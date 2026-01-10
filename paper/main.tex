@@ -131,7 +131,7 @@ They also require expert knowledge to create and maintain rules.
 
 \textbf{ML-based approaches} like AIIO use flat feature representations, treating each file record independently.
 This ignores the relational structure of I/O behavior: files accessed by the same MPI rank, the same file accessed through different I/O modules (POSIX vs. MPI-IO), or multiple jobs competing for shared storage resources.
-These relationships are often crucial for understanding bottlenecks like load imbalance or missing collective I/O.
+These relationships are often necessary for understanding bottlenecks like load imbalance or missing collective I/O.
 
 \textbf{LLM-based approaches} provide natural language explanations but face challenges with long I/O traces, lack domain-specific knowledge, and may hallucinate incorrect diagnoses~\cite{egersdoerfer2025ioagent}.
 They also incur significant computational cost and latency.
@@ -146,9 +146,9 @@ Figure~\ref{fig:motivating-example} illustrates the core limitation of flat-feat
     \label{fig:motivating-example}
 \end{figure*}
 
-\subsection{Key Insights and Contributions}
+\subsection{Contributions}
 
-Our key insight is that I/O bottlenecks are fundamentally \emph{relational}: they emerge from the relationships between files, processes, and I/O operations rather than from individual file statistics alone.
+Our central observation is that I/O bottlenecks are fundamentally \emph{relational}: they emerge from the relationships between files, processes, and I/O operations rather than from individual file statistics alone.
 For example:
 \begin{itemize}
     \item \textbf{Load imbalance} manifests as uneven I/O volume across MPI ranks accessing the same set of files.
@@ -200,7 +200,7 @@ The MPI-IO module captures parallel I/O semantics including independent vs. coll
 Additional modules cover STDIO, HDF5, PnetCDF, and file system-specific information (Lustre stripe settings, GPFS).
 
 For shared files accessed by multiple MPI ranks, Darshan records per-rank variance statistics including the fastest/slowest rank times and bytes transferred.
-This information is crucial for detecting load imbalance, a common bottleneck in parallel applications.
+This information is essential for detecting load imbalance, a common bottleneck in parallel applications.
 However, the raw counters are challenging to interpret: a single Darshan log may contain hundreds of counters across multiple files and modules, requiring expertise to identify performance issues.
 
 For fine-grained analysis, Darshan eXtended Tracing (DXT)~\cite{xu2017dxt} captures per-operation timestamps and offsets, enabling detailed temporal analysis.
@@ -268,7 +268,7 @@ For example, a job may have both small I/O (many operations $<$1KB) and data imb
 
 \subsection{Bottleneck Taxonomy}
 
-We define 8 bottleneck categories designed for robust detection from aggregated Darshan counters, based on the literature~\cite{bez2023drishti,dong2023aiio,yildirim2025wisio} and analysis of production workloads.
+We define 8 bottleneck categories designed for reliable detection from aggregated Darshan counters, based on the literature~\cite{bez2023drishti,dong2023aiio,yildirim2025wisio} and analysis of production workloads.
 We consolidate fine-grained distinctions (e.g., separating ``misaligned'' from ``small I/O'') that are difficult to distinguish reliably in aggregated statistics:
 
 \begin{enumerate}
@@ -369,7 +369,7 @@ where $\mathbf{W}^{(2)} \in \mathbb{R}^{d' \times (H \cdot d')}$ projects from t
 \alpha_{ij} = \frac{\exp(\text{LeakyReLU}(\mathbf{a}^T [\mathbf{W}\mathbf{h}_i \Vert \mathbf{W}\mathbf{h}_j]))}{\sum_{k \in \mathcal{N}(i)} \exp(\text{LeakyReLU}(\mathbf{a}^T [\mathbf{W}\mathbf{h}_i \Vert \mathbf{W}\mathbf{h}_k]))}
 \end{equation}
 where $\mathbf{a}$ is a learnable attention vector.
-These weights are crucial for interpretation (Section~\ref{sec:interpretation}).
+These weights enable interpretation (Section~\ref{sec:interpretation}).
 
 \textbf{Graph Pooling.} We aggregate node embeddings to a graph-level representation using mean pooling:
 \begin{equation}
@@ -482,7 +482,7 @@ Pre-trained + Fine-tuned & \placeholder{\textbf{.86}} & \textbf{+5\%} \\
 
 A critical requirement for HPC tools is explainability: a correct diagnosis is useless if the user cannot locate the source.
 While standard tools tell users ``Your job had a Metadata bottleneck,'' IOGraphNet highlights the \emph{specific sub-graph} (e.g., Rank 0 accessing File X) that triggered the classification.
-We leverage the attention mechanism of our GAT architecture to provide \textbf{intra-job localization}, turning the ``black box'' of ML into a ``glass box.''
+We use the attention mechanism of our GAT architecture to provide \textbf{intra-job localization}, turning the ``black box'' of ML into a ``glass box.''
 
 \textbf{Bottleneck Contribution Score.}
 We define the Bottleneck Contribution Score of a rank-file pair $(i,j)$ as its normalized attention weight $\alpha_{ij}$.
@@ -835,10 +835,10 @@ LLM (IOAgent) & $>$1 s & $>$1B & $>$10 GB \\
 \subsection{Why Graph Structure Helps}
 
 Our ablation study (Table~\ref{tab:ablation}) confirms that the graph structure contributes a [X]\% improvement in Micro-F1 over equivalent models without edges.
-The key insight is that many I/O bottlenecks are fundamentally \emph{relational}: they emerge from relationships between files, ranks, and modules rather than from individual file statistics alone.
+Many I/O bottlenecks are fundamentally \emph{relational}: they emerge from relationships between files, ranks, and modules rather than from individual file statistics alone.
 
 \textbf{Bottlenecks requiring relationships.}
-The improvement from graph structure is largest for bottlenecks that inherently involve relationships:
+The improvement from graph structure is largest for bottlenecks that involve relationships:
 \begin{itemize}
     \item \textbf{Load imbalance} manifests as uneven I/O volume or time across MPI ranks accessing the same set of files. Same-rank edges enable the model to aggregate information across files accessed by each rank, then compare across ranks through the graph structure.
     \item \textbf{Missing collective I/O} is detected when multiple ranks independently access the same shared file instead of using collective operations. Same-file edges connect POSIX and MPI-IO records for the same file, allowing the model to observe the pattern of independent accesses.
@@ -884,7 +884,7 @@ LLM-based approaches using commercial APIs (e.g., GPT-4) incur significant costs
 
 \textbf{Interpretability.}
 LLMs excel at generating natural language explanations that domain scientists can understand.
-IOGraphNet provides interpretability through attention weights, which indicate important file relationships but require visualization to communicate effectively.
+IOGraphNet provides interpretability through attention weights, which indicate important file relationships but require visualization to communicate clearly.
 
 \textbf{Hybrid approaches.}
 A promising direction is combining GNN-based detection with LLM-based explanation: IOGraphNet quickly identifies bottleneck types and important files, then an LLM generates human-readable recommendations based on this structured output.
@@ -991,7 +991,7 @@ IOGraphNet is complementary: it identifies \emph{what} to optimize, while AutoML
 \label{sec:conclusion}
 
 We presented IOGraphNet, the first graph neural network approach for I/O bottleneck detection in HPC systems.
-Our key insight is that I/O bottlenecks often emerge from \emph{relationships} (load imbalance across MPI ranks, missing collective operations on shared files, cross-module inefficiencies) that flat-feature models cannot capture effectively.
+I/O bottlenecks often emerge from \emph{relationships} (load imbalance across MPI ranks, missing collective operations on shared files, cross-module inefficiencies) that flat-feature models cannot capture.
 By modeling the relational structure of I/O behavior as a graph where nodes represent file access records and edges encode relationships, IOGraphNet learns to aggregate information across related files to detect these patterns.
 
 Our evaluation on over 2,000 benchmark logs with ground-truth labels demonstrates that IOGraphNet achieves [X]\% Micro-F1, outperforming XGBoost, Random Forest, and MLP baselines.
