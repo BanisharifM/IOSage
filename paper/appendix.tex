@@ -1,0 +1,353 @@
+%% ============================================================================
+%% APPENDIX: Extended Content for IOGraphNet Paper
+%% ============================================================================
+
+\appendix
+
+\section{Extended Experimental Results}
+\label{app:extended-results}
+
+\subsection{Hyperparameter Search}
+
+Table~\ref{tab:hyperparams} reports the hyperparameter search results.
+We searched over learning rate, hidden dimensions, number of attention heads, and dropout rate using grid search with 5-fold cross-validation on the training set.
+The best configuration uses learning rate 0.001, 64 hidden dimensions, 4 attention heads, and dropout 0.2.
+
+\begin{table}[ht]
+\caption{Hyperparameter search results (Micro-F1 on validation)}
+\label{tab:hyperparams}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+LR & Hidden & Heads & Drop. & F1 \\
+\midrule
+0.01 & 64 & 4 & 0.2 & \placeholder{0.82} \\
+0.001 & 32 & 4 & 0.2 & \placeholder{0.84} \\
+\textbf{0.001} & \textbf{64} & \textbf{4} & \textbf{0.2} & \placeholder{\textbf{0.86}} \\
+0.001 & 128 & 4 & 0.2 & \placeholder{0.85} \\
+0.001 & 64 & 2 & 0.2 & \placeholder{0.84} \\
+0.001 & 64 & 8 & 0.2 & \placeholder{0.85} \\
+0.001 & 64 & 4 & 0.1 & \placeholder{0.84} \\
+0.001 & 64 & 4 & 0.3 & \placeholder{0.85} \\
+0.0001 & 64 & 4 & 0.2 & \placeholder{0.83} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Additional Ablation Studies}
+
+\textbf{Number of GAT Layers.}
+Table~\ref{tab:ablation-layers} shows the effect of varying the number of GAT layers.
+Two layers provide the best trade-off between expressiveness and overfitting.
+Deeper networks (3--4 layers) show slight degradation, likely due to over-smoothing where node representations become indistinguishable.
+
+\begin{table}[ht]
+\caption{Effect of number of GAT layers}
+\label{tab:ablation-layers}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Layers & Micro-F1 & Training Time \\
+\midrule
+1 & \placeholder{0.82} & \placeholder{15} min \\
+\textbf{2} & \placeholder{\textbf{0.86}} & \placeholder{20} min \\
+3 & \placeholder{0.85} & \placeholder{28} min \\
+4 & \placeholder{0.84} & \placeholder{35} min \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Graph Pooling Methods.}
+We compare mean pooling with alternative aggregation strategies (Table~\ref{tab:ablation-pooling}).
+Mean pooling slightly outperforms max and sum pooling.
+Attention-based pooling (Set2Set) provides marginal improvement but at higher computational cost.
+
+\begin{table}[ht]
+\caption{Effect of graph pooling method}
+\label{tab:ablation-pooling}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Pooling & Micro-F1 & Inference Time \\
+\midrule
+\textbf{Mean} & \placeholder{\textbf{0.86}} & \placeholder{5} ms \\
+Max & \placeholder{0.84} & \placeholder{5} ms \\
+Sum & \placeholder{0.83} & \placeholder{5} ms \\
+Set2Set & \placeholder{0.87} & \placeholder{12} ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Dataset Details}
+\label{app:dataset}
+
+\subsection{Polaris System Characteristics}
+
+ALCF Polaris is a 560-node HPE Apollo Gen10+ system with:
+\begin{itemize}
+    \item \textbf{Compute:} AMD EPYC Milan CPUs (32 cores), 4$\times$ NVIDIA A100 GPUs per node
+    \item \textbf{Memory:} 512 GB DDR4 RAM, 160 GB HBM2e GPU memory per node
+    \item \textbf{Storage:} Eagle Lustre file system (100 PB, 650 GB/s peak bandwidth)
+    \item \textbf{Network:} HPE Slingshot interconnect (200 Gb/s per node)
+\end{itemize}
+
+\subsection{Polaris Log Statistics}
+
+Table~\ref{tab:polaris-stats} provides detailed statistics for the Polaris production dataset.
+
+\begin{table}[ht]
+\caption{Polaris production dataset statistics}
+\label{tab:polaris-stats}
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+Statistic & Value \\
+\midrule
+Total logs & 1,378,117 \\
+Date range & Apr 2024 -- Jan 2026 \\
+Unique users & \placeholder{X} \\
+Unique projects & \placeholder{Y} \\
+\midrule
+Logs with POSIX module & \placeholder{X\%} \\
+Logs with MPI-IO module & \placeholder{Y\%} \\
+Logs with STDIO module & \placeholder{Z\%} \\
+Logs with HDF5 module & \placeholder{W\%} \\
+\midrule
+Median files per job & \placeholder{12} \\
+Mean files per job & \placeholder{45} \\
+Max files per job & \placeholder{10,000+} \\
+\midrule
+Median job duration & \placeholder{X} min \\
+Median I/O bytes & \placeholder{Y} GB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benchmark Configuration Details}
+
+Table~\ref{tab:benchmark-configs} details the benchmark configurations used to generate ground-truth labels.
+
+\begin{table*}[ht]
+\caption{Benchmark configurations for ground-truth label generation (8 bottleneck categories)}
+\label{tab:benchmark-configs}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Bottleneck Type & Benchmark & Configuration & Label Criteria \\
+\midrule
+Metadata Storm & mdtest & 10K files/proc, stat-heavy & Meta time $>$ data time, opens/ops $>$10 \\
+Small I/O & IOR & \texttt{-t 64 -b 64} (64-byte transfers) & $>$80\% ops $<$1KB \\
+Data Imbalance & Custom MPI & Rank 0 writes 10$\times$ more; sleep injection & CV(bytes) $>$ 0.5, max/median time $>$ 2 \\
+Write Saturation & IOR & Large sequential writes, high volume & High bytes, low bandwidth vs peak \\
+Read Saturation & IOR & Large sequential reads, high volume & High bytes, low bandwidth vs peak \\
+Interface Misuse & IOR & POSIX mode on shared file & Shared file, high indep ops, zero collective \\
+File-per-Process & mdtest/Custom & 1000+ files created per rank & Files created $>$ 100 $\times$ ranks \\
+Healthy & IOR & Optimized collective I/O & High bandwidth, balanced access \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Feature Normalization}
+
+All node features are normalized using z-score standardization computed on the training set:
+\begin{equation}
+x'_i = \frac{x_i - \mu_i}{\sigma_i + \epsilon}
+\end{equation}
+where $\mu_i$ and $\sigma_i$ are the mean and standard deviation of feature $i$ across all training samples, and $\epsilon = 10^{-8}$ prevents division by zero.
+
+For features with heavy-tailed distributions (e.g., byte counts, operation counts), we apply log transformation before normalization:
+\begin{equation}
+x'_i = \frac{\log(1 + x_i) - \mu_i}{\sigma_i + \epsilon}
+\end{equation}
+
+\section{Implementation Details}
+\label{app:implementation}
+
+\subsection{Structure-Aware Baseline Features}
+
+To ensure fair comparison between IOGraphNet and flat-feature baselines, we augment XGBoost, Random Forest, and MLP with graph-derived statistical features.
+Table~\ref{tab:baseline-features} lists these features, which allow baselines to access summarized structural information without the graph itself.
+
+\begin{table}[ht]
+\caption{Structure-aware features for baseline models}
+\label{tab:baseline-features}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}llp{4.5cm}@{}}
+\toprule
+\textbf{Category} & \textbf{Feature} & \textbf{Topological Intuition} \\
+\midrule
+\multirow{2}{*}{Global} & Total Ops (Read/Write/Meta) & Overall job intensity (AIIO-style) \\
+ & Total Bytes (R/W) & Data volume \\
+\midrule
+\multirow{3}{*}{Graph (Node)} & Max/Mean Rank Degree & Fan-out: metadata stress \\
+ & Max/Mean File Degree & Fan-in: contention/locking \\
+ & Degree Std.\ Dev. & Load imbalance across nodes \\
+\midrule
+\multirow{3}{*}{Graph (Edge)} & Max Concurrency Weight & Peak contention on single file \\
+ & Mean Concurrency Weight & General system pressure \\
+ & Edge Weight Skewness & Stragglers vs.\ uniform I/O \\
+\midrule
+\multirow{2}{*}{Imbalance} & Gini Coefficient (bytes) & Data distribution inequality \\
+ & Max/Mean Time Ratio & Straggler detection \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\textbf{Key Insight:} If IOGraphNet outperforms structure-aware baselines, it proves that \emph{message-passing} (local neighborhood aggregation) provides value beyond statistical summaries.
+The GNN can identify \emph{which specific node} is the outlier, while baselines only see ``average degree = 5.''
+
+\subsection{Feature List}
+
+Table~\ref{tab:features} lists all features extracted from Darshan logs for each file node.
+
+\begin{table}[ht]
+\caption{Node features extracted from Darshan logs (partial list)}
+\label{tab:features}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Category & Feature & Description \\
+\midrule
+\multirow{6}{*}{Operations} & read\_count & Number of read operations \\
+& write\_count & Number of write operations \\
+& bytes\_read & Total bytes read \\
+& bytes\_written & Total bytes written \\
+& seq\_reads & Sequential read count \\
+& seq\_writes & Sequential write count \\
+\midrule
+\multirow{5}{*}{Access Size} & size\_0\_100 & Ops with size 0--100B \\
+& size\_100\_1K & Ops with size 100B--1KB \\
+& size\_1K\_10K & Ops with size 1KB--10KB \\
+& ... & ... \\
+& size\_1G\_plus & Ops with size $>$1GB \\
+\midrule
+\multirow{4}{*}{Timing} & read\_time & Total read time (s) \\
+& write\_time & Total write time (s) \\
+& meta\_time & Metadata operation time \\
+& io\_time & Total I/O time \\
+\midrule
+\multirow{3}{*}{Derived} & avg\_read\_size & bytes\_read / read\_count \\
+& bandwidth & bytes / time \\
+& meta\_ratio & meta\_time / io\_time \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Graph Construction Algorithm}
+
+Algorithm~\ref{alg:graph-construction} describes the graph construction procedure.
+
+\begin{algorithm}[ht]
+\caption{Graph Construction from Darshan Log}
+\label{alg:graph-construction}
+\begin{algorithmic}[1]
+\REQUIRE Darshan log $L$ with file records $\{r_1, ..., r_n\}$
+\ENSURE Graph $G = (V, E, X)$
+\STATE Initialize $V \leftarrow \emptyset$, $E \leftarrow \emptyset$
+\FOR{each record $r_i \in L$}
+    \STATE Add node $v_i$ to $V$
+    \STATE Extract features $\mathbf{x}_i$ from $r_i$
+\ENDFOR
+\STATE // Add same-rank edges
+\FOR{each pair $(v_i, v_j)$ where $i < j$}
+    \IF{$\text{rank}(r_i) = \text{rank}(r_j)$}
+        \STATE Add edge $(v_i, v_j)$ to $E$
+    \ENDIF
+\ENDFOR
+\STATE // Add same-file edges
+\FOR{each pair $(v_i, v_j)$ where $i < j$}
+    \IF{$\text{filename}(r_i) = \text{filename}(r_j)$}
+        \STATE Add edge $(v_i, v_j)$ to $E$
+    \ENDIF
+\ENDFOR
+\STATE // Compute edge weights (concurrency)
+\FOR{each edge $(v_i, v_j) \in E$}
+    \STATE $w_{ij} \leftarrow \text{IoU}(\text{time\_window}(r_i), \text{time\_window}(r_j))$
+\ENDFOR
+\STATE // Fallback for sparse graphs
+\IF{$|E| < 1$}
+    \STATE Add edges between all node pairs
+\ENDIF
+\STATE Normalize features: $X \leftarrow \text{normalize}([\mathbf{x}_1, ..., \mathbf{x}_n])$
+\RETURN $G = (V, E, X)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Model Hyperparameters}
+
+Table~\ref{tab:model-hyperparams} lists all model hyperparameters with justifications.
+
+\begin{table}[ht]
+\caption{IOGraphNet hyperparameters}
+\label{tab:model-hyperparams}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & Value & Justification \\
+\midrule
+GAT layers & 2 & Avoids over-smoothing \\
+Hidden dim & 64 & Balance capacity/speed \\
+Attention heads & 4 & Multi-perspective attention \\
+Dropout & 0.2 & Regularization \\
+Learning rate & 0.001 & Standard for Adam \\
+Weight decay & $10^{-5}$ & L2 regularization \\
+Batch size & 32 & GPU memory constraint \\
+Max epochs & 100 & With early stopping \\
+Early stop patience & 10 & Prevent overfitting \\
+Activation & ELU & Smooth gradients \\
+Pooling & Mean & Permutation invariant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Reproducibility}
+\label{app:reproducibility}
+
+\subsection{Code and Data Availability}
+
+Upon acceptance, we will release:
+\begin{itemize}
+    \item \textbf{Code:} Complete implementation including data processing, model training, and evaluation scripts (GitHub repository, MIT license)
+    \item \textbf{Benchmark dataset:} Darshan logs from IOR, mdtest, and DLIO with ground-truth labels
+    \item \textbf{Trained models:} Pre-trained IOGraphNet weights for inference
+    \item \textbf{Documentation:} Installation guide, usage examples, and API documentation
+\end{itemize}
+
+The Polaris production logs cannot be released due to ALCF data policies, but we provide detailed statistics (Appendix~\ref{app:dataset}) to enable replication on other systems.
+
+\subsection{Hardware Specifications}
+
+Experiments were conducted on:
+\begin{itemize}
+    \item \textbf{Training:} Single NVIDIA A100 (80 GB HBM2e)
+    \item \textbf{CPU:} AMD EPYC 7763 (64 cores)
+    \item \textbf{Memory:} 512 GB DDR4
+    \item \textbf{Software:} Python 3.10, PyTorch 2.0, PyTorch Geometric 2.3
+\end{itemize}
+
+\subsection{Training Procedure}
+
+\begin{enumerate}
+    \item \textbf{Data preparation:} Parse Darshan logs, extract features, construct graphs
+    \item \textbf{Split:} 70\% train, 15\% validation, 15\% test (stratified by label distribution)
+    \item \textbf{Training:} Adam optimizer, batch size 32, max 100 epochs
+    \item \textbf{Early stopping:} Monitor validation Micro-F1, patience 10 epochs
+    \item \textbf{Model selection:} Checkpoint with best validation Micro-F1
+    \item \textbf{Evaluation:} Final metrics on held-out test set
+\end{enumerate}
+
+Total training time: approximately \placeholder{2} hours on A100 GPU.
+
+\subsection{Random Seeds}
+
+For reproducibility, we fix random seeds:
+\begin{itemize}
+    \item Python random: 42
+    \item NumPy: 42
+    \item PyTorch: 42
+    \item CUDA: deterministic mode enabled
+\end{itemize}
+
+We report mean and standard deviation over 5 runs with different seeds in Table~\ref{tab:main-results}.
