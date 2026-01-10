@@ -70,10 +70,10 @@
 \begin{abstract}
 I/O performance remains a critical bottleneck in high-performance computing (HPC), often consuming a significant fraction of application runtime for data-intensive workloads.
 Existing I/O diagnosis tools either rely on manually crafted rules that may miss complex patterns, or use machine learning with flat feature representations that ignore the \emph{topology} of resource sharing between files and processes.
-We present IOGraphNet, a graph neural network (GNN) approach for automatic I/O bottleneck detection that formalizes the problem as \textbf{Topological Resource Contention}---modeling how ranks share files reveals bottleneck patterns even from aggregated Darshan logs without fine-grained traces.
+We present IOGraphNet, a graph neural network (GNN) approach for automatic I/O bottleneck detection that formalizes the problem as \textbf{Topological Resource Contention}. By modeling how ranks share files, our approach reveals bottleneck patterns even from aggregated Darshan logs without fine-grained traces.
 Our key insight is that I/O bottlenecks emerge from structural relationships: an N-to-1 star pattern (N ranks writing to 1 file) indicates contention; a 1-to-N pattern indicates metadata stress.
 Unlike flat-feature models that see ``Rank 0 is slow'' and ``File A is slow'' as independent features, IOGraphNet captures that Rank 0's slowness is \emph{caused by} its connection to high-degree File A.
-Using a Graph Attention Network (GAT) architecture, IOGraphNet performs multi-label classification to detect 8 bottleneck categories, with attention weights providing interpretable \emph{root-cause localization}---identifying exactly which file-rank relationships cause each detected issue.
+Using a Graph Attention Network (GAT) architecture, IOGraphNet performs multi-label classification to detect 8 bottleneck categories, with attention weights providing interpretable \emph{root-cause localization} that identifies exactly which file-rank relationships cause each detected issue.
 To address the distribution shift between controlled benchmarks and production workloads, we employ a two-stage \textbf{self-supervised pre-training} strategy: the model first learns the structural patterns of real HPC I/O by reconstructing masked edges from 1.37 million unlabeled Polaris logs, then fine-tunes on 2,000+ labeled benchmark logs for classification.
 Our results show that IOGraphNet achieves [X]\% Micro-F1 score, outperforming XGBoost and MLP baselines, with ablation studies confirming that the graph topology contributes [W]\% improvement over equivalent models without structural edges.
 \end{abstract}
@@ -114,7 +114,7 @@ On leadership-class systems, even modest improvements in I/O efficiency can save
 \subsection{Motivation}
 
 Diagnosing I/O performance problems requires expertise in the complex HPC I/O stack, which spans applications, high-level I/O libraries (HDF5, netCDF), MPI-IO, POSIX, and parallel file systems (Lustre, GPFS).
-Domain scientists often lack this expertise, relying on I/O specialists to analyze performance traces---a process that does not scale with the growing number of HPC users and applications.
+Domain scientists often lack this expertise, relying on I/O specialists to analyze performance traces, a process that does not scale with the growing number of HPC users and applications.
 
 Automated I/O diagnosis tools have emerged to address this challenge.
 Darshan~\cite{carns2009darshan} provides lightweight profiling to capture I/O behavior, generating logs with hundreds of counters per file access.
@@ -136,7 +136,7 @@ These relationships are often crucial for understanding bottlenecks like load im
 \textbf{LLM-based approaches} provide natural language explanations but face challenges with long I/O traces, lack domain-specific knowledge, and may hallucinate incorrect diagnoses~\cite{egersdoerfer2025ioagent}.
 They also incur significant computational cost and latency.
 
-Figure~\ref{fig:motivating-example} illustrates the core limitation of flat-feature approaches: while individual file statistics appear normal, the underlying graph topology reveals a star pattern where multiple ranks contend for a shared file---a bottleneck invisible to tools that analyze files independently.
+Figure~\ref{fig:motivating-example} illustrates the core limitation of flat-feature approaches: while individual file statistics appear normal, the underlying graph topology reveals a star pattern where multiple ranks contend for a shared file, a bottleneck invisible to tools that analyze files independently.
 
 \begin{figure*}[t]
     \centering
@@ -229,7 +229,7 @@ Trained on 40 months of Darshan logs from NERSC Cori, AIIO demonstrated signific
 
 However, AIIO and similar ML approaches~\cite{lofstead2020sc} use \emph{flat feature representations}: each file record is converted to a feature vector and processed independently.
 This ignores the relational structure of I/O behavior.
-Load imbalance, for example, emerges from the \emph{relationship} between files accessed by different ranks---a pattern that flat features cannot directly capture.
+Load imbalance, for example, emerges from the \emph{relationship} between files accessed by different ranks, a pattern that flat features cannot directly capture.
 Aggregating file-level features to job-level statistics (mean, max, sum) loses information about which files contribute to bottlenecks.
 
 \subsection{LLM-Based I/O Analysis}
@@ -247,7 +247,7 @@ However, they face several challenges: context length limitations restrict the a
 Graph neural networks~\cite{kipf2017gcn,hamilton2017graphsage,velickovic2018gat} learn representations by aggregating information from neighboring nodes, naturally capturing relational patterns.
 GNNs have been applied to various HPC problems: GNN-RL~\cite{fan2024gnnrl} uses graph representations for job scheduling on heterogeneous clusters; HPCGCN~\cite{zeng2023hpcgcn} predicts system events from log data using graph convolutions; and graph-based methods model microservice dependencies for performance prediction~\cite{wu2022graph}.
 
-The relational nature of I/O behavior---files connected by shared rank access, the same file accessed through different modules, resource contention patterns---makes this domain particularly suitable for graph-based learning.
+The relational nature of I/O behavior (files connected by shared rank access, the same file accessed through different modules, resource contention patterns) makes this domain particularly suitable for graph-based learning.
 Unlike flat-feature methods that sum or average counters across files (losing topology), GNNs preserve the \emph{structure} of resource sharing.
 This enables detection of bottlenecks like load imbalance that emerge from relationships: a GNN can learn that ``Rank 0 is slow \emph{because} it connects to File A, which has high degree (contention),'' rather than treating these as independent features.
 Compared to WisIO's 800+ hand-crafted rules for multi-perspective analysis~\cite{yildirim2025wisio}, GNNs learn these latent perspectives automatically from data.
@@ -293,7 +293,7 @@ We consolidate fine-grained distinctions (e.g., separating ``misaligned'' from `
 \label{sec:graph-construction}
 
 A key challenge in analyzing Darshan logs is their \emph{aggregated} nature: exact operation timestamps are lost, preventing traditional temporal analysis.
-We address this by formalizing I/O bottleneck detection as \textbf{Topological Resource Contention}---the structure of resource sharing between ranks and files reveals bottleneck patterns even without fine-grained traces.
+We address this by formalizing I/O bottleneck detection as \textbf{Topological Resource Contention}: the structure of resource sharing between ranks and files reveals bottleneck patterns even without fine-grained traces.
 
 We construct a heterogeneous bipartite graph $G = (V, E)$ for each Darshan log where nodes represent file access records and edges encode resource-sharing relationships.
 Figure~\ref{fig:graph-construction} illustrates this process.
@@ -313,7 +313,7 @@ All features are normalized using z-score standardization computed on the traini
 \textbf{Structural Edges.} Unlike approaches requiring fine-grained traces, we define edges based on \emph{structural resource sharing} that can be determined from aggregated statistics:
 \begin{itemize}
     \item \textbf{Same-rank edges} ($E_{\text{rank}}$): Connect file records accessed by the same MPI rank. These edges enable the model to aggregate information across files accessed by a single process, revealing per-rank I/O patterns.
-    \item \textbf{Same-file edges} ($E_{\text{file}}$): Connect records for the same file across different modules (e.g., POSIX and MPI-IO views) or different ranks accessing shared files. These capture contention topology---an N-to-1 star pattern (N ranks $\rightarrow$ 1 file) indicates potential lock contention.
+    \item \textbf{Same-file edges} ($E_{\text{file}}$): Connect records for the same file across different modules (e.g., POSIX and MPI-IO views) or different ranks accessing shared files. These capture contention topology; an N-to-1 star pattern (N ranks $\rightarrow$ 1 file) indicates potential lock contention.
 \end{itemize}
 
 \textbf{Edge Attributes.} Each edge carries a \emph{concurrency weight} derived from aggregated timing:
@@ -439,7 +439,7 @@ We first train the IOGraphNet encoder on the massive corpus of unlabeled Polaris
     \end{equation}
 \end{enumerate}
 
-This forces the model to learn the \emph{latent structural dependencies} of real HPC workloads---understanding that certain rank-file connectivity patterns (e.g., collective I/O vs. independent, file-per-process vs. shared-file) are intrinsically different---\emph{without} requiring any labels.
+This forces the model to learn the \emph{latent structural dependencies} of real HPC workloads, understanding that certain rank-file connectivity patterns (e.g., collective I/O vs. independent, file-per-process vs. shared-file) are intrinsically different, \emph{without} requiring any labels.
 
 \textbf{Stage 2: Supervised Fine-tuning (2,000+ Labeled Logs).}
 After pre-training, we attach the classification head (MLP) and fine-tune on labeled benchmark logs:
@@ -482,11 +482,11 @@ Pre-trained + Fine-tuned & \placeholder{\textbf{.86}} & \textbf{+5\%} \\
 
 A critical requirement for HPC tools is explainability: a correct diagnosis is useless if the user cannot locate the source.
 While standard tools tell users ``Your job had a Metadata bottleneck,'' IOGraphNet highlights the \emph{specific sub-graph} (e.g., Rank 0 accessing File X) that triggered the classification.
-We leverage the attention mechanism of our GAT architecture to provide \textbf{intra-job localization}---turning the ``black box'' of ML into a ``glass box.''
+We leverage the attention mechanism of our GAT architecture to provide \textbf{intra-job localization}, turning the ``black box'' of ML into a ``glass box.''
 
 \textbf{Bottleneck Contribution Score.}
 We define the Bottleneck Contribution Score of a rank-file pair $(i,j)$ as its normalized attention weight $\alpha_{ij}$.
-Unlike post-hoc explainers (e.g., SHAP~\cite{lundberg2017shap}) which approximate feature importance for flat models, $\alpha_{ij}$ is \emph{intrinsic} to the model's decision path---it directly reflects how much information flowed through each edge during classification.
+Unlike post-hoc explainers (e.g., SHAP~\cite{lundberg2017shap}) which approximate feature importance for flat models, $\alpha_{ij}$ is \emph{intrinsic} to the model's decision path: it directly reflects how much information flowed through each edge during classification.
 
 We interpret attention weights as ``blame probability'':
 \begin{itemize}
@@ -590,7 +590,7 @@ Specifically, we flatten each job's bipartite graph into:
 (2)~\emph{Edge weight statistics}: min, max, mean, and standard deviation of concurrency weights, capturing synchronization intensity;
 (3)~\emph{Imbalance metrics}: Gini coefficient of bytes across ranks, max/mean rank time ratio, capturing straggler behavior.
 This gives baselines access to summarized structural information.
-If IOGraphNet outperforms these structure-aware baselines, it demonstrates that local message-passing---not merely access to structural statistics---is necessary for accurate diagnosis.
+If IOGraphNet outperforms these structure-aware baselines, it demonstrates that local message-passing, not merely access to structural statistics, is necessary for accurate diagnosis.
 
 \subsection{Metrics}
 
@@ -835,7 +835,7 @@ LLM (IOAgent) & $>$1 s & $>$1B & $>$10 GB \\
 \subsection{Why Graph Structure Helps}
 
 Our ablation study (Table~\ref{tab:ablation}) confirms that the graph structure contributes a [X]\% improvement in Micro-F1 over equivalent models without edges.
-The key insight is that many I/O bottlenecks are fundamentally \emph{relational}---they emerge from relationships between files, ranks, and modules rather than from individual file statistics alone.
+The key insight is that many I/O bottlenecks are fundamentally \emph{relational}: they emerge from relationships between files, ranks, and modules rather than from individual file statistics alone.
 
 \textbf{Bottlenecks requiring relationships.}
 The improvement from graph structure is largest for bottlenecks that inherently involve relationships:
@@ -991,7 +991,7 @@ IOGraphNet is complementary: it identifies \emph{what} to optimize, while AutoML
 \label{sec:conclusion}
 
 We presented IOGraphNet, the first graph neural network approach for I/O bottleneck detection in HPC systems.
-Our key insight is that I/O bottlenecks often emerge from \emph{relationships}---load imbalance across MPI ranks, missing collective operations on shared files, cross-module inefficiencies---that flat-feature models cannot capture effectively.
+Our key insight is that I/O bottlenecks often emerge from \emph{relationships} (load imbalance across MPI ranks, missing collective operations on shared files, cross-module inefficiencies) that flat-feature models cannot capture effectively.
 By modeling the relational structure of I/O behavior as a graph where nodes represent file access records and edges encode relationships, IOGraphNet learns to aggregate information across related files to detect these patterns.
 
 Our evaluation on over 2,000 benchmark logs with ground-truth labels demonstrates that IOGraphNet achieves [X]\% Micro-F1, outperforming XGBoost, Random Forest, and MLP baselines.
