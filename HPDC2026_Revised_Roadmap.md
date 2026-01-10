@@ -729,6 +729,55 @@ def forward_with_attention(self, x, edge_index, batch):
 
 ---
 
+## Part 11: Artifact & Appendix Preparation
+
+### HPDC 2026 Artifact Requirements
+
+| Item | Requirement | Status |
+|------|-------------|--------|
+| AD/AE Appendix | Optional, up to 2 pages | ⏳ Pending |
+| Submit with paper | By Feb 5, 2026 | ⏳ Pending |
+| Double-blind | Must not reveal identity | ⏳ Pending |
+| Public availability | Encouraged (Zenodo DOI) | ⏳ Pending |
+
+### Artifacts to Prepare
+
+| Artifact | Description | Priority |
+|----------|-------------|----------|
+| Source code | IOGraphNet implementation | Required |
+| Trained models | Pre-trained + fine-tuned weights | Required |
+| Benchmark data | Labeled graphs for testing | Required |
+| Sample data | Small subset for quick testing | Required |
+| Docker image | Reproducible environment | Optional |
+| README/INSTALL | Documentation | Required |
+
+### Trained Model Submission
+
+- **Format**: PyTorch `.pt` files
+- **Include**: Both pre-trained (1.37M logs) and fine-tuned (benchmark) weights
+- **When**: With paper submission (Feb 5) or after acceptance
+- **Where**: GitHub + Zenodo (for DOI)
+
+### AD/AE Appendix Content
+
+```
+Artifact Description:
+- What: Code, models, data
+- Where: GitHub URL + Zenodo DOI
+- Hardware: GPU requirements
+- Software: Python/PyTorch versions
+
+Artifact Evaluation:
+- Setup: pip install -r requirements.txt
+- Run: python evaluate.py
+- Expected: Micro-F1 ~ 0.86
+- Time: 5 min (evaluation), 2 hr (training)
+```
+
+See PROJECT_PHASES.md Phase 5.5 for detailed checklist.
+
+---
+
 ## References
 
 ### Must-Cite (Competitors)
