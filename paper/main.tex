@@ -21,11 +21,28 @@
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\placeholder}[1]{\textcolor{blue}{[PLACEHOLDER: #1]}}
 
-%% Remove copyright for anonymous submission
+%% ============================================================
+%% HPDC 2026 Anonymous Submission Configuration
+%% ============================================================
+%% The 'anonymous' option in documentclass automatically:
+%%   - Replaces author names with "Anonymous Author(s)"
+%%   - Enables \acmSubmissionID to show paper ID on each page
+%% The 'review' option adds line numbers for reviewers
+%% ============================================================
+
+%% Submission ID - Replace XXX with your paper ID after registration
+%% This will appear on each page header in anonymous mode
+\acmSubmissionID{XXX}
+
+%% Conference information (required by ACM template)
+%% This does NOT break anonymity - it just identifies the venue
+\acmConference[HPDC '26]{The 35th ACM International Symposium on High-Performance Parallel and Distributed Computing}{July 13--16, 2026}{Cleveland, OH, USA}
+\acmYear{2026}
+
+%% Remove ACM reference format and copyright for submission
 \setcopyright{none}
 \settopmatter{printacmref=false}
 \renewcommand\footnotetextcopyrightpermission[1]{}
-\pagestyle{plain}
 
 %% Anonymize PDF metadata
 \hypersetup{
@@ -35,21 +52,20 @@
   pdfkeywords={}
 }
 
-%% Conference info - set to empty for anonymous submission
-\acmConference[]{}{}{}
-\acmYear{}
-
-%% For camera-ready version, replace above with:
-%% \acmConference[HPDC '26]{The 35th ACM International Symposium on High-Performance Parallel and Distributed Computing}{July 13--16, 2026}{Cleveland, OH, USA}
-%% \acmYear{2026}
-
-%% Document info
+%% ============================================================
+%% Document begins
+%% ============================================================
 \begin{document}
 
 \title{IOGraphNet: Graph Neural Networks for Multi-Label I/O Bottleneck Detection in HPC Systems}
 
-%% Anonymous for review - replace XXX with paper ID after registration
-\author{Paper ID: XXX}
+%% Author info - handled automatically by 'anonymous' option
+%% The template will show "Anonymous Author(s)" during review
+%% For camera-ready, replace with actual author information:
+%% \author{First Author}
+%% \affiliation{\institution{University}}
+%% \email{author@example.com}
+\author{}
 
 \begin{abstract}
 I/O performance remains a critical bottleneck in high-performance computing (HPC), often consuming a significant fraction of application runtime for data-intensive workloads.
