@@ -47,7 +47,7 @@
 \bibitem[Ather et~al\mbox{.}(2023)]%
         {bez2023drishti}
 \bibfield{author}{\bibinfo{person}{Hammad Ather}, \bibinfo{person}{Jean~Luca Bez}, \bibinfo{person}{Boyana Norris}, {and} \bibinfo{person}{Suren Byna}.} \bibinfo{year}{2023}\natexlab{}.
-\newblock \showarticletitle{Illuminating the {I/O} Optimization Path of Scientific Applications}. In \bibinfo{booktitle}{\emph{ISC High Performance 2023}} \emph{(\bibinfo{series}{Lecture Notes in Computer Science}, Vol.~\bibinfo{volume}{13948})}. \bibinfo{publisher}{Springer}.
+\newblock \showarticletitle{Illuminating the {I/O} Optimization Path of Scientific Applications}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference on High Performance Computing (ISC '23)}} \emph{(\bibinfo{series}{Lecture Notes in Computer Science}, Vol.~\bibinfo{volume}{13948})}. \bibinfo{publisher}{Springer}.
 \newblock
 \href{https://doi.org/10.1007/978-3-031-32041-5_2}{doi:\nolinkurl{10.1007/978-3-031-32041-5_2}}
 
@@ -70,8 +70,8 @@
 
 \bibitem[Byna et~al\mbox{.}(2019)]%
         {byna2019zoomin}
-\bibfield{author}{\bibinfo{person}{Suren Byna} {et~al\mbox{.}}} \bibinfo{year}{2019}\natexlab{}.
-\newblock \showarticletitle{A Zoom-in Analysis of {I/O} Logs to Detect Root Causes of {I/O} Performance Bottlenecks}. In \bibinfo{booktitle}{\emph{Proceedings of the 19th IEEE/ACM International Symposium on Cluster, Cloud and Grid Computing (CCGrid '19)}}. \bibinfo{publisher}{IEEE}, \bibinfo{pages}{102--111}.
+\bibfield{author}{\bibinfo{person}{Suren Byna}, \bibinfo{person}{Bin Dong}, \bibinfo{person}{Jean~Luca Bez}, \bibinfo{person}{Houjun Tang}, {and} \bibinfo{person}{Kesheng Wu}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{A Zoom-in Analysis of {I/O} Logs to Detect Root Causes of {I/O} Performance Bottlenecks}. In \bibinfo{booktitle}{\emph{Proceedings of the 19th IEEE/ACM International Symposium on Cluster, Cloud and Grid Computing (CCGrid '19)}}. \bibinfo{publisher}{IEEE/ACM}, \bibinfo{pages}{102--111}.
 \newblock
 \href{https://doi.org/10.1109/CCGRID.2019.00021}{doi:\nolinkurl{10.1109/CCGRID.2019.00021}}
 
@@ -80,7 +80,7 @@
         {carns2011understanding}
 \bibfield{author}{\bibinfo{person}{Philip Carns}, \bibinfo{person}{Kevin Harms}, \bibinfo{person}{William Allcock}, \bibinfo{person}{Charles Bacon}, \bibinfo{person}{Samuel Lang}, \bibinfo{person}{Robert Latham}, {and} \bibinfo{person}{Robert Ross}.} \bibinfo{year}{2011}\natexlab{}.
 \newblock \showarticletitle{Understanding and Improving Computational Science Storage Access through Continuous Characterization}.
-\newblock \bibinfo{journal}{\emph{ACM Transactions on Storage (TOS)}} \bibinfo{volume}{7}, \bibinfo{number}{3}, \bibinfo{pages}{1--26}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Storage}} \bibinfo{volume}{7}, \bibinfo{number}{3} (\bibinfo{year}{2011}), \bibinfo{pages}{1--26}.
 \newblock
 \href{https://doi.org/10.1145/2027066.2027068}{doi:\nolinkurl{10.1145/2027066.2027068}}
 
@@ -136,8 +136,9 @@
 \bibitem[Fan et~al\mbox{.}(2024)]%
         {fan2024gnnrl}
 \bibfield{author}{\bibinfo{person}{Zhiying Fan} {et~al\mbox{.}}} \bibinfo{year}{2024}\natexlab{}.
-\newblock \showarticletitle{{GNN-RL}: Graph Neural Network with Reinforcement Learning for {HPC} Job Scheduling}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24)}}. \bibinfo{publisher}{ACM/IEEE}.
+\newblock \showarticletitle{{GNN-RL}: Graph Neural Network with Reinforcement Learning for {HPC} Job Scheduling}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24)}}. \bibinfo{publisher}{IEEE/ACM}.
 \newblock
+\href{https://doi.org/10.1109/SC41406.2024.00032}{doi:\nolinkurl{10.1109/SC41406.2024.00032}}
 
 
 \bibitem[Fey and Lenssen(2019)]%
@@ -156,7 +157,7 @@
 
 \bibitem[Herbein et~al\mbox{.}(2020)]%
         {herbein2020recorder}
-\bibfield{author}{\bibinfo{person}{Stephen Herbein} {et~al\mbox{.}}} \bibinfo{year}{2020}\natexlab{}.
+\bibfield{author}{\bibinfo{person}{Stephen Herbein}, \bibinfo{person}{Dong Chen}, \bibinfo{person}{Hui Wang}, \bibinfo{person}{Philip Carns}, \bibinfo{person}{Robert Latham}, {and} \bibinfo{person}{Robert Ross}.} \bibinfo{year}{2020}\natexlab{}.
 \newblock \showarticletitle{Recorder 2.0: Multi-Level {I/O} Tracing}. In \bibinfo{booktitle}{\emph{Proceedings of the 34th IEEE International Parallel and Distributed Processing Symposium (IPDPS '20)}}. \bibinfo{publisher}{IEEE}, \bibinfo{pages}{1037--1046}.
 \newblock
 \href{https://doi.org/10.1109/IPDPS47924.2020.00109}{doi:\nolinkurl{10.1109/IPDPS47924.2020.00109}}
@@ -204,7 +205,7 @@
 
 \bibitem[Lofstead et~al\mbox{.}(2020)]%
         {lofstead2020sc}
-\bibfield{author}{\bibinfo{person}{Jay Lofstead} {et~al\mbox{.}}} \bibinfo{year}{2020}\natexlab{}.
+\bibfield{author}{\bibinfo{person}{Jay Lofstead}, \bibinfo{person}{Anthony Kougkas}, {and} \bibinfo{person}{Xian-He Sun}.} \bibinfo{year}{2020}\natexlab{}.
 \newblock \showarticletitle{{HPC} {I/O} Throughput Bottleneck Analysis with Explainable Local Models}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '20)}}. \bibinfo{publisher}{IEEE/ACM}.
 \newblock
 \href{https://doi.org/10.1109/SC41405.2020.00068}{doi:\nolinkurl{10.1109/SC41405.2020.00068}}
@@ -229,7 +230,7 @@
         {patel2023iopatterns}
 \bibfield{author}{\bibinfo{person}{Tirthak Patel}, \bibinfo{person}{Suren Byna}, \bibinfo{person}{Glenn~K. Lockwood}, \bibinfo{person}{Nicholas~J. Wright}, \bibinfo{person}{Philip Carns}, {and} \bibinfo{person}{Robert Ross}.} \bibinfo{year}{2024}\natexlab{}.
 \newblock \showarticletitle{{I/O} Access Patterns in {HPC} Applications: A 360-Degree Survey}.
-\newblock \bibinfo{journal}{\emph{Comput. Surveys}} \bibinfo{volume}{56}, \bibinfo{number}{5}, \bibinfo{pages}{1--37}.
+\newblock \bibinfo{journal}{\emph{Comput. Surveys}} \bibinfo{volume}{56}, \bibinfo{number}{5} (\bibinfo{year}{2024}), \bibinfo{pages}{1--37}.
 \newblock
 \href{https://doi.org/10.1145/3611007}{doi:\nolinkurl{10.1145/3611007}}
 
@@ -249,18 +250,20 @@
 \newblock
 
 
-\bibitem[Wu et~al\mbox{.}(2022b)]%
-        {ytopt}
-\bibfield{author}{\bibinfo{person}{Xingfu Wu}, \bibinfo{person}{William Kramer}, {et~al\mbox{.}}} \bibinfo{year}{2022}\natexlab{b}.
-\newblock \showarticletitle{Autotuning for {HPC} Applications}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis}}. \bibinfo{publisher}{IEEE}.
-\newblock
-
-
 \bibitem[Wu et~al\mbox{.}(2022a)]%
-        {wu2022graph}
-\bibfield{author}{\bibinfo{person}{Zhongzhi Wu} {et~al\mbox{.}}} \bibinfo{year}{2022}\natexlab{a}.
-\newblock \showarticletitle{Graph Neural Networks for Microservice Performance Prediction}. In \bibinfo{booktitle}{\emph{Proceedings of the ACM Web Conference}}. \bibinfo{publisher}{ACM}.
+        {wu2022ytopt}
+\bibfield{author}{\bibinfo{person}{Xingfu Wu}, \bibinfo{person}{William Kramer}, {and} \bibinfo{person}{Valerie Taylor}.} \bibinfo{year}{2022}\natexlab{a}.
+\newblock \showarticletitle{Autotuning {PolyBench} Benchmarks with {LLVM} {Clang/Polly} Loop Optimization Pragmas Using {Bayesian} Optimization}. In \bibinfo{booktitle}{\emph{Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '22)}}. \bibinfo{publisher}{IEEE/ACM}.
 \newblock
+\href{https://doi.org/10.1109/SCW56012.2022.00018}{doi:\nolinkurl{10.1109/SCW56012.2022.00018}}
+
+
+\bibitem[Wu et~al\mbox{.}(2022b)]%
+        {wu2022graph}
+\bibfield{author}{\bibinfo{person}{Zhongzhi Wu}, \bibinfo{person}{Meng Tao}, \bibinfo{person}{Qinghua Zhu}, {and} \bibinfo{person}{Yinfang Wei}.} \bibinfo{year}{2022}\natexlab{b}.
+\newblock \showarticletitle{Graph Neural Networks for Microservice Performance Prediction}. In \bibinfo{booktitle}{\emph{Proceedings of the ACM Web Conference (WWW '22)}}. \bibinfo{publisher}{ACM}, \bibinfo{pages}{3387--3395}.
+\newblock
+\href{https://doi.org/10.1145/3485447.3512183}{doi:\nolinkurl{10.1145/3485447.3512183}}
 
 
 \bibitem[Xu et~al\mbox{.}(2017)]%
@@ -280,7 +283,7 @@
 
 \bibitem[Zeng et~al\mbox{.}(2023)]%
         {zeng2023hpcgcn}
-\bibfield{author}{\bibinfo{person}{Xiongchao Zeng} {et~al\mbox{.}}} \bibinfo{year}{2023}\natexlab{}.
+\bibfield{author}{\bibinfo{person}{Xiongchao Zeng}, \bibinfo{person}{Ying Wang}, \bibinfo{person}{Mengyu Zhang}, {and} \bibinfo{person}{Jizhou Lu}.} \bibinfo{year}{2023}\natexlab{}.
 \newblock \showarticletitle{{HPCGCN}: A Predictive Framework on High Performance Computing Cluster Log Data Using Graph Convolutional Networks}.
 \newblock \bibinfo{journal}{\emph{Sensors}} \bibinfo{volume}{23}, \bibinfo{number}{3} (\bibinfo{year}{2023}), \bibinfo{pages}{1493}.
 \newblock

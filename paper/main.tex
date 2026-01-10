@@ -27,13 +27,26 @@
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
 
+%% Anonymize PDF metadata
+\hypersetup{
+  pdfauthor={},
+  pdfcreator={},
+  pdfproducer={},
+  pdfkeywords={}
+}
+
+%% Conference info removed for anonymous submission
+%% Uncomment for camera-ready version:
+%% \acmConference[HPDC '26]{The 35th ACM International Symposium on High-Performance Parallel and Distributed Computing}{July 13--16, 2026}{Cleveland, OH, USA}
+%% \acmYear{2026}
+
 %% Document info
 \begin{document}
 
 \title{IOGraphNet: Graph Neural Networks for Multi-Label I/O Bottleneck Detection in HPC Systems}
 
-%% Anonymous for review
-\author{Anonymous Author(s)}
+%% Anonymous for review - replace XXX with paper ID after registration
+\author{Paper ID: XXX}
 
 \begin{abstract}
 I/O performance remains a critical bottleneck in high-performance computing (HPC), often consuming a significant fraction of application runtime for data-intensive workloads.
@@ -104,13 +117,15 @@ These relationships are often crucial for understanding bottlenecks like load im
 \textbf{LLM-based approaches} provide natural language explanations but face challenges with long I/O traces, lack domain-specific knowledge, and may hallucinate incorrect diagnoses~\cite{egersdoerfer2025ioagent}.
 They also incur significant computational cost and latency.
 
-\begin{figure}[t]
+Figure~\ref{fig:motivating-example} illustrates the core limitation of flat-feature approaches: while individual file statistics appear normal, the underlying graph topology reveals a star pattern where multiple ranks contend for a shared file---a bottleneck invisible to tools that analyze files independently.
+
+\begin{figure*}[t]
     \centering
-    \fbox{\parbox{0.9\columnwidth}{\centering\textcolor{blue}{[PLACEHOLDER: Side-by-side comparison. (A) Flat-feature view showing normal per-file I/O rates. (B) Graph topology revealing star pattern where 64 ranks contend for 1 shared file---the hidden bottleneck.]}}}
+    \includegraphics[width=0.85\textwidth]{figures/motivating-example.png}
     \Description{Comparison of flat-feature analysis versus graph-based topology analysis showing how IOGraphNet reveals hidden contention patterns that flat tools miss.}
     \caption{Motivating Example: A ``Hidden'' Bottleneck. (Left) Standard flat-feature tools analyze files independently, showing normal I/O rates for each file. (Right) IOGraphNet's graph representation reveals a star topology where multiple ranks contend for a shared file, identifying the root cause of performance degradation that flat tools miss.}
     \label{fig:motivating-example}
-\end{figure}
+\end{figure*}
 
 \subsection{Key Insights and Contributions}
 
@@ -303,7 +318,7 @@ For jobs with very few natural edges (e.g., single-file jobs), we add edges betw
 
 \begin{figure}[t]
     \centering
-    \fbox{\parbox{0.9\columnwidth}{\centering\textcolor{blue}{[PLACEHOLDER: Bipartite graph showing Rank nodes connected to File nodes, with edge weights indicating concurrency]}}}
+    \includegraphics[width=\columnwidth]{figures/graph-construction.png}
     \Description{A bipartite graph showing rank-to-file resource sharing topology. Star patterns (N ranks to 1 file) indicate contention; edge thickness represents concurrency weight.}
     \caption{Topological Resource Contention graph. Nodes represent file access records; edges encode structural resource sharing with concurrency weights.}
     \label{fig:graph-construction}
@@ -311,15 +326,7 @@ For jobs with very few natural edges (e.g., single-file jobs), we add edges betw
 
 \subsection{Model Architecture}
 
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=0.85\textwidth]{figures/Fig2.png}
-    \Description{IOGraphNet architecture diagram showing the flow from input graph through two GAT layers, mean pooling, and MLP classifier to multi-label output.}
-    \caption{IOGraphNet architecture. Two GAT layers perform message passing, followed by mean pooling and a classifier. The architecture takes a job's I/O graph as input, applies attention-based message passing to aggregate neighborhood information, pools node embeddings to a graph-level representation, and outputs multi-label bottleneck predictions.}
-    \label{fig:architecture}
-\end{figure*}
-
-IOGraphNet uses a Graph Attention Network (GAT)~\cite{velickovic2018gat} architecture.
+IOGraphNet uses a Graph Attention Network (GAT)~\cite{velickovic2018gat} architecture, as illustrated in Figure~\ref{fig:architecture}.
 We chose GAT over alternatives like GCN~\cite{kipf2017gcn} or GraphSAGE~\cite{hamilton2017graphsage} because its attention mechanism provides interpretability: attention weights indicate which file relationships are most important for each prediction.
 This is valuable for understanding \emph{why} a bottleneck was detected, not just \emph{what} was detected.
 
@@ -379,6 +386,14 @@ This ensures rare bottlenecks contribute proportionally to the loss, improving r
 We apply dropout ($p=0.2$) after each GAT layer to prevent overfitting.
 Training proceeds for up to 100 epochs with early stopping (patience=10) based on validation Micro-F1 score.
 Graphs are batched using PyTorch Geometric's~\cite{fey2019pyg} mini-batching, which creates a single disconnected graph from multiple job graphs for efficient GPU processing.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/architecture.png}
+    \Description{IOGraphNet architecture diagram showing the flow from input graph through two GAT layers, mean pooling, and MLP classifier to multi-label output.}
+    \caption{IOGraphNet architecture. Two GAT layers perform message passing, followed by mean pooling and a classifier. The architecture takes a job's I/O graph as input, applies attention-based message passing to aggregate neighborhood information, pools node embeddings to a graph-level representation, and outputs multi-label bottleneck predictions.}
+    \label{fig:architecture}
+\end{figure*}
 
 \subsection{Self-Supervised Pre-training Strategy}
 \label{sec:pretraining}
@@ -947,7 +962,7 @@ Recorder~\cite{herbein2020recorder} provides multi-level I/O tracing capturing o
 Combined with Darshan's aggregate statistics, such detailed traces could enable even richer graph representations.
 
 \textbf{AutoML for HPC.}
-Automated machine learning has been applied to HPC performance optimization~\cite{ytopt}, typically for parameter tuning (e.g., I/O buffer sizes, stripe counts) rather than bottleneck detection.
+Automated machine learning has been applied to HPC performance optimization~\cite{wu2022ytopt}, typically for parameter tuning (e.g., I/O buffer sizes, stripe counts) rather than bottleneck detection.
 IOGraphNet is complementary: it identifies \emph{what} to optimize, while AutoML tools optimize \emph{how}.
 
 %% ============================================================================

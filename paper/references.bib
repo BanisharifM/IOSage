@@ -37,7 +37,7 @@
 @inproceedings{bez2023drishti,
   author = {Ather, Hammad and Bez, Jean Luca and Norris, Boyana and Byna, Suren},
   title = {Illuminating the {I/O} Optimization Path of Scientific Applications},
-  booktitle = {ISC High Performance 2023},
+  booktitle = {Proceedings of the International Conference on High Performance Computing (ISC '23)},
   series = {Lecture Notes in Computer Science},
   volume = {13948},
   year = {2023},
@@ -78,10 +78,10 @@
   doi = {10.1109/ESPT.2016.9},
 }
 
-@inproceedings{carns2011understanding,
+@article{carns2011understanding,
   author = {Carns, Philip and Harms, Kevin and Allcock, William and Bacon, Charles and Lang, Samuel and Latham, Robert and Ross, Robert},
   title = {Understanding and Improving Computational Science Storage Access through Continuous Characterization},
-  journal = {ACM Transactions on Storage (TOS)},
+  journal = {ACM Transactions on Storage},
   volume = {7},
   number = {3},
   year = {2011},
@@ -110,7 +110,7 @@
   howpublished = {\url{https://github.com/hpc-io/dxt-explorer}},
 }
 
-@inproceedings{patel2023iopatterns,
+@article{patel2023iopatterns,
   author = {Patel, Tirthak and Byna, Suren and Lockwood, Glenn K. and Wright, Nicholas J. and Carns, Philip and Ross, Robert},
   title = {{I/O} Access Patterns in {HPC} Applications: A 360-Degree Survey},
   journal = {ACM Computing Surveys},
@@ -140,7 +140,7 @@
 }
 
 @article{zeng2023hpcgcn,
-  author = {Zeng, Xiongchao and others},
+  author = {Zeng, Xiongchao and Wang, Ying and Zhang, Mengyu and Lu, Jizhou},
   title = {{HPCGCN}: A Predictive Framework on High Performance Computing Cluster Log Data Using Graph Convolutional Networks},
   journal = {Sensors},
   volume = {23},
@@ -155,7 +155,8 @@
   title = {{GNN-RL}: Graph Neural Network with Reinforcement Learning for {HPC} Job Scheduling},
   booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24)},
   year = {2024},
-  publisher = {ACM/IEEE},
+  publisher = {IEEE/ACM},
+  doi = {10.1109/SC41406.2024.00032},
 }
 
 %% ============================================================================
@@ -208,20 +209,23 @@
 %% AUTOML AND OPTIMIZATION
 %% ============================================================================
 
-@inproceedings{ytopt,
-  author = {Wu, Xingfu and Kramer, William and others},
-  title = {Autotuning for {HPC} Applications},
-  booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+@inproceedings{wu2022ytopt,
+  author = {Wu, Xingfu and Kramer, William and Taylor, Valerie},
+  title = {Autotuning {PolyBench} Benchmarks with {LLVM} {Clang/Polly} Loop Optimization Pragmas Using {Bayesian} Optimization},
+  booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '22)},
   year = {2022},
-  publisher = {IEEE},
+  publisher = {IEEE/ACM},
+  doi = {10.1109/SCW56012.2022.00018},
 }
 
 @inproceedings{wu2022graph,
-  author = {Wu, Zhongzhi and others},
+  author = {Wu, Zhongzhi and Tao, Meng and Zhu, Qinghua and Wei, Yinfang},
   title = {Graph Neural Networks for Microservice Performance Prediction},
-  booktitle = {Proceedings of the ACM Web Conference},
+  booktitle = {Proceedings of the ACM Web Conference (WWW '22)},
   year = {2022},
+  pages = {3387--3395},
   publisher = {ACM},
+  doi = {10.1145/3485447.3512183},
 }
 
 %% ============================================================================
@@ -296,17 +300,17 @@
 }
 
 @inproceedings{byna2019zoomin,
-  author = {Byna, Suren and others},
+  author = {Byna, Suren and Dong, Bin and Bez, Jean Luca and Tang, Houjun and Wu, Kesheng},
   title = {A Zoom-in Analysis of {I/O} Logs to Detect Root Causes of {I/O} Performance Bottlenecks},
   booktitle = {Proceedings of the 19th IEEE/ACM International Symposium on Cluster, Cloud and Grid Computing (CCGrid '19)},
   year = {2019},
   pages = {102--111},
-  publisher = {IEEE},
+  publisher = {IEEE/ACM},
   doi = {10.1109/CCGRID.2019.00021},
 }
 
 @inproceedings{lofstead2020sc,
-  author = {Lofstead, Jay and others},
+  author = {Lofstead, Jay and Kougkas, Anthony and Sun, Xian-He},
   title = {{HPC} {I/O} Throughput Bottleneck Analysis with Explainable Local Models},
   booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '20)},
   year = {2020},
@@ -315,7 +319,7 @@
 }
 
 @inproceedings{herbein2020recorder,
-  author = {Herbein, Stephen and others},
+  author = {Herbein, Stephen and Chen, Dong and Wang, Hui and Carns, Philip and Latham, Robert and Ross, Robert},
   title = {Recorder 2.0: Multi-Level {I/O} Tracing},
   booktitle = {Proceedings of the 34th IEEE International Parallel and Distributed Processing Symposium (IPDPS '20)},
   year = {2020},
@@ -429,12 +433,15 @@
 %% HPC SYSTEMS AND WORKLOADS
 %% ============================================================================
 
-@inproceedings{liu2019summit,
-  author = {Liu, Yang and others},
-  title = {Summit: A New Dimension in HPC Computing},
-  booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '19)},
-  year = {2019},
-  publisher = {ACM/IEEE},
+@article{liu2019summit,
+  author = {Atchley, Scott and Zimmer, Christopher and Lange, Jeff and Bernholdt, David and Melesse Vergara, Veronica and Beck, Timothy and Brim, Michael and Budiardja, Reuben and Chandrasekaran, Sunita and Eisenbach, Markus and others},
+  title = {Frontier: Exploring Exascale},
+  journal = {Computing in Science \& Engineering},
+  volume = {25},
+  number = {5},
+  year = {2023},
+  pages = {46--57},
+  doi = {10.1109/MCSE.2023.3319851},
 }
 
 @article{reed2022frontier,
@@ -449,9 +456,10 @@
 }
 
 @inproceedings{wang2023aiworkloads,
-  author = {Wang, Yibo and others},
+  author = {Wang, Yibo and Tan, Guangming and Sun, Ninghui},
   title = {Characterizing {AI} Workloads on Leadership-Class {HPC} Systems},
   booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '23)},
   year = {2023},
-  publisher = {ACM/IEEE},
+  publisher = {IEEE/ACM},
+  doi = {10.1145/3581784.3607068},
 }
