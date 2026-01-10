@@ -351,3 +351,141 @@ For reproducibility, we fix random seeds:
 \end{itemize}
 
 We report mean and standard deviation over 5 runs with different seeds in Table~\ref{tab:main-results}.
+
+%% ============================================================================
+%% ARTIFACT DESCRIPTION / ARTIFACT EVALUATION APPENDIX
+%% (Optional for HPDC 2026, up to 2 pages)
+%% ============================================================================
+
+\section{Artifact Description}
+\label{app:artifact-description}
+
+\subsection{Abstract}
+
+IOGraphNet artifacts include the complete source code implementation, pre-trained model weights, labeled benchmark datasets, and reproduction scripts for all experimental results presented in this paper.
+The artifacts enable independent verification of our main claims: (1) GNN-based bottleneck detection outperforms flat-feature baselines, (2) self-supervised pre-training improves generalization, and (3) attention weights provide interpretable root-cause localization.
+
+\subsection{Artifact Availability}
+
+\begin{itemize}
+    \item \textbf{Repository:} {\footnotesize\url{https://anonymous.4open.science/r/iographnet-hpdc26}}
+    \item \textbf{License:} MIT License (open source)
+    \item \textbf{DOI:} To be assigned upon acceptance (Zenodo)
+\end{itemize}
+
+\subsection{Artifact Contents}
+
+{\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Description} \\
+\midrule
+\texttt{src/} & Source code (models, data loading) \\
+\texttt{scripts/} & Reproduction scripts for experiments \\
+\texttt{models/} & Pre-trained model weights \\
+\texttt{data/sample/} & Sample benchmark data \\
+\texttt{configs/} & Hyperparameter configurations \\
+\texttt{README.md} & Documentation and usage \\
+\texttt{requirements.txt} & Python dependencies \\
+\bottomrule
+\end{tabular}
+}
+
+\subsection{Hardware Dependencies}
+
+\begin{itemize}
+    \item \textbf{GPU:} NVIDIA GPU with CUDA support (tested on A100, V100)
+    \item \textbf{Memory:} 32 GB RAM minimum (64 GB recommended)
+    \item \textbf{Storage:} 10 GB for code, models, and sample data
+\end{itemize}
+
+\subsection{Software Dependencies}
+
+\begin{itemize}
+    \item Python 3.9 or higher
+    \item PyTorch 2.0 or higher
+    \item PyTorch Geometric 2.3 or higher
+    \item CUDA 11.7 or higher (for GPU acceleration)
+    \item See \texttt{requirements.txt} for complete list
+\end{itemize}
+
+\subsection{Datasets}
+
+\begin{itemize}
+    \item \textbf{Benchmark dataset:} 2,000+ labeled Darshan logs from IOR, mdtest, and DLIO benchmarks (included in artifacts)
+    \item \textbf{Pre-training data:} 1.37M Polaris production logs (not redistributable due to ALCF policies; statistics provided in Appendix~\ref{app:dataset})
+\end{itemize}
+
+\section{Artifact Evaluation}
+\label{app:artifact-evaluation}
+
+\subsection{Setup Instructions}
+
+\begin{verbatim}
+# Clone repository
+git clone [repository-url]
+cd iographnet
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
+python -c "import torch_geometric; print('OK')"
+\end{verbatim}
+
+\subsection{Reproducing Main Results (Table 3)}
+
+\begin{verbatim}
+# Run evaluation with pre-trained model
+python scripts/evaluate.py \
+    --model models/finetuned.pt \
+    --data data/benchmark/test.pt
+
+# Expected output:
+# Micro-F1: 0.86 (+/- 0.02)
+# Macro-F1: 0.78 (+/- 0.03)
+# Subset Accuracy: 0.72 (+/- 0.02)
+\end{verbatim}
+
+\textbf{Time estimate:} 5 minutes (evaluation only)
+
+\subsection{Reproducing Ablation Studies (Table 4)}
+
+\begin{verbatim}
+# Run ablation experiments
+python scripts/run_ablations.py --output results/
+
+# Expected output: ablation_results.csv
+# matching Table 4 values within tolerance
+\end{verbatim}
+
+\textbf{Time estimate:} 30 minutes (GPU), 2 hours (CPU)
+
+\subsection{Training from Scratch}
+
+\begin{verbatim}
+# Full training pipeline
+python scripts/train.py \
+    --config configs/default.yaml \
+    --data data/benchmark/ \
+    --output models/trained.pt
+
+# Expected: Micro-F1 ~ 0.86 on test set
+\end{verbatim}
+
+\textbf{Time estimate:} 2 hours (A100 GPU), 8 hours (V100 GPU)
+
+\subsection{Validation Criteria}
+
+Results are considered successfully reproduced if:
+\begin{itemize}
+    \item Micro-F1 is within $\pm$0.02 of reported values
+    \item Relative ranking of methods matches Table 3
+    \item Ablation trends match Table 4 (graph edges improve performance)
+\end{itemize}
+
+Minor variations are expected due to hardware differences and random initialization.
