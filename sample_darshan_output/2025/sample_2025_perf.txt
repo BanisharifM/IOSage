@@ -1,0 +1,135 @@
+# darshan log version: 3.41
+# compression method: BZIP2
+# exe: 3326107759
+# uid: 1366244140
+# jobid: 6162074
+# start_time: 1758405951
+# start_time_asci: Sat Sep 20 17:05:51 2025
+# end_time: 1758407365
+# end_time_asci: Sat Sep 20 17:29:25 2025
+# nprocs: 32
+# run time: 1414.7360
+# metadata: lib_ver = 3.4.4
+# metadata: h = romio_no_indep_rw=true;cb_nodes=4
+
+# log file regions
+# -------------------------------------------------------
+# header: 1328 bytes (uncompressed)
+# job data: 523 bytes (compressed)
+# record table: 2654 bytes (compressed)
+# POSIX module: 15497 bytes (compressed), ver=4
+# MPI-IO module: 10143 bytes (compressed), ver=3
+# STDIO module: 1779 bytes (compressed), ver=2
+# APMPI module: 9533 bytes (compressed), ver=1
+# HEATMAP module: 910 bytes (compressed), ver=1
+
+# mounted file systems (mount point and fs type)
+# -------------------------------------------------------
+# mount entry:	/var/opt/cray/pe/pe_images/nvidia-24.11	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/nvidia-24.07	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/nvidia-24.03	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/nvidia-23.12	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-24.03	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-23.12	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-25.03	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-24.11	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-24.07	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/amd-24.03	squashfs
+# mount entry:	/opt/nvidia/pe_images/24.11	autofs
+# mount entry:	/opt/nvidia/pe_images/24.11	squashfs
+# mount entry:	/sys/kernel/debug/tracing	tracefs
+# mount entry:	/sys/firmware/efi/efivars	efivarfs
+# mount entry:	/proc/sys/fs/binfmt_misc	autofs
+# mount entry:	/opt/nvidia/hpc_sdk	squashfs
+# mount entry:	/opt/nvidia/hpc_sdk	autofs
+# mount entry:	/sys/kernel/tracing	tracefs
+# mount entry:	/sys/kernel/config	configfs
+# mount entry:	/sys/fs/cgroup	cgroup2
+# mount entry:	/sys/fs/pstore	pstore
+# mount entry:	/local/scratch	ext4
+# mount entry:	/run/cxi/cxi0	fuse
+# mount entry:	/run/cxi/cxi1	fuse
+# mount entry:	/opt/cray/pe	overlay
+# mount entry:	/sys/fs/bpf	bpf
+# mount entry:	/dev/mqueue	mqueue
+# mount entry:	/lus/eagle	lustre
+# mount entry:	/lus/grand	lustre
+# mount entry:	/root_ro	squashfs
+# mount entry:	/home	lustre
+# mount entry:	/soft	nfs
+# mount entry:	/dev	devtmpfs
+# mount entry:	/pe	nfs
+# mount entry:	/	overlay
+
+# *******************************************************
+# POSIX module data
+# *******************************************************
+
+# performance
+# -----------
+# total_bytes: 41569305482
+#
+# I/O timing for unique files (seconds):
+# ...........................
+# unique files: slowest_rank_io_time: 4.285537
+# unique files: slowest_rank_meta_only_time: 0.812609
+# unique files: slowest_rank_rw_only_time: 3.472928
+# unique files: slowest_rank: 0
+#
+# I/O timing for shared files (seconds):
+# ...........................
+# shared files: time_by_slowest: 10.878556
+#
+# Aggregate performance, including both shared and unique files:
+# ...........................
+# agg_time_by_slowest: 15.164093 # seconds
+# agg_perf_by_slowest: 2614.305934 # MiB/s
+
+# *******************************************************
+# MPI-IO module data
+# *******************************************************
+
+# performance
+# -----------
+# total_bytes: 36277041147
+#
+# I/O timing for unique files (seconds):
+# ...........................
+# unique files: slowest_rank_io_time: 25.082822
+# unique files: slowest_rank_meta_only_time: 7.431066
+# unique files: slowest_rank_rw_only_time: 17.651757
+# unique files: slowest_rank: 1
+#
+# I/O timing for shared files (seconds):
+# ...........................
+# shared files: time_by_slowest: 0.000000
+#
+# Aggregate performance, including both shared and unique files:
+# ...........................
+# agg_time_by_slowest: 25.082822 # seconds
+# agg_perf_by_slowest: 1379.289870 # MiB/s
+
+# *******************************************************
+# STDIO module data
+# *******************************************************
+
+# perform# Warning: no log utility handlers defined for module APMPI, SKIPPING.
+ance
+# -----------
+# total_bytes: 2048226
+#
+# I/O timing for unique files (seconds):
+# ...........................
+# unique files: slowest_rank_io_time: 0.266318
+# unique files: slowest_rank_meta_only_time: 0.048040
+# unique files: slowest_rank_rw_only_time: 0.218278
+# unique files: slowest_rank: 0
+#
+# I/O timing for shared files (seconds):
+# ...........................
+# shared files: time_by_slowest: 0.014859
+#
+# Aggregate performance, including both shared and unique files:
+# ...........................
+# agg_time_by_slowest: 0.281177 # seconds
+# agg_perf_by_slowest: 6.947013 # MiB/s

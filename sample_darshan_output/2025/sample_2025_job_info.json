@@ -1,0 +1,21 @@
+{
+  "year": "2025",
+  "jobid": 6162074,
+  "uid": 1366244140,
+  "nprocs": 32,
+  "start_time": "2025-09-20 17:05:51",
+  "end_time": "2025-09-20 17:29:25",
+  "runtime_seconds": 1414.7360236644745,
+  "log_version": "3.41",
+  "modules": [
+    "POSIX",
+    "MPI-IO",
+    "STDIO",
+    "APMPI",
+    "HEATMAP"
+  ],
+  "hints": {
+    "lib_ver": "3.4.4",
+    "h": "romio_no_indep_rw=true;cb_nodes=4"
+  }
+}

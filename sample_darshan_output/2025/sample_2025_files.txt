@@ -1,0 +1,10 @@
+darshan-parser: unrecognized option `--file-list-detailed'
+Usage: /Users/null/.local/bin/darshan-parser [options] <filename>
+    --help    : prints this help message and exits
+    --version : prints Darshan version number and exits
+    --all     : all sub-options are enabled
+    --base    : Darshan log field data [default]
+    --file    : total file counts
+    --perf    : derived perf data
+    --total   : aggregated Darshan field data
+    --show-incomplete : display results even if log is incomplete

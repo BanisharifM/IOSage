@@ -1,0 +1,103 @@
+# Warning: no log utility handlers defined for module APMPI, SKIPPING.
+# darshan log version: 3.41
+# compression method: BZIP2
+# exe: 4233957105
+# uid: 536320978
+# jobid: 2093372
+# start_time: 1726862605
+# start_time_asci: Fri Sep 20 15:03:25 2024
+# end_time: 1726862648
+# end_time_asci: Fri Sep 20 15:04:08 2024
+# nprocs: 8
+# run time: 42.7336
+# metadata: lib_ver = 3.4.4
+# metadata: h = romio_no_indep_rw=true;cb_nodes=4
+
+# log file regions
+# -------------------------------------------------------
+# header: 1328 bytes (uncompressed)
+# job data: 504 bytes (compressed)
+# record table: 703 bytes (compressed)
+# POSIX module: 614 bytes (compressed), ver=4
+# STDIO module: 549 bytes (compressed), ver=2
+# APMPI module: 358 bytes (compressed), ver=1
+# HEATMAP module: 255 bytes (compressed), ver=1
+
+# mounted file systems (mount point and fs type)
+# -------------------------------------------------------
+# mount entry:	/run/credentials/systemd-sysusers.service	ramfs
+# mount entry:	/var/opt/cray/pe/pe_images/nvidia-23.12	squashfs
+# mount entry:	/var/opt/cray/pe/pe_images/base-23.12	squashfs
+# mount entry:	/opt/nvidia/pe_images/23.9	squashfs
+# mount entry:	/opt/nvidia/pe_images/23.9	autofs
+# mount entry:	/sys/firmware/efi/efivars	efivarfs
+# mount entry:	/sys/kernel/debug/tracing	tracefs
+# mount entry:	/proc/sys/fs/binfmt_misc	autofs
+# mount entry:	/sys/fs/cgroup/unified	cgroup2
+# mount entry:	/opt/nvidia/hpc_sdk	squashfs
+# mount entry:	/sys/kernel/tracing	tracefs
+# mount entry:	/opt/nvidia/hpc_sdk	autofs
+# mount entry:	/sys/kernel/config	configfs
+# mount entry:	/sys/fs/pstore	pstore
+# mount entry:	/local/scratch	ext4
+# mount entry:	/run/cxi/cxi1	fuse
+# mount entry:	/run/cxi/cxi0	fuse
+# mount entry:	/opt/cray/pe	overlay
+# mount entry:	/sys/fs/bpf	bpf
+# mount entry:	/dev/mqueue	mqueue
+# mount entry:	/lus/grand	lustre
+# mount entry:	/lus/eagle	lustre
+# mount entry:	/root_ro	squashfs
+# mount entry:	/soft	nfs
+# mount entry:	/home	lustre
+# mount entry:	/dev	devtmpfs
+# mount entry:	/pe	nfs
+# mount entry:	/	overlay
+
+# *******************************************************
+# POSIX module data
+# *******************************************************
+
+# performance
+# -----------
+# total_bytes: 0
+#
+# I/O timing for unique files (seconds):
+# ...........................
+# unique files: slowest_rank_io_time: 0.000132
+# unique files: slowest_rank_meta_only_time: 0.000132
+# unique files: slowest_rank_rw_only_time: 0.000000
+# unique files: slowest_rank: 4
+#
+# I/O timing for shared files (seconds):
+# ...........................
+# shared files: time_by_slowest: 0.000000
+#
+# Aggregate performance, including both shared and unique files:
+# ...........................
+# agg_time_by_slowest: 0.000132 # seconds
+# agg_perf_by_slowest: 0.000000 # MiB/s
+
+# *******************************************************
+# STDIO module data
+# *******************************************************
+
+# performance
+# -----------
+# total_bytes: 12620
+#
+# I/O timing for unique files (seconds):
+# ...........................
+# unique files: slowest_rank_io_time: 0.011505
+# unique files: slowest_rank_meta_only_time: 0.011505
+# unique files: slowest_rank_rw_only_time: 0.000000
+# unique files: slowest_rank: 5
+#
+# I/O timing for shared files (seconds):
+# ...........................
+# shared files: time_by_slowest: 0.000208
+#
+# Aggregate performance, including both shared and unique files:
+# ...........................
+# agg_time_by_slowest: 0.011713 # seconds
+# agg_perf_by_slowest: 1.027520 # MiB/s
