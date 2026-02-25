@@ -1,0 +1,256 @@
+# Feature Extraction Configuration
+# SC 2026: ML+LLM Hybrid for HPC I/O Bottleneck Detection
+#
+# Defines all features, transformations, and thresholds.
+# No hardcoded values in source code — everything references this config.
+
+# --- Job Metadata ---
+job_metadata:
+  - nprocs
+  - runtime_seconds
+
+# --- POSIX Module (always present) ---
+posix:
+  # Operation counts
+  operations:
+    - POSIX_OPENS
+    - POSIX_FILENOS
+    - POSIX_DUPS
+    - POSIX_READS
+    - POSIX_WRITES
+    - POSIX_SEEKS
+    - POSIX_STATS
+    - POSIX_MMAPS
+    - POSIX_FSYNCS
+    - POSIX_FDSYNCS
+    - POSIX_RENAME_SOURCES
+    - POSIX_RENAME_TARGETS
+    - POSIX_RW_SWITCHES
+
+  # Byte counters
+  bytes:
+    - POSIX_BYTES_READ
+    - POSIX_BYTES_WRITTEN
+    - POSIX_MAX_BYTE_READ
+    - POSIX_MAX_BYTE_WRITTEN
+
+  # Access pattern counters
+  patterns:
+    - POSIX_CONSEC_READS
+    - POSIX_CONSEC_WRITES
+    - POSIX_SEQ_READS
+    - POSIX_SEQ_WRITES
+    - POSIX_STRIDE1_STRIDE
+    - POSIX_STRIDE2_STRIDE
+    - POSIX_STRIDE3_STRIDE
+    - POSIX_STRIDE4_STRIDE
+    - POSIX_STRIDE1_COUNT
+    - POSIX_STRIDE2_COUNT
+    - POSIX_STRIDE3_COUNT
+    - POSIX_STRIDE4_COUNT
+
+  # Read size histogram (10 bins)
+  size_read_histogram:
+    - POSIX_SIZE_READ_0_100
+    - POSIX_SIZE_READ_100_1K
+    - POSIX_SIZE_READ_1K_10K
+    - POSIX_SIZE_READ_10K_100K
+    - POSIX_SIZE_READ_100K_1M
+    - POSIX_SIZE_READ_1M_4M
+    - POSIX_SIZE_READ_4M_10M
+    - POSIX_SIZE_READ_10M_100M
+    - POSIX_SIZE_READ_100M_1G
+    - POSIX_SIZE_READ_1G_PLUS
+
+  # Write size histogram (10 bins)
+  size_write_histogram:
+    - POSIX_SIZE_WRITE_0_100
+    - POSIX_SIZE_WRITE_100_1K
+    - POSIX_SIZE_WRITE_1K_10K
+    - POSIX_SIZE_WRITE_10K_100K
+    - POSIX_SIZE_WRITE_100K_1M
+    - POSIX_SIZE_WRITE_1M_4M
+    - POSIX_SIZE_WRITE_4M_10M
+    - POSIX_SIZE_WRITE_10M_100M
+    - POSIX_SIZE_WRITE_100M_1G
+    - POSIX_SIZE_WRITE_1G_PLUS
+
+  # Most common access sizes
+  access_sizes:
+    - POSIX_ACCESS1_ACCESS
+    - POSIX_ACCESS2_ACCESS
+    - POSIX_ACCESS3_ACCESS
+    - POSIX_ACCESS4_ACCESS
+    - POSIX_ACCESS1_COUNT
+    - POSIX_ACCESS2_COUNT
+    - POSIX_ACCESS3_COUNT
+    - POSIX_ACCESS4_COUNT
+
+  # Alignment
+  alignment:
+    - POSIX_MEM_NOT_ALIGNED
+    - POSIX_MEM_ALIGNMENT
+    - POSIX_FILE_NOT_ALIGNED
+    - POSIX_FILE_ALIGNMENT
+
+  # Timing (float counters)
+  timing:
+    - POSIX_F_READ_TIME
+    - POSIX_F_WRITE_TIME
+    - POSIX_F_META_TIME
+    - POSIX_F_MAX_READ_TIME
+    - POSIX_F_MAX_WRITE_TIME
+    - POSIX_F_OPEN_START_TIMESTAMP
+    - POSIX_F_CLOSE_END_TIMESTAMP
+    - POSIX_F_FASTEST_RANK_TIME
+    - POSIX_F_SLOWEST_RANK_TIME
+
+  # Rank imbalance (only meaningful for shared files / nprocs > 1)
+  rank_imbalance:
+    - POSIX_FASTEST_RANK_BYTES
+    - POSIX_SLOWEST_RANK_BYTES
+    - POSIX_F_VARIANCE_RANK_TIME
+    - POSIX_F_VARIANCE_RANK_BYTES
+    - POSIX_MAX_READ_TIME_SIZE
+    - POSIX_MAX_WRITE_TIME_SIZE
+
+# --- MPI-IO Module (present for MPI-parallel jobs) ---
+mpiio:
+  operations:
+    - MPIIO_INDEP_OPENS
+    - MPIIO_COLL_OPENS
+    - MPIIO_INDEP_READS
+    - MPIIO_INDEP_WRITES
+    - MPIIO_COLL_READS
+    - MPIIO_COLL_WRITES
+    - MPIIO_SPLIT_READS
+    - MPIIO_SPLIT_WRITES
+    - MPIIO_NB_READS
+    - MPIIO_NB_WRITES
+    - MPIIO_SYNCS
+    - MPIIO_HINTS
+    - MPIIO_VIEWS
+  bytes:
+    - MPIIO_BYTES_READ
+    - MPIIO_BYTES_WRITTEN
+  timing:
+    - MPIIO_F_READ_TIME
+    - MPIIO_F_WRITE_TIME
+    - MPIIO_F_META_TIME
+
+# --- STDIO Module (present for C stdio usage) ---
+stdio:
+  operations:
+    - STDIO_OPENS
+    - STDIO_FDOPENS
+    - STDIO_READS
+    - STDIO_WRITES
+    - STDIO_SEEKS
+    - STDIO_FLUSHES
+  bytes:
+    - STDIO_BYTES_READ
+    - STDIO_BYTES_WRITTEN
+  timing:
+    - STDIO_F_READ_TIME
+    - STDIO_F_WRITE_TIME
+    - STDIO_F_META_TIME
+
+# --- Derived Features ---
+# Computed from raw counters, not directly from Darshan
+derived:
+  bandwidth:
+    - read_bw_mb_s          # POSIX_BYTES_READ / max(POSIX_F_READ_TIME, eps) / 1e6
+    - write_bw_mb_s         # POSIX_BYTES_WRITTEN / max(POSIX_F_WRITE_TIME, eps) / 1e6
+    - total_bw_mb_s         # (BYTES_READ + BYTES_WRITTEN) / max(total_io_time, eps) / 1e6
+
+  size_ratios:
+    - avg_read_size         # POSIX_BYTES_READ / max(POSIX_READS, 1)
+    - avg_write_size        # POSIX_BYTES_WRITTEN / max(POSIX_WRITES, 1)
+    - small_read_ratio      # (SIZE_READ_0_100 + SIZE_READ_100_1K) / max(READS, 1)
+    - small_write_ratio     # (SIZE_WRITE_0_100 + SIZE_WRITE_100_1K) / max(WRITES, 1)
+    - small_io_ratio        # combined small reads + writes / total ops
+    - large_read_ratio      # (SIZE_READ_1M_4M + ... + 1G_PLUS) / max(READS, 1)
+    - large_write_ratio     # (SIZE_WRITE_1M_4M + ... + 1G_PLUS) / max(WRITES, 1)
+
+  pattern_ratios:
+    - seq_read_ratio        # POSIX_SEQ_READS / max(POSIX_READS, 1)
+    - seq_write_ratio       # POSIX_SEQ_WRITES / max(POSIX_WRITES, 1)
+    - consec_read_ratio     # POSIX_CONSEC_READS / max(POSIX_READS, 1)
+    - consec_write_ratio    # POSIX_CONSEC_WRITES / max(POSIX_WRITES, 1)
+    - rw_ratio              # READS / max(WRITES, 1)
+    - rw_switch_ratio       # RW_SWITCHES / max(total_ops, 1)
+
+  alignment_ratios:
+    - mem_misalign_ratio    # MEM_NOT_ALIGNED / max(total_ops, 1)
+    - file_misalign_ratio   # FILE_NOT_ALIGNED / max(total_ops, 1)
+
+  metadata_ratios:
+    - metadata_time_ratio   # F_META_TIME / max(total_time, eps)
+    - opens_per_op          # OPENS / max(total_ops, 1)
+    - stats_per_op          # STATS / max(total_ops, 1)
+    - seeks_per_op          # SEEKS / max(total_ops, 1)
+    - fsync_ratio           # FSYNCS / max(WRITES, 1)
+    - opens_per_mb          # OPENS / max(total_bytes / 1e6, eps)
+
+  imbalance_ratios:
+    - rank_bytes_cv         # sqrt(VARIANCE_RANK_BYTES) / max(mean_bytes, eps)
+    - rank_time_cv          # sqrt(VARIANCE_RANK_TIME) / max(mean_time, eps)
+    - byte_imbalance        # (SLOWEST_BYTES - FASTEST_BYTES) / max(total_bytes, eps)
+    - time_imbalance        # (SLOWEST_TIME - FASTEST_TIME) / max(total_time, eps)
+
+  mpiio_ratios:
+    - collective_ratio      # (COLL_READS + COLL_WRITES) / max(total_mpiio_ops, 1)
+    - nonblocking_ratio     # (NB_READS + NB_WRITES) / max(total_mpiio_ops, 1)
+
+  temporal:
+    - io_duration           # max(END_TIMESTAMPS) - min(START_TIMESTAMPS)
+    - io_fraction           # io_duration / runtime
+
+  interface:
+    - uses_mpiio            # 1 if MPI-IO module present, else 0
+    - uses_stdio            # 1 if STDIO module present, else 0
+    - num_files             # count of unique file records
+
+  access_concentration:
+    - access_size_concentration  # ACCESS1_COUNT / max(total_ops, 1)
+    - dominant_access_size       # ACCESS1_ACCESS (most common size)
+
+# --- Transformation ---
+transformation:
+  # Apply log10(x+1) to count and byte features (heavy-tailed distributions)
+  # Following AIIO (HPDC 2023)
+  log_transform: true
+  log_transform_groups:
+    - posix.operations
+    - posix.bytes
+    - posix.patterns
+    - posix.size_read_histogram
+    - posix.size_write_histogram
+    - posix.access_sizes
+    - posix.alignment
+    - mpiio.operations
+    - mpiio.bytes
+    - stdio.operations
+    - stdio.bytes
+    - job_metadata
+  # Do NOT log-transform: timing (already in seconds), ratios (already 0-1), binary indicators
+
+# --- Filtering ---
+filtering:
+  # Remove logs with zero I/O
+  min_total_ops: 1
+  # Remove logs with < 1 second runtime
+  min_runtime_seconds: 1.0
+  # Remove features where > X% of values are zero (sparse)
+  max_zero_fraction: 0.95
+  # Replace -1 values (Darshan sentinel for "not available") with 0
+  sentinel_value: -1
+  replacement_value: 0
+
+# --- System Constants (Polaris-specific) ---
+system:
+  name: "ALCF Polaris"
+  filesystem: "Eagle/Grand Lustre"
+  peak_bandwidth_gb_s: 650
+  num_osts: 160
+  num_mdts: 40
