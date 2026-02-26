@@ -1,17 +1,22 @@
 # Feature Extraction Configuration
 # SC 2026: ML+LLM Hybrid for HPC I/O Bottleneck Detection
 #
-# Defines all features, transformations, and thresholds.
-# No hardcoded values in source code — everything references this config.
+# Defines ALL features extracted from Darshan logs.
+# The authoritative feature lists are in src/data/feature_extraction.py.
+# This config serves as documentation and reference for the feature set.
+#
+# IMPORTANT: No features are excluded here.  Feature selection is deferred
+# to the preprocessing stage (configs/preprocessing.yaml) and driven by
+# EDA (statistical analysis of the raw feature distribution).
 
-# --- Job Metadata ---
+# --- Job Metadata (2 features) ---
 job_metadata:
   - nprocs
   - runtime_seconds
 
-# --- POSIX Module (always present) ---
+# --- POSIX Module (always present, 86 counters) ---
 posix:
-  # Operation counts
+  # Operation counts (SUM aggregation)
   operations:
     - POSIX_OPENS
     - POSIX_FILENOS
@@ -27,29 +32,28 @@ posix:
     - POSIX_RENAME_TARGETS
     - POSIX_RW_SWITCHES
 
-  # Byte counters
+  # Byte counters (SUM / MAX aggregation)
   bytes:
     - POSIX_BYTES_READ
     - POSIX_BYTES_WRITTEN
     - POSIX_MAX_BYTE_READ
     - POSIX_MAX_BYTE_WRITTEN
 
-  # Access pattern counters
+  # Access pattern counters (SUM)
   patterns:
     - POSIX_CONSEC_READS
     - POSIX_CONSEC_WRITES
     - POSIX_SEQ_READS
     - POSIX_SEQ_WRITES
-    - POSIX_STRIDE1_STRIDE
-    - POSIX_STRIDE2_STRIDE
-    - POSIX_STRIDE3_STRIDE
-    - POSIX_STRIDE4_STRIDE
-    - POSIX_STRIDE1_COUNT
-    - POSIX_STRIDE2_COUNT
-    - POSIX_STRIDE3_COUNT
-    - POSIX_STRIDE4_COUNT
 
-  # Read size histogram (10 bins)
+  # Alignment (SUM for NOT_ALIGNED; LAST_VALUE for ALIGNMENT constants)
+  alignment:
+    - POSIX_MEM_NOT_ALIGNED
+    - POSIX_MEM_ALIGNMENT
+    - POSIX_FILE_NOT_ALIGNED
+    - POSIX_FILE_ALIGNMENT
+
+  # Read size histogram — 10 bins (SUM)
   size_read_histogram:
     - POSIX_SIZE_READ_0_100
     - POSIX_SIZE_READ_100_1K
@@ -62,7 +66,7 @@ posix:
     - POSIX_SIZE_READ_100M_1G
     - POSIX_SIZE_READ_1G_PLUS
 
-  # Write size histogram (10 bins)
+  # Write size histogram — 10 bins (SUM)
   size_write_histogram:
     - POSIX_SIZE_WRITE_0_100
     - POSIX_SIZE_WRITE_100_1K
@@ -75,7 +79,7 @@ posix:
     - POSIX_SIZE_WRITE_100M_1G
     - POSIX_SIZE_WRITE_1G_PLUS
 
-  # Most common access sizes
+  # Top-4 access sizes (TOP-4 MERGE aggregation)
   access_sizes:
     - POSIX_ACCESS1_ACCESS
     - POSIX_ACCESS2_ACCESS
@@ -86,35 +90,61 @@ posix:
     - POSIX_ACCESS3_COUNT
     - POSIX_ACCESS4_COUNT
 
-  # Alignment
-  alignment:
-    - POSIX_MEM_NOT_ALIGNED
-    - POSIX_MEM_ALIGNMENT
-    - POSIX_FILE_NOT_ALIGNED
-    - POSIX_FILE_ALIGNMENT
+  # Top-4 strides (TOP-4 MERGE aggregation)
+  strides:
+    - POSIX_STRIDE1_STRIDE
+    - POSIX_STRIDE2_STRIDE
+    - POSIX_STRIDE3_STRIDE
+    - POSIX_STRIDE4_STRIDE
+    - POSIX_STRIDE1_COUNT
+    - POSIX_STRIDE2_COUNT
+    - POSIX_STRIDE3_COUNT
+    - POSIX_STRIDE4_COUNT
 
-  # Timing (float counters)
+  # Rank imbalance (CONDITIONAL — sentinel -1 if not shared file)
+  rank_imbalance:
+    - POSIX_FASTEST_RANK
+    - POSIX_FASTEST_RANK_BYTES
+    - POSIX_SLOWEST_RANK
+    - POSIX_SLOWEST_RANK_BYTES
+    - POSIX_MAX_READ_TIME_SIZE
+    - POSIX_MAX_WRITE_TIME_SIZE
+
+  # File metadata (LAST_VALUE — not meaningful as aggregate, kept for EDA)
+  file_metadata:
+    - POSIX_MODE
+    - POSIX_RENAMED_FROM
+
+  # Timing — cumulative I/O times (SUM, seconds)
   timing:
     - POSIX_F_READ_TIME
     - POSIX_F_WRITE_TIME
     - POSIX_F_META_TIME
     - POSIX_F_MAX_READ_TIME
     - POSIX_F_MAX_WRITE_TIME
+
+  # Timestamps — absolute UNIX times (MIN_NONZERO / MAX)
+  timestamps:
     - POSIX_F_OPEN_START_TIMESTAMP
+    - POSIX_F_READ_START_TIMESTAMP
+    - POSIX_F_WRITE_START_TIMESTAMP
+    - POSIX_F_CLOSE_START_TIMESTAMP
+    - POSIX_F_OPEN_END_TIMESTAMP
+    - POSIX_F_READ_END_TIMESTAMP
+    - POSIX_F_WRITE_END_TIMESTAMP
     - POSIX_F_CLOSE_END_TIMESTAMP
+
+  # Rank time imbalance (CONDITIONAL — 0.0 if not shared)
+  rank_timing:
     - POSIX_F_FASTEST_RANK_TIME
     - POSIX_F_SLOWEST_RANK_TIME
 
-  # Rank imbalance (only meaningful for shared files / nprocs > 1)
-  rank_imbalance:
-    - POSIX_FASTEST_RANK_BYTES
-    - POSIX_SLOWEST_RANK_BYTES
+  # Variance (ZEROED in v3.5.0 --total)
+  variance:
     - POSIX_F_VARIANCE_RANK_TIME
     - POSIX_F_VARIANCE_RANK_BYTES
-    - POSIX_MAX_READ_TIME_SIZE
-    - POSIX_MAX_WRITE_TIME_SIZE
 
-# --- MPI-IO Module (present for MPI-parallel jobs) ---
+# --- MPI-IO Module (present for MPI-parallel jobs, 33 counters) ---
 mpiio:
   operations:
     - MPIIO_INDEP_OPENS
@@ -133,12 +163,31 @@ mpiio:
   bytes:
     - MPIIO_BYTES_READ
     - MPIIO_BYTES_WRITTEN
+  rw_switches:
+    - MPIIO_RW_SWITCHES
+  access_sizes:
+    - MPIIO_ACCESS1_ACCESS
+    - MPIIO_ACCESS2_ACCESS
+    - MPIIO_ACCESS3_ACCESS
+    - MPIIO_ACCESS4_ACCESS
+    - MPIIO_ACCESS1_COUNT
+    - MPIIO_ACCESS2_COUNT
+    - MPIIO_ACCESS3_COUNT
+    - MPIIO_ACCESS4_COUNT
   timing:
     - MPIIO_F_READ_TIME
     - MPIIO_F_WRITE_TIME
     - MPIIO_F_META_TIME
+    - MPIIO_F_MAX_READ_TIME
+    - MPIIO_F_MAX_WRITE_TIME
+  rank_timing:
+    - MPIIO_F_FASTEST_RANK_TIME
+    - MPIIO_F_SLOWEST_RANK_TIME
+  variance:
+    - MPIIO_F_VARIANCE_RANK_TIME
+    - MPIIO_F_VARIANCE_RANK_BYTES
 
-# --- STDIO Module (present for C stdio usage) ---
+# --- STDIO Module (present for C stdio usage, 17 counters) ---
 stdio:
   operations:
     - STDIO_OPENS
@@ -150,18 +199,40 @@ stdio:
   bytes:
     - STDIO_BYTES_READ
     - STDIO_BYTES_WRITTEN
+    - STDIO_MAX_BYTE_READ
+    - STDIO_MAX_BYTE_WRITTEN
   timing:
     - STDIO_F_READ_TIME
     - STDIO_F_WRITE_TIME
     - STDIO_F_META_TIME
+  rank_timing:
+    - STDIO_F_FASTEST_RANK_TIME
+    - STDIO_F_SLOWEST_RANK_TIME
+  variance:
+    - STDIO_F_VARIANCE_RANK_TIME
+    - STDIO_F_VARIANCE_RANK_BYTES
 
-# --- Derived Features ---
-# Computed from raw counters, not directly from Darshan
+# --- Module Indicators (8 binary features) ---
+indicators:
+  - has_posix
+  - has_mpiio
+  - has_stdio
+  - has_hdf5
+  - has_pnetcdf
+  - has_apmpi
+  - has_heatmap
+  - is_shared_file
+
+# --- Derived Features (39 features) ---
+# Computed from raw counters during feature engineering (Stage 3)
 derived:
   bandwidth:
     - read_bw_mb_s          # POSIX_BYTES_READ / max(POSIX_F_READ_TIME, eps) / 1e6
     - write_bw_mb_s         # POSIX_BYTES_WRITTEN / max(POSIX_F_WRITE_TIME, eps) / 1e6
     - total_bw_mb_s         # (BYTES_READ + BYTES_WRITTEN) / max(total_io_time, eps) / 1e6
+
+  read_write_balance:
+    - read_ratio            # bytes_read / max(total_bytes, 1)
 
   size_ratios:
     - avg_read_size         # POSIX_BYTES_READ / max(POSIX_READS, 1)
@@ -169,6 +240,8 @@ derived:
     - small_read_ratio      # (SIZE_READ_0_100 + SIZE_READ_100_1K) / max(READS, 1)
     - small_write_ratio     # (SIZE_WRITE_0_100 + SIZE_WRITE_100_1K) / max(WRITES, 1)
     - small_io_ratio        # combined small reads + writes / total ops
+    - medium_read_ratio     # (SIZE_READ_1K_10K + ... + 100K_1M) / max(READS, 1)
+    - medium_write_ratio    # (SIZE_WRITE_1K_10K + ... + 100K_1M) / max(WRITES, 1)
     - large_read_ratio      # (SIZE_READ_1M_4M + ... + 1G_PLUS) / max(READS, 1)
     - large_write_ratio     # (SIZE_WRITE_1M_4M + ... + 1G_PLUS) / max(WRITES, 1)
 
@@ -186,6 +259,8 @@ derived:
 
   metadata_ratios:
     - metadata_time_ratio   # F_META_TIME / max(total_time, eps)
+    - read_time_fraction    # F_READ_TIME / max(total_time, eps)
+    - write_time_fraction   # F_WRITE_TIME / max(total_time, eps)
     - opens_per_op          # OPENS / max(total_ops, 1)
     - stats_per_op          # STATS / max(total_ops, 1)
     - seeks_per_op          # SEEKS / max(total_ops, 1)
@@ -203,51 +278,33 @@ derived:
     - nonblocking_ratio     # (NB_READS + NB_WRITES) / max(total_mpiio_ops, 1)
 
   temporal:
-    - io_duration           # max(END_TIMESTAMPS) - min(START_TIMESTAMPS)
-    - io_fraction           # io_duration / runtime
-
-  interface:
-    - uses_mpiio            # 1 if MPI-IO module present, else 0
-    - uses_stdio            # 1 if STDIO module present, else 0
-    - num_files             # count of unique file records
+    - io_duration           # close_end_timestamp - open_start_timestamp
+    - io_active_fraction    # total_io_time / max(runtime, eps)
 
   access_concentration:
     - access_size_concentration  # ACCESS1_COUNT / max(total_ops, 1)
     - dominant_access_size       # ACCESS1_ACCESS (most common size)
 
-# --- Transformation ---
-transformation:
-  # Apply log10(x+1) to count and byte features (heavy-tailed distributions)
-  # Following AIIO (HPDC 2023)
-  log_transform: true
-  log_transform_groups:
-    - posix.operations
-    - posix.bytes
-    - posix.patterns
-    - posix.size_read_histogram
-    - posix.size_write_histogram
-    - posix.access_sizes
-    - posix.alignment
-    - mpiio.operations
-    - mpiio.bytes
-    - stdio.operations
-    - stdio.bytes
-    - job_metadata
-  # Do NOT log-transform: timing (already in seconds), ratios (already 0-1), binary indicators
+  file_count:
+    - num_files             # count of unique file records
 
-# --- Filtering ---
-filtering:
-  # Remove logs with zero I/O
-  min_total_ops: 1
-  # Remove logs with < 1 second runtime
-  min_runtime_seconds: 1.0
-  # Remove features where > X% of values are zero (sparse)
-  max_zero_fraction: 0.95
-  # Replace -1 values (Darshan sentinel for "not available") with 0
-  sentinel_value: -1
-  replacement_value: 0
+# --- Info Columns (not features, carried for identification) ---
+info_columns:
+  - _jobid
+  - _uid
+  - _start_time
+  - _end_time
+  - _modules
+  - _uses_lustre
+  - _log_version
+  - _lustre_mount
 
-# --- System Constants (Polaris-specific) ---
+# --- Feature Groups (for group-specific normalization) ---
+# See configs/preprocessing.yaml for normalization settings per group.
+# Groups: volume, count, histogram, top4, timing, timestamp, categorical,
+#         rank_id, conditional_size, indicator, ratio, derived_absolute, metadata
+
+# --- System Constants (Polaris-specific, for reference) ---
 system:
   name: "ALCF Polaris"
   filesystem: "Eagle/Grand Lustre"
