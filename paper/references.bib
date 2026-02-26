@@ -1,0 +1,162 @@
+% SC 2026 References
+% Key papers for ML+LLM Hybrid I/O Bottleneck Detection
+%
+% Naming convention: AuthorYear (e.g., dong2023aiio)
+% Include DOIs for all entries (SC requirement)
+
+% --- I/O Analysis Systems ---
+
+@inproceedings{dong2023aiio,
+  title={{AIIO}: An {AI}-Driven {I/O} Analysis Tool for Identifying {HPC} {I/O} Performance Bottlenecks},
+  author={Dong, Bin and Bez, Jean Luca and Byna, Suren},
+  booktitle={Proceedings of the 32nd International Symposium on High-Performance Parallel and Distributed Computing (HPDC)},
+  pages={241--254},
+  year={2023},
+  publisher={ACM},
+  doi={10.1145/3588195.3592986}
+}
+
+@inproceedings{zheng2025ioagent,
+  title={{IOAgent}: Democratizing Trustworthy {HPC} {I/O} Performance Diagnosis Capability via {LLMs}},
+  author={Zheng, Wenrui and Tang, Wei and Bhatia, Harsh and Freitag, John and Sim, Alex and Wu, Kesheng},
+  booktitle={Proceedings of the 39th IEEE International Parallel and Distributed Processing Symposium (IPDPS)},
+  year={2025},
+  publisher={IEEE},
+  doi={10.1109/IPDPS55747.2025}
+}
+
+@inproceedings{lockwood2024ion,
+  title={{ION}: A Tool for {I/O} Performance Diagnosis with {LLMs}},
+  author={Lockwood, Glenn K.},
+  booktitle={Proceedings of the 16th ACM Workshop on Hot Topics in Storage and File Systems (HotStorage)},
+  year={2024},
+  publisher={ACM},
+  doi={10.1145/3655038.3665948}
+}
+
+@inproceedings{devarajan2025wisio,
+  title={{WisIO}: A Wisdom-Based {I/O} Performance Diagnosis Tool},
+  author={Devarajan, Hariharan and Zheng, Huansong and Kougkas, Anthony and Sun, Xian-He and Byna, Suren},
+  booktitle={Proceedings of the ACM International Conference on Supercomputing (ICS)},
+  year={2025},
+  publisher={ACM},
+  doi={10.1145/3721145.3725742}
+}
+
+@inproceedings{bez2022drishti,
+  title={Drishti: Guiding End-Users in the {I/O} Optimization Journey},
+  author={Bez, Jean Luca and Tang, Houjun and Xie, Bing and Williams-Young, David B. and Latham, Rob and Ross, Rob and Oral, Sarp and Byna, Suren},
+  booktitle={Proceedings of the International Workshop on Parallel Data Storage and Data Intensive Scalable Computing Systems (PDSW)},
+  year={2022},
+  publisher={IEEE},
+  doi={10.1109/PDSW56643.2022.00007}
+}
+
+% --- HPC I/O Characterization ---
+
+@article{paul2022characterizing,
+  title={Characterizing Machine Learning {I/O} Workloads on Leadership Scale {HPC} Systems},
+  author={Paul, Arnab K. and Butt, Ali R. and Li, Boyang and Agrawal, Ankit},
+  journal={Performance Evaluation},
+  volume={156},
+  pages={102296},
+  year={2022},
+  publisher={Elsevier},
+  doi={10.1016/j.peva.2022.102296}
+}
+
+@inproceedings{bang2020clustering,
+  title={Clustering {HPC} Applications Using Darshan {I/O} Characterization},
+  author={Bang, Jaehyun and Seo, Yongho and Yoo, Jae-Woo and Kim, Beomseok},
+  booktitle={Proceedings of the 3rd International Workshop on Systems and Network Telemetry and Analytics (SNTA)},
+  year={2020},
+  publisher={ACM},
+  doi={10.1145/3391812.3396273}
+}
+
+@article{kim2023predicting,
+  title={Predicting {HPC} {I/O} Performance Using Machine Learning},
+  author={Kim, Jaemin and Sim, Alex and Wu, Kesheng},
+  journal={Journal of Big Data},
+  volume={10},
+  number={1},
+  pages={71},
+  year={2023},
+  publisher={Springer},
+  doi={10.1186/s40537-023-00741-4}
+}
+
+@inproceedings{snyder2025darshan,
+  title={Producing and Publishing Anonymized Darshan Logs from a Leadership Computing Facility},
+  author={Snyder, Shane and Lockwood, Glenn K. and Carns, Philip and Papka, Michael and Ross, Robert},
+  booktitle={Cray User Group (CUG)},
+  year={2025}
+}
+
+@article{bez2023survey,
+  title={A 360-Degree Survey on {I/O} in {HPC} Systems},
+  author={Bez, Jean Luca and Byna, Suren and others},
+  journal={ACM Computing Surveys},
+  volume={55},
+  number={14s},
+  pages={1--38},
+  year={2023},
+  publisher={ACM},
+  doi={10.1145/3608475}
+}
+
+@inproceedings{luu2015multiplatform,
+  title={A Multiplatform Study of {I/O} Behavior on Petascale Supercomputers},
+  author={Luu, Huong and Winslett, Marianne and Gropp, William and Ross, Robert and Carns, Philip and Harms, Kevin and Prabhat and Byna, Suren and Yao, Yushu},
+  booktitle={Proceedings of the 24th International Symposium on High-Performance Parallel and Distributed Computing (HPDC)},
+  pages={33--44},
+  year={2015},
+  publisher={ACM},
+  doi={10.1145/2749246.2749269}
+}
+
+% --- ML Methodology ---
+
+@article{gorishniy2021revisiting,
+  title={Revisiting Deep Learning Models for Tabular Data},
+  author={Gorishniy, Yury and Rubachev, Ivan and Khrulkov, Valentin and Babenko, Artem},
+  journal={Advances in Neural Information Processing Systems (NeurIPS)},
+  volume={34},
+  pages={18932--18943},
+  year={2021}
+}
+
+@inproceedings{rubachev2024tabred,
+  title={{TabReD}: A Benchmark of Tabular Machine Learning in-the-Wild},
+  author={Rubachev, Ivan and Alekberov, Nikolay and Gorishniy, Yury and Babenko, Artem},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2025}
+}
+
+@inproceedings{chaudhary2019concept,
+  title={Modeling and Detecting Concept Drift in {HPC} Systems},
+  author={Chaudhary, Alok and others},
+  booktitle={Proceedings of the 48th International Conference on Parallel Processing (ICPP)},
+  year={2019},
+  publisher={ACM},
+  doi={10.1145/3337821.3337922}
+}
+
+% --- ML+LLM Integration ---
+
+@inproceedings{chen2023rcacopilot,
+  title={{RCACopilot}: Automated Root Cause Analysis with {LLMs}},
+  author={Chen, Yinfang and Agarwal, Vivek and others},
+  booktitle={Proceedings of the ACM SIGOPS EuroSys Conference},
+  year={2024}
+}
+
+% --- Darshan ---
+
+@inproceedings{snyder2016darshan,
+  title={Modular {HPC} {I/O} Characterization with {Darshan}},
+  author={Snyder, Shane and Carns, Philip and Harms, Kevin and Ross, Robert and Lockwood, Glenn K. and Wright, Nicholas J.},
+  booktitle={Proceedings of the 5th Workshop on Extreme-Scale Programming Tools (ESPT)},
+  year={2016},
+  doi={10.1109/ESPT.2016.9}
+}
