@@ -1,0 +1,100 @@
+# Preprocessing Pipeline Configuration
+# SC 2026: ML+LLM Hybrid for HPC I/O Bottleneck Detection
+#
+# This config controls ALL preprocessing decisions.  No hardcoded values
+# in source code -- everything references this config.
+#
+# Pipeline: raw_features.parquet -> clean -> engineer -> analyze -> normalize
+#
+# IMPORTANT: Feature exclusions are NOT hardcoded.  All exclusion decisions
+# are informed by statistical analysis (Stage 4 EDA) and applied through
+# feature_selection settings below.
+
+# --- Stage 2: Cleaning ---
+cleaning:
+  # Minimum job duration (seconds).  Jobs shorter than this are likely
+  # system probes, login shells, or trivial test scripts.
+  min_duration_seconds: 10
+
+  # Minimum total I/O bytes (POSIX_BYTES_READ + POSIX_BYTES_WRITTEN).
+  # 4096 = one memory page = one meaningful I/O operation.
+  min_total_bytes: 4096
+
+  # Minimum total I/O operations (POSIX_READS + POSIX_WRITES).
+  # 2 = at least one open+close or one read+write pair.
+  min_io_ops: 2
+
+  # Require POSIX module to be present.  POSIX is the foundation layer;
+  # logs without it have no meaningful I/O data for our analysis.
+  require_posix: true
+
+# --- Sentinel Value Handling ---
+sentinel_handling:
+  # Replace -1 rank IDs with this value.
+  # -1 means "not applicable" (non-shared files or single-rank jobs).
+  replace_negative_rank_with: 0
+
+# --- Stage 5: Normalization ---
+# Group-specific normalization strategies.
+# Options per group: "none", "log1p", "log1p_robust", "log10p1"
+#
+# "log1p": natural log(1+x), compresses heavy tails
+# "log1p_robust": log1p then RobustScaler (median+IQR centering)
+# "log10p1": log10(1+x), legacy AIIO-style
+# "none": no transformation (already bounded or categorical)
+#
+# NOTE: These are INITIAL settings.  After EDA (Stage 4), these may be
+# updated based on actual data distributions observed in the Polaris logs.
+normalization:
+  volume_counters: "log1p_robust"
+  count_counters: "log1p_robust"
+  histogram_counters: "log1p"
+  top4_counters: "log1p"
+  timing_counters: "log1p_robust"
+  timestamp_counters: "none"    # absolute timestamps; used for derived features only
+  categorical_counters: "none"  # MODE, ALIGNMENT — categorical, not continuous
+  rank_id_counters: "none"      # integer rank IDs — not performance metrics
+  conditional_size_counters: "log1p"
+  indicator_features: "none"    # binary 0/1 — no normalization needed
+  ratio_features: "none"        # already bounded [0,1] or similar
+  derived_absolute: "log1p"     # io_duration, dominant_access_size, num_files
+  metadata_features: "log1p"    # nprocs, runtime_seconds
+
+# --- Data Splits ---
+splits:
+  # "temporal" = split by job start time (recommended for realistic eval)
+  # "random"   = random shuffle split
+  method: "temporal"
+
+  # Fraction of data for test set (most recent jobs for temporal split)
+  test_fraction: 0.15
+
+  # Fraction of data for validation set
+  val_fraction: 0.15
+
+# --- Feature Selection (applied AFTER EDA, INSIDE Pipeline) ---
+# These settings are used by the statistical analysis stage to FLAG
+# features as candidates for removal.  Actual removal requires user review.
+feature_selection:
+  # Features with Spearman |rho| > threshold are flagged as redundant.
+  # Among correlated pairs, keep the one with higher MI to target.
+  correlation_threshold: 0.90
+
+  # Features with > (1 - min_nonzero_fraction) zeros are flagged as sparse.
+  # e.g., 0.01 means features with >99% zeros are flagged.
+  min_nonzero_fraction: 0.01
+
+  # Feature selection method for model pipeline.
+  # Options: "shap_select", "mutual_information", "model_importance", "none"
+  method: "none"  # Start with none; enable after EDA
+
+# --- Reproducibility ---
+random_seed: 42
+
+# --- System Constants (Polaris-specific, for reference) ---
+system:
+  name: "ALCF Polaris"
+  filesystem: "Eagle/Grand Lustre"
+  peak_bandwidth_gb_s: 650
+  num_osts: 160
+  num_mdts: 40
