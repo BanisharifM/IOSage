@@ -1,0 +1,23 @@
+% ===========================================================================
+% Section 7: Discussion (~0.5 pages)
+% ===========================================================================
+
+% TODO: Discuss limitations and future work
+
+% --- Limitations ---
+% - Silver labels (Drishti heuristic) may propagate biases
+% - Darshan captures aggregate counters only (no per-call traces on Polaris)
+% - LLM recommendations require human validation before deployment
+% - Knowledge Base limited to benchmarks we ran (IOR, mdtest, DLIO)
+% - Single facility (Polaris) -- generalization to other systems untested
+
+% --- Threats to Validity ---
+% - Internal: label noise in silver labels, temporal split may miss some patterns
+% - External: Polaris-specific storage (Lustre) may not transfer to other FSes
+% - Construct: Drishti agreement as proxy for correctness has ceiling
+
+% --- Future Work ---
+% - Extend KB with more benchmarks and real application fixes
+% - Multi-facility evaluation (Frontier, Aurora, Perlmutter)
+% - Online learning: update model as new production logs arrive
+% - Integration with job schedulers for proactive I/O optimization

@@ -1,0 +1,33 @@
+% ===========================================================================
+% Section 1: Introduction (~1.5 pages)
+% ===========================================================================
+
+% --- Problem statement ---
+% I/O bottlenecks in HPC: gap between detection and actionable fixes
+
+% --- Existing approaches and limitations ---
+Prior work on I/O bottleneck detection includes rule-based
+systems~\cite{bez2022drishti, devarajan2025wisio},
+ML classifiers~\cite{dong2023aiio}, and LLM-based
+approaches~\cite{zheng2025ioagent, lockwood2024ion}.
+
+% TODO: Expand on limitations of each:
+% - Rule-based (Drishti, WisIO): Cannot learn, brittle thresholds, no code fixes
+% - ML-only (AIIO): Detects patterns but no recommendations
+% - LLM-only (IOAgent, ION): No learned detection, hallucination risk, slow
+
+% --- Our approach ---
+% ML+LLM hybrid with benchmark-grounded Knowledge Base
+% Three-phase architecture: benchmark KB -> ML training -> online inference
+
+% --- Contributions ---
+% TODO: 3-4 bullet points
+% \begin{itemize}
+%   \item A hybrid ML+LLM architecture that combines learned bottleneck
+%         detection with retrieval-augmented code-level recommendations.
+%   \item A benchmark-grounded Knowledge Base mapping Darshan I/O signatures
+%         to verified code causes and validated fixes.
+%   \item The first ML-based I/O analysis at facility scale on 1.37M Darshan
+%         logs from ALCF Polaris.
+%   \item Comprehensive evaluation showing [TODO: key results].
+% \end{itemize}

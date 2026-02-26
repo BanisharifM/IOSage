@@ -1,0 +1,55 @@
+% ===========================================================================
+% Section 6: Evaluation (~2 pages)
+% ===========================================================================
+
+% --- 6.1 Experimental Setup ---
+\subsection{Experimental Setup}
+\label{sec:eval:setup}
+
+% TODO: Describe experimental setup
+% - Hardware: ALCF Polaris (AMD EPYC + NVIDIA A100, Lustre storage)
+% - Dataset: 131,151 preprocessed jobs, 70/15/15 temporal split
+% - Baselines: Drishti (rule-based), AIIO (ML-only), IOAgent (LLM-only)
+% - Metrics:
+%   - Detection: micro-F1, macro-F1, per-class precision/recall/AP
+%   - Recommendations: human expert rating (1-5 scale), benchmark speedup
+%   - Efficiency: inference latency, throughput (logs/sec)
+
+% --- 6.2 Detection Performance ---
+\subsection{Detection Performance}
+\label{sec:eval:detection}
+
+% TODO: Results table and analysis
+% Table: model comparison (XGBoost, LightGBM, RF, MLP) x metrics
+% Table: comparison with baselines (Drishti, AIIO)
+% Key findings: which model wins, where, and why
+
+% --- 6.3 Recommendation Quality ---
+\subsection{Recommendation Quality}
+\label{sec:eval:recs}
+
+% TODO: LLM recommendation evaluation
+% - Human expert blind evaluation (5 experts, 50 samples each)
+% - Comparison: \system{} vs. IOAgent vs. Drishti suggestions
+% - Benchmark re-run: apply top recommendation, measure improvement
+% - Grounding analysis: % of recommendations traceable to KB
+
+% --- 6.4 Ablation Study ---
+\subsection{Ablation Study}
+\label{sec:eval:ablation}
+
+% TODO: Ablation experiments
+% - Gold-only vs. Silver-only vs. Gold+Silver labels
+% - With/without SHAP-guided RAG
+% - With/without KB grounding
+% - Feature group importance (which Darshan modules matter most)
+
+% --- 6.5 Case Studies ---
+\subsection{Case Studies}
+\label{sec:eval:cases}
+
+% TODO: 2-3 detailed case studies
+% - Case 1: Small I/O bottleneck detected and fixed
+% - Case 2: Metadata-heavy workload with interface mismatch
+% - Case 3: Load imbalance across MPI ranks
+% Show: Darshan counters -> ML prediction -> SHAP -> KB match -> LLM fix -> speedup
