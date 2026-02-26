@@ -137,23 +137,32 @@ def _parse_with_pydarshan(path):
 
     # --- Extract counters from read modules ---
     counters = {}
+    shared_file_flags = {}
 
     # POSIX
     if 'POSIX' in report.records:
-        _extract_pydarshan_module(report, 'POSIX', counters)
+        sf = _extract_pydarshan_module(report, 'POSIX', counters)
+        shared_file_flags['POSIX'] = sf
 
     # MPI-IO
     if 'MPI-IO' in report.records:
-        _extract_pydarshan_module(report, 'MPI-IO', counters, prefix='MPIIO')
+        sf = _extract_pydarshan_module(report, 'MPI-IO', counters, prefix='MPIIO')
+        shared_file_flags['MPI-IO'] = sf
 
     # STDIO
     if 'STDIO' in report.records:
-        _extract_pydarshan_module(report, 'STDIO', counters)
+        sf = _extract_pydarshan_module(report, 'STDIO', counters)
+        shared_file_flags['STDIO'] = sf
 
     # Count unique files
     counters['num_files'] = len(report.name_records) if hasattr(report, 'name_records') else 0
 
-    return {'job': job, 'counters': counters, 'modules': modules}
+    return {
+        'job': job,
+        'counters': counters,
+        'modules': modules,
+        'shared_file_flags': shared_file_flags,
+    }
 
 
 def _top4_merge(agg, new):
@@ -197,7 +206,7 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
         dfs = rec.to_df()
     except Exception:
         logger.debug("Cannot read module %s", module_name, exc_info=True)
-        return
+        return False
 
     pfx = prefix or module_name
 
@@ -340,6 +349,8 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
             if size_key in df_int.columns:
                 counters[size_key] = float(df_int[size_key].iloc[idx])
 
+    return shared_file_flag
+
 
 # ---------------------------------------------------------------------------
 # CLI backend (darshan-parser --total)
@@ -411,7 +422,13 @@ def _parse_with_cli(path):
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
-    return {'job': job, 'counters': counters, 'modules': modules}
+    # CLI --total cannot determine shared_file_flag reliably; default to False
+    return {
+        'job': job,
+        'counters': counters,
+        'modules': modules,
+        'shared_file_flags': {},
+    }
 
 
 def _parse_cli_header(output):
