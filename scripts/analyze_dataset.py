@@ -94,8 +94,13 @@ def compute_basic_stats(df):
     stats['feature_cols'] = len([c for c in df.columns if not c.startswith('_')])
     stats['info_cols'] = len([c for c in df.columns if c.startswith('_')])
 
-    # Date range — extract from file paths since _start_time may be 0
-    if '_source_path' in df.columns:
+    # Date range from _start_time (Unix timestamps)
+    if '_start_time' in df.columns and (df['_start_time'] > 0).any():
+        valid_ts = df['_start_time'][df['_start_time'] > 0]
+        stats['date_min'] = str(pd.Timestamp(valid_ts.min(), unit='s').date())
+        stats['date_max'] = str(pd.Timestamp(valid_ts.max(), unit='s').date())
+    elif '_source_path' in df.columns:
+        # Fallback: extract from file paths
         import re
         pattern = r'Darshan_Logs/(\d{4})/(\d{1,2})/(\d{1,2})/'
         dates = df['_source_path'].str.extract(pattern)
@@ -216,28 +221,32 @@ def classify_workload_type(df):
 def plot_temporal_distribution(df, fig_dir):
     """Fig: Logs per month over time.
 
-    Extracts date from _source_path (format: .../Darshan_Logs/YYYY/M/D/...)
-    since _start_time may be zero.
+    Uses _start_time (Unix timestamp) if available and non-zero,
+    falls back to extracting dates from _source_path.
     """
-    if '_source_path' not in df.columns:
-        logger.warning("No _source_path column, skipping temporal plot")
+    # Try _start_time first (preferred — actual job start time)
+    if '_start_time' in df.columns and (df['_start_time'] > 0).any():
+        valid = df[df['_start_time'] > 0]
+        ts = pd.to_datetime(valid['_start_time'], unit='s')
+        ym = ts.dt.to_period('M').astype(str)
+        monthly = ym.value_counts().sort_index()
+    elif '_source_path' in df.columns:
+        # Fallback: extract from file paths
+        pattern = r'Darshan_Logs/(\d{4})/(\d{1,2})/'
+        dates = df['_source_path'].str.extract(pattern)
+        dates.columns = ['year', 'month']
+        dates = dates.dropna()
+        if len(dates) == 0:
+            logger.warning("Could not extract dates from paths")
+            return
+        dates['year'] = dates['year'].astype(int)
+        dates['month'] = dates['month'].astype(int)
+        dates['ym'] = dates['year'].astype(str) + '-' + dates['month'].apply(
+            lambda x: f'{x:02d}')
+        monthly = dates['ym'].value_counts().sort_index()
+    else:
+        logger.warning("No temporal data available, skipping temporal plot")
         return
-
-    import re
-    # Extract year/month from path: .../Darshan_Logs/2024/5/19/...
-    pattern = r'Darshan_Logs/(\d{4})/(\d{1,2})/'
-    dates = df['_source_path'].str.extract(pattern)
-    dates.columns = ['year', 'month']
-    dates = dates.dropna()
-    if len(dates) == 0:
-        logger.warning("Could not extract dates from paths")
-        return
-
-    dates['year'] = dates['year'].astype(int)
-    dates['month'] = dates['month'].astype(int)
-    dates['ym'] = dates['year'].astype(str) + '-' + dates['month'].apply(lambda x: f'{x:02d}')
-
-    monthly = dates['ym'].value_counts().sort_index()
 
     fig, ax = plt.subplots(figsize=(12, 4))
     ax.bar(range(len(monthly)), monthly.values, color='#2196F3', edgecolor='none')

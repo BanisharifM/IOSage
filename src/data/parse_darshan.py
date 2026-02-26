@@ -115,10 +115,10 @@ def _parse_with_pydarshan(path):
         'jobid': job_meta.get('jobid', 0),
         'uid': job_meta.get('uid', 0),
         'nprocs': job_meta.get('nprocs', 1),
-        'start_time': job_meta.get('start_time', 0),
-        'end_time': job_meta.get('end_time', 0),
+        'start_time': job_meta.get('start_time_sec', 0),
+        'end_time': job_meta.get('end_time_sec', 0),
         'runtime': job_meta.get('run_time', 0.0),
-        'log_version': report.metadata.get('lib_ver', ''),
+        'log_version': job_meta.get('log_ver', ''),
     }
 
     modules = list(report.modules.keys())

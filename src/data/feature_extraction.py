@@ -267,25 +267,31 @@ FEATURE_GROUPS = {
         'has_hdf5', 'has_pnetcdf', 'has_apmpi', 'has_heatmap',
         'is_shared_file',
     ],
-    # Derived ratios: bounded [0, 1] or [0, inf)
+    # Derived ratios: bounded [0, 1] — no normalization needed
     'ratio': [
-        'read_ratio', 'read_bw_mb_s', 'write_bw_mb_s', 'total_bw_mb_s',
-        'avg_read_size', 'avg_write_size',
+        'read_ratio',
         'small_read_ratio', 'small_write_ratio', 'small_io_ratio',
         'medium_read_ratio', 'medium_write_ratio',
         'large_read_ratio', 'large_write_ratio',
         'seq_read_ratio', 'seq_write_ratio',
         'consec_read_ratio', 'consec_write_ratio',
-        'rw_ratio', 'rw_switch_ratio',
+        'rw_switch_ratio',
         'mem_misalign_ratio', 'file_misalign_ratio',
         'metadata_time_ratio', 'read_time_fraction', 'write_time_fraction',
+        'byte_imbalance', 'time_imbalance',
+        'collective_ratio', 'nonblocking_ratio',
+        'access_size_concentration',
+    ],
+    # Derived unbounded: computed ratios/values with no fixed upper bound
+    # These need log1p to compress their dynamic range
+    'ratio_unbounded': [
+        'read_bw_mb_s', 'write_bw_mb_s', 'total_bw_mb_s',
+        'avg_read_size', 'avg_write_size',
+        'rw_ratio',
         'opens_per_op', 'stats_per_op', 'seeks_per_op',
         'fsync_ratio', 'opens_per_mb',
         'rank_bytes_cv', 'rank_time_cv',
-        'byte_imbalance', 'time_imbalance',
-        'collective_ratio', 'nonblocking_ratio',
         'io_active_fraction',
-        'access_size_concentration',
     ],
     # Derived absolute: unbounded derived values
     'derived_absolute': [
