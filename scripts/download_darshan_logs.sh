@@ -106,7 +106,7 @@ TRANSFER_OPTS=(
     --recursive
     --label "$LABEL"
     --preserve-timestamp
-    --notify on,off,off  # notify on success only
+    --notify succeeded  # notify on success only
 )
 
 if $SYNC; then
