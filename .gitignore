@@ -1,107 +1,95 @@
 # =============================================================================
-# IOGraphNet Project .gitignore
+# SC 2026 Project .gitignore
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Python (recursive - matches in all subdirectories)
+# Python
 # -----------------------------------------------------------------------------
-**/__pycache__/
-**/*.py[cod]
-**/*$py.class
-**/*.so
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
 build/
 develop-eggs/
 dist/
-downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-**/*.egg-info/
+*.egg-info/
 .installed.cfg
-**/*.egg
+*.egg
 
 # Virtual environments
-**/venv/
-**/ENV/
-**/env/
-**/.venv/
+venv/
+env/
+.venv/
 
 # -----------------------------------------------------------------------------
-# PyTorch / ML (recursive)
+# ML / PyTorch
 # -----------------------------------------------------------------------------
-# Model weights (use Git LFS for large files if needed)
-**/*.pt
-**/*.pth
-**/*.ckpt
-**/*.pkl
-**/*.joblib
-
-# Keep .gitkeep files
-!**/.gitkeep
+# Model weights (tracked via Git LFS when needed)
+# *.pt  *.pth  *.ckpt  -- uncomment to ignore, or use LFS
 
 # Weights & Biases
-**/wandb/
+wandb/
 
-# TensorBoard
-**/runs/
-**/logs/
+# TensorBoard / logs
+runs/
+logs/
 
 # MLflow
-**/mlruns/
+mlruns/
 
 # -----------------------------------------------------------------------------
-# Jupyter Notebooks (recursive)
+# Jupyter Notebooks
 # -----------------------------------------------------------------------------
-**/.ipynb_checkpoints/
+.ipynb_checkpoints/
 
 # -----------------------------------------------------------------------------
-# LaTeX (recursive)
+# LaTeX build artifacts
 # -----------------------------------------------------------------------------
-**/*.aux
-**/*.bbl
-**/*.blg
-**/*.fdb_latexmk
-**/*.fls
-**/*.synctex.gz
-**/*.toc
-**/*.lof
-**/*.lot
-**/*.nav
-**/*.snm
-**/*.vrb
-**/*.bcf
-**/*.run.xml
-**/*.xdv
-
-# LaTeX log and out files (but not Python .log files in logs/ folder)
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
 paper/*.log
 paper/*.out
 
-# Keep main PDF for easy viewing
-!paper/main.pdf
+# Compiled PDF (regenerable; Overleaf compiles its own)
+paper/main.pdf
 
 # -----------------------------------------------------------------------------
-# Data Files (Large)
+# Data Files
 # -----------------------------------------------------------------------------
-# Raw Darshan logs (1.37M files - DO NOT COMMIT)
+# Raw Darshan logs (1.37M files - too large for git)
 Darshan_Logs/2024/
 Darshan_Logs/2025/
 Darshan_Logs/2026/
+Darshan_Logs/.last_collection
+Darshan_Logs/.meta/
 
-# Processed data
-data/processed/*.parquet
-data/processed/*.pt
-data/splits/*.pt
+# Darshan log files anywhere
+*.darshan
+
+# Intermediate extraction chunks (regenerable from raw logs)
+data/processed/archive/
+
+# Benchmark logs (generated locally)
 data/benchmark_logs/
 
-# Keep sample data for testing
-!data/sample/
+# NOTE: Parquet files (data/processed/*.parquet, data/processed/splits/*.parquet)
+# are tracked via Git LFS -- do NOT ignore them here.
 
 # -----------------------------------------------------------------------------
 # Results & Outputs
@@ -109,93 +97,54 @@ data/benchmark_logs/
 results/*.json
 results/*.csv
 results/ablation/
-
-# Keep expected results for validation
 !results/expected/
 
 # -----------------------------------------------------------------------------
-# IDE & Editors (recursive)
+# IDE & Editors
 # -----------------------------------------------------------------------------
-# VSCode
-**/.vscode/
-**/*.code-workspace
-
-# PyCharm
-**/.idea/
-
-# Vim
-**/*.swp
-**/*.swo
-
-# Emacs
-**/\#*\#
-**/*.elc
+.vscode/
+*.code-workspace
+.idea/
+*.swp
+*.swo
+\#*\#
+*.elc
 
 # -----------------------------------------------------------------------------
-# OS Files (recursive - matches in all subdirectories)
+# OS Files
 # -----------------------------------------------------------------------------
-# macOS
-**/.DS_Store
-**/.AppleDouble
-**/.LSOverride
-**/._*
-
-# Windows
-**/Thumbs.db
-**/ehthumbs.db
-**/Desktop.ini
-
-# Linux
-**/*~
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
 
 # -----------------------------------------------------------------------------
-# Secrets & Credentials (recursive)
+# Secrets & Credentials
 # -----------------------------------------------------------------------------
-**/.env
-**/.env.local
-**/*.pem
-**/*.key
-**/credentials.json
-**/secrets.yaml
-
-# -----------------------------------------------------------------------------
-# Misc (recursive)
-# -----------------------------------------------------------------------------
-# Temporary files
-**/*.tmp
-**/*.temp
-**/*.bak
-
-# Coverage reports
-**/htmlcov/
-**/.coverage
-**/.coverage.*
-**/coverage.xml
-**/*.cover
-
-# pytest
-**/.pytest_cache/
-**/.cache/
-
-# mypy
-**/.mypy_cache/
-
-# Profiling
-**/*.prof
-**/*.lprof
+.env
+.env.local
+*.pem
+*.key
+credentials.json
+secrets.yaml
 
 # -----------------------------------------------------------------------------
-# Project Specific
+# Misc
 # -----------------------------------------------------------------------------
-# Darshan log files (large, should not be committed)
-**/*.darshan
-
-# Symlinks (tracked by git automatically, but data inside is ignored)
-# data/raw is a symlink to Darshan_Logs
-
-# Local settings (if any)
-**/local.yaml
-**/*.local.yaml
-
-# Parquet data files
-**/*.parquet
+*.tmp
+*.temp
+*.bak
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+.cache/
+.mypy_cache/
+*.prof
+*.lprof

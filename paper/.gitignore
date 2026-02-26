@@ -1,0 +1,20 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
+*.nav
+*.snm
+*.vrb
+
+# Compiled PDF (Overleaf compiles its own)
+main.pdf
+
+# Internal research notes (not for Overleaf)
+paper_materials.md
+stats.json
