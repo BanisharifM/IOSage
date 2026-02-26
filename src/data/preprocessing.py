@@ -22,7 +22,6 @@ Design principles:
 """
 
 import logging
-import math
 from pathlib import Path
 
 import numpy as np
@@ -156,7 +155,7 @@ def stage2_clean(df, config):
 # ---------------------------------------------------------------------------
 
 def stage3_engineer(df):
-    """Compute derived features from cleaned raw counters.
+    """Compute derived features from cleaned raw counters (vectorized).
 
     Parameters
     ----------
@@ -168,29 +167,132 @@ def stage3_engineer(df):
     pd.DataFrame
         Features with derived columns added.
     """
-    logger.info("Computing derived features for %d rows...", len(df))
+    logger.info("Computing derived features for %d rows (vectorized)...",
+                len(df))
+    df = df.copy()
 
-    info_cols = [c for c in df.columns if c.startswith('_')]
+    # Replace sentinel -1 with 0 in feature columns for safe computation
+    feature_cols = [c for c in df.columns if not c.startswith('_')]
+    for col in feature_cols:
+        if df[col].dtype in [np.float64, np.float32, np.int64, np.int32]:
+            mask = df[col] == _SENTINEL
+            if mask.any():
+                df.loc[mask, col] = 0.0
 
-    # Process each row to compute derived features
-    derived_rows = []
-    for idx, row in df.iterrows():
-        f = row.to_dict()
-        modules = str(f.get('_modules', '')).split(',')
+    # Helper: safe column access (0 if missing)
+    def g(col):
+        return df[col] if col in df.columns else 0.0
 
-        # Replace sentinels for computation
-        for key in list(f.keys()):
-            if not key.startswith('_') and f[key] == _SENTINEL:
-                f[key] = 0.0
+    # Precompute reusable aggregates
+    total_reads = g('POSIX_READS')
+    total_writes = g('POSIX_WRITES')
+    total_ops = total_reads + total_writes
+    bytes_read = g('POSIX_BYTES_READ')
+    bytes_written = g('POSIX_BYTES_WRITTEN')
+    total_bytes = bytes_read + bytes_written
+    read_time = g('POSIX_F_READ_TIME')
+    write_time = g('POSIX_F_WRITE_TIME')
+    meta_time = g('POSIX_F_META_TIME')
+    total_time = read_time + write_time + meta_time
+    nprocs = df['nprocs'] if 'nprocs' in df.columns else 1
+    runtime = df['runtime_seconds'] if 'runtime_seconds' in df.columns else 0
 
-        _compute_derived_features(f, modules)
-        derived_rows.append(f)
+    # --- Read/write balance ---
+    df['read_ratio'] = bytes_read / np.maximum(total_bytes, 1)
 
-    result = pd.DataFrame(derived_rows, index=df.index)
-    n_new = len(result.columns) - len(df.columns)
+    # --- Bandwidth ---
+    df['read_bw_mb_s'] = bytes_read / np.maximum(read_time, _EPS) / 1e6
+    df['write_bw_mb_s'] = bytes_written / np.maximum(write_time, _EPS) / 1e6
+    io_time = read_time + write_time
+    df['total_bw_mb_s'] = total_bytes / np.maximum(io_time, _EPS) / 1e6
+
+    # --- Average sizes ---
+    df['avg_read_size'] = bytes_read / np.maximum(total_reads, 1)
+    df['avg_write_size'] = bytes_written / np.maximum(total_writes, 1)
+
+    # --- Size distribution ratios ---
+    small_r = g('POSIX_SIZE_READ_0_100') + g('POSIX_SIZE_READ_100_1K')
+    small_w = g('POSIX_SIZE_WRITE_0_100') + g('POSIX_SIZE_WRITE_100_1K')
+    df['small_read_ratio'] = small_r / np.maximum(total_reads, 1)
+    df['small_write_ratio'] = small_w / np.maximum(total_writes, 1)
+    df['small_io_ratio'] = (small_r + small_w) / np.maximum(total_ops, 1)
+
+    medium_r = (g('POSIX_SIZE_READ_1K_10K') + g('POSIX_SIZE_READ_10K_100K')
+                + g('POSIX_SIZE_READ_100K_1M'))
+    medium_w = (g('POSIX_SIZE_WRITE_1K_10K') + g('POSIX_SIZE_WRITE_10K_100K')
+                + g('POSIX_SIZE_WRITE_100K_1M'))
+    df['medium_read_ratio'] = medium_r / np.maximum(total_reads, 1)
+    df['medium_write_ratio'] = medium_w / np.maximum(total_writes, 1)
+
+    large_r = (g('POSIX_SIZE_READ_1M_4M') + g('POSIX_SIZE_READ_4M_10M')
+               + g('POSIX_SIZE_READ_10M_100M') + g('POSIX_SIZE_READ_100M_1G')
+               + g('POSIX_SIZE_READ_1G_PLUS'))
+    large_w = (g('POSIX_SIZE_WRITE_1M_4M') + g('POSIX_SIZE_WRITE_4M_10M')
+               + g('POSIX_SIZE_WRITE_10M_100M') + g('POSIX_SIZE_WRITE_100M_1G')
+               + g('POSIX_SIZE_WRITE_1G_PLUS'))
+    df['large_read_ratio'] = large_r / np.maximum(total_reads, 1)
+    df['large_write_ratio'] = large_w / np.maximum(total_writes, 1)
+
+    # --- Pattern ratios ---
+    df['seq_read_ratio'] = g('POSIX_SEQ_READS') / np.maximum(total_reads, 1)
+    df['seq_write_ratio'] = g('POSIX_SEQ_WRITES') / np.maximum(total_writes, 1)
+    df['consec_read_ratio'] = g('POSIX_CONSEC_READS') / np.maximum(total_reads, 1)
+    df['consec_write_ratio'] = g('POSIX_CONSEC_WRITES') / np.maximum(total_writes, 1)
+    df['rw_ratio'] = total_reads / np.maximum(total_writes, 1)
+    df['rw_switch_ratio'] = g('POSIX_RW_SWITCHES') / np.maximum(total_ops, 1)
+
+    # --- Alignment ratios ---
+    df['mem_misalign_ratio'] = g('POSIX_MEM_NOT_ALIGNED') / np.maximum(total_ops, 1)
+    df['file_misalign_ratio'] = g('POSIX_FILE_NOT_ALIGNED') / np.maximum(total_ops, 1)
+
+    # --- Metadata ratios ---
+    df['metadata_time_ratio'] = meta_time / np.maximum(total_time, _EPS)
+    df['read_time_fraction'] = read_time / np.maximum(total_time, _EPS)
+    df['write_time_fraction'] = write_time / np.maximum(total_time, _EPS)
+    df['opens_per_op'] = g('POSIX_OPENS') / np.maximum(total_ops, 1)
+    df['stats_per_op'] = g('POSIX_STATS') / np.maximum(total_ops, 1)
+    df['seeks_per_op'] = g('POSIX_SEEKS') / np.maximum(total_ops, 1)
+    df['fsync_ratio'] = g('POSIX_FSYNCS') / np.maximum(total_writes, 1)
+    df['opens_per_mb'] = g('POSIX_OPENS') / np.maximum(total_bytes / 1e6, _EPS)
+
+    # --- Imbalance ratios ---
+    var_bytes = np.maximum(g('POSIX_F_VARIANCE_RANK_BYTES'), 0)
+    var_time = np.maximum(g('POSIX_F_VARIANCE_RANK_TIME'), 0)
+    mean_bytes_per_rank = total_bytes / np.maximum(nprocs, 1)
+    mean_time_per_rank = total_time / np.maximum(nprocs, 1)
+    df['rank_bytes_cv'] = np.sqrt(var_bytes) / np.maximum(mean_bytes_per_rank, _EPS)
+    df['rank_time_cv'] = np.sqrt(var_time) / np.maximum(mean_time_per_rank, _EPS)
+
+    fastest_bytes = g('POSIX_FASTEST_RANK_BYTES')
+    slowest_bytes = g('POSIX_SLOWEST_RANK_BYTES')
+    df['byte_imbalance'] = (slowest_bytes - fastest_bytes) / np.maximum(total_bytes, _EPS)
+
+    fastest_time = g('POSIX_F_FASTEST_RANK_TIME')
+    slowest_time = g('POSIX_F_SLOWEST_RANK_TIME')
+    df['time_imbalance'] = (slowest_time - fastest_time) / np.maximum(total_time, _EPS)
+
+    # --- MPI-IO ratios ---
+    coll = g('MPIIO_COLL_READS') + g('MPIIO_COLL_WRITES')
+    indep = g('MPIIO_INDEP_READS') + g('MPIIO_INDEP_WRITES')
+    nb = g('MPIIO_NB_READS') + g('MPIIO_NB_WRITES')
+    total_mpiio = coll + indep + nb
+    df['collective_ratio'] = coll / np.maximum(total_mpiio, 1)
+    df['nonblocking_ratio'] = nb / np.maximum(total_mpiio, 1)
+
+    # --- Temporal ---
+    open_start = g('POSIX_F_OPEN_START_TIMESTAMP')
+    close_end = g('POSIX_F_CLOSE_END_TIMESTAMP')
+    df['io_duration'] = np.maximum(close_end - open_start, 0)
+    df['io_active_fraction'] = total_time / np.maximum(runtime, _EPS)
+
+    # --- Access concentration ---
+    df['access_size_concentration'] = g('POSIX_ACCESS1_COUNT') / np.maximum(total_ops, 1)
+    df['dominant_access_size'] = g('POSIX_ACCESS1_ACCESS')
+
+    n_derived = len(FEATURE_GROUPS.get('ratio', [])) + len(FEATURE_GROUPS.get('derived_absolute', []))
     logger.info("Added %d derived features (total: %d columns)",
-                 n_new, len(result.columns))
-    return result
+                n_derived, len(df.columns))
+    return df
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +398,66 @@ def find_redundant_features(corr_matrix, threshold=0.90):
 
 
 # ---------------------------------------------------------------------------
+# Feature Exclusion (between EDA and Normalization)
+# ---------------------------------------------------------------------------
+
+def drop_excluded_features(df, config, train_df=None):
+    """Drop features that should not go to ML models.
+
+    Two mechanisms:
+      1. Auto-drop: constant features (zero variance) detected on train_df.
+      2. Manual exclusion: features listed in config['feature_exclusion'].
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input features.
+    config : dict
+        Preprocessing config with 'feature_exclusion' section.
+    train_df : pd.DataFrame, optional
+        Training set for detecting constant features.  If None, uses df.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with excluded features removed.
+    list
+        Names of dropped features (for logging/auditing).
+    """
+    exclusion_cfg = config.get('feature_exclusion', {})
+    dropped = []
+
+    # 1. Manual exclusions from config
+    manual_drops = exclusion_cfg.get('drop_features', [])
+    present = [c for c in manual_drops if c in df.columns]
+    if present:
+        df = df.drop(columns=present)
+        dropped.extend(present)
+        logger.info("Dropped %d manually excluded features: %s",
+                     len(present), present[:5])
+
+    # 2. Auto-drop constant features (zero variance on train set)
+    if exclusion_cfg.get('drop_constant', True):
+        ref = train_df if train_df is not None else df
+        feature_cols = [c for c in ref.columns
+                        if not c.startswith('_') and c in df.columns]
+        numeric = ref[feature_cols].select_dtypes(include=['number'])
+        constant_cols = numeric.columns[numeric.std() == 0].tolist()
+
+        # Only drop those still present (some may already be manually dropped)
+        to_drop = [c for c in constant_cols if c in df.columns]
+        if to_drop:
+            df = df.drop(columns=to_drop)
+            dropped.extend(to_drop)
+            logger.info("Auto-dropped %d constant features: %s",
+                         len(to_drop), to_drop[:5])
+
+    logger.info("Feature exclusion complete: dropped %d features, %d remain",
+                len(dropped), len([c for c in df.columns if not c.startswith('_')]))
+    return df, dropped
+
+
+# ---------------------------------------------------------------------------
 # Stage 5: Normalization
 # ---------------------------------------------------------------------------
 
@@ -350,11 +512,12 @@ def stage5_normalize(df, config, fit=True, scalers=None):
         'conditional_size': norm_config.get('conditional_size_counters', 'log1p'),
         'indicator': norm_config.get('indicator_features', 'none'),
         'ratio': norm_config.get('ratio_features', 'none'),
+        'ratio_unbounded': norm_config.get('ratio_unbounded_features', 'log1p'),
         'derived_absolute': norm_config.get('derived_absolute', 'log1p'),
         'metadata': norm_config.get('metadata_features', 'log1p'),
     }
 
-    # Apply group-specific normalization
+    # Apply group-specific normalization (vectorized)
     for group_name, method in group_methods.items():
         cols = [c for c in FEATURE_GROUPS.get(group_name, [])
                 if c in df.columns]
@@ -362,13 +525,11 @@ def stage5_normalize(df, config, fit=True, scalers=None):
             continue
 
         if method == 'log1p':
-            for col in cols:
-                df[col] = df[col].apply(lambda x: math.log1p(max(x, 0)))
+            df[cols] = np.log1p(df[cols].clip(lower=0))
 
         elif method == 'log1p_robust':
-            # Step 1: log1p transform
-            for col in cols:
-                df[col] = df[col].apply(lambda x: math.log1p(max(x, 0)))
+            # Step 1: log1p transform (vectorized)
+            df[cols] = np.log1p(df[cols].clip(lower=0))
 
             # Step 2: RobustScaler (median + IQR)
             if fit:
@@ -386,8 +547,7 @@ def stage5_normalize(df, config, fit=True, scalers=None):
 
         elif method == 'log10p1':
             # Legacy: log10(x+1) for backward compatibility
-            for col in cols:
-                df[col] = df[col].apply(lambda x: math.log10(max(x, 0) + 1))
+            df[cols] = np.log10(df[cols].clip(lower=0) + 1)
 
     logger.info("Normalization complete: %d columns", len(feature_cols))
     return df, scalers
@@ -552,6 +712,7 @@ def _default_config():
             'conditional_size_counters': 'log1p',
             'indicator_features': 'none',
             'ratio_features': 'none',
+            'ratio_unbounded_features': 'log1p',
             'derived_absolute': 'log1p',
             'metadata_features': 'log1p',
         },

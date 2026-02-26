@@ -12,17 +12,22 @@
 
 # --- Stage 2: Cleaning ---
 cleaning:
-  # Minimum job duration (seconds).  Jobs shorter than this are likely
-  # system probes, login shells, or trivial test scripts.
-  min_duration_seconds: 10
+  # Minimum job duration (seconds).  1s filters out sub-second system
+  # probes and login shells while retaining legitimate burst I/O jobs
+  # (median 58.6 MB at 13.4 MB/s in the 1-10s range).
+  # Evidence: threshold sensitivity analysis showed 33K genuine I/O jobs
+  # in the 1-10s window with zero NaN/Inf and comparable feature variance.
+  min_duration_seconds: 1
 
   # Minimum total I/O bytes (POSIX_BYTES_READ + POSIX_BYTES_WRITTEN).
-  # 4096 = one memory page = one meaningful I/O operation.
-  min_total_bytes: 4096
+  # 1024 = at least one meaningful read or write operation.
+  # Evidence: sharp cliff at 0->512 bytes (332K zero-byte metadata-only
+  # jobs drop out); stable from 512 to 65K (only 11K difference).
+  min_total_bytes: 1024
 
   # Minimum total I/O operations (POSIX_READS + POSIX_WRITES).
-  # 2 = at least one open+close or one read+write pair.
-  min_io_ops: 2
+  # 1 = at least one actual read or write (not just opens).
+  min_io_ops: 1
 
   # Require POSIX module to be present.  POSIX is the foundation layer;
   # logs without it have no meaningful I/O data for our analysis.
@@ -56,7 +61,8 @@ normalization:
   rank_id_counters: "none"      # integer rank IDs — not performance metrics
   conditional_size_counters: "log1p"
   indicator_features: "none"    # binary 0/1 — no normalization needed
-  ratio_features: "none"        # already bounded [0,1] or similar
+  ratio_features: "none"        # bounded [0,1] ratios — no normalization
+  ratio_unbounded_features: "log1p"  # unbounded derived (bandwidth, avg_size, rw_ratio, etc.)
   derived_absolute: "log1p"     # io_duration, dominant_access_size, num_files
   metadata_features: "log1p"    # nprocs, runtime_seconds
 
@@ -71,6 +77,38 @@ splits:
 
   # Fraction of data for validation set
   val_fraction: 0.15
+
+# --- Feature Exclusion (applied BEFORE normalization) ---
+# Features to drop before model training.  Two mechanisms:
+#   1. Auto-drop: constant features (zero variance on train set) are removed
+#      automatically.  No configuration needed.
+#   2. Manual exclusion: features listed below are dropped explicitly.
+#      Each entry must have a rationale.
+feature_exclusion:
+  # Auto-drop constant features detected on train set
+  drop_constant: true
+
+  # Manually excluded features (with rationale)
+  # These were identified by post-normalization audit (Entry 72)
+  drop_features:
+    # Timestamps: absolute within-job timestamps (seconds from job start).
+    # Redundant — io_duration and io_active_fraction already capture the
+    # useful signal.  Raw timestamps have extreme scale (0 to 189K) and
+    # skewness (up to 122) that normalization cannot fix without distortion.
+    - POSIX_F_OPEN_START_TIMESTAMP
+    - POSIX_F_READ_START_TIMESTAMP
+    - POSIX_F_WRITE_START_TIMESTAMP
+    - POSIX_F_CLOSE_START_TIMESTAMP
+    - POSIX_F_OPEN_END_TIMESTAMP
+    - POSIX_F_READ_END_TIMESTAMP
+    - POSIX_F_WRITE_END_TIMESTAMP
+    - POSIX_F_CLOSE_END_TIMESTAMP
+
+    # Categorical hash/system values: not continuous, not I/O behavior
+    - POSIX_RENAMED_FROM     # hash of original filename (std = 3.9e17)
+    - POSIX_MODE             # file permission bits (0/448), categorical
+    - POSIX_FILE_ALIGNMENT   # system constant (0/4096/1048576), categorical
+    # Note: POSIX_MEM_ALIGNMENT is always 8 (constant) — auto-dropped
 
 # --- Feature Selection (applied AFTER EDA, INSIDE Pipeline) ---
 # These settings are used by the statistical analysis stage to FLAG
