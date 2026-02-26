@@ -26,13 +26,12 @@ from pathlib import Path
 import pandas as pd
 
 from src.data.parse_darshan import parse_darshan_log
-from src.data.aggregate import aggregate_from_total_output
-from src.data.feature_extraction import extract_features
+from src.data.feature_extraction import extract_raw_features, extract_features
 
 logger = logging.getLogger(__name__)
 
 
-def extract_single_log(darshan_path, backend=None):
+def extract_single_log(darshan_path, backend=None, raw_only=False):
     """Extract features from one .darshan file.
 
     Parameters
@@ -41,6 +40,10 @@ def extract_single_log(darshan_path, backend=None):
         Path to .darshan file.
     backend : str, optional
         Parser backend ('pydarshan' or 'cli').
+    raw_only : bool
+        If True, extract raw features only (no transforms, no derived).
+        Used for Stage 1 extraction where all subsequent decisions are
+        deferred to preprocessing after EDA.
 
     Returns
     -------
@@ -52,11 +55,11 @@ def extract_single_log(darshan_path, backend=None):
         if parsed is None:
             return None
 
-        # Aggregation (--total output is already aggregated)
-        parsed['counters'] = aggregate_from_total_output(parsed['counters'])
+        if raw_only:
+            features = extract_raw_features(parsed)
+        else:
+            features = extract_features(parsed, apply_log_transform=True)
 
-        # Feature extraction
-        features = extract_features(parsed, apply_log_transform=True)
         features['_source_path'] = str(darshan_path)
         return features
 
@@ -66,7 +69,7 @@ def extract_single_log(darshan_path, backend=None):
 
 
 def batch_extract(input_dir, output_path, max_workers=16, max_files=None,
-                  backend=None, chunk_size=10000):
+                  backend=None, chunk_size=10000, raw_only=False):
     """Extract features from all .darshan files in a directory.
 
     Parameters
@@ -83,10 +86,18 @@ def batch_extract(input_dir, output_path, max_workers=16, max_files=None,
         Parser backend.
     chunk_size : int
         Write intermediate results every chunk_size files.
+    raw_only : bool
+        If True, extract raw features only (Stage 1).  No transforms,
+        no derived features.  Recommended for initial extraction so that
+        all subsequent decisions (exclusion, normalization) are informed
+        by statistical analysis.
     """
     input_dir = Path(input_dir)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    mode_label = "RAW" if raw_only else "FULL"
+    logger.info("Extraction mode: %s", mode_label)
 
     # Find all .darshan files
     files = sorted(input_dir.rglob('*.darshan'))
@@ -106,7 +117,7 @@ def batch_extract(input_dir, output_path, max_workers=16, max_files=None,
 
     with ProcessPoolExecutor(max_workers=max_workers) as pool:
         future_to_path = {
-            pool.submit(extract_single_log, str(f), backend): f
+            pool.submit(extract_single_log, str(f), backend, raw_only): f
             for f in files
         }
 
@@ -141,8 +152,10 @@ def batch_extract(input_dir, output_path, max_workers=16, max_files=None,
 
     elapsed = time.time() - t_start
     logger.info(
-        "Batch extraction complete: %d success, %d failed, %.1f seconds (%.1f logs/s)",
-        n_success, n_fail, elapsed, n_success / max(elapsed, 0.001)
+        "Batch extraction complete (%s): %d success, %d failed, "
+        "%.1f seconds (%.1f logs/s)",
+        mode_label, n_success, n_fail, elapsed,
+        n_success / max(elapsed, 0.001)
     )
     logger.info("Output: %s", output_path)
 
@@ -176,6 +189,8 @@ def main():
                         help='Parser backend (auto-detect if not specified)')
     parser.add_argument('--chunk-size', type=int, default=10000,
                         help='Write intermediate results every N files')
+    parser.add_argument('--raw', action='store_true',
+                        help='Extract raw features only (Stage 1, no transforms)')
     parser.add_argument('--log-level', default='INFO',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'])
     args = parser.parse_args()
@@ -192,6 +207,7 @@ def main():
         max_files=args.max_files,
         backend=args.backend,
         chunk_size=args.chunk_size,
+        raw_only=args.raw,
     )
 
 
