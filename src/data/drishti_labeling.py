@@ -1,11 +1,16 @@
 """
-Drishti Silver Labeling Pipeline
-=================================
-Generates multi-label silver labels from production log features by
+Drishti Heuristic Labeling Pipeline
+=====================================
+Generates multi-label heuristic labels from production log features by
 reimplementing Drishti's 30 heuristic rules as vectorized pandas operations.
 
 This operates on the already-extracted engineered_features.parquet, not on
 raw .darshan files. A full labeling pass over 131K rows completes in seconds.
+
+Terminology (per SC 2026 paper convention):
+  - "heuristic labels" = Drishti rule-based labels on production logs
+  - "ground-truth labels" = benchmark-derived labels (by construction)
+  - See docs/paper_materials.md Section 2.5.1 for rationale.
 
 Drishti Insight Codes and Severity Levels:
     HIGH (critical issues):
@@ -461,22 +466,22 @@ def compute_confidence(codes, labels):
     return confidence
 
 
-def generate_silver_labels(features_path, output_path, min_confidence=0.0):
-    """Generate silver labels from engineered features using Drishti rules.
+def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
+    """Generate heuristic labels from engineered features using Drishti rules.
 
     Parameters
     ----------
     features_path : str or Path
         Path to engineered_features.parquet.
     output_path : str or Path
-        Output path for silver_labels.parquet.
+        Output path for heuristic labels parquet file.
     min_confidence : float
         Minimum confidence to include a sample (default: 0.0 = keep all).
 
     Returns
     -------
     pd.DataFrame
-        Silver labels DataFrame with _jobid, 8 dimension columns,
+        Heuristic labels DataFrame with _jobid, 8 dimension columns,
         drishti_confidence, label_source, and all 30 Drishti code columns.
     """
     features_path = Path(features_path)
@@ -508,7 +513,7 @@ def generate_silver_labels(features_path, output_path, min_confidence=0.0):
 
     # Confidence and source
     result['drishti_confidence'] = confidence.values
-    result['label_source'] = 'drishti_silver'
+    result['label_source'] = 'drishti_heuristic'
 
     # Individual Drishti codes (for debugging, analysis, and Drishti baseline)
     for code_name, code_series in sorted(codes.items()):
@@ -524,7 +529,7 @@ def generate_silver_labels(features_path, output_path, min_confidence=0.0):
 
     # Write output
     result.to_parquet(output_path, index=False, engine='pyarrow')
-    logger.info("Wrote silver labels to %s (%d rows, %.1f MB)",
+    logger.info("Wrote heuristic labels to %s (%d rows, %.1f MB)",
                 output_path, len(result),
                 output_path.stat().st_size / 1e6)
 
@@ -538,7 +543,7 @@ def _log_summary(result):
     """Log label distribution statistics."""
     n = len(result)
 
-    logger.info("=== Silver Label Summary ===")
+    logger.info("=== Heuristic Label Summary ===")
     logger.info("Total samples: %d", n)
 
     for dim_name in DIMENSION_NAMES:
@@ -569,7 +574,11 @@ def _log_summary(result):
                 conf.mean(), conf.median(), conf.min(), conf.max())
 
 
-def validate_against_drishti_cli(silver_labels_path, sample_logs_dir,
+# Backward compatibility alias
+generate_silver_labels = generate_heuristic_labels
+
+
+def validate_against_drishti_cli(heuristic_labels_path, sample_logs_dir,
                                  n_samples=50, seed=42):
     """Validate vectorized labels against actual Drishti CLI output.
 
@@ -578,8 +587,8 @@ def validate_against_drishti_cli(silver_labels_path, sample_logs_dir,
 
     Parameters
     ----------
-    silver_labels_path : str or Path
-        Path to silver_labels.parquet (to look up our predictions).
+    heuristic_labels_path : str or Path
+        Path to heuristic labels parquet (to look up our predictions).
     sample_logs_dir : str or Path
         Directory containing sample .darshan files.
     n_samples : int
@@ -595,7 +604,7 @@ def validate_against_drishti_cli(silver_labels_path, sample_logs_dir,
     import subprocess
     import re
 
-    silver = pd.read_parquet(silver_labels_path)
+    silver = pd.read_parquet(heuristic_labels_path)
     sample_dir = Path(sample_logs_dir)
     logs = sorted(sample_dir.rglob('*.darshan'))
 
@@ -671,9 +680,9 @@ def validate_against_drishti_cli(silver_labels_path, sample_logs_dir,
 # ---------------------------------------------------------------------------
 
 def main():
-    """CLI entry point for silver label generation."""
+    """CLI entry point for heuristic label generation."""
     parser = argparse.ArgumentParser(
-        description='Generate Drishti silver labels from engineered features'
+        description='Generate Drishti heuristic labels from engineered features'
     )
     parser.add_argument(
         '--features', required=True,
@@ -681,7 +690,7 @@ def main():
     )
     parser.add_argument(
         '--output', required=True,
-        help='Output path for silver_labels.parquet'
+        help='Output path for heuristic labels parquet'
     )
     parser.add_argument(
         '--min-confidence', type=float, default=0.0,
@@ -707,7 +716,7 @@ def main():
         stream=sys.stdout,
     )
 
-    result = generate_silver_labels(
+    result = generate_heuristic_labels(
         features_path=args.features,
         output_path=args.output,
         min_confidence=args.min_confidence,
@@ -715,7 +724,7 @@ def main():
 
     if args.validate_dir:
         validate_against_drishti_cli(
-            silver_labels_path=args.output,
+            heuristic_labels_path=args.output,
             sample_logs_dir=args.validate_dir,
             n_samples=args.validate_samples,
         )

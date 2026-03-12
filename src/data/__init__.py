@@ -19,7 +19,8 @@ from src.data.preprocessing import (
 )
 from src.data.batch_extract import batch_extract
 from src.data.drishti_labeling import (
-    generate_silver_labels,
+    generate_heuristic_labels,
+    generate_silver_labels,  # backward compat alias
     compute_drishti_codes,
     codes_to_labels,
     DIMENSION_NAMES,
@@ -41,7 +42,8 @@ __all__ = [
     'create_splits',
     'load_preprocessing_config',
     'batch_extract',
-    'generate_silver_labels',
+    'generate_heuristic_labels',
+    'generate_silver_labels',  # backward compat alias
     'compute_drishti_codes',
     'codes_to_labels',
     'DIMENSION_NAMES',
