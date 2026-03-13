@@ -13,7 +13,7 @@ PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/custom"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/custom"
-DARSHAN_LIB="/sw/spack/deltacpu-2022-03/apps/darshan-runtime/3.3.1-gcc-11.2.0-7tis4xp/lib/libdarshan.so"
+DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
 SCRIPT="${PROJECT_DIR}/benchmarks/custom/load_imbalance.py"
 

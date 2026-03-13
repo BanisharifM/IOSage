@@ -21,7 +21,7 @@ BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 DLIO_DIR="${BENCH_SCRATCH}/dlio"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/dlio"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/dlio"
-DARSHAN_LIB="/sw/spack/deltacpu-2022-03/apps/darshan-runtime/3.3.1-gcc-11.2.0-7tis4xp/lib/libdarshan.so"
+DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
 
 REPETITIONS=3

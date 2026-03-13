@@ -30,8 +30,8 @@ set -euo pipefail
 # --- Configuration ---
 PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
-DARSHAN_LIB="/sw/spack/deltacpu-2022-03/apps/darshan-runtime/3.3.1-gcc-11.2.0-7tis4xp/lib/libdarshan.so"
-DARSHAN_PARSER="/sw/spack/deltacpu-2022-03/apps/darshan-util/3.3.1-gcc-11.2.0-vq4wq2e/bin/darshan-parser"
+DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
+DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
 SMOKE_DIR="${BENCH_SCRATCH}/smoke_test"
 SMOKE_LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/smoke_test"
@@ -165,12 +165,13 @@ run_test "small_io" "access_granularity=1" \
     "ior -a POSIX -t 512 -b 64K -s 100 -F -e -C -w -r" ""
 
 # Test 2: Random I/O (access_pattern bottleneck)
+# Use FPP (-F) with random offsets to avoid shared-file alignment issues with O_DIRECT
 run_test "random_io" "access_pattern=1" \
-    "ior -a POSIX -t 4096 -b 10M -s 10 -z -e -C -w -r -O useO_DIRECT=1" ""
+    "ior -a POSIX -t 4096 -b 10M -s 10 -z -F -e -C -w -r --posix.odirect" ""
 
 # Test 3: Interface misuse (POSIX on shared file)
 run_test "interface_misuse" "interface_choice=1" \
-    "ior -a POSIX -t 1048576 -b 100M -s 4 -e -C -w -r -O useO_DIRECT=1" \
+    "ior -a POSIX -t 1048576 -b 100M -s 4 -e -C -w -r --posix.odirect" \
     'MPICH_MPIIO_HINTS="*:romio_cb_write=disable:romio_cb_read=disable"'
 
 # Test 4: Healthy (large sequential FPP)
@@ -178,7 +179,7 @@ HEALTHY_DIR="${SMOKE_DIR}/healthy"
 mkdir -p "${HEALTHY_DIR}"
 lfs setstripe -c -1 -S 1M "${HEALTHY_DIR}" 2>/dev/null || true
 run_test "healthy_fpp" "healthy=1" \
-    "ior -a POSIX -t 4194304 -b 100M -s 4 -F -e -C -w -r -O useO_DIRECT=1" ""
+    "ior -a POSIX -t 4194304 -b 100M -s 4 -F -e -C -w -r --posix.odirect" ""
 
 # Test 5: Healthy MPI-IO collective
 run_test "healthy_collective" "healthy=1" \

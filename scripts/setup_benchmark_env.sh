@@ -15,8 +15,8 @@ set -euo pipefail
 # --- Configuration ---
 PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
-DARSHAN_LIB="/sw/spack/deltacpu-2022-03/apps/darshan-runtime/3.3.1-gcc-11.2.0-7tis4xp/lib/libdarshan.so"
-DARSHAN_PARSER="/sw/spack/deltacpu-2022-03/apps/darshan-util/3.3.1-gcc-11.2.0-vq4wq2e/bin/darshan-parser"
+DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
+DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
 PIP_BIN="/projects/bdau/envs/sc2026/bin/pip"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs"
@@ -62,7 +62,7 @@ echo "  Parser:  ${DARSHAN_PARSER}"
 
 # Verify Darshan lib is compatible (64-bit, not stripped)
 file "${DARSHAN_LIB}" | grep -q "ELF 64-bit" || { echo "ERROR: Darshan lib is not 64-bit ELF"; exit 1; }
-echo "  Darshan 3.3.1 verified OK"
+echo "  Darshan 3.4.6 verified OK"
 
 # --- Step 3: Create benchmark directories with controlled Lustre striping ---
 echo ""
