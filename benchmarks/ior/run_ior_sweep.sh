@@ -277,7 +277,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "random_posix" ]; the
                 script=$(generate_job_script \
                     "random_posix" "access_pattern=1" \
                     "POSIX" "${tsize}" "100M" "10" "${nranks}" "${rep}" \
-                    "-z -e -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
+                    "-z -e -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
                 else
