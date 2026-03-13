@@ -1,0 +1,622 @@
+# =============================================================================
+# Benchmark Configuration for SC 2026 Ground-Truth Generation
+# =============================================================================
+# Target: NCSA Delta (Lustre /work/hdd, 12 OSTs, PFL auto-restripe)
+# Purpose: Generate Darshan logs with KNOWN I/O bottleneck patterns
+#          Labels assigned by CONSTRUCTION (from config), not from Darshan features
+# =============================================================================
+
+# --- Delta Cluster Settings ---
+cluster:
+  partition: cpu
+  account: bdau-delta-cpu
+  max_walltime: "48:00:00"
+  # CPU nodes: 2x AMD EPYC 7763 (128 cores), 256 GB DDR4
+  cores_per_node: 128
+  mem_per_node_gb: 256
+
+# --- Filesystem ---
+filesystem:
+  type: lustre
+  work_dir: /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+  # PFL on /work/hdd: 0-16MB=1 OST, 16MB-4GB=4 OSTs, 4GB+=12 OSTs
+  # We OVERRIDE PFL with lfs setstripe on benchmark directories
+  benchmark_scratch: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch
+  # Stripe configs for controlled experiments
+  stripe_bottleneck: {count: 1, size: "1M"}     # Single OST = limited BW
+  stripe_healthy: {count: -1, size: "1M"}        # All OSTs = max BW
+  stripe_medium: {count: 4, size: "1M"}          # Medium striping
+
+# --- Darshan Instrumentation ---
+darshan:
+  # Darshan runtime library (spack install on Delta, NOT a module)
+  lib_path: /sw/spack/deltacpu-2022-03/apps/darshan-runtime/3.3.1-gcc-11.2.0-7tis4xp/lib/libdarshan.so
+  # Darshan parser for verification
+  parser_path: /sw/spack/deltacpu-2022-03/apps/darshan-util/3.3.1-gcc-11.2.0-vq4wq2e/bin/darshan-parser
+  # Where benchmark Darshan logs are collected
+  log_dir: data/benchmark_logs
+  # DXT tracing: disabled for job-level features (saves memory)
+  # Enable only for debugging specific benchmarks
+  dxt_enabled: false
+  # Increase Darshan memory for Python apps (DLIO)
+  modmem_mb: 4
+
+# --- MPI Settings ---
+mpi:
+  # Delta uses cray-mpich 8.1.32
+  module: cray-mpich/8.1.32
+  # IOR module
+  ior_module: ior/3.3.0-gcc13.3.1
+  # ROMIO collective buffering control (Cray MPICH uses MPICH_MPIIO_HINTS)
+  # Disable: forces independent I/O even with MPI-IO API (for interface_choice bottleneck)
+  hints_disabled: "*:romio_cb_write=disable:romio_cb_read=disable:romio_ds_write=disable:romio_ds_read=disable"
+  # Enable: allows ROMIO to aggregate (for healthy benchmarks)
+  hints_enabled: "*:romio_cb_write=enable:romio_ds_write=disable"
+  # Debug: show MPI-IO hints at file open
+  hints_display: 1
+
+# --- Python Environment ---
+python:
+  env_path: /projects/bdau/envs/sc2026
+  python_bin: /projects/bdau/envs/sc2026/bin/python
+
+# --- Benchmark Output ---
+output:
+  benchmark_logs_dir: data/benchmark_logs    # Darshan .darshan files
+  benchmark_results_dir: data/benchmark_results  # IOR stdout, timing info
+  labels_file: data/benchmark_logs/groundtruth_labels.csv
+  verification_report: data/benchmark_logs/verification_report.csv
+  # Keep IOR/mdtest output files? (large, only for debugging)
+  keep_data_files: false
+
+# --- Repetitions ---
+# 3 reps per config for statistical reliability
+repetitions: 3
+
+# --- Minimum thresholds for log inclusion ---
+verification:
+  min_runtime_seconds: 5
+  min_total_bytes: 10240       # 10 KB
+  min_io_ops: 100
+  # Tolerance: fraction of verification checks that can fail
+  tolerance: 0.2
+
+# =============================================================================
+# IOR Scenarios (~2000 logs target)
+# =============================================================================
+# IOR 3.3.0 on Delta. Key flags:
+#   -a API        POSIX or MPIIO
+#   -t SIZE       Transfer size per I/O op
+#   -b SIZE       Block size per task (total bytes = b * s)
+#   -s COUNT      Segment count
+#   -F            File-per-process mode
+#   -c            Collective I/O (MPI-IO only)
+#   -C            ReorderTasks (defeats page cache on reads)
+#   -e            fsync after write (flushes to disk)
+#   -z            Random offsets (not sequential)
+#   -k            Keep files (for multi-phase tests)
+#   -O useO_DIRECT=1   Bypass page cache (requires t >= 4096 on Lustre)
+#   -D SECS       Stonewall deadline
+#
+# CRITICAL: O_DIRECT requires transfer size >= 4096 (Lustre page alignment)
+#           For t < 4096, use -e -C instead (fsync + reorderTasks)
+
+ior:
+  scenarios:
+    # ----- ACCESS GRANULARITY = BAD (Small I/O) -----
+    # Label: access_granularity = 1
+    small_posix:
+      description: "Small I/O with POSIX (no O_DIRECT, sub-4KB transfers)"
+      label: {access_granularity: 1}
+      stripe: bottleneck        # 1 OST
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [64, 128, 256, 512, 1024, 2048]  # All < 4KB
+        block_size: 64K
+        segments: 100
+        file_per_proc: true     # -F avoids shared-file contention
+        fsync: true             # -e
+        reorder_tasks: true     # -C
+        use_o_direct: false     # Cannot use O_DIRECT with t < 4096
+      rank_counts: [4, 16]
+      expected_logs: 36         # 6 sizes * 2 ranks * 3 reps
+
+    small_direct:
+      description: "Small I/O with O_DIRECT (4KB minimum, bypasses page cache)"
+      label: {access_granularity: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [4096, 8192, 16384]  # 4KB, 8KB, 16KB (all page-aligned)
+        block_size: 1M
+        segments: 100
+        file_per_proc: true
+        fsync: false            # O_DIRECT makes fsync redundant
+        reorder_tasks: true
+        use_o_direct: true      # -O useO_DIRECT=1
+      rank_counts: [4, 16]
+      expected_logs: 18         # 3 sizes * 2 ranks * 3 reps
+
+    misaligned:
+      description: "Non-power-of-2 transfer sizes (misaligned I/O)"
+      label: {access_granularity: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [1000, 1500, 3000, 7000]  # Non-aligned, all < 4KB
+        block_size: 1M
+        segments: 50
+        file_per_proc: true
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: false     # Cannot O_DIRECT with non-aligned sizes
+      rank_counts: [4, 16]
+      expected_logs: 24         # 4 sizes * 2 ranks * 3 reps
+
+    # ----- ACCESS PATTERN = BAD (Random I/O) -----
+    # Label: access_pattern = 1
+    random_posix:
+      description: "Random offset access with POSIX"
+      label: {access_pattern: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [4096, 65536, 1048576]  # 4KB, 64KB, 1MB
+        block_size: 100M
+        segments: 10
+        file_per_proc: false    # Shared file makes random access worse
+        random_offset: true     # -z
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: true      # All sizes >= 4KB
+      rank_counts: [4, 16, 64]
+      expected_logs: 27         # 3 sizes * 3 ranks * 3 reps
+
+    random_small:
+      description: "Random offset with small transfers (worst case)"
+      label: {access_pattern: 1, access_granularity: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [512, 1024]
+        block_size: 10M
+        segments: 50
+        file_per_proc: true
+        random_offset: true
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: false
+      rank_counts: [4, 16]
+      expected_logs: 12         # 2 sizes * 2 ranks * 3 reps
+
+    # ----- INTERFACE CHOICE = BAD (Wrong API) -----
+    # Label: interface_choice = 1
+    interface_misuse_posix_shared:
+      description: "POSIX on shared file (should use MPI-IO collective)"
+      label: {interface_choice: 1}
+      stripe: bottleneck        # 1 OST makes contention worse
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [1048576]  # 1MB
+        block_size: 100M
+        segments: 4
+        file_per_proc: false    # Shared file = contention
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: true
+      rank_counts: [16, 32, 64, 128]
+      expected_logs: 12         # 1 size * 4 ranks * 3 reps
+
+    interface_misuse_mpiio_indep:
+      description: "MPI-IO independent on shared file (should use collective)"
+      label: {interface_choice: 1}
+      stripe: bottleneck
+      collective_buffering: disabled  # Disable ROMIO aggregation
+      params:
+        api: MPIIO
+        collective: false       # Independent MPI-IO (no -c)
+        transfer_sizes: [1048576]
+        block_size: 100M
+        segments: 4
+        file_per_proc: false
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: false     # MPI-IO manages buffering
+      rank_counts: [16, 32, 64, 128]
+      expected_logs: 12         # 1 size * 4 ranks * 3 reps
+
+    # ----- FILE STRATEGY = BAD (Too many files) -----
+    # Label: file_strategy = 1
+    file_explosion:
+      description: "File-per-process with many ranks (excessive files)"
+      label: {file_strategy: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [65536]  # 64KB
+        block_size: 10M
+        segments: 10
+        file_per_proc: true     # Each rank creates its own file
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: true
+      rank_counts: [64, 128, 256]  # Many ranks = many files
+      expected_logs: 9          # 1 size * 3 ranks * 3 reps
+
+    # ----- THROUGHPUT UTILIZATION = BAD -----
+    # Label: throughput_utilization = 1
+    fsync_per_write:
+      description: "Excessive fsync (write saturation)"
+      label: {throughput_utilization: 1}
+      stripe: bottleneck
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [65536, 1048576]  # 64KB, 1MB
+        block_size: 100M
+        segments: 4
+        file_per_proc: true
+        fsync: true
+        fsync_per_write: true   # -Y (fsync EVERY write, not just at end)
+        reorder_tasks: true
+        use_o_direct: false     # O_DIRECT + fsyncPerWrite is redundant
+      rank_counts: [4, 16]
+      expected_logs: 12         # 2 sizes * 2 ranks * 3 reps
+
+    # ----- HEALTHY (Optimal I/O) -----
+    # Label: healthy = 1
+    healthy_collective:
+      description: "MPI-IO collective, large transfers, full striping"
+      label: {healthy: 1}
+      stripe: healthy           # All OSTs
+      collective_buffering: enabled  # Re-enable ROMIO
+      params:
+        api: MPIIO
+        collective: true        # -c
+        transfer_sizes: [4194304]  # 4MB
+        block_size: 1G
+        segments: 4
+        file_per_proc: false    # Shared file with collective = optimal
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: false
+      rank_counts: [16, 32, 64, 128]
+      expected_logs: 12         # 1 size * 4 ranks * 3 reps
+
+    healthy_posix_fpp:
+      description: "POSIX file-per-process with large transfers (optimal for POSIX)"
+      label: {healthy: 1}
+      stripe: healthy
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [4194304]  # 4MB
+        block_size: 1G
+        segments: 4
+        file_per_proc: true     # FPP = no contention
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: true
+      rank_counts: [16, 32, 64]
+      expected_logs: 9          # 1 size * 3 ranks * 3 reps
+
+    healthy_large_seq:
+      description: "Large sequential POSIX with O_DIRECT (bandwidth test)"
+      label: {healthy: 1}
+      stripe: healthy
+      collective_buffering: disabled
+      params:
+        api: POSIX
+        transfer_sizes: [1048576, 4194304, 16777216]  # 1MB, 4MB, 16MB
+        block_size: 1G
+        segments: 4
+        file_per_proc: true
+        fsync: true
+        reorder_tasks: true
+        use_o_direct: true
+      rank_counts: [4, 16]
+      expected_logs: 18         # 3 sizes * 2 ranks * 3 reps
+
+  # Total expected IOR logs: ~201 (before reps) * 3 reps = ~603
+  # After verification (~70% pass rate): ~420 verified logs
+
+# =============================================================================
+# mdtest Scenarios (~400 logs target)
+# =============================================================================
+# mdtest (bundled with IOR 3.3.0). Key flags:
+#   -n COUNT      Files per MPI rank
+#   -w BYTES      Write bytes per file on creation
+#   -e BYTES      Read bytes per file
+#   -F            File-only mode (skip dir tests)
+#   -D            Directory-only mode
+#   -u            Unique directory per rank
+#   -S            Shared directory (all ranks use same dir)
+#   -z DEPTH      Directory tree depth
+#   -b BRANCH     Branching factor
+#   -R            Random stat order
+#   -N SHIFT      Tasks read/stat shifted by N ranks (defeats MDS cache)
+#   -i ITER       Number of iterations
+
+mdtest:
+  scenarios:
+    # ----- METADATA INTENSITY = BAD -----
+    # Label: metadata_intensity = 1
+    metadata_storm_shared:
+      description: "Many file creates in shared directory (MDS contention)"
+      label: {metadata_intensity: 1}
+      params:
+        items_per_rank: [1000, 5000, 10000, 50000]
+        write_bytes: 100        # Small write to trigger file creation
+        read_bytes: 100
+        files_only: true        # -F
+        unique_dir: false       # Shared dir = MDS contention
+        iterations: 1
+      rank_counts: [4, 16]
+      expected_logs: 24         # 4 items * 2 ranks * 3 reps
+
+    metadata_storm_unique:
+      description: "Many file creates with unique dirs (per-rank metadata)"
+      label: {metadata_intensity: 1}
+      params:
+        items_per_rank: [5000, 10000, 50000]
+        write_bytes: 0          # Pure metadata (no data)
+        read_bytes: 0
+        files_only: true
+        unique_dir: true        # -u
+        iterations: 1
+      rank_counts: [4, 16, 64]
+      expected_logs: 27         # 3 items * 3 ranks * 3 reps
+
+    metadata_cross_node:
+      description: "Cross-node stat (defeats MDS cache)"
+      label: {metadata_intensity: 1}
+      params:
+        items_per_rank: [5000, 10000]
+        write_bytes: 64
+        read_bytes: 64
+        files_only: true
+        unique_dir: false
+        stagger_shift: true     # -N (stagger = nprocs)
+        iterations: 1
+      rank_counts: [32, 64, 128]
+      expected_logs: 18         # 2 items * 3 ranks * 3 reps
+
+    # ----- FILE STRATEGY = BAD -----
+    # Label: file_strategy = 1
+    file_per_process_explosion:
+      description: "Massive file-per-process (too many files)"
+      label: {file_strategy: 1}
+      params:
+        items_per_rank: [100, 500, 1000, 5000]
+        write_bytes: 4096       # 4KB per file
+        read_bytes: 4096
+        files_only: true
+        unique_dir: true        # Each rank its own dir
+        iterations: 1
+      rank_counts: [32, 64, 128]
+      expected_logs: 36         # 4 items * 3 ranks * 3 reps
+
+    deep_tree:
+      description: "Deep directory hierarchy (metadata-heavy tree ops)"
+      label: {metadata_intensity: 1}
+      params:
+        items_per_rank: [100]
+        write_bytes: 0
+        read_bytes: 0
+        files_only: false       # Include directory ops
+        unique_dir: true
+        tree_depth: [3, 5, 10]  # -z
+        branching: [2, 5]       # -b
+        iterations: 1
+      rank_counts: [4, 16]
+      expected_logs: 36         # 1 item * 6 tree * 2 ranks * 3 reps
+
+    # ----- HEALTHY METADATA -----
+    # Label: healthy = 1
+    healthy_metadata:
+      description: "Moderate metadata with data (balanced workload)"
+      label: {healthy: 1}
+      params:
+        items_per_rank: [10, 50]
+        write_bytes: 1048576    # 1MB per file
+        read_bytes: 1048576
+        files_only: true
+        unique_dir: true
+        iterations: 1
+      rank_counts: [4, 16]
+      expected_logs: 12         # 2 items * 2 ranks * 3 reps
+
+  # Total expected mdtest logs: ~153 * 3 reps = ~459 (compressed by reps already counted)
+  # Actually: 24+27+18+36+36+12 = 153 logs total
+
+# =============================================================================
+# DLIO Scenarios (~300 logs target)
+# =============================================================================
+# DLIO emulates ML training I/O. Uses mpi4py (MPI_Init → Darshan auto-detects).
+# Must install: pip install dlio-benchmark (after mpi4py from source)
+# IMPORTANT: Darshan captures DLIO I/O via LD_PRELOAD
+# Python apps open many .so/.pyc files → set DARSHAN_MODMEM=4 to avoid memory exhaustion
+
+dlio:
+  scenarios:
+    # ----- ACCESS GRANULARITY = BAD (Small records) -----
+    # Label: access_granularity = 1
+    small_records:
+      description: "Small record reads (DL data loading bottleneck)"
+      label: {access_granularity: 1}
+      params:
+        workload: unet3d
+        format: npz
+        record_lengths: [64, 256, 1024, 4096]  # Bytes per sample
+        num_files_train: 1000
+        num_samples_per_file: 1
+        batch_size: 1
+        read_threads: 1
+        computation_time: 0.01  # Near-zero compute → I/O-bound
+        epochs: 2
+        seed: 42
+      rank_counts: [4, 8]
+      expected_logs: 24         # 4 sizes * 2 ranks * 3 reps
+
+    # ----- THROUGHPUT UTILIZATION = BAD (Checkpoint bottleneck) -----
+    # Label: throughput_utilization = 1
+    checkpoint_burst:
+      description: "Large checkpoint writes (model saving bottleneck)"
+      label: {throughput_utilization: 1}
+      params:
+        workload: unet3d
+        format: npz
+        record_length: 65536    # 64KB (moderate data I/O)
+        num_files_train: 100
+        num_samples_per_file: 10
+        batch_size: 8
+        read_threads: 4
+        computation_time: 0.5
+        epochs: 5
+        checkpoint: true
+        checkpoint_after_epoch: 1
+        model_sizes: [100000000, 500000000, 1000000000]  # 100MB, 500MB, 1GB
+        seed: 42
+      rank_counts: [4, 8]
+      expected_logs: 18         # 3 sizes * 2 ranks * 3 reps
+
+    # ----- HEALTHY (Optimized DL I/O) -----
+    # Label: healthy = 1
+    healthy_ml:
+      description: "Optimized ML I/O (large records, prefetch, compute overlap)"
+      label: {healthy: 1}
+      params:
+        workload: unet3d
+        format: npz
+        record_lengths: [1048576, 4194304]  # 1MB, 4MB
+        num_files_train: 100
+        num_samples_per_file: 10
+        batch_size: 32
+        read_threads: 8
+        computation_time: 1.0   # Significant compute → not I/O bound
+        epochs: 3
+        seed: 42
+      rank_counts: [4, 8]
+      expected_logs: 12         # 2 sizes * 2 ranks * 3 reps
+
+    # ----- ACCESS PATTERN = BAD (Random shuffle) -----
+    # Label: access_pattern = 1
+    shuffle_heavy:
+      description: "Heavy random shuffle across many files"
+      label: {access_pattern: 1}
+      params:
+        workload: unet3d
+        format: npz
+        record_length: 65536
+        num_files_train: 5000
+        num_samples_per_file: 1
+        batch_size: 1
+        read_threads: 1
+        sample_shuffle: random
+        file_shuffle: random
+        computation_time: 0.01
+        epochs: 2
+        seed: 42
+      rank_counts: [4, 8]
+      expected_logs: 6          # 1 config * 2 ranks * 3 reps
+
+  # Total expected DLIO logs: 24+18+12+6 = 60 logs total
+
+# =============================================================================
+# Custom mpi4py Scenarios (~100 logs target)
+# =============================================================================
+# Custom Python scripts for patterns not easily generated by IOR/mdtest/DLIO
+# Requires mpi4py built from source against cray-mpich
+
+custom:
+  scenarios:
+    # ----- PARALLELISM EFFICIENCY = BAD (Load imbalance) -----
+    # Label: parallelism_efficiency = 1
+    load_imbalance:
+      description: "Rank 0 writes N times more data than other ranks"
+      label: {parallelism_efficiency: 1}
+      params:
+        imbalance_factors: [2, 5, 10, 20]
+        base_size_mb: [10, 50]
+      rank_counts: [4, 16, 64]
+      expected_logs: 72         # 4 factors * 2 sizes * 3 ranks * 3 reps
+
+    # ----- HEALTHY (Balanced parallel I/O) -----
+    healthy_balanced:
+      description: "All ranks write equal data (balanced workload)"
+      label: {healthy: 1}
+      params:
+        imbalance_factors: [1]  # No imbalance
+        base_size_mb: [50, 100]
+      rank_counts: [4, 16, 64]
+      expected_logs: 18         # 1 factor * 2 sizes * 3 ranks * 3 reps
+
+  # Total expected custom logs: 72+18 = 90 logs total
+
+# =============================================================================
+# Summary of Expected Logs
+# =============================================================================
+# IOR:     ~201 configs * 3 reps = ~603 logs
+# mdtest:  ~153 configs (already includes reps) = ~153 logs
+# DLIO:    ~60 logs
+# Custom:  ~90 logs
+# TOTAL:   ~906 logs before verification
+# After verification (~70-80% pass rate): ~640-720 verified logs
+#
+# This is Phase 1 of benchmarking (Tier 1 only).
+# If more samples needed, add Tier 2 benchmarks (h5bench, HACC-IO, MACSio).
+
+# =============================================================================
+# Verification Patterns
+# =============================================================================
+# Each scenario defines what Darshan features MUST show for the log to pass
+# See src/data/benchmark_verify.py for implementation
+
+verification_patterns:
+  access_granularity:
+    # avg write/read size should be small
+    checks:
+      - feature: small_io_ratio
+        range: [0.3, 1.0]
+      - feature: avg_write_size
+        range: [0, 32768]       # < 32KB
+
+  metadata_intensity:
+    checks:
+      - feature: metadata_time_ratio
+        range: [0.1, 1.0]
+
+  access_pattern:
+    checks:
+      - feature: seq_write_ratio
+        range: [0.0, 0.7]       # Not fully sequential
+
+  interface_choice:
+    # POSIX on shared file OR MPI-IO without collective
+    checks:
+      - feature: MPIIO_COLL_WRITES
+        range: [0, 0]           # No collective writes
+
+  file_strategy:
+    checks:
+      - feature: num_files
+        range: [50, 1000000]    # Many files
+
+  throughput_utilization:
+    checks:
+      - feature: write_bw_mb_s
+        range: [0, 500]         # Low bandwidth
+
+  healthy:
+    checks:
+      - feature: small_io_ratio
+        range: [0.0, 0.2]      # Low small I/O
+      - feature: write_bw_mb_s
+        range: [100, 1000000]   # Reasonable bandwidth
