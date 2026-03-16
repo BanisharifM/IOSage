@@ -1,6 +1,6 @@
 """Data pipeline for Darshan log feature extraction."""
 
-from src.data.parse_darshan import parse_darshan_log
+from src.data.parse_darshan import parse_darshan_log, parse_benchmark_job
 from src.data.feature_extraction import (
     extract_features,
     extract_raw_features,
@@ -28,6 +28,7 @@ from src.data.drishti_labeling import (
 
 __all__ = [
     'parse_darshan_log',
+    'parse_benchmark_job',
     'extract_features',
     'extract_raw_features',
     'get_feature_names',

@@ -70,6 +70,7 @@ export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
 
 echo "Custom imbalance: factor=${factor}, base=${base_mb}MB, ranks=${nranks}, rep=${rep}"
+echo "Label:    parallelism_efficiency=1"
 echo "Date: \$(date)"
 
 srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
@@ -130,6 +131,7 @@ export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
 
 echo "Balanced I/O: base=${base_mb}MB, ranks=${nranks}, rep=${rep}"
+echo "Label:    healthy=1"
 
 srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${PYTHON_BIN} ${SCRIPT} \\

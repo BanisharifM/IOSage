@@ -206,13 +206,60 @@ def verify_dlio_signature(features, label_dims, job_name, verbose=False):
     issues = []
     basename = job_name
 
-    # Skip lscpu/uname probe logs
+    # Skip lscpu/uname probe logs (DARSHAN_ENABLE_NONMPI startup probes)
     if "_lscpu_" in basename or "_uname_" in basename:
         return ["SKIP: startup probe log"]
 
     bytes_r = features.get("POSIX_BYTES_READ", 0) or 0
-    if bytes_r == 0:
-        issues.append("ZERO bytes_read (DLIO should read training data)")
+    bytes_w = features.get("POSIX_BYTES_WRITTEN", 0) or 0
+    total_bytes = bytes_r + bytes_w
+
+    if total_bytes == 0:
+        issues.append("ZERO total bytes (DLIO should produce I/O)")
+        return issues
+
+    posix_reads = features.get("POSIX_READS", 0) or 0
+    posix_writes = features.get("POSIX_WRITES", 0) or 0
+    total_ops = posix_reads + posix_writes
+    avg_io_size = total_bytes / total_ops if total_ops > 0 else 0
+
+    seq_reads = features.get("POSIX_SEQ_READS", 0) or 0
+    seq_writes = features.get("POSIX_SEQ_WRITES", 0) or 0
+
+    if "access_granularity" in label_dims:
+        # DLIO small reads: record_length <= 4096
+        if total_ops > 0 and avg_io_size >= 1_048_576:
+            issues.append(
+                f"access_granularity=1 but avg_io_size={avg_io_size:.0f} >= 1MB"
+            )
+
+    if "access_pattern" in label_dims:
+        # DLIO shuffle: random access pattern
+        if total_ops > 10:
+            seq_pct = (seq_reads + seq_writes) / total_ops * 100
+            if seq_pct > 90:
+                issues.append(
+                    f"access_pattern=1 (shuffle) but seq%={seq_pct:.1f}%"
+                )
+
+    if "throughput_utilization" in label_dims:
+        # DLIO checkpoint: large checkpoint writes that bottleneck throughput
+        if bytes_w == 0:
+            issues.append("throughput_utilization=1 but bytes_written=0")
+
+    if "healthy" in label_dims:
+        # DLIO healthy: sequential reading with large record_length.
+        # DLIO is an ML data loading benchmark — PyTorch DataLoader reads many
+        # small sample files (1024 files per rank). The POSIX-level avg_io_size
+        # is naturally small (~6-8KB) because Darshan captures individual read()
+        # calls, not logical sample sizes. Verify total bytes and read activity
+        # instead of avg_io_size (which is an IOR/block-I/O concept).
+        if bytes_r == 0:
+            issues.append("healthy=1 but bytes_read=0 (DLIO should read data)")
+        if posix_reads < 10:
+            issues.append(
+                f"healthy=1 but posix_reads={posix_reads} < 10 (too few reads)"
+            )
 
     return issues
 
@@ -223,9 +270,28 @@ def verify_custom_signature(features, label_dims, job_name, verbose=False):
 
     bytes_w = features.get("POSIX_BYTES_WRITTEN", 0) or 0
     bytes_r = features.get("POSIX_BYTES_READ", 0) or 0
+    nprocs = features.get("nprocs", 1) or 1
 
     if bytes_w == 0 and bytes_r == 0:
         issues.append("ZERO bytes (custom benchmark should produce I/O)")
+        return issues
+
+    if "parallelism_efficiency" in label_dims:
+        # Load imbalance: intentionally uneven I/O across ranks.
+        # Custom Python benchmarks with mpi4py + LD_PRELOAD create one Darshan
+        # log per rank (nprocs=1 per log). The imbalance is visible across logs
+        # for the same job ID, not within a single log. Here we verify that each
+        # rank produced meaningful I/O.
+        if bytes_w < 100_000:
+            issues.append(
+                f"parallelism_efficiency=1 but bytes_written={bytes_w:,} < 100KB"
+            )
+
+    if "healthy" in label_dims:
+        # Balanced I/O: all ranks write equally, large sequential writes.
+        # Same as imbalance: one Darshan log per rank (nprocs=1 per log).
+        if bytes_w < 100_000:
+            issues.append(f"healthy=1 but bytes_written={bytes_w:,} < 100KB")
 
     return issues
 

@@ -542,3 +542,215 @@ def _safe_float(s):
         return float(str(s).strip())
     except (ValueError, TypeError):
         return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Per-rank log aggregation for non-MPI benchmarks (DLIO, custom Python)
+# ---------------------------------------------------------------------------
+
+def parse_benchmark_job(rank_files):
+    """Aggregate per-rank Darshan logs into a single job-level result.
+
+    When Python/mpi4py programs run with LD_PRELOAD + DARSHAN_ENABLE_NONMPI=1,
+    each MPI rank creates its own .darshan file (nprocs=1). This function
+    groups them by job and applies the same 7 aggregation rules that Darshan's
+    MPI_Finalize uses for compiled MPI applications, producing output identical
+    in format to ``parse_darshan_log()`` on a standard aggregated log.
+
+    Parameters
+    ----------
+    rank_files : list of str or Path
+        Paths to per-rank .darshan files belonging to the same job.
+        Must contain at least one file. Files should be filtered to exclude
+        startup probes (lscpu, uname) before calling.
+
+    Returns
+    -------
+    dict or None
+        Same structure as ``parse_darshan_log()``:
+        ``{'job': {...}, 'counters': {...}, 'modules': [...], 'shared_file_flags': {...}}``
+        Returns None if no files can be parsed.
+    """
+    if not rank_files:
+        return None
+
+    import pandas as pd
+
+    nprocs = len(rank_files)
+    all_posix_int = []
+    all_posix_float = []
+    all_mpiio_int = []
+    all_mpiio_float = []
+    all_stdio_int = []
+    all_stdio_float = []
+
+    job_meta = None
+    all_modules = set()
+    all_name_records = {}
+    start_times = []
+    end_times = []
+
+    for rank_idx, fpath in enumerate(sorted(rank_files)):
+        try:
+            report = darshan.DarshanReport(str(fpath), read_all=False)
+        except Exception:
+            logger.debug("Cannot open per-rank log %s", fpath)
+            continue
+
+        # Collect job metadata from first parseable file
+        jm = report.metadata.get('job', {})
+        if job_meta is None:
+            job_meta = {
+                'jobid': jm.get('jobid', 0),
+                'uid': jm.get('uid', 0),
+                'nprocs': nprocs,
+                'start_time': jm.get('start_time_sec', 0),
+                'end_time': jm.get('end_time_sec', 0),
+                'runtime': jm.get('run_time', 0.0),
+                'log_version': jm.get('log_ver', ''),
+                'uses_lustre': False,
+                'lustre_mount': '',
+            }
+            for mount_info in report.metadata.get('mounts', []):
+                mp = mount_info[0] if isinstance(mount_info, (list, tuple)) else str(mount_info)
+                fs = mount_info[1] if isinstance(mount_info, (list, tuple)) and len(mount_info) > 1 else ''
+                if 'lustre' in str(fs).lower() or '/lus/' in str(mp):
+                    job_meta['uses_lustre'] = True
+                    job_meta['lustre_mount'] = str(mp)
+                    break
+
+        # Track start/end across ranks for accurate runtime
+        st = jm.get('start_time_sec', 0)
+        et = jm.get('end_time_sec', 0)
+        if st > 0:
+            start_times.append(st)
+        if et > 0:
+            end_times.append(et)
+
+        # Read modules
+        _MODULES = ['POSIX', 'MPI-IO', 'STDIO']
+        for mod in _MODULES:
+            if mod in report.modules:
+                all_modules.add(mod)
+                try:
+                    report.mod_read_all_records(mod)
+                except Exception:
+                    pass
+
+        # Collect name records for file count
+        if hasattr(report, 'name_records'):
+            all_name_records.update(report.name_records)
+
+        # Extract per-rank DataFrames with rank reassignment
+        if 'POSIX' in report.records:
+            try:
+                dfs = report.records['POSIX'].to_df()
+                if 'counters' in dfs:
+                    df = dfs['counters'].copy()
+                    df['rank'] = rank_idx
+                    all_posix_int.append(df)
+                if 'fcounters' in dfs:
+                    df = dfs['fcounters'].copy()
+                    df['rank'] = rank_idx
+                    all_posix_float.append(df)
+            except Exception:
+                pass
+
+        if 'MPI-IO' in report.records:
+            try:
+                dfs = report.records['MPI-IO'].to_df()
+                if 'counters' in dfs:
+                    df = dfs['counters'].copy()
+                    df['rank'] = rank_idx
+                    all_mpiio_int.append(df)
+                if 'fcounters' in dfs:
+                    df = dfs['fcounters'].copy()
+                    df['rank'] = rank_idx
+                    all_mpiio_float.append(df)
+            except Exception:
+                pass
+
+        if 'STDIO' in report.records:
+            try:
+                dfs = report.records['STDIO'].to_df()
+                if 'counters' in dfs:
+                    df = dfs['counters'].copy()
+                    df['rank'] = rank_idx
+                    all_stdio_int.append(df)
+                if 'fcounters' in dfs:
+                    df = dfs['fcounters'].copy()
+                    df['rank'] = rank_idx
+                    all_stdio_float.append(df)
+            except Exception:
+                pass
+
+    if job_meta is None:
+        return None
+
+    # Fix runtime from cross-rank start/end times
+    if start_times and end_times:
+        job_meta['start_time'] = min(start_times)
+        job_meta['end_time'] = max(end_times)
+        job_meta['runtime'] = max(end_times) - min(start_times)
+
+    job_meta['nprocs'] = nprocs
+    job_meta['modules'] = sorted(all_modules)
+
+    # Build a synthetic report-like object to feed into _extract_pydarshan_module
+    counters = {}
+    shared_file_flags = {}
+
+    class _SyntheticReport:
+        """Mimics darshan.DarshanReport enough for _extract_pydarshan_module."""
+        def __init__(self):
+            self.records = {}
+            self.name_records = all_name_records
+
+    class _SyntheticRecords:
+        """Mimics DarshanRecordCollection.to_df() return value."""
+        def __init__(self, int_df, float_df):
+            self._int = int_df
+            self._float = float_df
+
+        def to_df(self):
+            result = {}
+            if self._int is not None:
+                result['counters'] = self._int
+            if self._float is not None:
+                result['fcounters'] = self._float
+            return result
+
+    synth = _SyntheticReport()
+
+    if all_posix_int:
+        synth.records['POSIX'] = _SyntheticRecords(
+            pd.concat(all_posix_int, ignore_index=True),
+            pd.concat(all_posix_float, ignore_index=True) if all_posix_float else None,
+        )
+        sf = _extract_pydarshan_module(synth, 'POSIX', counters)
+        shared_file_flags['POSIX'] = sf
+
+    if all_mpiio_int:
+        synth.records['MPI-IO'] = _SyntheticRecords(
+            pd.concat(all_mpiio_int, ignore_index=True),
+            pd.concat(all_mpiio_float, ignore_index=True) if all_mpiio_float else None,
+        )
+        sf = _extract_pydarshan_module(synth, 'MPI-IO', counters, prefix='MPIIO')
+        shared_file_flags['MPI-IO'] = sf
+
+    if all_stdio_int:
+        synth.records['STDIO'] = _SyntheticRecords(
+            pd.concat(all_stdio_int, ignore_index=True),
+            pd.concat(all_stdio_float, ignore_index=True) if all_stdio_float else None,
+        )
+        sf = _extract_pydarshan_module(synth, 'STDIO', counters)
+        shared_file_flags['STDIO'] = sf
+
+    counters['num_files'] = len(all_name_records)
+
+    return {
+        'job': job_meta,
+        'counters': counters,
+        'modules': sorted(all_modules),
+        'shared_file_flags': shared_file_flags,
+    }
