@@ -80,18 +80,31 @@ def verify_ior_signature(features, label_dims, job_name, verbose=False):
     total_writes = features.get("POSIX_WRITES", 0) or 0
     fsyncs = features.get("POSIX_FSYNCS", 0) or 0
     posix_files = features.get("POSIX_FILENOS", 0) or 0
+    mpiio_files = features.get("MPIIO_FILENOS", 0) or 0
 
+    # Basic sanity: every IOR log should have non-zero bytes
     if total_bytes == 0:
         issues.append("ZERO total bytes")
 
+    # --- Per-dimension verification ---
+
     if "access_granularity" in label_dims:
-        # Extract transfer size from job name: _t<SIZE>_
+        # Small/misaligned transfer sizes → access_granularity bottleneck
         t_match = re.search(r"_t(\d+)_", job_name)
         if t_match:
             tsize = int(t_match.group(1))
             if tsize > 1048576:
                 issues.append(
                     f"access_granularity=1 but transfer_size={tsize} > 1MB"
+                )
+        # Verify Darshan sees small average I/O size
+        total_ops = total_reads + total_writes
+        if total_ops > 0 and total_bytes > 0:
+            avg_io_size = total_bytes / total_ops
+            # For access_granularity bottleneck, avg I/O should be < 1MB
+            if avg_io_size > 2_097_152:  # 2MB tolerance
+                issues.append(
+                    f"access_granularity=1 but avg_io_size={avg_io_size:,.0f} > 2MB"
                 )
 
     if "access_pattern" in label_dims:
@@ -104,6 +117,30 @@ def verify_ior_signature(features, label_dims, job_name, verbose=False):
                     f"access_pattern=1 (random) but seq_pct={seq_pct:.1%}"
                 )
 
+    if "interface_choice" in label_dims:
+        # interface_choice=1 means POSIX on shared file with >1 rank
+        # Should see POSIX bytes but NOT MPI-IO bytes
+        if nprocs > 1 and (mpiio_w + mpiio_r) > (bytes_w + bytes_r):
+            issues.append(
+                f"interface_choice=1 (should use POSIX on shared) but "
+                f"MPI-IO bytes ({mpiio_w + mpiio_r:,}) > POSIX bytes ({bytes_w + bytes_r:,})"
+            )
+        # File-per-process flag should NOT be set for shared-file scenario
+        if "_shared" in job_name or "e2e_posix" in job_name:
+            if posix_files > nprocs and nprocs > 0:
+                issues.append(
+                    f"interface_choice=1 shared file but posix_files={posix_files} > nprocs={nprocs}"
+                )
+
+    if "file_strategy" in label_dims:
+        # file_strategy=1 means file-per-process explosion: nfiles >> nprocs
+        if posix_files == 0:
+            issues.append("file_strategy=1 but POSIX_FILENOS=0")
+        elif nprocs > 0 and posix_files < nprocs:
+            issues.append(
+                f"file_strategy=1 but POSIX_FILENOS={posix_files} < nprocs={nprocs}"
+            )
+
     if "throughput_utilization" in label_dims:
         if fsyncs == 0:
             issues.append("throughput_utilization=1 (fsync) but fsyncs=0")
@@ -113,6 +150,11 @@ def verify_ior_signature(features, label_dims, job_name, verbose=False):
         if runtime > 0 and total_bytes / runtime < 1000:
             issues.append(
                 f"healthy=1 but throughput={total_bytes/runtime:.0f} B/s (very low)"
+            )
+        # Healthy IOR using MPI-IO should have MPI-IO bytes
+        if "mpiio" in job_name.lower() and (mpiio_w + mpiio_r) == 0:
+            issues.append(
+                f"healthy=1 with mpiio in name but ZERO MPI-IO bytes"
             )
 
     return issues
@@ -188,6 +230,21 @@ def verify_custom_signature(features, label_dims, job_name, verbose=False):
     return issues
 
 
+def _log_counters(features, label_str):
+    """Print key Darshan counters for debugging failed verifications."""
+    keys = [
+        "nprocs", "runtime_seconds",
+        "POSIX_BYTES_WRITTEN", "POSIX_BYTES_READ",
+        "MPIIO_BYTES_WRITTEN", "MPIIO_BYTES_READ",
+        "POSIX_READS", "POSIX_WRITES",
+        "POSIX_SEQ_READS", "POSIX_SEQ_WRITES",
+        "POSIX_FSYNCS", "POSIX_FILENOS", "MPIIO_FILENOS",
+        "POSIX_F_META_TIME", "POSIX_F_READ_TIME", "POSIX_F_WRITE_TIME",
+    ]
+    vals = {k: features.get(k, 0) or 0 for k in keys}
+    logger.info(f"    label={label_str} counters={vals}")
+
+
 def verify_all_logs(bench_type, log_dir, results_dir, verbose=False):
     """Verify ALL logs from a benchmark type."""
     logs = sorted(glob.glob(os.path.join(log_dir, "*.darshan")))
@@ -223,7 +280,15 @@ def verify_all_logs(bench_type, log_dir, results_dir, verbose=False):
             label_str = find_job_label(job_id, results_dir) if job_id else None
             label_dims = parse_label_string(label_str)
 
-            issues = checker(features, label_dims, basename, verbose)
+            # Warn if label not found (can't verify dimensions without it)
+            if label_str is None and bench_type in ("ior", "mdtest"):
+                issues = ["WARN: no SLURM output found for job_id=" + str(job_id)]
+                logger.warning(f"  {basename[:60]}... {issues[0]}")
+                # Still run basic checks (total_bytes, parse success)
+                basic_issues = checker(features, {}, basename, verbose)
+                issues.extend(basic_issues)
+            else:
+                issues = checker(features, label_dims, basename, verbose)
 
             if issues and issues[0].startswith("SKIP"):
                 skipped += 1
@@ -231,6 +296,8 @@ def verify_all_logs(bench_type, log_dir, results_dir, verbose=False):
 
             if issues:
                 logger.warning(f"  FAIL: {basename[:60]}... {'; '.join(issues)}")
+                if verbose:
+                    _log_counters(features, label_str)
                 failed += 1
                 failures.append((basename, issues, label_str))
             else:
@@ -239,10 +306,16 @@ def verify_all_logs(bench_type, log_dir, results_dir, verbose=False):
                     nprocs = features.get("nprocs", "?")
                     runtime = features.get("runtime_seconds", 0) or 0
                     bytes_w = features.get("POSIX_BYTES_WRITTEN", 0) or 0
+                    bytes_r = features.get("POSIX_BYTES_READ", 0) or 0
+                    fsyncs = features.get("POSIX_FSYNCS", 0) or 0
+                    seq_r = features.get("POSIX_SEQ_READS", 0) or 0
+                    seq_w = features.get("POSIX_SEQ_WRITES", 0) or 0
                     logger.info(
                         f"  OK: {basename[:50]}... "
                         f"label={label_str or 'unknown'} "
-                        f"nprocs={nprocs} runtime={runtime:.1f}s write={bytes_w:,.0f}B"
+                        f"nprocs={nprocs} runtime={runtime:.1f}s "
+                        f"write={bytes_w:,.0f}B read={bytes_r:,.0f}B "
+                        f"fsyncs={fsyncs} seq_r={seq_r} seq_w={seq_w}"
                     )
 
         except Exception as e:
