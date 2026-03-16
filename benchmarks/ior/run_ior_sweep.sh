@@ -190,6 +190,27 @@ mkdir -p "${BOTTLENECK_DIR}" "${HEALTHY_DIR}" 2>/dev/null || true
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 
+# --- Sequential submission: chain ALL jobs to prevent inode/disk overflow ---
+# Every job depends on the previous one via --dependency=afterany:PREV_JOB
+PREV_JOB=""
+
+submit_job() {
+    local script_path="$1"
+    if [ "${DRY_RUN}" = true ]; then
+        echo "  [DRY] ${script_path}"
+        return
+    fi
+    local JOB_ID
+    if [ -n "${PREV_JOB}" ]; then
+        JOB_ID=$(sbatch --dependency=afterany:${PREV_JOB} "${script_path}" 2>&1 | awk '{print $NF}')
+    else
+        JOB_ID=$(sbatch "${script_path}" 2>&1 | awk '{print $NF}')
+    fi
+    PREV_JOB="${JOB_ID}"
+    echo "  Submitted: ${script_path##*/} → Job ${JOB_ID} (after: ${PREV_JOB})"
+    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
+}
+
 # ===== SCENARIO: small_posix =====
 # Small I/O with POSIX (sub-4KB, no O_DIRECT)
 # Label: access_granularity = 1
@@ -204,13 +225,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "small_posix" ]; then
                     "small_posix" "access_granularity=1" \
                     "POSIX" "${tsize}" "64K" "100" "${nranks}" "${rep}" \
                     "-F -e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -230,13 +245,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "small_direct" ]; the
                     "small_direct" "access_granularity=1" \
                     "POSIX" "${tsize}" "1M" "100" "${nranks}" "${rep}" \
                     "-F -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -256,13 +265,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "misaligned" ]; then
                     "misaligned" "access_granularity=1" \
                     "POSIX" "${tsize}" "1M" "50" "${nranks}" "${rep}" \
                     "-F -e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -282,13 +285,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "random_posix" ]; the
                     "random_posix" "access_pattern=1" \
                     "POSIX" "${tsize}" "100M" "10" "${nranks}" "${rep}" \
                     "-z -e -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -308,13 +305,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "random_small" ]; the
                     "random_small" "access_pattern=1,access_granularity=1" \
                     "POSIX" "${tsize}" "10M" "50" "${nranks}" "${rep}" \
                     "-F -z -e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -333,13 +324,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interface_misuse_pos
                 "interface_posix_shared" "interface_choice=1" \
                 "POSIX" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-e -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -357,13 +342,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interface_misuse_mpi
                 "interface_mpiio_indep" "interface_choice=1" \
                 "MPIIO" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -381,13 +360,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "file_explosion" ]; t
                 "file_explosion" "file_strategy=1" \
                 "POSIX" "65536" "10M" "10" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -406,13 +379,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "fsync_per_write" ]; 
                     "fsync_per_write" "throughput_utilization=1" \
                     "POSIX" "${tsize}" "100M" "4" "${nranks}" "${rep}" \
                     "-F -e -C -w -r -Y" "${BOTTLENECK_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -421,12 +388,9 @@ fi
 # ===== SCENARIO: healthy_collective =====
 # MPI-IO collective, large transfers, full striping
 # Label: healthy = 1
-# NOTE: Healthy jobs write large data (up to 512 GB). Submit sequentially with
-# SLURM dependencies so each cleans up before the next starts.
-PREV_HEALTHY_JOB=""
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_collective" ]; then
     echo ""
-    echo "--- Scenario: healthy_collective (Healthy — sequential submission) ---"
+    echo "--- Scenario: healthy_collective (Healthy) ---"
     for nranks in 16 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -434,18 +398,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_collective" 
                 "healthy_collective" "healthy=1" \
                 "MPIIO" "4194304" "1G" "4" "${nranks}" "${rep}" \
                 "-c -e -C -w -r" "${HEALTHY_DIR}" "enabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                if [ -n "${PREV_HEALTHY_JOB}" ]; then
-                    JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                fi
-                PREV_HEALTHY_JOB="${JOB_ID}"
-                echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -455,7 +408,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_posix_fpp" ]; then
     echo ""
-    echo "--- Scenario: healthy_posix_fpp (Healthy — sequential submission) ---"
+    echo "--- Scenario: healthy_posix_fpp (Healthy) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -463,18 +416,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_posix_fpp" ]
                 "healthy_posix_fpp" "healthy=1" \
                 "POSIX" "4194304" "1G" "4" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                if [ -n "${PREV_HEALTHY_JOB}" ]; then
-                    JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                fi
-                PREV_HEALTHY_JOB="${JOB_ID}"
-                echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -484,7 +426,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_large_seq" ]; then
     echo ""
-    echo "--- Scenario: healthy_large_seq (Healthy — sequential submission) ---"
+    echo "--- Scenario: healthy_large_seq (Healthy) ---"
     for tsize in 1048576 4194304 16777216; do
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
@@ -493,18 +435,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_large_seq" ]
                     "healthy_large_seq" "healthy=1" \
                     "POSIX" "${tsize}" "1G" "4" "${nranks}" "${rep}" \
                     "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    if [ -n "${PREV_HEALTHY_JOB}" ]; then
-                        JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
-                    else
-                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    fi
-                    PREV_HEALTHY_JOB="${JOB_ID}"
-                    echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -526,13 +457,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_hard" ]; then
                 "io500_hard" "access_granularity=1,interface_choice=1" \
                 "POSIX" "47008" "47008" "1000" "${nranks}" "${rep}" \
                 "-e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -550,13 +475,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_easy" ]; then
                 "io500_easy" "healthy=1" \
                 "POSIX" "1048576" "1G" "4" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi
@@ -576,13 +495,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "e2e_posix_vs_mpiio" 
                 "e2e_posix_shared" "interface_choice=1" \
                 "POSIX" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
 
             # MPI-IO collective on shared file (good)
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -590,13 +503,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "e2e_posix_vs_mpiio" 
                 "e2e_mpiio_coll" "healthy=1" \
                 "MPIIO" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-c -e -C -w -r" "${HEALTHY_DIR}" "enabled")
-            if [ "${DRY_RUN}" = true ]; then
-                echo "  [DRY] ${script}"
-            else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
-                SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-            fi
+            submit_job "${script}"
         done
     done
 fi

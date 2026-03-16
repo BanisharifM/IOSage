@@ -147,12 +147,28 @@ TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 SKIPPED_JOBS=0
 
-# Inode safety: /work/hdd + /work/nvme share 2,805,000 inode quota
-# Current usage ~1.52M, headroom ~1.28M
+# Inode safety: /work/hdd + /work/nvme share ~2.55M inode quota
 # mdtest creates items*nranks temp files simultaneously
+# Chain ALL jobs sequentially so only one runs at a time
 INODE_HEADROOM=1280000
-# Track jobs that need sequential execution (near inode limit)
-PREV_LARGE_MDTEST_JOB=""
+PREV_JOB=""
+
+submit_job() {
+    local script_path="$1"
+    if [ "${DRY_RUN}" = true ]; then
+        echo "  [DRY] ${script_path}"
+        return
+    fi
+    local JOB_ID
+    if [ -n "${PREV_JOB}" ]; then
+        JOB_ID=$(sbatch --dependency=afterany:${PREV_JOB} "${script_path}" 2>&1 | awk '{print $NF}')
+    else
+        JOB_ID=$(sbatch "${script_path}" 2>&1 | awk '{print $NF}')
+    fi
+    PREV_JOB="${JOB_ID}"
+    echo "  Submitted: ${script_path##*/} → Job ${JOB_ID} (after: ${PREV_JOB})"
+    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
+}
 
 # ===== metadata_storm_shared =====
 # Label: metadata_intensity = 1
@@ -163,19 +179,11 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_share
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
-                # Zero-byte files: ALL time is metadata (create/stat/remove)
-                # Avoids small-I/O time diluting metadata fraction
                 script=$(generate_mdtest_job \
                     "meta_shared" "metadata_intensity=1" \
                     "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -201,13 +209,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_uniqu
                     "meta_unique" "metadata_intensity=1" \
                     "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F -u")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -227,29 +229,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
                 SKIPPED_JOBS=$((SKIPPED_JOBS + REPETITIONS))
                 continue
             fi
-            # Near-limit configs (>75% of headroom) run sequentially
-            local_threshold=$((INODE_HEADROOM * 3 / 4))
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
                     "meta_cross" "metadata_intensity=1" \
                     "${nranks}" "${items}" "64" "64" "${rep}" \
                     "-F -N ${nranks}")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    if [ ${local_files} -gt ${local_threshold} ] && [ -n "${PREV_LARGE_MDTEST_JOB}" ]; then
-                        JOB_ID=$(sbatch --dependency=afterany:${PREV_LARGE_MDTEST_JOB} "${script}" 2>&1 | awk '{print $NF}')
-                        echo "  Submitted: Job ${JOB_ID} (sequential after ${PREV_LARGE_MDTEST_JOB}, ${local_files} near inode limit)"
-                    else
-                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                        echo "  Submitted: Job ${JOB_ID}"
-                    fi
-                    if [ ${local_files} -gt ${local_threshold} ]; then
-                        PREV_LARGE_MDTEST_JOB="${JOB_ID}"
-                    fi
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -268,13 +254,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "file_per_process_exp
                     "fpp_explosion" "file_strategy=1" \
                     "${nranks}" "${items}" "4096" "4096" "${rep}" \
                     "-F -u")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -294,13 +274,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "deep_tree" ]; then
                         "deep_tree_d${depth}_b${branch}" "metadata_intensity=1" \
                         "${nranks}" "100" "0" "0" "${rep}" \
                         "-u -z ${depth} -b ${branch}")
-                    if [ "${DRY_RUN}" = true ]; then
-                        echo "  [DRY] ${script}"
-                    else
-                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                        echo "  Submitted: Job ${JOB_ID}"
-                        SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                    fi
+                    submit_job "${script}"
                 done
             done
         done
@@ -320,13 +294,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_metadata" ];
                     "healthy" "healthy=1" \
                     "${nranks}" "${items}" "1048576" "1048576" "${rep}" \
                     "-F -u")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -348,30 +316,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]
                 SKIPPED_JOBS=$((SKIPPED_JOBS + REPETITIONS))
                 continue
             fi
-            # Near-limit configs (>75% of headroom) run sequentially
-            local_threshold=$((INODE_HEADROOM * 3 / 4))
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
-                # IO500 mdtest-hard: shared dir (-S implied by no -u), 3901 bytes per file
                 script=$(generate_mdtest_job \
                     "io500_hard" "metadata_intensity=1" \
                     "${nranks}" "${items}" "3901" "3901" "${rep}" \
                     "-F")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    if [ ${local_files} -gt ${local_threshold} ] && [ -n "${PREV_LARGE_MDTEST_JOB}" ]; then
-                        JOB_ID=$(sbatch --dependency=afterany:${PREV_LARGE_MDTEST_JOB} "${script}" 2>&1 | awk '{print $NF}')
-                        echo "  Submitted: Job ${JOB_ID} (sequential after ${PREV_LARGE_MDTEST_JOB}, ${local_files} near inode limit)"
-                    else
-                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                        echo "  Submitted: Job ${JOB_ID}"
-                    fi
-                    if [ ${local_files} -gt ${local_threshold} ]; then
-                        PREV_LARGE_MDTEST_JOB="${JOB_ID}"
-                    fi
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
@@ -391,13 +342,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_easy" ]
                     "io500_easy" "healthy=1" \
                     "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F -u")
-                if [ "${DRY_RUN}" = true ]; then
-                    echo "  [DRY] ${script}"
-                else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
-                    SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
-                fi
+                submit_job "${script}"
             done
         done
     done
