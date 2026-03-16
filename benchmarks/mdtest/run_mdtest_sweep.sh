@@ -34,7 +34,7 @@ DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 REPETITIONS=3
 DRY_RUN=false
 SCENARIO_FILTER=""
-SLURM_WALLTIME="02:00:00"
+SLURM_WALLTIME="08:00:00"
 SLURM_PARTITION="cpu"
 SLURM_ACCOUNT="bdau-delta-cpu"
 
@@ -102,6 +102,10 @@ else
     exit 1
 fi
 
+# Ensure test files are cleaned up on ANY exit (including failure/quota)
+cleanup() { rm -rf "${test_dir}" 2>/dev/null || true; }
+trap cleanup EXIT
+
 # Create test directory (single-stripe for metadata focus)
 mkdir -p "${test_dir}"
 
@@ -126,8 +130,7 @@ else
     echo "WARNING: No Darshan log found"
 fi
 
-# Cleanup test files
-rm -rf "${test_dir}" 2>/dev/null || true
+# Cleanup handled by trap EXIT
 SLURM_EOF
 
     echo "${script_path}"
@@ -142,6 +145,14 @@ echo "============================================================"
 mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" "${MDTEST_DIR}" 2>/dev/null || true
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
+SKIPPED_JOBS=0
+
+# Inode safety: /work/hdd + /work/nvme share 2,805,000 inode quota
+# Current usage ~1.52M, headroom ~1.28M
+# mdtest creates items*nranks temp files simultaneously
+INODE_HEADROOM=1280000
+# Track jobs that need sequential execution (near inode limit)
+PREV_LARGE_MDTEST_JOB=""
 
 # ===== metadata_storm_shared =====
 # Label: metadata_intensity = 1
@@ -152,9 +163,11 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_share
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
+                # Zero-byte files: ALL time is metadata (create/stat/remove)
+                # Avoids small-I/O time diluting metadata fraction
                 script=$(generate_mdtest_job \
                     "meta_shared" "metadata_intensity=1" \
-                    "${nranks}" "${items}" "100" "100" "${rep}" \
+                    "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F")
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
@@ -175,6 +188,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_uniqu
     echo "--- Scenario: metadata_storm_unique ---"
     for items in 5000 10000 50000; do
         for nranks in 4 16 64; do
+            # Inode safety: skip configs where items*nranks > headroom
+            local_files=$((items * nranks))
+            if [ ${local_files} -gt ${INODE_HEADROOM} ]; then
+                echo "  [SKIP] items=${items} x nranks=${nranks} = ${local_files} files > ${INODE_HEADROOM} inode headroom"
+                SKIPPED_JOBS=$((SKIPPED_JOBS + REPETITIONS))
+                continue
+            fi
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
@@ -200,6 +220,15 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
     echo "--- Scenario: metadata_cross_node ---"
     for items in 5000 10000; do
         for nranks in 32 64 128; do
+            # Inode safety check
+            local_files=$((items * nranks))
+            if [ ${local_files} -gt ${INODE_HEADROOM} ]; then
+                echo "  [SKIP] items=${items} x nranks=${nranks} = ${local_files} files > ${INODE_HEADROOM} inode headroom"
+                SKIPPED_JOBS=$((SKIPPED_JOBS + REPETITIONS))
+                continue
+            fi
+            # Near-limit configs (>75% of headroom) run sequentially
+            local_threshold=$((INODE_HEADROOM * 3 / 4))
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
@@ -209,8 +238,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
                 else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
+                    if [ ${local_files} -gt ${local_threshold} ] && [ -n "${PREV_LARGE_MDTEST_JOB}" ]; then
+                        JOB_ID=$(sbatch --dependency=afterany:${PREV_LARGE_MDTEST_JOB} "${script}" 2>&1 | awk '{print $NF}')
+                        echo "  Submitted: Job ${JOB_ID} (sequential after ${PREV_LARGE_MDTEST_JOB}, ${local_files} near inode limit)"
+                    else
+                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
+                        echo "  Submitted: Job ${JOB_ID}"
+                    fi
+                    if [ ${local_files} -gt ${local_threshold} ]; then
+                        PREV_LARGE_MDTEST_JOB="${JOB_ID}"
+                    fi
                     SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
                 fi
             done
@@ -304,6 +341,15 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]
     echo "--- Scenario: io500_mdtest_hard (IO500 standardized) ---"
     for items in 1000 5000 10000; do
         for nranks in 16 64 256; do
+            # Inode safety check
+            local_files=$((items * nranks))
+            if [ ${local_files} -gt ${INODE_HEADROOM} ]; then
+                echo "  [SKIP] items=${items} x nranks=${nranks} = ${local_files} files > ${INODE_HEADROOM} inode headroom"
+                SKIPPED_JOBS=$((SKIPPED_JOBS + REPETITIONS))
+                continue
+            fi
+            # Near-limit configs (>75% of headroom) run sequentially
+            local_threshold=$((INODE_HEADROOM * 3 / 4))
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 # IO500 mdtest-hard: shared dir (-S implied by no -u), 3901 bytes per file
@@ -314,8 +360,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
                 else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: Job ${JOB_ID}"
+                    if [ ${local_files} -gt ${local_threshold} ] && [ -n "${PREV_LARGE_MDTEST_JOB}" ]; then
+                        JOB_ID=$(sbatch --dependency=afterany:${PREV_LARGE_MDTEST_JOB} "${script}" 2>&1 | awk '{print $NF}')
+                        echo "  Submitted: Job ${JOB_ID} (sequential after ${PREV_LARGE_MDTEST_JOB}, ${local_files} near inode limit)"
+                    else
+                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
+                        echo "  Submitted: Job ${JOB_ID}"
+                    fi
+                    if [ ${local_files} -gt ${local_threshold} ]; then
+                        PREV_LARGE_MDTEST_JOB="${JOB_ID}"
+                    fi
                     SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
                 fi
             done
@@ -353,6 +407,7 @@ echo ""
 echo "============================================================"
 echo "mdtest Sweep Summary"
 echo "Total jobs: ${TOTAL_JOBS}"
+echo "Skipped (inode limit): ${SKIPPED_JOBS}"
 if [ "${DRY_RUN}" = true ]; then
     echo "Mode: DRY RUN"
 else

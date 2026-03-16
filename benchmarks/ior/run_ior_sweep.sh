@@ -35,7 +35,7 @@ DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 REPETITIONS=3
 DRY_RUN=false
 SCENARIO_FILTER=""
-SLURM_WALLTIME="04:00:00"
+SLURM_WALLTIME="08:00:00"
 SLURM_PARTITION="cpu"
 SLURM_ACCOUNT="bdau-delta-cpu"
 
@@ -95,6 +95,10 @@ generate_job_script() {
 
 # --- Environment ---
 module load ior/3.3.0-gcc13.3.1
+
+# Ensure IOR data files are cleaned up on ANY exit (including failure/quota)
+cleanup() { rm -f ${ior_output}* 2>/dev/null || true; }
+trap cleanup EXIT
 
 # Darshan log directory
 export DARSHAN_LOGPATH="${LOG_DIR}"
@@ -417,9 +421,12 @@ fi
 # ===== SCENARIO: healthy_collective =====
 # MPI-IO collective, large transfers, full striping
 # Label: healthy = 1
+# NOTE: Healthy jobs write large data (up to 512 GB). Submit sequentially with
+# SLURM dependencies so each cleans up before the next starts.
+PREV_HEALTHY_JOB=""
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_collective" ]; then
     echo ""
-    echo "--- Scenario: healthy_collective (Healthy) ---"
+    echo "--- Scenario: healthy_collective (Healthy — sequential submission) ---"
     for nranks in 16 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -430,8 +437,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_collective" 
             if [ "${DRY_RUN}" = true ]; then
                 echo "  [DRY] ${script}"
             else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
+                if [ -n "${PREV_HEALTHY_JOB}" ]; then
+                    JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
+                else
+                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
+                fi
+                PREV_HEALTHY_JOB="${JOB_ID}"
+                echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
                 SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
             fi
         done
@@ -443,7 +455,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_posix_fpp" ]; then
     echo ""
-    echo "--- Scenario: healthy_posix_fpp (Healthy) ---"
+    echo "--- Scenario: healthy_posix_fpp (Healthy — sequential submission) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -454,8 +466,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_posix_fpp" ]
             if [ "${DRY_RUN}" = true ]; then
                 echo "  [DRY] ${script}"
             else
-                JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                echo "  Submitted: ${script} → Job ${JOB_ID}"
+                if [ -n "${PREV_HEALTHY_JOB}" ]; then
+                    JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
+                else
+                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
+                fi
+                PREV_HEALTHY_JOB="${JOB_ID}"
+                echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
                 SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
             fi
         done
@@ -467,7 +484,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_large_seq" ]; then
     echo ""
-    echo "--- Scenario: healthy_large_seq (Healthy) ---"
+    echo "--- Scenario: healthy_large_seq (Healthy — sequential submission) ---"
     for tsize in 1048576 4194304 16777216; do
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
@@ -479,8 +496,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_large_seq" ]
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
                 else
-                    JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
-                    echo "  Submitted: ${script} → Job ${JOB_ID}"
+                    if [ -n "${PREV_HEALTHY_JOB}" ]; then
+                        JOB_ID=$(sbatch --dependency=afterany:${PREV_HEALTHY_JOB} "${script}" 2>&1 | awk '{print $NF}')
+                    else
+                        JOB_ID=$(sbatch "${script}" 2>&1 | awk '{print $NF}')
+                    fi
+                    PREV_HEALTHY_JOB="${JOB_ID}"
+                    echo "  Submitted: ${script} → Job ${JOB_ID} (dep: ${PREV_HEALTHY_JOB})"
                     SUBMITTED_JOBS=$((SUBMITTED_JOBS + 1))
                 fi
             done

@@ -23,11 +23,12 @@ LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/dlio"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/dlio"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
+DLIO_BIN="/projects/bdau/envs/sc2026/bin/dlio_benchmark"
 
 REPETITIONS=3
 DRY_RUN=false
 SCENARIO_FILTER=""
-SLURM_WALLTIME="04:00:00"
+SLURM_WALLTIME="08:00:00"
 SLURM_PARTITION="cpu"
 SLURM_ACCOUNT="bdau-delta-cpu"
 
@@ -79,9 +80,9 @@ echo "Data dir: ${data_dir}"
 echo "Date:     \$(date)"
 echo "============================================================"
 
-# Step 1: Generate data
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-    ${PYTHON_BIN} -m dlio_benchmark \\
+# Step 1: Generate data (no Darshan needed for data gen)
+srun --export=ALL \\
+    ${DLIO_BIN} \\
     workload=unet3d \\
     ++workload.workflow.generate_data=True \\
     ++workload.workflow.train=False \\
@@ -92,7 +93,7 @@ echo "Data generation complete at \$(date)"
 
 # Step 2: Run training (this is what generates the Darshan log we want)
 srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-    ${PYTHON_BIN} -m dlio_benchmark \\
+    ${DLIO_BIN} \\
     workload=unet3d \\
     ++workload.workflow.generate_data=False \\
     ++workload.workflow.train=True \\
