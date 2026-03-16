@@ -574,8 +574,8 @@ def _log_summary(result):
                 conf.mean(), conf.median(), conf.min(), conf.max())
 
 
-# Backward compatibility alias
-generate_silver_labels = generate_heuristic_labels
+# NOTE: Legacy alias 'generate_silver_labels' removed 2026-03-15.
+# Use generate_heuristic_labels() directly.
 
 
 def validate_against_drishti_cli(heuristic_labels_path, sample_logs_dir,
@@ -604,7 +604,7 @@ def validate_against_drishti_cli(heuristic_labels_path, sample_logs_dir,
     import subprocess
     import re
 
-    silver = pd.read_parquet(heuristic_labels_path)
+    heuristic_df = pd.read_parquet(heuristic_labels_path)
     sample_dir = Path(sample_logs_dir)
     logs = sorted(sample_dir.rglob('*.darshan'))
 
@@ -639,12 +639,12 @@ def validate_against_drishti_cli(heuristic_labels_path, sample_logs_dir,
 
             # Find matching jobid in our labels
             jobid = log_path.stem.split('_')[0]  # Extract jobid from filename
-            our_row = silver[silver['_jobid'].astype(str).str.contains(jobid)]
+            our_row = heuristic_df[heuristic_df['_jobid'].astype(str).str.contains(jobid)]
             if our_row.empty:
                 continue
 
             our_codes = set()
-            for col in silver.columns:
+            for col in heuristic_df.columns:
                 if col.startswith('drishti_') and col != 'drishti_confidence':
                     code = col.replace('drishti_', '')
                     if our_row.iloc[0][col] == 1:

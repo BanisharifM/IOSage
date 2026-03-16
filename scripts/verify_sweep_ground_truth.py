@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Verify that benchmark Darshan logs match expected gold labels.
+Verify that benchmark Darshan logs match expected ground-truth labels.
 
 For each benchmark type, parse a sample of Darshan logs and check:
 1. The log parses successfully
 2. Key Darshan counters match the expected bottleneck signature
 3. The label encoded in the job name is consistent with I/O patterns
 
-Gold Label Mapping:
--------------------
+Ground-Truth Label Mapping (by construction):
+----------------------------------------------
 IOR:
   small_posix/small_mpiio → access_granularity=1 (transfer_size << 1MB)
   random_posix             → access_pattern=1 (random offsets)
@@ -51,7 +51,7 @@ from src.data.feature_extraction import extract_raw_features
 
 
 def infer_label_from_jobname(log_path):
-    """Extract the gold label from the Darshan log filename.
+    """Extract the ground-truth label from the Darshan log filename.
 
     Darshan log names: <user>_<exe>_id<jobid>-<hash>_<date>-<hash>_<rank>.darshan
     The SLURM job name is embedded in the output file names, not the Darshan log.
@@ -175,7 +175,7 @@ def verify_benchmark_type(bench_type, log_dir, sample_size=10, seed=42):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Verify benchmark gold labels")
+    parser = argparse.ArgumentParser(description="Verify benchmark ground-truth labels")
     parser.add_argument("--project-dir", default="/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
     parser.add_argument("--sample-size", type=int, default=10,
                         help="Number of logs to sample per benchmark type")
