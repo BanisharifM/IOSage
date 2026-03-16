@@ -258,12 +258,14 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "misaligned" ]; then
     echo ""
     echo "--- Scenario: misaligned (Access Granularity = BAD, non-aligned) ---"
     for tsize in 1000 1500 3000 7000; do
+        # block_size must be a multiple of transfer_size (IOR requirement)
+        bsize=$(( tsize * 1000 ))
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_job_script \
                     "misaligned" "access_granularity=1" \
-                    "POSIX" "${tsize}" "1M" "50" "${nranks}" "${rep}" \
+                    "POSIX" "${tsize}" "${bsize}" "50" "${nranks}" "${rep}" \
                     "-F -e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
                 submit_job "${script}"
             done
