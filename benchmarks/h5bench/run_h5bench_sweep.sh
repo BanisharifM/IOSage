@@ -197,7 +197,7 @@ echo ""
 
 # --- Run h5bench write with Darshan ---
 echo "=== h5bench WRITE phase ==="
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${H5BENCH_BUILD}/h5bench_write ${config_path}.write ${output_dir}/h5bench_output.h5
 
 WRITE_RC=\$?
@@ -209,7 +209,7 @@ echo "Write completed at \$(date), exit code: \${WRITE_RC}"
 if [ -f "${output_dir}/h5bench_output.h5" ]; then
     echo ""
     echo "=== h5bench READ phase ==="
-    srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+    srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
         ${H5BENCH_BUILD}/h5bench_read ${config_path}.read ${output_dir}/h5bench_output.h5
 
     READ_RC=\$?
