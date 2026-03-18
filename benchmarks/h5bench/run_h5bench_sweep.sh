@@ -299,12 +299,15 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small" ]; then
 fi
 
 # ===== SCENARIO: interleaved_access =====
-# Interleaved memory+file pattern — access_pattern bottleneck
-# Non-contiguous access forces HDF5 to do strided I/O
+# HDF5 compound datatype (array-of-structs layout), collective I/O, large data.
+# Research finding: h5bench INTERLEAVED = HDF5 compound type, NOT random POSIX access.
+# HDF5 internal pipeline converts compound writes to sequential POSIX I/O (Darshan
+# confirms 92-94% sequential). Relabeled as healthy — large collective sequential I/O.
+# Ref: Bez et al. (ACM CSUR 2023) on abstraction gap between I/O stack levels.
 # 262144 elements × 8 bytes = 2 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interleaved_access" ]; then
     echo ""
-    echo "--- Scenario: interleaved_access (Access Pattern = BAD) ---"
+    echo "--- Scenario: interleaved_access (Healthy — compound type, collective, sequential POSIX) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -312,7 +315,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interleaved_access" 
             generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
                 "YES" "YES" "INTERLEAVED" "INTERLEAVED" "262144" "10"
             script=$(generate_job_script \
-                "interleaved_access" "access_pattern=1" \
+                "interleaved_access" "healthy=1" \
                 "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -384,12 +387,13 @@ fi
 # =========================================================================
 
 # ===== SCENARIO: indep_small_interleaved =====
-# Independent + interleaved + small data: 3 bottlenecks
-# interface_choice + access_pattern + access_granularity
+# Independent + compound type + small data: 2 bottlenecks
+# interface_choice + access_granularity (access_pattern removed — HDF5 compound
+# type produces sequential POSIX I/O, see interleaved_access comment above)
 # 256 elements × 8 bytes = 2 KB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interleaved" ]; then
     echo ""
-    echo "--- Scenario: indep_small_interleaved (Interface + Pattern + Granularity = BAD) ---"
+    echo "--- Scenario: indep_small_interleaved (Interface + Granularity = BAD) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -397,7 +401,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interlea
             generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "256" "20"
             script=$(generate_job_script \
-                "indep_small_interleaved" "access_granularity=1,interface_choice=1,access_pattern=1" \
+                "indep_small_interleaved" "access_granularity=1,interface_choice=1" \
                 "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -405,12 +409,13 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interlea
 fi
 
 # ===== SCENARIO: indep_interleaved =====
-# Independent + interleaved: 2 bottlenecks
-# interface_choice + access_pattern (but large enough data to not be granularity issue)
+# Independent + compound type: 1 bottleneck
+# interface_choice only (access_pattern removed — HDF5 compound type produces
+# sequential POSIX I/O). Large enough data to not be granularity issue.
 # 524288 elements × 8 bytes = 4 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]; then
     echo ""
-    echo "--- Scenario: indep_interleaved (Interface + Pattern = BAD) ---"
+    echo "--- Scenario: indep_interleaved (Interface Choice = BAD) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -418,7 +423,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]
             generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "524288" "10"
             script=$(generate_job_script \
-                "indep_interleaved" "interface_choice=1,access_pattern=1" \
+                "indep_interleaved" "interface_choice=1" \
                 "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -461,13 +466,13 @@ echo ""
 echo "Scenario breakdown:"
 echo "  Single-label:"
 echo "    indep_small              → interface_choice=1"
-echo "    interleaved_access       → access_pattern=1"
+echo "    interleaved_access       → healthy=1 (compound type → seq POSIX)"
 echo "    collective_small         → access_granularity=1"
 echo "    collective_large_healthy → healthy=1"
 echo "    indep_large_healthy      → healthy=1"
 echo "  Multi-label:"
-echo "    indep_small_interleaved  → access_granularity=1, interface_choice=1, access_pattern=1"
-echo "    indep_interleaved        → interface_choice=1, access_pattern=1"
+echo "    indep_small_interleaved  → access_granularity=1, interface_choice=1"
+echo "    indep_interleaved        → interface_choice=1"
 echo "    indep_small_single_ost   → access_granularity=1, interface_choice=1, throughput_utilization=1"
 echo ""
 echo "After completion, run feature extraction:"

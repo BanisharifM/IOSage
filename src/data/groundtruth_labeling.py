@@ -83,13 +83,16 @@ BENCHMARK_LABEL_MAP = {
     'ior_e2e_posix_shared_*': {'interface_choice': 1},
     'ior_e2e_mpiio_coll_*': {'healthy': 1},
     # h5bench scenarios
+    # Note: INTERLEAVED in h5bench = HDF5 compound datatype (AOS layout), NOT random
+    # POSIX access. HDF5 internal pipeline converts to sequential POSIX writes.
+    # Ref: Bez et al. (ACM CSUR 2023) on I/O stack abstraction gap.
     'h5b_indep_small_n*': {'interface_choice': 1},
-    'h5b_interleaved_access_*': {'access_pattern': 1},
+    'h5b_interleaved_access_*': {'healthy': 1},
     'h5b_collective_small_*': {'access_granularity': 1},
     'h5b_collective_large_healthy_*': {'healthy': 1},
     'h5b_indep_large_healthy_*': {'healthy': 1},
-    'h5b_indep_small_interleaved_*': {'access_granularity': 1, 'interface_choice': 1, 'access_pattern': 1},
-    'h5b_indep_interleaved_*': {'interface_choice': 1, 'access_pattern': 1},
+    'h5b_indep_small_interleaved_*': {'access_granularity': 1, 'interface_choice': 1},
+    'h5b_indep_interleaved_*': {'interface_choice': 1},
     'h5b_indep_small_single_ost_*': {'access_granularity': 1, 'interface_choice': 1, 'throughput_utilization': 1},
     # HACC-IO scenarios
     'hacc_posix_shared_large_*': {'interface_choice': 1},
