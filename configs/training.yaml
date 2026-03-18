@@ -1,0 +1,226 @@
+# =============================================================================
+# ML Training Configuration for SC 2026
+# =============================================================================
+# Multi-label I/O bottleneck classification
+# Binary Relevance with per-label XGBoost/LightGBM
+# Ref: Grinsztajn et al. (NeurIPS 2022), TabZilla (NeurIPS 2023)
+# =============================================================================
+
+# --- Paths ---
+paths:
+  # Production data (heuristic labels)
+  engineered_features: data/processed/engineered_features.parquet
+  heuristic_labels: data/processed/heuristic_labels.parquet
+  normalized_features: data/processed/normalized_features.parquet
+  # Ground-truth data (benchmark labels)
+  ground_truth_features: data/processed/ground_truth_features.parquet
+  ground_truth_labels: data/processed/ground_truth_labels.parquet
+  # Splits
+  splits: data/splits/train_val_test_indices.npz
+  # Output
+  model_dir: models/
+  results_dir: results/
+
+# --- Label dimensions ---
+dimensions:
+  - access_granularity
+  - metadata_intensity
+  - parallelism_efficiency
+  - access_pattern
+  - interface_choice
+  - file_strategy
+  - throughput_utilization
+  - healthy
+
+# --- Features to exclude (from EDA, Stage 4) ---
+# 29 features dropped: 18 constant, 8 timestamp, 3 categorical
+exclude_features:
+  # Constant after cleaning (zero variance)
+  - POSIX_MMAPS
+  - POSIX_FDSYNCS
+  - POSIX_MEM_ALIGNMENT
+  - POSIX_F_VARIANCE_RANK_TIME
+  - POSIX_F_VARIANCE_RANK_BYTES
+  - MPIIO_F_VARIANCE_RANK_TIME
+  - MPIIO_F_VARIANCE_RANK_BYTES
+  - MPIIO_SPLIT_READS
+  - MPIIO_SPLIT_WRITES
+  - MPIIO_NB_READS
+  - MPIIO_NB_WRITES
+  - STDIO_F_VARIANCE_RANK_TIME
+  - STDIO_F_VARIANCE_RANK_BYTES
+  - has_posix      # always 1 after cleaning
+  - has_hdf5       # never present
+  - has_pnetcdf    # never present
+  - has_heatmap    # always present
+  - rank_bytes_cv  # constant (derived from VARIANCE which is zeroed)
+  # Timestamps (redundant with io_duration, extreme scale)
+  - POSIX_F_OPEN_START_TIMESTAMP
+  - POSIX_F_OPEN_END_TIMESTAMP
+  - POSIX_F_READ_START_TIMESTAMP
+  - POSIX_F_READ_END_TIMESTAMP
+  - POSIX_F_WRITE_START_TIMESTAMP
+  - POSIX_F_WRITE_END_TIMESTAMP
+  - POSIX_F_CLOSE_START_TIMESTAMP
+  - POSIX_F_CLOSE_END_TIMESTAMP
+  # Categorical (not continuous features)
+  - POSIX_RENAMED_FROM
+  - POSIX_MODE
+  - POSIX_FILE_ALIGNMENT
+  # Info columns (not features)
+  - _jobid
+  - _uid
+  - _start_time
+  - _end_time
+  - _log_version
+  - _modules
+  - _lustre_mount
+  - _uses_lustre
+
+# --- Multi-label strategy ---
+multi_label:
+  # Binary Relevance (BR): one model per label, independent
+  # Classifier Chains (CC): sequential, label predictions as features
+  # Ensemble Classifier Chains (ECC): multiple CC with random orders
+  strategy: binary_relevance   # primary
+  ablation_strategies:
+    - classifier_chains
+    - ensemble_classifier_chains
+
+# --- Model configurations ---
+models:
+  xgboost:
+    enabled: true
+    primary: true
+    params:
+      objective: binary:logistic
+      tree_method: hist
+      eval_metric: logloss
+      n_estimators: 500
+      max_depth: 6
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      reg_alpha: 0.1
+      reg_lambda: 1.0
+      min_child_weight: 5
+      gamma: 0.1
+      # scale_pos_weight: computed per-label automatically
+    seed: 42
+
+  lightgbm:
+    enabled: true
+    params:
+      objective: binary
+      metric: binary_logloss
+      n_estimators: 500
+      num_leaves: 63
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      reg_alpha: 0.1
+      reg_lambda: 1.0
+      min_child_samples: 20
+      verbose: -1
+    seed: 42
+
+  random_forest:
+    enabled: true
+    params:
+      n_estimators: 500
+      max_depth: 15
+      min_samples_leaf: 5
+      max_features: sqrt
+      class_weight: balanced
+      n_jobs: -1
+    seed: 42
+
+  mlp:
+    enabled: true
+    params:
+      hidden_layers: [256, 128, 64]
+      dropout: 0.3
+      learning_rate: 0.001
+      batch_size: 512
+      epochs: 100
+      early_stopping_patience: 10
+      # Asymmetric Loss (Ben-Baruch et al. ICCV 2021)
+      loss: asymmetric
+      asl_gamma_neg: 4
+      asl_gamma_pos: 1
+      asl_clip: 0.05
+    seed: 42
+
+# --- Imbalance handling ---
+imbalance:
+  # Per-label scale_pos_weight for tree models
+  # Computed automatically: count(neg) / count(pos), capped at max_weight
+  max_weight: 100.0
+  # For MLP: Asymmetric Loss (see mlp.params above)
+
+# --- Hyperparameter tuning ---
+tuning:
+  enabled: true
+  framework: optuna
+  n_trials: 200
+  # Optimize Macro-F1 to ensure rare labels are not ignored
+  optimize_metric: macro_f1
+  timeout_seconds: 7200  # 2 hours max per model
+  # Search ranges (override model defaults during tuning)
+  xgboost_ranges:
+    n_estimators: [100, 1000]
+    max_depth: [3, 10]
+    learning_rate: [0.001, 0.3]  # log scale
+    subsample: [0.5, 1.0]
+    colsample_bytree: [0.5, 1.0]
+    reg_alpha: [1.0e-8, 10.0]  # log scale
+    reg_lambda: [1.0e-8, 10.0]  # log scale
+    min_child_weight: [1, 10]
+    gamma: [1.0e-8, 1.0]  # log scale
+
+# --- Evaluation ---
+evaluation:
+  # Primary metrics
+  primary_metrics:
+    - micro_f1
+    - macro_f1
+  # Secondary metrics
+  secondary_metrics:
+    - hamming_loss
+    - per_label_f1
+    - per_label_precision
+    - per_label_recall
+  # Statistical significance
+  bootstrap:
+    n_resamples: 10000
+    confidence_level: 0.95
+    seed: 42
+
+# --- SHAP ---
+shap:
+  enabled: true
+  # Number of test samples for SHAP computation
+  max_samples: 1000
+  # Plots to generate
+  plots:
+    - feature_label_heatmap    # mean |SHAP| (features x labels)
+    - per_label_beeswarm       # beeswarm for each label
+    - global_bar               # stacked bar chart
+
+# --- Training data strategy ---
+training_data:
+  # Phase 1: Train on heuristic labels only (fastest to get baseline)
+  # Phase 2: Train on heuristic + ground-truth (combined)
+  # Phase 3: Train on Cleanlab-denoised heuristic + ground-truth
+  phase: 1
+  # Source-aware weighting
+  ground_truth_weight: 1.0
+  heuristic_weight: 0.8
+  # Cleanlab noise correction (requires cleanlab package)
+  cleanlab:
+    enabled: false  # Enable after installing cleanlab
+    strategy: prune  # 'prune' or 'reweight'
+
+# --- Reproducibility ---
+seed: 42
+deterministic: true
