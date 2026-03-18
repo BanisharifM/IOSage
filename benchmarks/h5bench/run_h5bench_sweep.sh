@@ -86,7 +86,6 @@ DIM_1=${dim1}
 DIM_2=1
 DIM_3=1
 CSV_FILE=output.csv
-MODE=SYNC
 CONFIG_EOF
 
     # Read config (used by h5bench_read)
@@ -104,7 +103,6 @@ DIM_1=${dim1}
 DIM_2=1
 DIM_3=1
 CSV_FILE=output.csv
-MODE=SYNC
 CONFIG_EOF
 }
 
