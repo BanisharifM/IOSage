@@ -82,6 +82,25 @@ BENCHMARK_LABEL_MAP = {
     # E2E-style API comparison
     'ior_e2e_posix_shared_*': {'interface_choice': 1},
     'ior_e2e_mpiio_coll_*': {'healthy': 1},
+    # h5bench scenarios
+    'h5b_indep_small_n*': {'interface_choice': 1},
+    'h5b_interleaved_access_*': {'access_pattern': 1},
+    'h5b_collective_small_*': {'access_granularity': 1},
+    'h5b_collective_large_healthy_*': {'healthy': 1},
+    'h5b_indep_large_healthy_*': {'healthy': 1},
+    'h5b_indep_small_interleaved_*': {'access_granularity': 1, 'interface_choice': 1, 'access_pattern': 1},
+    'h5b_indep_interleaved_*': {'interface_choice': 1, 'access_pattern': 1},
+    'h5b_indep_small_single_ost_*': {'access_granularity': 1, 'interface_choice': 1, 'throughput_utilization': 1},
+    # HACC-IO scenarios
+    'hacc_posix_shared_large_*': {'interface_choice': 1},
+    'hacc_fpp_many_ranks_*': {'file_strategy': 1},
+    'hacc_posix_shared_single_ost_*': {'throughput_utilization': 1},
+    'hacc_mpiio_collective_healthy_*': {'healthy': 1},
+    'hacc_fpp_healthy_*': {'healthy': 1},
+    'hacc_posix_shared_small_p*': {'access_granularity': 1, 'interface_choice': 1},
+    'hacc_posix_shared_small_1ost_*': {'access_granularity': 1, 'interface_choice': 1, 'throughput_utilization': 1},
+    'hacc_fpp_small_many_*': {'file_strategy': 1, 'access_granularity': 1},
+    'hacc_posix_shared_many_single_ost_*': {'interface_choice': 1, 'throughput_utilization': 1},
 }
 
 
@@ -291,13 +310,18 @@ def process_benchmark_logs(log_dir, output_path, output_format='csv'):
 def _extract_benchmark_type(filename):
     """Extract benchmark type from filename."""
     name = filename.lower()
-    if name.startswith('ior_') or 'ior' in name:
-        return 'ior'
-    elif name.startswith('mdtest_') or 'mdtest' in name:
+    # Order matters: check specific patterns before generic ones
+    if 'hacc_io' in name:
+        return 'hacc_io'
+    elif 'h5bench' in name or 'h5b_' in name:
+        return 'h5bench'
+    elif 'mdtest' in name:
         return 'mdtest'
-    elif name.startswith('dlio_') or 'dlio' in name:
+    elif name.startswith('ior_') or '_ior_' in name or '_ior ' in name:
+        return 'ior'
+    elif 'dlio' in name:
         return 'dlio'
-    elif name.startswith('custom_') or 'imbalance' in name or 'balanced' in name:
+    elif 'custom_' in name or 'imbalance' in name or 'balanced' in name:
         return 'custom'
     return 'unknown'
 

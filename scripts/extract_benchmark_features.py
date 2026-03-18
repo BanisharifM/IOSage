@@ -69,7 +69,7 @@ DIMENSION_NAMES = [
 PER_RANK_BENCHMARKS = {"dlio", "custom"}
 
 # Benchmark types that produce aggregated logs (compiled MPI)
-AGGREGATED_BENCHMARKS = {"ior", "mdtest"}
+AGGREGATED_BENCHMARKS = {"ior", "mdtest", "h5bench", "hacc_io"}
 
 
 # ---------------------------------------------------------------------------
@@ -306,7 +306,7 @@ def main():
     parser.add_argument(
         "--bench-type",
         type=str,
-        choices=["all", "ior", "mdtest", "dlio", "custom"],
+        choices=["all", "ior", "mdtest", "dlio", "custom", "h5bench", "hacc_io"],
         default="all",
         help="Which benchmark type to process",
     )
@@ -318,7 +318,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     bench_types = (
-        ["ior", "mdtest", "dlio", "custom"]
+        ["ior", "mdtest", "dlio", "custom", "h5bench", "hacc_io"]
         if args.bench_type == "all"
         else [args.bench_type]
     )
