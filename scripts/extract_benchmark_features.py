@@ -38,6 +38,7 @@ from src.data.feature_extraction import (
     get_raw_feature_names,
     get_info_columns,
 )
+from src.data.preprocessing import stage3_engineer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -357,20 +358,36 @@ def main():
     features_df = pd.DataFrame(all_features)
     labels_df = pd.DataFrame(all_labels)
 
+    # Apply feature engineering (same 39 derived features as production pipeline)
+    # This is critical: the ML model trains on engineered features (195 cols),
+    # so the GT test set must have the same derived features.
+    extra_cols_list = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
+    extra_data = {col: features_df[col] for col in extra_cols_list if col in features_df.columns}
+    try:
+        features_df = stage3_engineer(features_df)
+        logger.info("Applied feature engineering: %d columns", len(features_df.columns))
+    except Exception as e:
+        logger.warning("Feature engineering failed (%s), using raw features only", e)
+    # Restore extra columns if they were dropped
+    for col, data in extra_data.items():
+        if col not in features_df.columns:
+            features_df[col] = data.values
+
     # Ensure consistent column order matching production pipeline
     raw_feature_cols = get_raw_feature_names()
     info_cols = get_info_columns()
     extra_cols = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
 
-    # Reorder feature columns: raw features + info + extras
+    # Reorder: all feature columns (raw + derived) + info + extras
     ordered_cols = []
-    for col in raw_feature_cols + info_cols + extra_cols:
+    for col in features_df.columns:
+        if col not in extra_cols and col not in info_cols:
+            ordered_cols.append(col)
+    for col in info_cols:
         if col in features_df.columns:
             ordered_cols.append(col)
-
-    # Add any columns we missed (shouldn't happen, but safety)
-    for col in features_df.columns:
-        if col not in ordered_cols:
+    for col in extra_cols:
+        if col in features_df.columns:
             ordered_cols.append(col)
 
     features_df = features_df[ordered_cols]
