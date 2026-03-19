@@ -4,9 +4,9 @@ Preprocessing Pipeline Runner
 Orchestrates Stages 2-5 of the preprocessing pipeline on raw_features.parquet.
 
 Stages:
-  2. Cleaning        -> data/processed/cleaned_features.parquet
-  3. Engineering      -> data/processed/engineered_features.parquet
-  4. EDA / Statistics -> data/processed/eda_stats.parquet + eda_report.json
+  2. Cleaning        -> data/processed/production/cleaned_features.parquet
+  3. Engineering      -> data/processed/production/features.parquet
+  4. EDA / Statistics -> data/processed/production/eda/stats.parquet + eda_report.json
   5. Normalization    -> data/processed/normalized_{train,val,test}.parquet
                       + data/processed/scalers.pkl
 
@@ -404,7 +404,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Run preprocessing pipeline (Stages 2-5)')
     parser.add_argument('--input', type=str,
-                        default='data/processed/raw_features.parquet',
+                        default='data/processed/production/raw_features.parquet',
                         help='Input parquet from Stage 1')
     parser.add_argument('--output-dir', type=str,
                         default='data/processed',

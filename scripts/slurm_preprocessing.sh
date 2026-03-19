@@ -24,7 +24,7 @@ set -euo pipefail
 
 # --- Configuration ---
 PYTHON="/projects/bdau/envs/sc2026/bin/python"
-INPUT="data/processed/raw_features.parquet"
+INPUT="data/processed/production/raw_features.parquet"
 OUTPUT_DIR="data/processed"
 CONFIG="configs/preprocessing.yaml"
 

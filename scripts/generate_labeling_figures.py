@@ -105,7 +105,7 @@ SEVERITY_COLORS = {
 
 def load_heuristic_labels():
     """Load heuristic labels parquet."""
-    path = DATA_DIR / 'heuristic_labels.parquet'
+    path = DATA_DIR / 'production/labels.parquet'
     if not path.exists():
         logger.error(f"File not found: {path}")
         sys.exit(1)

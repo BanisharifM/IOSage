@@ -21,11 +21,11 @@ print("=" * 80)
 print("LOADING DATA")
 print("=" * 80)
 
-eng = pd.read_parquet(f"{BASE}/data/processed/engineered_features.parquet")
+eng = pd.read_parquet(f"{BASE}/data/processed/production/features.parquet")
 train = pd.read_parquet(f"{BASE}/data/processed/splits/train.parquet")
 val = pd.read_parquet(f"{BASE}/data/processed/splits/val.parquet")
 test = pd.read_parquet(f"{BASE}/data/processed/splits/test.parquet")
-eda = pd.read_parquet(f"{BASE}/data/processed/eda_stats.parquet")
+eda = pd.read_parquet(f"{BASE}/data/processed/production/eda/stats.parquet")
 
 # Identify feature columns (non-metadata)
 info_cols = [c for c in train.columns if c.startswith("_")]

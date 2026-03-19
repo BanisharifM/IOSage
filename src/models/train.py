@@ -42,6 +42,60 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Optional W&B integration
+try:
+    import wandb
+    HAS_WANDB = True
+except ImportError:
+    HAS_WANDB = False
+
+
+def init_wandb(config, model_name, seed, enabled=True):
+    """Initialize W&B run for experiment tracking."""
+    if not enabled or not HAS_WANDB:
+        return None
+    run = wandb.init(
+        project="sc2026-io-bottleneck",
+        name=f"{model_name}_seed{seed}",
+        config={
+            "model": model_name,
+            "seed": seed,
+            "n_train": config.get("_n_train", 0),
+            "n_gt_test": config.get("_n_gt_test", 0),
+            **config.get("models", {}).get(model_name, {}).get("params", {}),
+        },
+        tags=["phase1", model_name],
+        reinit=True,
+    )
+    return run
+
+
+def log_wandb_metrics(results, seed=None):
+    """Log evaluation metrics to W&B."""
+    if not HAS_WANDB or wandb.run is None:
+        return
+    metrics = {
+        "val/micro_f1": results.get("val_micro_f1", 0),
+        "val/macro_f1": results.get("val_macro_f1", 0),
+        "val/hamming_loss": results.get("val_hamming", 0),
+    }
+    if "gt_micro_f1" in results:
+        metrics.update({
+            "gt/micro_f1": results["gt_micro_f1"],
+            "gt/macro_f1": results["gt_macro_f1"],
+            "gt/hamming_loss": results["gt_hamming"],
+        })
+    if "train_time" in results:
+        metrics["train_time_s"] = results["train_time"]
+    # Per-label metrics
+    for dim, m in results.get("per_label", {}).items():
+        metrics[f"val/{dim}_f1"] = m.get("val_f1", 0)
+        if m.get("gt_f1") is not None:
+            metrics[f"gt/{dim}_f1"] = m["gt_f1"]
+    if seed is not None:
+        metrics["seed"] = seed
+    wandb.log(metrics)
+
 
 def load_config(config_path):
     with open(config_path) as f:
@@ -52,10 +106,12 @@ def load_data(config):
     """Load features and labels, apply feature exclusions, return train/val arrays."""
     paths = config["paths"]
 
-    # Load heuristic-labeled production data
-    logger.info("Loading engineered features...")
-    features_df = pd.read_parquet(PROJECT_DIR / paths["engineered_features"])
-    labels_df = pd.read_parquet(PROJECT_DIR / paths["heuristic_labels"])
+    # Load production data (heuristic-labeled)
+    prod_feat_key = "production_features" if "production_features" in paths else "engineered_features"
+    prod_label_key = "production_labels" if "production_labels" in paths else "heuristic_labels"
+    logger.info("Loading production features from %s...", paths[prod_feat_key])
+    features_df = pd.read_parquet(PROJECT_DIR / paths[prod_feat_key])
+    labels_df = pd.read_parquet(PROJECT_DIR / paths[prod_label_key])
 
     # Align by _jobid
     labels_df = labels_df.set_index("_jobid")
@@ -103,8 +159,10 @@ def load_data(config):
                 len(X_train), len(X_val), len(test_idx))
 
     # Load ground-truth test set (benchmark logs)
-    gt_feat_path = PROJECT_DIR / paths["ground_truth_features"]
-    gt_label_path = PROJECT_DIR / paths["ground_truth_labels"]
+    gt_feat_key = "benchmark_features" if "benchmark_features" in paths else "ground_truth_features"
+    gt_label_key = "benchmark_labels" if "benchmark_labels" in paths else "ground_truth_labels"
+    gt_feat_path = PROJECT_DIR / paths[gt_feat_key]
+    gt_label_path = PROJECT_DIR / paths[gt_label_key]
 
     X_gt_test, y_gt_test = None, None
     if gt_feat_path.exists() and gt_label_path.exists():
@@ -473,6 +531,8 @@ def main():
     parser.add_argument("--save", action="store_true", help="Save trained models")
     parser.add_argument("--n-seeds", type=int, default=1,
                         help="Number of random seeds for statistical rigor (SC requires 5)")
+    parser.add_argument("--wandb", action="store_true",
+                        help="Enable Weights & Biases experiment tracking")
     args = parser.parse_args()
 
     config_path = PROJECT_DIR / args.config

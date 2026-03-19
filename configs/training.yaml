@@ -8,18 +8,30 @@
 
 # --- Paths ---
 paths:
-  # Production data (heuristic labels)
-  engineered_features: data/processed/engineered_features.parquet
-  heuristic_labels: data/processed/heuristic_labels.parquet
-  normalized_features: data/processed/normalized_features.parquet
-  # Ground-truth data (benchmark labels)
-  ground_truth_features: data/processed/ground_truth_features.parquet
-  ground_truth_labels: data/processed/ground_truth_labels.parquet
-  # Splits
-  splits: data/splits/train_val_test_indices.npz
+  # Production data (131K Polaris logs with Drishti heuristic labels)
+  production_features: data/processed/production/features.parquet
+  production_labels: data/processed/production/labels.parquet
+  production_features_normalized: data/processed/production/features_normalized.parquet
+  production_raw: data/processed/production/raw_features.parquet
+  production_cleaned: data/processed/production/cleaned_features.parquet
+  production_scalers: data/processed/production/scalers.pkl
+  production_splits: data/processed/production/split_indices.pkl
+  # Ground-truth data (benchmark logs with construction-based labels)
+  benchmark_features: data/processed/benchmark/features.parquet
+  benchmark_labels: data/processed/benchmark/labels.parquet
+  # EDA
+  eda_stats: data/processed/production/eda/stats.parquet
+  eda_report: data/processed/production/eda/report.json
   # Output
   model_dir: models/
   results_dir: results/
+  # Legacy aliases (for backward compatibility during transition)
+  engineered_features: data/processed/production/features.parquet
+  heuristic_labels: data/processed/production/labels.parquet
+  normalized_features: data/processed/production/features_normalized.parquet
+  ground_truth_features: data/processed/benchmark/features.parquet
+  ground_truth_labels: data/processed/benchmark/labels.parquet
+  splits: data/processed/production/split_indices.pkl
 
 # --- Label dimensions ---
 dimensions:

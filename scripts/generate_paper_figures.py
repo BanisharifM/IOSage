@@ -112,12 +112,12 @@ def load_data(data_dir):
     data = {}
 
     logger.info("Loading data files...")
-    data['raw'] = pd.read_parquet(data_dir / 'raw_features.parquet')
-    data['engineered'] = pd.read_parquet(data_dir / 'engineered_features.parquet')
+    data['raw'] = pd.read_parquet(data_dir / 'production/raw_features.parquet')
+    data['engineered'] = pd.read_parquet(data_dir / 'production/features.parquet')
     data['train'] = pd.read_parquet(data_dir / 'splits' / 'train.parquet')
     data['val'] = pd.read_parquet(data_dir / 'splits' / 'val.parquet')
     data['test'] = pd.read_parquet(data_dir / 'splits' / 'test.parquet')
-    data['eda_stats'] = pd.read_parquet(data_dir / 'eda_stats.parquet')
+    data['eda_stats'] = pd.read_parquet(data_dir / 'production/eda/stats.parquet')
 
     for name, df in data.items():
         logger.info(f"  {name}: {df.shape[0]:,} rows x {df.shape[1]} cols")

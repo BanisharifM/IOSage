@@ -4,7 +4,7 @@ Drishti Heuristic Labeling Pipeline
 Generates multi-label heuristic labels from production log features by
 reimplementing Drishti's 30 heuristic rules as vectorized pandas operations.
 
-This operates on the already-extracted engineered_features.parquet, not on
+This operates on the already-extracted production/features.parquet, not on
 raw .darshan files. A full labeling pass over 131K rows completes in seconds.
 
 Terminology (per SC 2026 paper convention):
@@ -472,7 +472,7 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     Parameters
     ----------
     features_path : str or Path
-        Path to engineered_features.parquet.
+        Path to production/features.parquet.
     output_path : str or Path
         Output path for heuristic labels parquet file.
     min_confidence : float
@@ -686,7 +686,7 @@ def main():
     )
     parser.add_argument(
         '--features', required=True,
-        help='Path to engineered_features.parquet'
+        help='Path to production/features.parquet'
     )
     parser.add_argument(
         '--output', required=True,

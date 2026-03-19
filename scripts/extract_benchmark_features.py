@@ -10,8 +10,8 @@ For DLIO/custom (Python + LD_PRELOAD): per-rank .darshan files → aggregate via
 parse_benchmark_job() using the same 7 Darshan aggregation rules as MPI_Finalize.
 
 Output:
-    data/processed/ground_truth_features.parquet  — same columns as raw_features.parquet
-    data/processed/ground_truth_labels.parquet     — 8 binary label dimensions + metadata
+    data/processed/benchmark/features.parquet  — same columns as production/features.parquet
+    data/processed/benchmark/labels.parquet     — 8 binary label dimensions + metadata
 
 Usage:
     python scripts/extract_benchmark_features.py
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_LOG_DIR = PROJECT_DIR / "data" / "benchmark_logs"
 DEFAULT_RESULTS_DIR = PROJECT_DIR / "data" / "benchmark_results"
-DEFAULT_OUTPUT_DIR = PROJECT_DIR / "data" / "processed"
+DEFAULT_OUTPUT_DIR = PROJECT_DIR / "data" / "processed" / "benchmark"
 
 DIMENSION_NAMES = [
     "access_granularity",
@@ -398,8 +398,8 @@ def main():
     labels_df = labels_df[label_ordered]
 
     # Save
-    feat_path = output_dir / "ground_truth_features.parquet"
-    label_path = output_dir / "ground_truth_labels.parquet"
+    feat_path = output_dir / "features.parquet"
+    label_path = output_dir / "labels.parquet"
     features_df.to_parquet(feat_path, index=False)
     labels_df.to_parquet(label_path, index=False)
 
@@ -443,7 +443,7 @@ def main():
     logger.info("Saved: %s", label_path)
 
     # Consistency check: verify column overlap with production raw_features
-    prod_path = output_dir / "raw_features.parquet"
+    prod_path = PROJECT_DIR / "data" / "processed" / "production" / "raw_features.parquet"
     if prod_path.exists():
         prod_cols = set(pd.read_parquet(prod_path, columns=[]).columns)
         gt_cols = set(features_df.columns) - {"_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"}
