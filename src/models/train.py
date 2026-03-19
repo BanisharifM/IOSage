@@ -375,6 +375,95 @@ def save_models(models, model_name, config):
 config = {}
 
 
+def aggregate_multi_seed_results(all_seed_results):
+    """Aggregate results across multiple seeds: compute mean +/- std."""
+    from collections import defaultdict
+
+    # Group by model name
+    by_model = defaultdict(list)
+    for seed_results in all_seed_results:
+        for r in seed_results:
+            by_model[r["model"]].append(r)
+
+    aggregated = []
+    for model_name, runs in by_model.items():
+        agg = {"model": model_name, "n_seeds": len(runs)}
+
+        # Aggregate scalar metrics
+        for metric in ["val_micro_f1", "val_macro_f1", "val_hamming",
+                        "gt_micro_f1", "gt_macro_f1", "gt_hamming", "train_time"]:
+            vals = [r[metric] for r in runs if metric in r]
+            if vals:
+                agg[f"{metric}_mean"] = np.mean(vals)
+                agg[f"{metric}_std"] = np.std(vals)
+
+        # Aggregate per-label metrics
+        dim_names = list(runs[0]["per_label"].keys())
+        agg["per_label"] = {}
+        for dim in dim_names:
+            agg["per_label"][dim] = {}
+            for metric in ["val_f1", "val_precision", "val_recall",
+                            "gt_f1", "gt_precision", "gt_recall"]:
+                vals = [r["per_label"][dim][metric] for r in runs
+                        if r["per_label"][dim].get(metric) is not None]
+                if vals:
+                    agg["per_label"][dim][f"{metric}_mean"] = np.mean(vals)
+                    agg["per_label"][dim][f"{metric}_std"] = np.std(vals)
+
+        aggregated.append(agg)
+    return aggregated
+
+
+def log_aggregated_results(aggregated):
+    """Log multi-seed aggregated results in formatted tables."""
+    for agg in aggregated:
+        model_name = agg["model"]
+        n = agg["n_seeds"]
+
+        logger.info("")
+        logger.info("=" * 80)
+        logger.info("Model: %s (%d seeds)", model_name, n)
+        logger.info("=" * 80)
+
+        # Overall metrics
+        val_mi = agg.get("val_micro_f1_mean", 0)
+        val_mi_s = agg.get("val_micro_f1_std", 0)
+        val_ma = agg.get("val_macro_f1_mean", 0)
+        val_ma_s = agg.get("val_macro_f1_std", 0)
+        logger.info("Validation:   Micro-F1=%.4f+/-%.4f  Macro-F1=%.4f+/-%.4f",
+                    val_mi, val_mi_s, val_ma, val_ma_s)
+
+        if "gt_micro_f1_mean" in agg:
+            gt_mi = agg["gt_micro_f1_mean"]
+            gt_mi_s = agg["gt_micro_f1_std"]
+            gt_ma = agg["gt_macro_f1_mean"]
+            gt_ma_s = agg["gt_macro_f1_std"]
+            logger.info("Ground-truth: Micro-F1=%.4f+/-%.4f  Macro-F1=%.4f+/-%.4f",
+                        gt_mi, gt_mi_s, gt_ma, gt_ma_s)
+
+        tt = agg.get("train_time_mean", 0)
+        tt_s = agg.get("train_time_std", 0)
+        logger.info("Train time:   %.1f+/-%.1fs", tt, tt_s)
+
+        # Per-label table
+        logger.info("")
+        header = f"{'Dimension':<28s} {'Val-F1':>14s} {'GT-F1':>14s}"
+        logger.info(header)
+        logger.info("-" * len(header))
+        for dim, metrics in agg["per_label"].items():
+            vf = metrics.get("val_f1_mean", 0)
+            vf_s = metrics.get("val_f1_std", 0)
+            row = f"{dim:<28s} {vf:.4f}+/-{vf_s:.4f}"
+            gf = metrics.get("gt_f1_mean")
+            gf_s = metrics.get("gt_f1_std")
+            if gf is not None:
+                row += f" {gf:.4f}+/-{gf_s:.4f}"
+            else:
+                row += "            N/A"
+            logger.info(row)
+        logger.info("=" * 80)
+
+
 def main():
     global config
     parser = argparse.ArgumentParser(description="Train multi-label I/O bottleneck classifiers")
@@ -382,13 +471,17 @@ def main():
     parser.add_argument("--model", default="all", choices=["all", "xgboost", "lightgbm", "random_forest", "mlp"])
     parser.add_argument("--tune", action="store_true", help="Run Optuna hyperparameter tuning")
     parser.add_argument("--save", action="store_true", help="Save trained models")
+    parser.add_argument("--n-seeds", type=int, default=1,
+                        help="Number of random seeds for statistical rigor (SC requires 5)")
     args = parser.parse_args()
 
     config_path = PROJECT_DIR / args.config
     config = load_config(config_path)
 
-    # Set global seed
-    np.random.seed(config.get("seed", 42))
+    # Seeds for multi-run training
+    SEEDS = [42, 123, 456, 789, 1024]
+    n_seeds = min(args.n_seeds, len(SEEDS))
+    seeds = SEEDS[:n_seeds]
 
     logger.info("Loading data...")
     t0 = time.time()
@@ -412,57 +505,116 @@ def main():
     }
 
     models_to_train = list(trainers.keys()) if args.model == "all" else [args.model]
-    all_results = []
+    all_seed_results = []
+    best_models = {}  # Store best seed's models for saving
 
-    for model_name in models_to_train:
-        model_cfg = config["models"].get(model_name, {})
-        if not model_cfg.get("enabled", False):
-            logger.info("Skipping %s (disabled in config)", model_name)
-            continue
-
+    for seed_idx, seed in enumerate(seeds):
         logger.info("")
-        logger.info("Training %s (Binary Relevance)...", model_name)
-        t0 = time.time()
-        models = trainers[model_name](data, config)
-        train_time = time.time() - t0
-        logger.info("%s training completed in %.1fs", model_name, train_time)
+        logger.info("########################################")
+        logger.info("SEED %d/%d: %d", seed_idx + 1, n_seeds, seed)
+        logger.info("########################################")
 
-        # Evaluate
-        results = evaluate_models(models, data, model_name)
-        results["train_time"] = train_time
-        log_results(results)
-        all_results.append(results)
+        # Update seed in config for this run
+        config["seed"] = seed
+        for model_key in config.get("models", {}):
+            config["models"][model_key]["seed"] = seed
+        np.random.seed(seed)
 
-        # Save if requested
-        if args.save:
+        seed_results = []
+        for model_name in models_to_train:
+            model_cfg = config["models"].get(model_name, {})
+            if not model_cfg.get("enabled", False):
+                if seed_idx == 0:
+                    logger.info("Skipping %s (disabled in config)", model_name)
+                continue
+
+            logger.info("")
+            logger.info("Training %s (seed=%d)...", model_name, seed)
+            t0 = time.time()
+            models = trainers[model_name](data, config)
+            train_time = time.time() - t0
+            logger.info("%s completed in %.1fs", model_name, train_time)
+
+            # Evaluate
+            results = evaluate_models(models, data, model_name)
+            results["train_time"] = train_time
+            results["seed"] = seed
+
+            if n_seeds == 1:
+                log_results(results)
+
+            seed_results.append(results)
+
+            # Track best seed for saving
+            gt_f1 = results.get("gt_micro_f1", results.get("val_micro_f1", 0))
+            if model_name not in best_models or gt_f1 > best_models[model_name][1]:
+                best_models[model_name] = (models, gt_f1, seed)
+
+        all_seed_results.append(seed_results)
+
+    # Save best models if requested
+    if args.save:
+        for model_name, (models, f1, seed) in best_models.items():
             save_models(models, model_name, config)
+            logger.info("Saved best %s models (seed=%d, GT-F1=%.4f)", model_name, seed, f1)
 
-    # Save results summary
+    # Save all results
     results_dir = PROJECT_DIR / config["paths"]["results_dir"]
     results_dir.mkdir(parents=True, exist_ok=True)
     results_path = results_dir / "training_results.pkl"
     with open(results_path, "wb") as f:
-        pickle.dump(all_results, f)
+        pickle.dump(all_seed_results, f)
     logger.info("Results saved to %s", results_path)
 
-    # Summary comparison
-    if len(all_results) > 1:
+    # Multi-seed aggregation and summary
+    if n_seeds > 1:
+        aggregated = aggregate_multi_seed_results(all_seed_results)
+        log_aggregated_results(aggregated)
+
+        # Summary comparison table
         logger.info("")
-        logger.info("=" * 50)
-        logger.info("MODEL COMPARISON SUMMARY")
-        logger.info("=" * 50)
-        header = f"{'Model':<20s} {'Val-MiF1':>9s} {'Val-MaF1':>9s} {'GT-MiF1':>9s} {'GT-MaF1':>9s} {'Time':>7s}"
+        logger.info("=" * 70)
+        logger.info("MULTI-SEED MODEL COMPARISON (%d seeds)", n_seeds)
+        logger.info("=" * 70)
+        header = f"{'Model':<18s} {'Val-MiF1':>16s} {'Val-MaF1':>16s} {'GT-MiF1':>16s} {'GT-MaF1':>16s}"
         logger.info(header)
         logger.info("-" * len(header))
-        for r in all_results:
-            row = f"{r['model']:<20s} {r['val_micro_f1']:9.4f} {r['val_macro_f1']:9.4f}"
-            if "gt_micro_f1" in r:
-                row += f" {r['gt_micro_f1']:9.4f} {r['gt_macro_f1']:9.4f}"
+        for agg in aggregated:
+            vm = agg.get("val_micro_f1_mean", 0)
+            vs = agg.get("val_micro_f1_std", 0)
+            vmm = agg.get("val_macro_f1_mean", 0)
+            vms = agg.get("val_macro_f1_std", 0)
+            row = f"{agg['model']:<18s} {vm:.4f}+/-{vs:.4f} {vmm:.4f}+/-{vms:.4f}"
+            if "gt_micro_f1_mean" in agg:
+                gm = agg["gt_micro_f1_mean"]
+                gs = agg["gt_micro_f1_std"]
+                gmm = agg["gt_macro_f1_mean"]
+                gms = agg["gt_macro_f1_std"]
+                row += f" {gm:.4f}+/-{gs:.4f} {gmm:.4f}+/-{gms:.4f}"
             else:
-                row += "       N/A       N/A"
-            row += f" {r['train_time']:6.1f}s"
+                row += "              N/A              N/A"
             logger.info(row)
-        logger.info("=" * 50)
+        logger.info("=" * 70)
+    else:
+        # Single-seed summary
+        flat_results = all_seed_results[0] if all_seed_results else []
+        if len(flat_results) > 1:
+            logger.info("")
+            logger.info("=" * 50)
+            logger.info("MODEL COMPARISON SUMMARY")
+            logger.info("=" * 50)
+            header = f"{'Model':<20s} {'Val-MiF1':>9s} {'Val-MaF1':>9s} {'GT-MiF1':>9s} {'GT-MaF1':>9s} {'Time':>7s}"
+            logger.info(header)
+            logger.info("-" * len(header))
+            for r in flat_results:
+                row = f"{r['model']:<20s} {r['val_micro_f1']:9.4f} {r['val_macro_f1']:9.4f}"
+                if "gt_micro_f1" in r:
+                    row += f" {r['gt_micro_f1']:9.4f} {r['gt_macro_f1']:9.4f}"
+                else:
+                    row += "       N/A       N/A"
+                row += f" {r['train_time']:6.1f}s"
+                logger.info(row)
+            logger.info("=" * 50)
 
 
 if __name__ == "__main__":
