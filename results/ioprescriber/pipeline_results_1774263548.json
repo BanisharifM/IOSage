@@ -1,0 +1,104 @@
+[
+  {
+    "workload": "ior_ior_small_posix_t64_n4_r1",
+    "pipeline_latency_ms": 20047.2,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity"
+      ]
+    },
+    "step2_shap": {
+      "access_granularity": [
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 819144.0,
+          "shap_value": 3.395044,
+          "direction": "increases_risk",
+          "abs_importance": 3.395044
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "value": 819200.0,
+          "shap_value": 1.765648,
+          "direction": "increases_risk",
+          "abs_importance": 1.765648
+        },
+        {
+          "feature": "POSIX_WRITES",
+          "value": 409600.0,
+          "shap_value": 1.422673,
+          "direction": "increases_risk",
+          "abs_importance": 1.422673
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+          "similarity": 0.9231,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+          "similarity": 0.9193,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+          "similarity": 0.9165,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": {
+        "diagnosis": "This job exhibits severe access granularity problems with extremely small I/O operations. The Darshan data shows 819,200 POSIX access operations with an average write size of only 64 bytes, resulting in 819,144 unaligned file accesses. With 26.2MB total written across 409,600 writes, each write operation transfers just 64 bytes on average. This creates massive syscall overhead - the job performs over 800K small I/O operations when it could accomplish the same work with just 25 large operations (26MB \u00f7 1MB chunks). The small_io_ratio of 1.0 confirms that 100% of I/O operations are inefficiently small, leading to poor bandwidth utilization at only 29.1 MB/s.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "The job performs 409,600 write operations of 64 bytes each instead of buffering into large chunks. This creates 819,200 total POSIX accesses with excessive syscall overhead. Each 64-byte write requires a full kernel transition, making the I/O bound by syscall latency rather than bandwidth.",
+            "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+            "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+            "expected_speedup": "16x-25x based on reducing 819,200 syscalls to ~25 large operations",
+            "kb_citation": "ior_ior_small_posix_t64_n4_r1_0",
+            "confidence": "high",
+            "api_change": "POSIX write buffering - aggregate small writes into 1MB+ chunks"
+          }
+        ],
+        "overall_expected_improvement": "16x-25x speedup by eliminating syscall overhead through write buffering"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 13374.8,
+        "tokens_input": 1785,
+        "tokens_output": 537,
+        "timestamp": "2026-03-23T05:59:08Z"
+      }
+    }
+  }
+]

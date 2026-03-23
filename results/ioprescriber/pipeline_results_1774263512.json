@@ -1,0 +1,152 @@
+[
+  {
+    "workload": "ior_ior_small_posix_t64_n4_r1",
+    "pipeline_latency_ms": 9.3,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity"
+      ]
+    },
+    "step2_shap": {
+      "access_granularity": [
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 819144.0,
+          "shap_value": 3.395044,
+          "direction": "increases_risk",
+          "abs_importance": 3.395044
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "value": 819200.0,
+          "shap_value": 1.765648,
+          "direction": "increases_risk",
+          "abs_importance": 1.765648
+        },
+        {
+          "feature": "POSIX_WRITES",
+          "value": 409600.0,
+          "shap_value": 1.422673,
+          "direction": "increases_risk",
+          "abs_importance": 1.422673
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+          "similarity": 0.9231,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+          "similarity": 0.9193,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+          "similarity": 0.9165,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": null,
+      "groundedness": null,
+      "metadata": null
+    }
+  },
+  {
+    "workload": "ior_ior_small_posix_t64_n4_r2",
+    "pipeline_latency_ms": 7.4,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity"
+      ]
+    },
+    "step2_shap": {
+      "access_granularity": [
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 819144.0,
+          "shap_value": 3.395064,
+          "direction": "increases_risk",
+          "abs_importance": 3.395064
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "value": 819200.0,
+          "shap_value": 1.765648,
+          "direction": "increases_risk",
+          "abs_importance": 1.765648
+        },
+        {
+          "feature": "POSIX_WRITES",
+          "value": 409600.0,
+          "shap_value": 1.422694,
+          "direction": "increases_risk",
+          "abs_importance": 1.422694
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+          "similarity": 0.9231,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+          "similarity": 0.9165,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+          "similarity": 0.9129,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": null,
+      "groundedness": null,
+      "metadata": null
+    }
+  }
+]
