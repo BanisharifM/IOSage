@@ -1,0 +1,4544 @@
+[
+  {
+    "entry_id": "ior_ior_file_explosion_t65536_n128_r1_138",
+    "benchmark": "ior",
+    "scenario": "ior_file_explosion_t65536_n128_r1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 225.8729,
+      "POSIX_BYTES_WRITTEN": 13421772800.0,
+      "POSIX_BYTES_READ": 13421772800.0,
+      "POSIX_WRITES": 204800.0,
+      "POSIX_READS": 204800.0,
+      "POSIX_SEQ_WRITES": 204672.0,
+      "POSIX_SEQ_READS": 204672.0,
+      "POSIX_FSYNCS": 128.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 5.7795,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 65536.0,
+      "avg_read_size": 65536.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9994,
+      "metadata_time_ratio": 0.0007,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 3.4828,
+      "fsync_ratio": 0.0006
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9997,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9296,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "nprocs",
+          "shap_value": -2.977305,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.784468,
+          "feature_value": 6807.621192
+        },
+        {
+          "feature": "POSIX_BYTES_WRITTEN",
+          "shap_value": -1.266061,
+          "feature_value": 13421772800.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -1.155669,
+          "feature_value": 409600.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": -0.994041,
+          "feature_value": 34.148649
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699181,
+          "feature_value": 0.882587
+        },
+        {
+          "feature": "medium_write_ratio",
+          "shap_value": -0.497779,
+          "feature_value": 1.0
+        },
+        {
+          "feature": "POSIX_ACCESS2_ACCESS",
+          "shap_value": -0.47884,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "io_duration",
+          "shap_value": -0.437452,
+          "feature_value": 188.796012
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.41169,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior",
+      "language": "C",
+      "io_functions": {
+        "POSIX": "write(fd, buf, transferSize)",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "ior_ior_file_explosion_t65536_n128_r2_139",
+    "benchmark": "ior",
+    "scenario": "ior_file_explosion_t65536_n128_r2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 146.7209,
+      "POSIX_BYTES_WRITTEN": 13421772800.0,
+      "POSIX_BYTES_READ": 13421772800.0,
+      "POSIX_WRITES": 204800.0,
+      "POSIX_READS": 204800.0,
+      "POSIX_SEQ_WRITES": 204672.0,
+      "POSIX_SEQ_READS": 204672.0,
+      "POSIX_FSYNCS": 128.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 4.009,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 65536.0,
+      "avg_read_size": 65536.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9994,
+      "metadata_time_ratio": 0.0011,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 7.668,
+      "fsync_ratio": 0.0006
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9998,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9674,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "nprocs",
+          "shap_value": -2.979396,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.784468,
+          "feature_value": 3002.747677
+        },
+        {
+          "feature": "POSIX_BYTES_WRITTEN",
+          "shap_value": -1.266061,
+          "feature_value": 13421772800.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -1.179842,
+          "feature_value": 409600.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": -0.994041,
+          "feature_value": 23.88702
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699181,
+          "feature_value": 0.856771
+        },
+        {
+          "feature": "medium_write_ratio",
+          "shap_value": -0.497779,
+          "feature_value": 1.0
+        },
+        {
+          "feature": "POSIX_ACCESS2_ACCESS",
+          "shap_value": -0.47884,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.41169,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": 0.394584,
+          "feature_value": 65536.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior",
+      "language": "C",
+      "io_functions": {
+        "POSIX": "write(fd, buf, transferSize)",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "ior_ior_file_explosion_t65536_n128_r3_140",
+    "benchmark": "ior",
+    "scenario": "ior_file_explosion_t65536_n128_r3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 266.7709,
+      "POSIX_BYTES_WRITTEN": 13421772800.0,
+      "POSIX_BYTES_READ": 13421772800.0,
+      "POSIX_WRITES": 204800.0,
+      "POSIX_READS": 204800.0,
+      "POSIX_SEQ_WRITES": 204672.0,
+      "POSIX_SEQ_READS": 204672.0,
+      "POSIX_FSYNCS": 128.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 3.6599,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 65536.0,
+      "avg_read_size": 65536.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9994,
+      "metadata_time_ratio": 0.0006,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 4.0798,
+      "fsync_ratio": 0.0006
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9997,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9612,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "nprocs",
+          "shap_value": -2.979396,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.784468,
+          "feature_value": 5442.351435
+        },
+        {
+          "feature": "POSIX_BYTES_WRITTEN",
+          "shap_value": -1.266061,
+          "feature_value": 13421772800.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -1.169504,
+          "feature_value": 409600.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": -0.994041,
+          "feature_value": 24.677654
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699181,
+          "feature_value": 0.826693
+        },
+        {
+          "feature": "medium_write_ratio",
+          "shap_value": -0.497779,
+          "feature_value": 1.0
+        },
+        {
+          "feature": "POSIX_ACCESS2_ACCESS",
+          "shap_value": -0.47884,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "io_duration",
+          "shap_value": -0.421687,
+          "feature_value": 221.427539
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.41169,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior",
+      "language": "C",
+      "io_functions": {
+        "POSIX": "write(fd, buf, transferSize)",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r32_rep1_240",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r32_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 2.8004,
+      "POSIX_BYTES_WRITTEN": 13107200.0,
+      "POSIX_BYTES_READ": 13107200.0,
+      "POSIX_WRITES": 3200.0,
+      "POSIX_READS": 3200.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 6400.0,
+      "POSIX_F_META_TIME": 3.8967,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0663,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.4773,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0004,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0011,
+      "interface_choice": 0.0,
+      "file_strategy": 0.987,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.617258,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.129726,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.204521,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.886721,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.713233,
+          "feature_value": 6400.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603714,
+          "feature_value": 54.901423
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.495919,
+          "feature_value": 0.933412
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463564,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r32_rep2_241",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r32_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 3.2744,
+      "POSIX_BYTES_WRITTEN": 13107200.0,
+      "POSIX_BYTES_READ": 13107200.0,
+      "POSIX_WRITES": 3200.0,
+      "POSIX_READS": 3200.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 6400.0,
+      "POSIX_F_META_TIME": 3.9755,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0585,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.4097,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0003,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0011,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9795,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.613847,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.129726,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.20111,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.886721,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.713233,
+          "feature_value": 6400.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603714,
+          "feature_value": 63.968675
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.495919,
+          "feature_value": 0.941221
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463564,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r32_rep3_242",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r32_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 3.0384,
+      "POSIX_BYTES_WRITTEN": 13107200.0,
+      "POSIX_BYTES_READ": 13107200.0,
+      "POSIX_WRITES": 3200.0,
+      "POSIX_READS": 3200.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 6400.0,
+      "POSIX_F_META_TIME": 3.726,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0576,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.4299,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0003,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0011,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9795,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.641337,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.131441,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.207272,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.887545,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.725815,
+          "feature_value": 6400.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603713,
+          "feature_value": 60.951913
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.499996,
+          "feature_value": 0.942095
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.471652,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r64_rep1_243",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r64_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 3.184,
+      "POSIX_BYTES_WRITTEN": 26214400.0,
+      "POSIX_BYTES_READ": 26214400.0,
+      "POSIX_WRITES": 6400.0,
+      "POSIX_READS": 6400.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 12800.0,
+      "POSIX_F_META_TIME": 8.4648,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.066,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.4377,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0003,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0006,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.61509,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.010139,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.033748,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.801601,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.76049,
+          "feature_value": 12800.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.722041,
+          "feature_value": 119.737242
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699283,
+          "feature_value": 0.933629
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.652665,
+          "feature_value": 40.279857
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r64_rep2_244",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r64_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 3.2446,
+      "POSIX_BYTES_WRITTEN": 26214400.0,
+      "POSIX_BYTES_READ": 26214400.0,
+      "POSIX_WRITES": 6400.0,
+      "POSIX_READS": 6400.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 12800.0,
+      "POSIX_F_META_TIME": 8.6895,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0657,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.424,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0002,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0006,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.61509,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.01026,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.033748,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.801571,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.760868,
+          "feature_value": 12800.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.72154,
+          "feature_value": 123.612484
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699137,
+          "feature_value": 0.934011
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.652665,
+          "feature_value": 40.789117
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r64_rep3_245",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r64_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 2.8281,
+      "POSIX_BYTES_WRITTEN": 26214400.0,
+      "POSIX_BYTES_READ": 26214400.0,
+      "POSIX_WRITES": 6400.0,
+      "POSIX_READS": 6400.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 12800.0,
+      "POSIX_F_META_TIME": 8.4674,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0752,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.5036,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0003,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0006,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.614328,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.010139,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.029712,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.801601,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.760868,
+          "feature_value": 12800.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.721771,
+          "feature_value": 104.059731
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699283,
+          "feature_value": 0.924379
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.652665,
+          "feature_value": 39.805014
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r128_rep1_246",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r128_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 12.0976,
+      "POSIX_BYTES_WRITTEN": 52428800.0,
+      "POSIX_BYTES_READ": 52428800.0,
+      "POSIX_WRITES": 12800.0,
+      "POSIX_READS": 12800.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 25600.0,
+      "POSIX_F_META_TIME": 26.9799,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0857,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3641,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.005115,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -1.835138,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.002484,
+          "feature_value": 287.839464
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.001105,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.98034,
+          "feature_value": 25600.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.758839,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.498292,
+          "feature_value": 0.913961
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.46962,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": -0.463593,
+          "feature_value": 4096.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.46255,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r128_rep2_247",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r128_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 12.7562,
+      "POSIX_BYTES_WRITTEN": 52428800.0,
+      "POSIX_BYTES_READ": 52428800.0,
+      "POSIX_WRITES": 12800.0,
+      "POSIX_READS": 12800.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 25600.0,
+      "POSIX_F_META_TIME": 51.8072,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.1297,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3015,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -1.950237,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -1.834723,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -0.960661,
+          "feature_value": 347.621045
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -0.921718,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.814121,
+          "feature_value": 25600.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.744137,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.490293,
+          "feature_value": 0.870047
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.470627,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": -0.458095,
+          "feature_value": 4096.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.432715,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n100_r128_rep3_248",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n100_r128_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 29.5031,
+      "POSIX_BYTES_WRITTEN": 52428800.0,
+      "POSIX_BYTES_READ": 52428800.0,
+      "POSIX_WRITES": 12800.0,
+      "POSIX_READS": 12800.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 25600.0,
+      "POSIX_F_META_TIME": 132.0312,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.2598,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2787,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0081,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9999,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.524823,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.00999,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.029928,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.823842,
+          "feature_value": 25600.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.810014,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.78859,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.763379,
+          "feature_value": 17.226143
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714783,
+          "feature_value": 376.086576
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.697785,
+          "feature_value": 0.740001
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r32_rep1_249",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r32_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 26.946,
+      "POSIX_BYTES_WRITTEN": 65536000.0,
+      "POSIX_BYTES_READ": 65536000.0,
+      "POSIX_WRITES": 16000.0,
+      "POSIX_READS": 16000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 32000.0,
+      "POSIX_F_META_TIME": 18.4273,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0265,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.1933,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.475534,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.010139,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.025892,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.823842,
+          "feature_value": 32000.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.810174,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.78526,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.735064,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714974,
+          "feature_value": 678.053944
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.700188,
+          "feature_value": 0.973428
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.634846,
+          "feature_value": 25.850287
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r32_rep2_250",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r32_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 29.8308,
+      "POSIX_BYTES_WRITTEN": 65536000.0,
+      "POSIX_BYTES_READ": 65536000.0,
+      "POSIX_WRITES": 16000.0,
+      "POSIX_READS": 16000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 32000.0,
+      "POSIX_F_META_TIME": 19.6351,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0252,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.1723,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 0.9999,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.524823,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.00999,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.029928,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.825601,
+          "feature_value": 32000.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.810014,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.78859,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.763379,
+          "feature_value": 26.153765
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714783,
+          "feature_value": 760.470691
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.697785,
+          "feature_value": 0.974728
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r32_rep3_251",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r32_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 27.1908,
+      "POSIX_BYTES_WRITTEN": 65536000.0,
+      "POSIX_BYTES_READ": 65536000.0,
+      "POSIX_WRITES": 16000.0,
+      "POSIX_READS": 16000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 32000.0,
+      "POSIX_F_META_TIME": 19.0881,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0263,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.1856,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.019683,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -1.830792,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.01637,
+          "feature_value": 705.93666
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.001135,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.926242,
+          "feature_value": 32000.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.760231,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.4941,
+          "feature_value": 0.973557
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.480671,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": -0.466056,
+          "feature_value": 4096.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.464186,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r64_rep1_252",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r64_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 16.6086,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 37.1497,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0461,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3409,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0004,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.705285,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.128482,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.357249,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.913194,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.912515,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.629176,
+          "feature_value": 768.883344
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.492786,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.491637,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.49102,
+          "feature_value": 0.953681
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": -0.466056,
+          "feature_value": 4096.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r64_rep2_253",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r64_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 15.5176,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 36.7745,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0531,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3995,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0008,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0004,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.638499,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.138347,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.204725,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.890757,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.722,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603444,
+          "feature_value": 651.264719
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.496525,
+          "feature_value": 0.939797
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463448,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r64_rep3_254",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r64_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 15.5212,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 41.0293,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0517,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3481,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.63843,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.138428,
+          "feature_value": 64.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.204725,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.890757,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.722,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603506,
+          "feature_value": 752.852679
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.496525,
+          "feature_value": 0.948062
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463448,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r128_rep1_255",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r128_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 31.6415,
+      "POSIX_BYTES_WRITTEN": 262144000.0,
+      "POSIX_BYTES_READ": 262144000.0,
+      "POSIX_WRITES": 64000.0,
+      "POSIX_READS": 64000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128000.0,
+      "POSIX_F_META_TIME": 299.9153,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.1601,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3332,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0006,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.638499,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.134996,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.204725,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.890757,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.722,
+          "feature_value": 128000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.603444,
+          "feature_value": 1573.078879
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.488803,
+          "feature_value": 0.839688
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463448,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r128_rep2_256",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r128_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 43.2222,
+      "POSIX_BYTES_WRITTEN": 262144000.0,
+      "POSIX_BYTES_READ": 262144000.0,
+      "POSIX_WRITES": 64000.0,
+      "POSIX_READS": 64000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128000.0,
+      "POSIX_F_META_TIME": 436.2258,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.2103,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3201,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.567856,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.000403,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.029712,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.788699,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.76049,
+          "feature_value": 128000.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.735064,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.722103,
+          "feature_value": 1637.220785
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699283,
+          "feature_value": 0.789451
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.65236,
+          "feature_value": 47.98161
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n500_r128_rep3_257",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n500_r128_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 17.9847,
+      "POSIX_BYTES_WRITTEN": 262144000.0,
+      "POSIX_BYTES_READ": 262144000.0,
+      "POSIX_WRITES": 64000.0,
+      "POSIX_READS": 64000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128000.0,
+      "POSIX_F_META_TIME": 88.7953,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0602,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.378,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0006,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.61509,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.000403,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.033748,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.800409,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.780893,
+          "feature_value": 82.053477
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.760868,
+          "feature_value": 128000.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.72154,
+          "feature_value": 1386.412029
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.699283,
+          "feature_value": 0.939492
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r32_rep1_258",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r32_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 28.3116,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 33.3966,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0474,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3909,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0004,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.68943,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.12299,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.357249,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.913194,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.883192,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.622706,
+          "feature_value": 670.491253
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.504512,
+          "feature_value": 0.952333
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.492786,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.491871,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.483154,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r32_rep2_259",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r32_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 28.0313,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 39.4339,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0549,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3862,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.042367,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -1.839624,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -1.002998,
+          "feature_value": 678.539048
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.001105,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.913345,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.758839,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.503837,
+          "feature_value": 0.944856
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.480671,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.478182,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.405379,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r32_rep3_260",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r32_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 31.9006,
+      "POSIX_BYTES_WRITTEN": 131072000.0,
+      "POSIX_BYTES_READ": 131072000.0,
+      "POSIX_WRITES": 32000.0,
+      "POSIX_READS": 32000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 64000.0,
+      "POSIX_F_META_TIME": 36.1746,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.0473,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3597,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0004,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0002,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.584631,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.131933,
+          "feature_value": 32.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.204669,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.885329,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.713147,
+          "feature_value": 64000.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.596937,
+          "feature_value": 728.545541
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.500644,
+          "feature_value": 0.952494
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.463448,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r128_rep1_261",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r128_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 99.3439,
+      "POSIX_BYTES_WRITTEN": 524288000.0,
+      "POSIX_BYTES_READ": 524288000.0,
+      "POSIX_WRITES": 128000.0,
+      "POSIX_READS": 128000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256000.0,
+      "POSIX_F_META_TIME": 916.436,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.2026,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2906,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.549085,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.00999,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.033748,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.791331,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.758815,
+          "feature_value": 256000.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714783,
+          "feature_value": 3607.121534
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.69688,
+          "feature_value": 0.79728
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.617545,
+          "feature_value": 45.541662
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r128_rep2_262",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r128_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 95.0079,
+      "POSIX_BYTES_WRITTEN": 524288000.0,
+      "POSIX_BYTES_READ": 524288000.0,
+      "POSIX_WRITES": 128000.0,
+      "POSIX_READS": 128000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256000.0,
+      "POSIX_F_META_TIME": 854.9986,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.1913,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2902,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0005,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.543784,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.004689,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.033748,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.822774,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.809535,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.758815,
+          "feature_value": 256000.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714783,
+          "feature_value": 3612.689715
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.69688,
+          "feature_value": 0.808497
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.531632,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n1000_r128_rep3_263",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n1000_r128_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 112.9649,
+      "POSIX_BYTES_WRITTEN": 524288000.0,
+      "POSIX_BYTES_READ": 524288000.0,
+      "POSIX_WRITES": 128000.0,
+      "POSIX_READS": 128000.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256000.0,
+      "POSIX_F_META_TIME": 1365.9179,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.2361,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2373,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0,
+      "metadata_intensity": 0.0028,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -3.549227,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -2.00999,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -1.029928,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.818795,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": 0.789932,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.760781,
+          "feature_value": 256000.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.734828,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.714783,
+          "feature_value": 4416.975381
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.70333,
+          "feature_value": 0.763625
+        },
+        {
+          "feature": "io_active_fraction",
+          "shap_value": 0.652665,
+          "feature_value": 51.203723
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n5000_r128_rep1_264",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n5000_r128_rep1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 309.0269,
+      "POSIX_BYTES_WRITTEN": 536870912.0,
+      "POSIX_BYTES_READ": 536870912.0,
+      "POSIX_WRITES": 131072.0,
+      "POSIX_READS": 131072.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 262144.0,
+      "POSIX_F_META_TIME": 891.8987,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.1569,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2241,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0015,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -1.962769,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -1.839658,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.49555,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": -0.93812,
+          "feature_value": 4791.431751
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.925159,
+          "feature_value": 262144.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.776483,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.481502,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_ACCESS",
+          "shap_value": -0.466168,
+          "feature_value": 4096.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.464186,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.398869,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n5000_r128_rep2_265",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n5000_r128_rep2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 294.9499,
+      "POSIX_BYTES_WRITTEN": 536870912.0,
+      "POSIX_BYTES_READ": 536870912.0,
+      "POSIX_WRITES": 131072.0,
+      "POSIX_READS": 131072.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 262144.0,
+      "POSIX_F_META_TIME": 1180.4984,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.2593,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.3185,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0142,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.382799,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.073953,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.749001,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.89542,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.782358,
+          "feature_value": 262144.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.543338,
+          "feature_value": 3370.003038
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.465327,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.446174,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_MEM_NOT_ALIGNED",
+          "shap_value": -0.382153,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "mdtest_mdtest_fpp_explosion_n5000_r128_rep3_266",
+    "benchmark": "mdtest",
+    "scenario": "mdtest_fpp_explosion_n5000_r128_rep3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 292.0059,
+      "POSIX_BYTES_WRITTEN": 536870912.0,
+      "POSIX_BYTES_READ": 536870912.0,
+      "POSIX_WRITES": 131072.0,
+      "POSIX_READS": 131072.0,
+      "POSIX_SEQ_WRITES": 0.0,
+      "POSIX_SEQ_READS": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 262144.0,
+      "POSIX_F_META_TIME": 895.865,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 4096.0,
+      "avg_read_size": 4096.0,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.0,
+      "metadata_time_ratio": 0.1869,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 0.2756,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0009,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0003,
+      "interface_choice": 0.0,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {
+      "file_strategy": [
+        {
+          "feature": "stats_per_op",
+          "shap_value": -2.370548,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "nprocs",
+          "shap_value": -2.038065,
+          "feature_value": 128.0
+        },
+        {
+          "feature": "large_write_ratio",
+          "shap_value": -1.71779,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_FILENOS",
+          "shap_value": -0.871557,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "shap_value": -0.734582,
+          "feature_value": 262144.0
+        },
+        {
+          "feature": "POSIX_F_WRITE_TIME",
+          "shap_value": 0.565147,
+          "feature_value": 3895.60377
+        },
+        {
+          "feature": "POSIX_SIZE_WRITE_100K_1M",
+          "shap_value": -0.493793,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "STDIO_SEEKS",
+          "shap_value": -0.453319,
+          "feature_value": 0.0
+        },
+        {
+          "feature": "write_time_fraction",
+          "shap_value": -0.451803,
+          "feature_value": 0.812911
+        },
+        {
+          "feature": "POSIX_STATS",
+          "shap_value": -0.446887,
+          "feature_value": 0.0
+        }
+      ]
+    },
+    "source_code": {
+      "repo": "https://github.com/hpc/ior (bundled)",
+      "language": "C",
+      "io_functions": {
+        "create": "open(path, O_CREAT|O_WRONLY, 0600)",
+        "stat": "stat(path, &statbuf)",
+        "remove": "unlink(path)"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n32_r1_539",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n32_r1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.3328,
+      "POSIX_BYTES_WRITTEN": 926906368.0,
+      "POSIX_BYTES_READ": 926906368.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.2909,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.0589,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 398.8722,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0004,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 0.0077,
+      "throughput_utilization": 0.0007,
+      "healthy": 0.2748
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n32_r2_540",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n32_r2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.4022,
+      "POSIX_BYTES_WRITTEN": 926906368.0,
+      "POSIX_BYTES_READ": 926906368.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.2934,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1086,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 769.8834,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0004,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 0.0071,
+      "throughput_utilization": 0.0005,
+      "healthy": 0.4887
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n32_r3_541",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n32_r3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.4206,
+      "POSIX_BYTES_WRITTEN": 926906368.0,
+      "POSIX_BYTES_READ": 926906368.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.295,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.0929,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 643.4893,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 0.0081,
+      "throughput_utilization": 0.0007,
+      "healthy": 0.3087
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n64_r1_542",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n64_r1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.692,
+      "POSIX_BYTES_WRITTEN": 1853812736.0,
+      "POSIX_BYTES_READ": 1853812736.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.0619,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1208,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 479.8134,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0001,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.001
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n64_r2_543",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n64_r2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.4631,
+      "POSIX_BYTES_WRITTEN": 1853812736.0,
+      "POSIX_BYTES_READ": 1853812736.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.0935,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1224,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 472.7936,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0003,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0003,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.0012
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n64_r3_544",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n64_r3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.4982,
+      "POSIX_BYTES_WRITTEN": 1853812736.0,
+      "POSIX_BYTES_READ": 1853812736.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.0982,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1237,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 476.4377,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0002,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.0009
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n128_r1_545",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n128_r1",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 1.2348,
+      "POSIX_BYTES_WRITTEN": 3707625472.0,
+      "POSIX_BYTES_READ": 3707625472.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 5.5274,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1667,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 268.4085,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0029,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.0
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n128_r2_546",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n128_r2",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 1.8898,
+      "POSIX_BYTES_WRITTEN": 3707625472.0,
+      "POSIX_BYTES_READ": 3707625472.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 5.5324,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1424,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 222.5791,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0023,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0001,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0003,
+      "healthy": 0.0001
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_many_ranks_p100000_n128_r3_547",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_many_ranks_p100000_n128_r3",
+    "bottleneck_labels": [
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 2.3772,
+      "POSIX_BYTES_WRITTEN": 3707625472.0,
+      "POSIX_BYTES_READ": 3707625472.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 5.3259,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2896582.4,
+      "avg_read_size": 2896582.4,
+      "small_io_ratio": 0.0,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1154,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 181.5494,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0018,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0001,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0004,
+      "healthy": 0.0001
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r1_557",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n32_r1",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.2938,
+      "POSIX_BYTES_WRITTEN": 805367168.0,
+      "POSIX_BYTES_READ": 805367168.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.2875,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.0942,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 582.7123,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.1648,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0003,
+      "file_strategy": 0.0083,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.2706
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r2_558",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n32_r2",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.5096,
+      "POSIX_BYTES_WRITTEN": 805367168.0,
+      "POSIX_BYTES_READ": 805367168.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.2756,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1117,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 735.0014,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.0221,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0003,
+      "file_strategy": 0.0087,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.3948
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r3_559",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n32_r3",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 32.0,
+      "runtime_seconds": 0.2185,
+      "POSIX_BYTES_WRITTEN": 805367168.0,
+      "POSIX_BYTES_READ": 805367168.0,
+      "POSIX_WRITES": 320.0,
+      "POSIX_READS": 320.0,
+      "POSIX_SEQ_WRITES": 288.0,
+      "POSIX_SEQ_READS": 288.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 128.0,
+      "POSIX_F_META_TIME": 0.3377,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1442,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 803.9928,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.1615,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0003,
+      "file_strategy": 0.0099,
+      "throughput_utilization": 0.0002,
+      "healthy": 0.3729
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r1_560",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n64_r1",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.2514,
+      "POSIX_BYTES_WRITTEN": 1610734336.0,
+      "POSIX_BYTES_READ": 1610734336.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.1723,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.18,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 603.0837,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9996,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0004,
+      "file_strategy": 0.9999,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0008
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n64_r2",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.217,
+      "POSIX_BYTES_WRITTEN": 1610734336.0,
+      "POSIX_BYTES_READ": 1610734336.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.3098,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1827,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 549.6435,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9995,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 0.9999,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.001
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n64_r3",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 64.0,
+      "runtime_seconds": 0.3139,
+      "POSIX_BYTES_WRITTEN": 1610734336.0,
+      "POSIX_BYTES_READ": 1610734336.0,
+      "POSIX_WRITES": 640.0,
+      "POSIX_READS": 640.0,
+      "POSIX_SEQ_WRITES": 576.0,
+      "POSIX_SEQ_READS": 576.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 256.0,
+      "POSIX_F_META_TIME": 1.2247,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1881,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 609.5233,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9995,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0004,
+      "file_strategy": 0.9999,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0008
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n128_r1",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 1.036,
+      "POSIX_BYTES_WRITTEN": 3221468672.0,
+      "POSIX_BYTES_READ": 3221468672.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 6.2268,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.2164,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 285.7032,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9999,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0001,
+      "healthy": 0.0
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n128_r2",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 0.7235,
+      "POSIX_BYTES_WRITTEN": 3221468672.0,
+      "POSIX_BYTES_READ": 3221468672.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 6.2544,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.2202,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 290.8452,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9999,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  },
+  {
+    "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+    "benchmark": "hacc_io",
+    "scenario": "hacc_fpp_small_many_p50_n128_r3",
+    "bottleneck_labels": [
+      "access_granularity",
+      "file_strategy"
+    ],
+    "darshan_signature": {
+      "nprocs": 128.0,
+      "runtime_seconds": 1.1138,
+      "POSIX_BYTES_WRITTEN": 3221468672.0,
+      "POSIX_BYTES_READ": 3221468672.0,
+      "POSIX_WRITES": 1280.0,
+      "POSIX_READS": 1280.0,
+      "POSIX_SEQ_WRITES": 1152.0,
+      "POSIX_SEQ_READS": 1152.0,
+      "POSIX_FSYNCS": 0.0,
+      "POSIX_OPENS": 512.0,
+      "POSIX_F_META_TIME": 5.4843,
+      "MPIIO_COLL_WRITES": 0.0,
+      "MPIIO_INDEP_WRITES": 0.0,
+      "avg_write_size": 2516772.4,
+      "avg_read_size": 2516772.4,
+      "small_io_ratio": 0.9,
+      "seq_write_ratio": 0.9,
+      "metadata_time_ratio": 0.1994,
+      "collective_ratio": 0.0,
+      "total_bw_mb_s": 292.6526,
+      "fsync_ratio": 0.0
+    },
+    "ml_predictions": {
+      "access_granularity": 0.9999,
+      "metadata_intensity": 0.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 0.0,
+      "interface_choice": 0.0002,
+      "file_strategy": 1.0,
+      "throughput_utilization": 0.0,
+      "healthy": 0.0
+    },
+    "shap_top_features": {},
+    "source_code": {
+      "repo": "ANL HACC-IO proxy",
+      "language": "C",
+      "io_functions": {
+        "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
+        "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
+        "fpp": "write(fd, buf, nbytes)  /* file-per-process */"
+      }
+    },
+    "fixes": [
+      {
+        "cause": "I/O operations with very small transfer sizes (<1MB), causing excessive system call overhead",
+        "fix": "Increase transfer/buffer size to >=1MB. For POSIX: aggregate small writes into large buffers. For MPI-IO: use collective I/O with larger datatypes.",
+        "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+        "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+        "dimension": "access_granularity"
+      },
+      {
+        "cause": "File-per-process pattern creating excessive files, overwhelming metadata servers",
+        "fix": "Use shared files with MPI-IO collective I/O. For checkpointing, use HDF5 or ADIOS2 for structured shared-file output.",
+        "code_before": "/* Each of 1000 ranks creates its own file */\nchar fname[256];\nsprintf(fname, \"output_rank_%d.dat\", rank);\nfd = open(fname, O_CREAT|O_WRONLY);",
+        "code_after": "/* Single shared file with MPI-IO */\nMPI_File_open(comm, \"output_shared.dat\", MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\nMPI_File_write_at_all(fh, rank*chunk_size, buf, chunk_size, MPI_BYTE, &status);",
+        "dimension": "file_strategy"
+      }
+    ]
+  }
+]
