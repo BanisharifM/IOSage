@@ -1,0 +1,1224 @@
+{
+  "A0": [
+    {
+      "workload": "FULL_ior_ior_small_posix_t64_n4_r1",
+      "pipeline_latency_ms": 101.4,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 1.0,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "step2_shap": {
+        "access_granularity": [
+          {
+            "feature": "POSIX_FILE_NOT_ALIGNED",
+            "value": 819144.0,
+            "shap_value": 3.395044,
+            "direction": "increases_risk",
+            "abs_importance": 3.395044
+          },
+          {
+            "feature": "POSIX_ACCESS1_COUNT",
+            "value": 819200.0,
+            "shap_value": 1.765648,
+            "direction": "increases_risk",
+            "abs_importance": 1.765648
+          },
+          {
+            "feature": "POSIX_WRITES",
+            "value": 409600.0,
+            "shap_value": 1.422673,
+            "direction": "increases_risk",
+            "abs_importance": 1.422673
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+            "similarity": 0.9231,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+            "similarity": 0.9193,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+            "similarity": 0.9165,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe access granularity problems with extremely small I/O operations. The Darshan data shows 819,200 POSIX access operations with an average write size of only 64 bytes, resulting in 819,144 unaligned file accesses. With 26.2MB total written across 409,600 writes, each write operation transfers just 64 bytes on average. This creates massive syscall overhead - the job performs over 800K small I/O operations when it could accomplish the same work with just 25 large operations (26MB \u00f7 1MB chunks). The small_io_ratio of 1.0 confirms that 100% of I/O operations are inefficiently small, leading to poor bandwidth utilization at only 29.1 MB/s.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs 409,600 write operations of 64 bytes each instead of buffering into large chunks. This creates 819,200 total POSIX accesses with excessive syscall overhead. Each 64-byte write requires a full kernel transition, making the I/O bound by syscall latency rather than bandwidth.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "16x-25x based on reducing 819,200 syscalls to ~25 large operations",
+              "kb_citation": "ior_ior_small_posix_t64_n4_r1_0",
+              "confidence": "high",
+              "api_change": "POSIX write buffering - aggregate small writes into 1MB+ chunks"
+            }
+          ],
+          "overall_expected_improvement": "16x-25x speedup by eliminating syscall overhead through write buffering"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13374.8,
+          "tokens_input": 1785,
+          "tokens_output": 537,
+          "timestamp": "2026-03-23T05:59:08Z"
+        }
+      }
+    },
+    {
+      "workload": "FULL_ior_ior_interface_mpiio_indep_t1048576_n128_r1",
+      "pipeline_latency_ms": 32.7,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0028,
+          "metadata_intensity": 0.0002,
+          "parallelism_efficiency": 0.0001,
+          "access_pattern": 0.0,
+          "interface_choice": 0.9999,
+          "file_strategy": 0.0048,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0001
+        },
+        "detected": [
+          "interface_choice"
+        ]
+      },
+      "step2_shap": {
+        "interface_choice": [
+          {
+            "feature": "MPIIO_INDEP_WRITES",
+            "value": 51200.0,
+            "shap_value": 2.045104,
+            "direction": "increases_risk",
+            "abs_importance": 2.045104
+          },
+          {
+            "feature": "MPIIO_ACCESS1_COUNT",
+            "value": 102400.0,
+            "shap_value": 1.76294,
+            "direction": "increases_risk",
+            "abs_importance": 1.76294
+          },
+          {
+            "feature": "MPIIO_INDEP_READS",
+            "value": 51200.0,
+            "shap_value": 1.090828,
+            "direction": "increases_risk",
+            "abs_importance": 1.090828
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141",
+            "similarity": 0.9766,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r2_142",
+            "similarity": 0.9758,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+            "similarity": 0.9673,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O performance problems due to suboptimal interface choice. With 128 processes writing 53.7 GB of data at only 1.622 MB/s total bandwidth, the job is using MPI-IO independent operations (51,200 independent writes and reads) instead of collective operations for shared file access. The high POSIX_F_SLOWEST_RANK_TIME of 548 seconds indicates significant I/O serialization and contention. The sequential write pattern (seq_write_ratio=1.0) with 1MB average write size suggests this workload would benefit greatly from collective I/O coordination.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "The job is using MPI-IO independent operations (MPI_File_write/read) for shared file access with 128 ranks, causing poor coordination and serialization. The 51,200 independent writes and reads create contention, resulting in extremely low bandwidth (1.622 MB/s total). Collective operations would coordinate these accesses automatically.",
+              "code_before": "/* MPI-IO independent operations on shared file */\nMPI_File_write(fh, buf, transferSize, MPI_BYTE, &status);\nMPI_File_read(fh, buf, transferSize, MPI_BYTE, &status);",
+              "code_after": "/* MPI-IO collective operations with proper file view */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status);\nMPI_File_read_all(fh, buf, transferSize, MPI_BYTE, &status);",
+              "expected_speedup": "Significant improvement expected based on benchmark evidence showing collective operations outperform independent operations for shared file access patterns",
+              "kb_citation": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141, ior_ior_interface_mpiio_indep_t1048576_n128_r2_142, ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+              "confidence": "high",
+              "api_change": "MPI_File_write -> MPI_File_write_all, MPI_File_read -> MPI_File_read_all"
+            }
+          ],
+          "overall_expected_improvement": "Substantial bandwidth improvement expected from eliminating I/O serialization and contention through collective operations, though specific speedup cannot be quantified without direct benchmark comparison data"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11597.3,
+          "tokens_input": 1868,
+          "tokens_output": 676,
+          "timestamp": "2026-03-23T06:40:47Z"
+        }
+      }
+    },
+    {
+      "workload": "FULL_mdtest_mdtest_meta_shared_n1000_r4_rep1",
+      "pipeline_latency_ms": 50.0,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0,
+          "metadata_intensity": 1.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0004
+        },
+        "detected": [
+          "metadata_intensity"
+        ]
+      },
+      "step2_shap": {
+        "metadata_intensity": [
+          {
+            "feature": "POSIX_F_META_TIME",
+            "value": 6.180927,
+            "shap_value": 2.61792,
+            "direction": "increases_risk",
+            "abs_importance": 2.61792
+          },
+          {
+            "feature": "total_bw_mb_s",
+            "value": 0.0,
+            "shap_value": 1.602965,
+            "direction": "increases_risk",
+            "abs_importance": 1.602965
+          },
+          {
+            "feature": "io_duration",
+            "value": 25.668339,
+            "shap_value": -0.707108,
+            "direction": "decreases_risk",
+            "abs_importance": 0.707108
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep2_148",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep3_149",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe metadata intensity bottleneck with 8,000 POSIX file opens consuming 6.18 seconds of metadata time out of 25.67 total I/O duration (metadata_time_ratio = 1.0). The job achieves 0.0 MB/s bandwidth, indicating it performs virtually no data I/O - only metadata operations. This pattern suggests a file-per-process approach where each process creates/opens many small files, overwhelming the filesystem's metadata servers.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "The job performs 8,000 POSIX opens with zero data bandwidth, indicating excessive file creation/opening without meaningful data I/O. This creates severe metadata server contention.",
+              "code_before": "for (i=0; i<50000; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  close(fd);\n}",
+              "code_after": "/* Create files in batches, or use single shared file */\nMPI_File_open(comm, shared_path, MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);",
+              "expected_speedup": "Significant reduction in metadata overhead - benchmark shows this pattern can be eliminated by consolidating to shared files",
+              "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+              "confidence": "high",
+              "api_change": "POSIX open/close -> MPI_File_open for shared file access"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "If file-per-process is required, batch metadata operations to reduce filesystem round trips and metadata server load.",
+              "code_before": "for (i=0; i<files_per_proc; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  stat(path_i, &statbuf);\n  close(fd);\n}",
+              "code_after": "/* Batch create files first, then batch stat operations */\nfor (i=0; i<files_per_proc; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  close(fd);\n}\n/* Separate stat phase if needed */\nfor (i=0; i<files_per_proc; i++) {\n  stat(path_i, &statbuf);\n}",
+              "expected_speedup": "Moderate improvement by reducing interleaved metadata operations",
+              "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep2_148",
+              "confidence": "medium",
+              "api_change": "Restructure POSIX calls to batch similar operations"
+            }
+          ],
+          "overall_expected_improvement": "High improvement potential - eliminating metadata_intensity bottleneck could reduce I/O time from 25.67s to primarily data transfer time, as benchmark evidence shows this pattern can be largely eliminated through file consolidation"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 41898.4,
+          "tokens_input": 1637,
+          "tokens_output": 803,
+          "timestamp": "2026-03-23T06:40:09Z"
+        }
+      }
+    },
+    {
+      "workload": "FULL_dlio_dlio_ckpt_ms100000000_n4_rep1",
+      "pipeline_latency_ms": 62.1,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.1156,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0001,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0147,
+          "healthy": 0.0904
+        },
+        "detected": [
+          "healthy"
+        ]
+      },
+      "step2_shap": {
+        "healthy": [
+          {
+            "feature": "POSIX_READS",
+            "value": 3832.0,
+            "shap_value": -2.706574,
+            "direction": "decreases_risk",
+            "abs_importance": 2.706574
+          },
+          {
+            "feature": "POSIX_MAX_BYTE_WRITTEN",
+            "value": 493.0,
+            "shap_value": 1.191416,
+            "direction": "increases_risk",
+            "abs_importance": 1.191416
+          },
+          {
+            "feature": "POSIX_ACCESS1_COUNT",
+            "value": 8.0,
+            "shap_value": 0.753682,
+            "direction": "increases_risk",
+            "abs_importance": 0.753682
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.9974,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.9916,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.99,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job shows healthy I/O behavior with no significant bottlenecks detected (confidence=0.09). The application performs 3,832 POSIX reads with good sequential access patterns. However, there are some minor inefficiencies: small average write size (247 bytes), high metadata time ratio (98.22%), and mixed sequential write patterns (50% sequential). The total bandwidth of 197 MB/s is reasonable for the workload size.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "healthy_optimization",
+              "explanation": "The job is already performing well with no significant I/O bottlenecks. The benchmark evidence shows this is an optimal I/O pattern using collective MPI-IO with large transfers. The current approach with numpy file operations and appropriate transfer sizes is efficient.",
+              "code_before": "/* Current implementation is already optimal */\nnp.fromfile(path, dtype=np.float32, count=record_length)\ndata.tofile(checkpoint_path)",
+              "code_after": "/* No changes needed - maintain current pattern */\nnp.fromfile(path, dtype=np.float32, count=record_length)\ndata.tofile(checkpoint_path)",
+              "expected_speedup": "No speedup expected - already optimal",
+              "kb_citation": "dlio_dlio_healthy_rl1048576_n4_rep2_310, dlio_dlio_healthy_rl4194304_n4_rep2_316, dlio_dlio_healthy_rl1048576_n4_rep1_309",
+              "confidence": "high",
+              "api_change": "No API change needed"
+            }
+          ],
+          "overall_expected_improvement": "No improvement needed - current I/O pattern is already efficient based on benchmark evidence"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 8833.2,
+          "tokens_input": 1515,
+          "tokens_output": 451,
+          "timestamp": "2026-03-23T06:43:52Z"
+        }
+      }
+    }
+  ],
+  "A1": [
+    {
+      "condition": "A1_no_ml",
+      "workload": "ior_ior_small_posix_t64_n4_r1",
+      "has_ml": false,
+      "has_shap": false,
+      "has_kb": false,
+      "recommendation": {
+        "diagnosis": "Severe small I/O problem with 409,600 writes of only 64 bytes each. This creates massive overhead with 1:1 read/write ratio suggesting inefficient data processing. High metadata time (19.16%) and extremely low bandwidth (29.1 MB/s) indicate the application is completely I/O bound due to tiny operations.",
+        "recommendations": [
+          {
+            "optimization": "Implement write buffering to aggregate small writes",
+            "code_before": "for (int i = 0; i < data_size; i++) {\n    write(fd, &data[i], sizeof(data_element));\n}",
+            "code_after": "#define BUFFER_SIZE (1024*1024)\nchar buffer[BUFFER_SIZE];\nsize_t buf_pos = 0;\n\nfor (int i = 0; i < data_size; i++) {\n    memcpy(buffer + buf_pos, &data[i], sizeof(data_element));\n    buf_pos += sizeof(data_element);\n    \n    if (buf_pos + sizeof(data_element) > BUFFER_SIZE) {\n        write(fd, buffer, buf_pos);\n        buf_pos = 0;\n    }\n}\nif (buf_pos > 0) write(fd, buffer, buf_pos);",
+            "expected_speedup": "50-100x improvement by reducing system calls from 409,600 to ~26"
+          },
+          {
+            "optimization": "Use memory mapping for read-write operations",
+            "code_before": "char data[64];\nfor (int i = 0; i < count; i++) {\n    read(fd, data, 64);\n    process_data(data);\n    write(out_fd, data, 64);\n}",
+            "code_after": "char *mapped_in = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, in_fd, 0);\nchar *mapped_out = mmap(NULL, file_size, PROT_WRITE, MAP_SHARED, out_fd, 0);\n\nfor (int i = 0; i < count; i++) {\n    process_data(mapped_in + i*64);\n    memcpy(mapped_out + i*64, mapped_in + i*64, 64);\n}\n\nmunmap(mapped_in, file_size);\nmunmap(mapped_out, file_size);",
+            "expected_speedup": "10-20x improvement by eliminating all read/write system calls"
+          },
+          {
+            "optimization": "Implement parallel I/O with larger chunks per process",
+            "code_before": "// Each process writes 64-byte records sequentially\nfor (int i = rank; i < total_records; i += nprocs) {\n    write(fd, &records[i], 64);\n}",
+            "code_after": "// Each process handles larger contiguous chunks\nsize_t chunk_size = total_size / nprocs;\nsize_t offset = rank * chunk_size;\nsize_t records_per_chunk = chunk_size / 64;\n\n// Aggregate into larger buffer\nchar *write_buffer = malloc(chunk_size);\nfor (int i = 0; i < records_per_chunk; i++) {\n    memcpy(write_buffer + i*64, &records[offset/64 + i], 64);\n}\npwrite(fd, write_buffer, chunk_size, offset);\nfree(write_buffer);",
+            "expected_speedup": "5-10x improvement through better parallelization and reduced contention"
+          },
+          {
+            "optimization": "Remove unnecessary fsync calls",
+            "code_before": "for (int i = 0; i < nprocs; i++) {\n    if (rank == i) {\n        write_data();\n        fsync(fd);\n    }\n    MPI_Barrier(MPI_COMM_WORLD);\n}",
+            "code_after": "write_data();\nMPI_Barrier(MPI_COMM_WORLD);\nif (rank == 0) {\n    fsync(fd);  // Only sync once at the end\n}",
+            "expected_speedup": "2-3x improvement by reducing synchronous I/O overhead"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 37824.1,
+        "tokens_input": 269,
+        "tokens_output": 1103,
+        "timestamp": "2026-03-23T07:18:04Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "n_recommendations": 0,
+        "n_grounded": 0,
+        "note": "No KB provided \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A1_no_ml",
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1",
+      "has_ml": false,
+      "has_shap": false,
+      "has_kb": false,
+      "recommendation": {
+        "diagnosis": {
+          "primary_issues": [
+            "Extremely low bandwidth utilization (1.622 MB/s vs expected 100-1000+ MB/s for parallel filesystem)",
+            "Excessive synchronization overhead with 128 fsync calls (one per process)",
+            "Poor write aggregation despite good sequential access pattern",
+            "Potential file-per-process pattern causing metadata contention"
+          ],
+          "performance_bottlenecks": [
+            "Synchronous I/O operations blocking computation",
+            "Lack of collective I/O operations",
+            "Individual process fsync calls serializing writes",
+            "Missing write buffering and aggregation"
+          ]
+        },
+        "recommendations": [
+          {
+            "optimization": "Replace individual fsync calls with collective I/O",
+            "code_before": "// Each process writes and syncs independently\nfor (int i = 0; i < local_data_size; i++) {\n    fwrite(&data[i], sizeof(double), 1, fp);\n}\nfsync(fileno(fp));\nfclose(fp);",
+            "code_after": "// Use MPI-IO collective operations\nMPI_File fh;\nMPI_File_open(MPI_COMM_WORLD, filename, \n              MPI_MODE_CREATE | MPI_MODE_WRONLY, \n              MPI_INFO_NULL, &fh);\nMPI_File_write_at_all(fh, offset, data, count, \n                      MPI_DOUBLE, &status);\nMPI_File_sync(fh);  // Single collective sync\nMPI_File_close(&fh);",
+            "expected_speedup": "10-50x improvement in bandwidth utilization"
+          },
+          {
+            "optimization": "Implement write aggregation and buffering",
+            "code_before": "// Writing small chunks individually\nfor (int timestep = 0; timestep < nsteps; timestep++) {\n    fwrite(buffer, 1048576, 1, fp);\n    fflush(fp);\n}",
+            "code_after": "// Aggregate writes into larger buffers\nsize_t buffer_size = 16 * 1048576;  // 16MB buffer\nchar *write_buffer = malloc(buffer_size);\nsize_t buffer_pos = 0;\n\nfor (int timestep = 0; timestep < nsteps; timestep++) {\n    memcpy(write_buffer + buffer_pos, data, 1048576);\n    buffer_pos += 1048576;\n    \n    if (buffer_pos >= buffer_size || timestep == nsteps-1) {\n        fwrite(write_buffer, buffer_pos, 1, fp);\n        buffer_pos = 0;\n    }\n}",
+            "expected_speedup": "3-5x reduction in I/O overhead"
+          },
+          {
+            "optimization": "Use shared file with proper striping instead of file-per-process",
+            "code_before": "// Each process creates its own file\nchar filename[256];\nsprintf(filename, \"output_rank_%d.dat\", rank);\nFILE *fp = fopen(filename, \"wb\");",
+            "code_after": "// Single shared file with MPI-IO\nMPI_Info info;\nMPI_Info_create(&info);\nMPI_Info_set(info, \"striping_factor\", \"8\");\nMPI_Info_set(info, \"striping_unit\", \"1048576\");\n\nMPI_File_open(MPI_COMM_WORLD, \"output_shared.dat\",\n              MPI_MODE_CREATE | MPI_MODE_WRONLY,\n              info, &fh);\n              \n// Calculate non-overlapping offset per rank\nMPI_Offset offset = rank * local_data_size * sizeof(double);",
+            "expected_speedup": "5-20x improvement through reduced metadata operations"
+          },
+          {
+            "optimization": "Implement asynchronous I/O to overlap with computation",
+            "code_before": "// Synchronous I/O blocking computation\ncompute_timestep();\nwrite_checkpoint_data();\ncompute_next_timestep();",
+            "code_after": "// Asynchronous I/O with double buffering\nMPI_Request write_request = MPI_REQUEST_NULL;\ndouble *buffer1 = malloc(data_size);\ndouble *buffer2 = malloc(data_size);\ndouble *current_buffer = buffer1;\n\nfor (int step = 0; step < nsteps; step++) {\n    compute_timestep(current_buffer);\n    \n    // Wait for previous write to complete\n    if (write_request != MPI_REQUEST_NULL) {\n        MPI_Wait(&write_request, MPI_STATUS_IGNORE);\n    }\n    \n    // Start async write of current data\n    MPI_File_iwrite_at(fh, offset, current_buffer, count,\n                       MPI_DOUBLE, &write_request);\n    \n    // Switch buffers\n    current_buffer = (current_buffer == buffer1) ? buffer2 : buffer1;\n}",
+            "expected_speedup": "2-4x overall runtime improvement through computation/I/O overlap"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 21147.4,
+        "tokens_input": 257,
+        "tokens_output": 1356,
+        "timestamp": "2026-03-23T07:18:25Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "n_recommendations": 0,
+        "n_grounded": 0,
+        "note": "No KB provided \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A1_no_ml",
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep1",
+      "has_ml": false,
+      "has_shap": false,
+      "has_kb": false,
+      "recommendation": {
+        "diagnosis": "Critical I/O performance issue detected. The metadata_time_ratio of 1.0 indicates that 100% of I/O time is spent on metadata operations, suggesting excessive file operations with minimal data transfer. This is a severe anti-pattern that can cause orders of magnitude performance degradation.",
+        "recommendations": [
+          {
+            "code_before": "// Opening/closing files repeatedly in loops\nfor (int i = 0; i < num_timesteps; i++) {\n    char filename[256];\n    sprintf(filename, \"output_%d.dat\", i);\n    FILE *fp = fopen(filename, \"w\");\n    fwrite(&data[i], sizeof(double), 1, fp);\n    fclose(fp);\n}",
+            "code_after": "// Batch writes to single file with headers\nFILE *fp = fopen(\"output_combined.dat\", \"w\");\nfor (int i = 0; i < num_timesteps; i++) {\n    fwrite(&i, sizeof(int), 1, fp);  // timestep header\n    fwrite(&data[i], sizeof(double), 1, fp);\n}\nfclose(fp);",
+            "expected_speedup": "10-100x reduction in I/O time"
+          },
+          {
+            "code_before": "// Individual stat/access calls per file\nfor (int i = 0; i < file_count; i++) {\n    struct stat st;\n    if (stat(filenames[i], &st) == 0) {\n        process_file(filenames[i]);\n    }\n}",
+            "code_after": "// Use directory scanning with readdir\nDIR *dir = opendir(\"./\");\nstruct dirent *entry;\nwhile ((entry = readdir(dir)) != NULL) {\n    if (strstr(entry->d_name, \"input_\")) {\n        process_file(entry->d_name);\n    }\n}\nclosedir(dir);",
+            "expected_speedup": "5-20x reduction in metadata overhead"
+          },
+          {
+            "code_before": "// MPI-IO with individual file per rank\nchar filename[256];\nsprintf(filename, \"rank_%d_output.dat\", rank);\nMPI_File fh;\nMPI_File_open(MPI_COMM_SELF, filename, \n              MPI_MODE_CREATE | MPI_MODE_WRONLY, \n              MPI_INFO_NULL, &fh);\nMPI_File_write(fh, data, count, MPI_DOUBLE, &status);\nMPI_File_close(&fh);",
+            "code_after": "// Collective MPI-IO to shared file\nMPI_File fh;\nMPI_File_open(MPI_COMM_WORLD, \"shared_output.dat\",\n              MPI_MODE_CREATE | MPI_MODE_WRONLY,\n              MPI_INFO_NULL, &fh);\nMPI_Offset offset = rank * count * sizeof(double);\nMPI_File_write_at_all(fh, offset, data, count, \n                      MPI_DOUBLE, &status);\nMPI_File_close(&fh);",
+            "expected_speedup": "20-50x improvement with collective I/O"
+          },
+          {
+            "code_before": "// Frequent small writes without buffering\nfor (int i = 0; i < large_array_size; i++) {\n    fprintf(fp, \"%f\\n\", array[i]);\n    fflush(fp);  // Force immediate write\n}",
+            "code_after": "// Buffered writes with larger chunks\nsetvbuf(fp, NULL, _IOFBF, 64*1024);  // 64KB buffer\nfor (int i = 0; i < large_array_size; i++) {\n    fprintf(fp, \"%f\\n\", array[i]);\n}\n// fflush only at end if needed",
+            "expected_speedup": "5-15x reduction in system calls"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 15196.2,
+        "tokens_input": 139,
+        "tokens_output": 1054,
+        "timestamp": "2026-03-23T07:18:41Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "n_recommendations": 0,
+        "n_grounded": 0,
+        "note": "No KB provided \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A1_no_ml",
+      "workload": "dlio_dlio_ckpt_ms100000000_n4_rep1",
+      "has_ml": false,
+      "has_shap": false,
+      "has_kb": false,
+      "recommendation": {
+        "diagnosis": "This job exhibits severe I/O performance issues with extremely small write operations (247 bytes average), excessive metadata operations consuming 98% of I/O time, and a massive read-to-write ratio (3832:8) indicating inefficient data access patterns. The high small I/O ratio (58%) and poor sequential access (50%) suggest fragmented I/O operations.",
+        "recommendations": [
+          {
+            "optimization": "Implement write buffering to reduce small writes",
+            "code_before": "for (int i = 0; i < n_iterations; i++) {\n    fwrite(&data[i], sizeof(float), 1, fp);\n    fflush(fp);\n}",
+            "code_after": "#define BUFFER_SIZE 65536\nchar write_buffer[BUFFER_SIZE];\nsize_t buffer_pos = 0;\n\nfor (int i = 0; i < n_iterations; i++) {\n    if (buffer_pos + sizeof(float) > BUFFER_SIZE) {\n        fwrite(write_buffer, 1, buffer_pos, fp);\n        buffer_pos = 0;\n    }\n    memcpy(write_buffer + buffer_pos, &data[i], sizeof(float));\n    buffer_pos += sizeof(float);\n}\nif (buffer_pos > 0) {\n    fwrite(write_buffer, 1, buffer_pos, fp);\n}",
+            "expected_speedup": "10-50x reduction in write operations"
+          },
+          {
+            "optimization": "Batch file operations to reduce metadata overhead",
+            "code_before": "for (int i = 0; i < num_files; i++) {\n    char filename[256];\n    sprintf(filename, \"data_%d.dat\", i);\n    FILE *fp = fopen(filename, \"r\");\n    fread(buffer, size, 1, fp);\n    fclose(fp);\n}",
+            "code_after": "// Pre-open all files\nFILE *file_handles[num_files];\nfor (int i = 0; i < num_files; i++) {\n    char filename[256];\n    sprintf(filename, \"data_%d.dat\", i);\n    file_handles[i] = fopen(filename, \"r\");\n}\n\n// Batch read operations\nfor (int i = 0; i < num_files; i++) {\n    fread(buffer, size, 1, file_handles[i]);\n}\n\n// Close all files\nfor (int i = 0; i < num_files; i++) {\n    fclose(file_handles[i]);\n}",
+            "expected_speedup": "5-20x reduction in metadata operations"
+          },
+          {
+            "optimization": "Use MPI-IO collective operations for coordinated access",
+            "code_before": "// Each process writes independently\nMPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);\nMPI_File_write(fh, local_data, count, MPI_FLOAT, &status);\nMPI_File_close(&fh);",
+            "code_after": "// Collective I/O with shared file handle\nMPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);\nMPI_Offset offset = rank * count * sizeof(float);\nMPI_File_write_at_all(fh, offset, local_data, count, MPI_FLOAT, &status);\nMPI_File_close(&fh);",
+            "expected_speedup": "3-8x improvement in parallel I/O efficiency"
+          },
+          {
+            "optimization": "Implement read-ahead caching to reduce redundant reads",
+            "code_before": "for (int i = 0; i < data_points; i++) {\n    fseek(fp, i * sizeof(float), SEEK_SET);\n    fread(&value, sizeof(float), 1, fp);\n    process_value(value);\n}",
+            "code_after": "#define CACHE_SIZE 1024\nfloat read_cache[CACHE_SIZE];\nint cache_start = -1, cache_end = -1;\n\nfor (int i = 0; i < data_points; i++) {\n    if (i < cache_start || i >= cache_end) {\n        cache_start = i;\n        cache_end = min(i + CACHE_SIZE, data_points);\n        fseek(fp, cache_start * sizeof(float), SEEK_SET);\n        fread(read_cache, sizeof(float), cache_end - cache_start, fp);\n    }\n    float value = read_cache[i - cache_start];\n    process_value(value);\n}",
+            "expected_speedup": "20-100x reduction in read operations"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 18128.5,
+        "tokens_input": 250,
+        "tokens_output": 1275,
+        "timestamp": "2026-03-23T07:18:59Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "n_recommendations": 0,
+        "n_grounded": 0,
+        "note": "No KB provided \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    }
+  ],
+  "A2": [
+    {
+      "condition": "A2_no_kb",
+      "workload": "ior_ior_small_posix_t64_n4_r1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "access_granularity"
+      ],
+      "recommendation": {
+        "diagnosis": "Severe small I/O bottleneck detected with 64-byte average write size and 819,144 unaligned operations. The application is performing extremely fine-grained I/O with 409,600 writes totaling 26MB, resulting in poor bandwidth utilization (29.1 MB/s). High metadata overhead (19.16% of runtime) indicates excessive system call frequency.",
+        "recommendations": [
+          {
+            "optimization": "Implement write buffering to aggregate small writes",
+            "code_before": "for (int i = 0; i < n_elements; i++) {\n    write(fd, &data[i], sizeof(data_element));\n}",
+            "code_after": "#define BUFFER_SIZE (1024*1024)  // 1MB buffer\nchar write_buffer[BUFFER_SIZE];\nsize_t buffer_pos = 0;\n\nfor (int i = 0; i < n_elements; i++) {\n    if (buffer_pos + sizeof(data_element) > BUFFER_SIZE) {\n        write(fd, write_buffer, buffer_pos);\n        buffer_pos = 0;\n    }\n    memcpy(write_buffer + buffer_pos, &data[i], sizeof(data_element));\n    buffer_pos += sizeof(data_element);\n}\n// Flush remaining data\nif (buffer_pos > 0) {\n    write(fd, write_buffer, buffer_pos);\n}",
+            "expected_speedup": "10-50x improvement by reducing system calls from 409,600 to ~26 and improving cache locality"
+          },
+          {
+            "optimization": "Use memory-mapped I/O for better alignment and reduced overhead",
+            "code_before": "int fd = open(filename, O_WRONLY | O_CREAT, 0644);\nfor (int i = 0; i < n_elements; i++) {\n    write(fd, &data[i], sizeof(data_element));\n}\nclose(fd);",
+            "code_after": "int fd = open(filename, O_RDWR | O_CREAT, 0644);\nftruncate(fd, total_size);\nchar *mapped = mmap(NULL, total_size, PROT_WRITE, MAP_SHARED, fd, 0);\nif (mapped != MAP_FAILED) {\n    memcpy(mapped, data, total_size);\n    msync(mapped, total_size, MS_ASYNC);\n    munmap(mapped, total_size);\n}\nclose(fd);",
+            "expected_speedup": "5-20x improvement by eliminating system call overhead and leveraging OS page cache"
+          },
+          {
+            "optimization": "Ensure proper alignment for I/O operations",
+            "code_before": "char *buffer = malloc(data_size);\nwrite(fd, buffer, data_size);",
+            "code_after": "// Align to 4KB page boundary\nchar *buffer;\nif (posix_memalign((void**)&buffer, 4096, \n                   ((data_size + 4095) / 4096) * 4096) != 0) {\n    // Handle error\n}\n// Use O_DIRECT for direct I/O if appropriate\nint fd = open(filename, O_WRONLY | O_CREAT | O_DIRECT, 0644);\nwrite(fd, buffer, aligned_size);",
+            "expected_speedup": "2-5x improvement by eliminating the 819,144 unaligned operations and reducing CPU overhead"
+          },
+          {
+            "optimization": "Use collective I/O with MPI-IO for parallel efficiency",
+            "code_before": "// Each process writes independently\nchar filename[256];\nsprintf(filename, \"output_%d.dat\", rank);\nint fd = open(filename, O_WRONLY | O_CREAT, 0644);\nwrite(fd, local_data, local_size);\nclose(fd);",
+            "code_after": "MPI_File fh;\nMPI_File_open(MPI_COMM_WORLD, \"output.dat\", \n              MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);\n\n// Calculate offset for this process\nMPI_Offset offset = rank * local_size;\nMPI_File_write_at_all(fh, offset, local_data, local_size, \n                      MPI_BYTE, MPI_STATUS_IGNORE);\nMPI_File_close(&fh);",
+            "expected_speedup": "3-10x improvement through coordinated parallel I/O and reduced file system contention"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 19269.3,
+        "tokens_input": 431,
+        "tokens_output": 1193,
+        "timestamp": "2026-03-23T07:19:18Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "note": "No KB \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A2_no_kb",
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "interface_choice"
+      ],
+      "recommendation": {
+        "diagnosis": "The application is using POSIX I/O instead of MPI-IO for parallel file operations, resulting in severe performance degradation. With 128 processes writing 53GB of data at only 1.622 MB/s total bandwidth, the current POSIX approach is creating significant contention and inefficiency. The high MPIIO_INDEP_WRITES and MPIIO_ACCESS1_COUNT values suggest the workload would benefit greatly from collective MPI-IO operations.",
+        "recommendations": [
+          {
+            "optimization": "Replace POSIX write calls with MPI-IO collective writes",
+            "code_before": "FILE *fp = fopen(filename, \"w\");\nfor (int i = 0; i < local_data_size; i++) {\n    fwrite(&data[i], sizeof(double), 1, fp);\n}\nfclose(fp);",
+            "code_after": "MPI_File fh;\nMPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);\nMPI_Offset offset = rank * local_data_size * sizeof(double);\nMPI_File_write_at_all(fh, offset, data, local_data_size, MPI_DOUBLE, MPI_STATUS_IGNORE);\nMPI_File_close(&fh);",
+            "expected_speedup": "10-50x improvement in write bandwidth due to collective I/O coordination"
+          },
+          {
+            "optimization": "Use MPI-IO file views for structured data access",
+            "code_before": "MPI_File_write_at(fh, offset, data, count, MPI_DOUBLE, &status);",
+            "code_after": "MPI_Datatype filetype;\nMPI_Type_create_subarray(ndims, gsizes, lsizes, starts, MPI_ORDER_C, MPI_DOUBLE, &filetype);\nMPI_Type_commit(&filetype);\nMPI_File_set_view(fh, 0, MPI_DOUBLE, filetype, \"native\", MPI_INFO_NULL);\nMPI_File_write_all(fh, data, local_count, MPI_DOUBLE, &status);\nMPI_Type_free(&filetype);",
+            "expected_speedup": "2-5x additional improvement through optimized data layout"
+          },
+          {
+            "optimization": "Configure MPI-IO hints for better performance",
+            "code_before": "MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);",
+            "code_after": "MPI_Info info;\nMPI_Info_create(&info);\nMPI_Info_set(info, \"collective_buffering\", \"true\");\nMPI_Info_set(info, \"cb_buffer_size\", \"16777216\");\nMPI_Info_set(info, \"romio_cb_write\", \"automatic\");\nMPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, info, &fh);\nMPI_Info_free(&info);",
+            "expected_speedup": "1.5-3x improvement through optimized buffering and aggregation"
+          },
+          {
+            "optimization": "Implement proper error handling and synchronization",
+            "code_before": "MPI_File_write_at_all(fh, offset, data, count, MPI_DOUBLE, MPI_STATUS_IGNORE);",
+            "code_after": "MPI_Status status;\nint result = MPI_File_write_at_all(fh, offset, data, count, MPI_DOUBLE, &status);\nif (result != MPI_SUCCESS) {\n    char error_string[MPI_MAX_ERROR_STRING];\n    int length;\n    MPI_Error_string(result, error_string, &length);\n    fprintf(stderr, \"MPI-IO error: %s\\n\", error_string);\n}\nMPI_File_sync(fh);",
+            "expected_speedup": "Ensures data consistency and helps identify performance bottlenecks"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 15075.6,
+        "tokens_input": 437,
+        "tokens_output": 1095,
+        "timestamp": "2026-03-23T07:19:34Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "note": "No KB \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A2_no_kb",
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "metadata_intensity"
+      ],
+      "recommendation": {
+        "diagnosis": "Critical metadata bottleneck detected with 100% metadata intensity. The application is spending 6.18 seconds on metadata operations with 8000 file opens across 4 processes, resulting in zero effective bandwidth. This indicates excessive small file operations or inefficient file access patterns that are completely dominated by metadata overhead.",
+        "recommendations": [
+          {
+            "optimization": "Reduce file open/close operations through file handle reuse",
+            "code_before": "// Opening files repeatedly in loops\nfor (int i = 0; i < num_iterations; i++) {\n    char filename[256];\n    sprintf(filename, \"data_%d.dat\", i);\n    FILE* fp = fopen(filename, \"r\");\n    // Read small amount of data\n    fread(buffer, sizeof(char), small_size, fp);\n    fclose(fp);\n}",
+            "code_after": "// Batch file operations and reuse handles\nFILE* fps[MAX_FILES];\n// Open all files once\nfor (int i = 0; i < num_files; i++) {\n    char filename[256];\n    sprintf(filename, \"data_%d.dat\", i);\n    fps[i] = fopen(filename, \"r\");\n}\n// Perform all I/O operations\nfor (int i = 0; i < num_iterations; i++) {\n    fread(buffer, sizeof(char), small_size, fps[i % num_files]);\n}\n// Close all files at end\nfor (int i = 0; i < num_files; i++) {\n    fclose(fps[i]);\n}",
+            "expected_speedup": "5-10x reduction in metadata overhead"
+          },
+          {
+            "optimization": "Consolidate small files into larger containers",
+            "code_before": "// Writing many small files\nfor (int rank = 0; rank < nprocs; rank++) {\n    for (int timestep = 0; timestep < num_timesteps; timestep++) {\n        char filename[256];\n        sprintf(filename, \"output_rank%d_step%d.dat\", rank, timestep);\n        FILE* fp = fopen(filename, \"w\");\n        fwrite(data, sizeof(double), local_size, fp);\n        fclose(fp);\n    }\n}",
+            "code_after": "// Use single file per process with structured layout\nchar filename[256];\nsprintf(filename, \"output_rank%d.dat\", rank);\nFILE* fp = fopen(filename, \"w\");\n// Write header with metadata\nfwrite(&num_timesteps, sizeof(int), 1, fp);\nfwrite(&local_size, sizeof(int), 1, fp);\n// Write all timestep data sequentially\nfor (int timestep = 0; timestep < num_timesteps; timestep++) {\n    fwrite(data[timestep], sizeof(double), local_size, fp);\n}\nfclose(fp);",
+            "expected_speedup": "10-50x reduction in file count and metadata operations"
+          },
+          {
+            "optimization": "Implement MPI-IO collective operations to reduce metadata calls",
+            "code_before": "// Each process opens/writes independently\nchar filename[256];\nsprintf(filename, \"data_rank%d.dat\", rank);\nFILE* fp = fopen(filename, \"w\");\nfwrite(local_data, sizeof(double), local_size, fp);\nfclose(fp);",
+            "code_after": "// Use MPI-IO with single shared file\nMPI_File fh;\nMPI_File_open(MPI_COMM_WORLD, \"data_collective.dat\", \n              MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);\n// Calculate offset for this rank\nMPI_Offset offset = rank * local_size * sizeof(double);\nMPI_File_write_at_all(fh, offset, local_data, local_size, \n                      MPI_DOUBLE, MPI_STATUS_IGNORE);\nMPI_File_close(&fh);",
+            "expected_speedup": "3-8x improvement through collective metadata operations"
+          },
+          {
+            "optimization": "Add buffering to reduce system call frequency",
+            "code_before": "// Frequent small writes without buffering\nfor (int i = 0; i < num_records; i++) {\n    fwrite(&records[i], sizeof(record_t), 1, fp);\n}",
+            "code_after": "// Buffer writes to reduce system calls\n#define BUFFER_SIZE (1024 * 1024)  // 1MB buffer\nchar write_buffer[BUFFER_SIZE];\nsetvbuf(fp, write_buffer, _IOFBF, BUFFER_SIZE);\n// Or manually buffer\nrecord_t* buffer = malloc(BUFFER_SIZE);\nint buffer_count = 0;\nfor (int i = 0; i < num_records; i++) {\n    buffer[buffer_count++] = records[i];\n    if (buffer_count * sizeof(record_t) >= BUFFER_SIZE) {\n        fwrite(buffer, sizeof(record_t), buffer_count, fp);\n        buffer_count = 0;\n    }\n}\n// Flush remaining data\nif (buffer_count > 0) {\n    fwrite(buffer, sizeof(record_t), buffer_count, fp);\n}",
+            "expected_speedup": "2-5x reduction in metadata overhead from fewer system calls"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 21159.1,
+        "tokens_input": 332,
+        "tokens_output": 1430,
+        "timestamp": "2026-03-23T07:19:55Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "note": "No KB \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    },
+    {
+      "condition": "A2_no_kb",
+      "workload": "dlio_dlio_ckpt_ms100000000_n4_rep1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "healthy"
+      ],
+      "recommendation": {
+        "diagnosis": "The application shows healthy I/O performance with no major bottlenecks detected. However, there are opportunities for optimization based on the I/O patterns observed: high number of small reads (3832 POSIX_READS), small average write size (247 bytes), and significant small I/O operations (58.44% ratio). The metadata time ratio of 98.22% indicates excessive time spent on file operations rather than actual data transfer.",
+        "recommendations": [
+          {
+            "optimization": "Reduce small read operations through buffering",
+            "code_before": "// Multiple small reads\nfor (int i = 0; i < data_points; i++) {\n    read(fd, &buffer[i], sizeof(data_point));\n}",
+            "code_after": "// Bulk read with larger buffer\nsize_t bulk_size = data_points * sizeof(data_point);\nchar* bulk_buffer = malloc(bulk_size);\nread(fd, bulk_buffer, bulk_size);\n// Process data from bulk_buffer",
+            "expected_speedup": "2-3x reduction in I/O overhead"
+          },
+          {
+            "optimization": "Increase write buffer size to reduce small writes",
+            "code_before": "// Small individual writes (247 bytes average)\nwrite(fd, data_chunk, 247);",
+            "code_after": "// Use larger write buffer (64KB or larger)\n#define WRITE_BUFFER_SIZE 65536\nchar write_buffer[WRITE_BUFFER_SIZE];\nsize_t buffer_pos = 0;\n\n// Accumulate data in buffer\nmemcpy(write_buffer + buffer_pos, data_chunk, chunk_size);\nbuffer_pos += chunk_size;\n\n// Flush when buffer is full\nif (buffer_pos >= WRITE_BUFFER_SIZE - max_chunk_size) {\n    write(fd, write_buffer, buffer_pos);\n    buffer_pos = 0;\n}",
+            "expected_speedup": "1.5-2x improvement in write throughput"
+          },
+          {
+            "optimization": "Reduce metadata operations and file access patterns",
+            "code_before": "// Multiple file accesses and stat calls\nfor (int i = 0; i < num_files; i++) {\n    if (access(filenames[i], F_OK) == 0) {\n        struct stat file_stat;\n        stat(filenames[i], &file_stat);\n        // Process file\n    }\n}",
+            "code_after": "// Batch file operations and cache metadata\nstruct file_info {\n    char* name;\n    struct stat stat_info;\n    bool exists;\n};\n\n// Pre-check all files in one pass\nfor (int i = 0; i < num_files; i++) {\n    file_infos[i].exists = (stat(filenames[i], &file_infos[i].stat_info) == 0);\n}\n\n// Process files without additional metadata calls\nfor (int i = 0; i < num_files; i++) {\n    if (file_infos[i].exists) {\n        // Process using cached metadata\n    }\n}",
+            "expected_speedup": "3-5x reduction in metadata overhead"
+          },
+          {
+            "optimization": "Implement collective I/O for MPI applications",
+            "code_before": "// Independent I/O from each process\nMPI_File_write_at(fh, offset + rank * chunk_size, local_data, chunk_size, MPI_BYTE, &status);",
+            "code_after": "// Collective I/O with data aggregation\nMPI_File_write_at_all(fh, offset, collective_buffer, total_size, MPI_BYTE, &status);\n// Or use MPI-IO collective buffering\nMPI_Info info;\nMPI_Info_create(&info);\nMPI_Info_set(info, \"collective_buffering\", \"true\");\nMPI_Info_set(info, \"cb_buffer_size\", \"16777216\"); // 16MB\nMPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_WRONLY | MPI_MODE_CREATE, info, &fh);",
+            "expected_speedup": "2-4x improvement for parallel writes"
+          }
+        ]
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 18440.8,
+        "tokens_input": 421,
+        "tokens_output": 1108,
+        "timestamp": "2026-03-23T07:20:14Z"
+      },
+      "groundedness": {
+        "groundedness_score": 0.0,
+        "note": "No KB \u2014 groundedness N/A"
+      },
+      "parse_error": null
+    }
+  ],
+  "A3": [
+    {
+      "condition": "A3_no_shap",
+      "workload": "ior_ior_small_posix_t64_n4_r1",
+      "has_ml": true,
+      "has_shap": false,
+      "has_kb": true,
+      "detected": [
+        "access_granularity"
+      ],
+      "recommendation": {
+        "diagnosis": "This job exhibits severe I/O inefficiency due to extremely small transfer sizes. With an average write size of only 64 bytes and 100% small I/O operations (small_io_ratio=1.0), the application is making excessive system calls. The job wrote 26.2MB across 4 processes in 0.75 seconds, achieving only 29.1 MB/s bandwidth. The high metadata_time_ratio of 0.1916 (19.16%) indicates significant overhead from frequent system calls rather than actual data transfer.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "The application is performing individual 64-byte writes, causing massive syscall overhead. With 409,600 total write operations (26.2MB / 64B), each syscall has significant overhead that dominates performance.",
+            "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+            "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+            "expected_speedup": "16x-25x based on aggregating 64B writes into 1MB chunks",
+            "kb_citation": "ior_ior_small_posix_t64_n4_r1_0, ior_ior_small_posix_t64_n4_r3_2, ior_ior_small_posix_t64_n4_r2_1",
+            "confidence": "high",
+            "api_change": "POSIX write buffering strategy - same API, different usage pattern"
+          }
+        ],
+        "overall_expected_improvement": "16x-25x total speedup (from 29.1 MB/s to 465-728 MB/s) by eliminating syscall overhead through write aggregation"
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 8876.1,
+        "tokens_input": 1607,
+        "tokens_output": 517,
+        "timestamp": "2026-03-23T07:20:22Z"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      }
+    },
+    {
+      "condition": "A3_no_shap",
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1",
+      "has_ml": true,
+      "has_shap": false,
+      "has_kb": true,
+      "detected": [
+        "interface_choice"
+      ],
+      "recommendation": {
+        "diagnosis": "This HPC job exhibits severe I/O performance problems due to suboptimal interface choice. With 128 processes writing 53.7 GB of data at only 1.622 MB/s total bandwidth, the job is achieving extremely poor I/O performance. The sequential write ratio of 1.0 and average write size of 1 MB indicate this is a shared-file parallel I/O workload that would benefit significantly from MPI-IO collective operations instead of POSIX I/O. The current approach likely causes excessive file system contention and metadata overhead as all 128 ranks independently seek and write to the same shared file.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "interface_choice",
+            "explanation": "The job is using POSIX I/O (lseek/write) for shared-file parallel I/O with 128 ranks, causing severe performance degradation. Each rank independently seeks to its offset and writes, creating file system contention and preventing collective optimizations. MPI-IO collective operations can coordinate writes across ranks and enable collective buffering optimizations.",
+            "code_before": "/* POSIX on shared file \u2014 each rank seeks and writes independently */\nlseek(fd, my_offset, SEEK_SET);\nwrite(fd, buf, size);",
+            "code_after": "/* MPI-IO collective \u2014 automatic coordination */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, size, MPI_BYTE, &status);",
+            "expected_speedup": "Significant improvement expected - benchmark evidence shows MPI-IO collective operations consistently outperform POSIX for shared-file parallel I/O workloads",
+            "kb_citation": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141, ior_ior_interface_mpiio_indep_t1048576_n128_r2_142, ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+            "confidence": "high",
+            "api_change": "POSIX write -> MPI_File_write_all"
+          }
+        ],
+        "overall_expected_improvement": "Substantial performance improvement expected from switching to MPI-IO collective operations, though specific speedup cannot be quantified without comparative benchmark data between POSIX and MPI-IO collective for this exact configuration"
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 15605.4,
+        "tokens_input": 1675,
+        "tokens_output": 620,
+        "timestamp": "2026-03-23T07:20:38Z"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      }
+    },
+    {
+      "condition": "A3_no_shap",
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep1",
+      "has_ml": true,
+      "has_shap": false,
+      "has_kb": true,
+      "detected": [
+        "metadata_intensity"
+      ],
+      "recommendation": {
+        "diagnosis": "This job exhibits severe metadata intensity bottleneck with a metadata_time_ratio of 1.0, meaning 100% of I/O time is spent on metadata operations (open/stat/close) with virtually no actual data transfer. With 4 processes running for 26.7 seconds, the job is likely creating many small files individually rather than using efficient shared file approaches, causing excessive filesystem metadata overhead.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "metadata_intensity",
+            "explanation": "The job is performing excessive file metadata operations (open/stat/close) relative to data I/O, likely creating thousands of individual files per process. This creates a metadata storm that overwhelms the filesystem's metadata servers.",
+            "code_before": "for (i=0; i<50000; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  close(fd);\n}",
+            "code_after": "/* Create files in batches, or use single shared file */\nMPI_File_open(comm, shared_path, MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);",
+            "expected_speedup": "Significant improvement expected - benchmark shows this pattern creates 50,000 metadata operations per process, switching to shared file approach eliminates per-file overhead",
+            "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+            "confidence": "high",
+            "api_change": "POSIX open/close -> MPI_File_open for shared file access"
+          }
+        ],
+        "overall_expected_improvement": "Major performance improvement expected by eliminating metadata bottleneck - could reduce runtime from 26.7 seconds to seconds or less depending on actual data volume, as metadata operations are currently dominating 100% of I/O time"
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 19904.2,
+        "tokens_input": 1468,
+        "tokens_output": 474,
+        "timestamp": "2026-03-23T07:20:58Z"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      }
+    },
+    {
+      "condition": "A3_no_shap",
+      "workload": "dlio_dlio_ckpt_ms100000000_n4_rep1",
+      "has_ml": true,
+      "has_shap": false,
+      "has_kb": true,
+      "detected": [
+        "healthy"
+      ],
+      "recommendation": {
+        "diagnosis": "This job exhibits healthy I/O behavior with no significant bottlenecks detected. The ML classifier confidence for 'healthy' is very low (0.09), but the Darshan metrics show reasonable performance: 197 MB/s total bandwidth, 48-second runtime with 4 processes. The small I/O ratio of 0.58 and average write size of 247 bytes suggest some room for optimization, but the benchmark evidence indicates the current I/O patterns are already efficient.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "healthy_io_pattern",
+            "explanation": "The job is already performing well with no significant I/O bottlenecks. The benchmark evidence shows similar healthy scenarios using efficient collective MPI-IO with large transfer sizes (4MB). Current performance appears optimal.",
+            "code_before": "/* Current I/O pattern appears to be already optimized */\n/* Based on benchmark: np.fromfile() and data.tofile() operations */\ndata = np.fromfile(path, dtype=np.float32, count=record_length)\ndata.tofile(checkpoint_path)",
+            "code_after": "/* No change needed - pattern is already efficient */\n/* Benchmark shows collective MPI-IO is already in use */\ndata = np.fromfile(path, dtype=np.float32, count=record_length)\ndata.tofile(checkpoint_path)",
+            "expected_speedup": "No speedup expected - already optimal",
+            "kb_citation": "dlio_dlio_healthy_rl1048576_n4_rep2_310, dlio_dlio_healthy_rl4194304_n4_rep2_316, dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "confidence": "high",
+            "api_change": "No API change needed"
+          }
+        ],
+        "overall_expected_improvement": "No improvement expected - job is already performing optimally based on benchmark evidence"
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 10170.9,
+        "tokens_input": 1335,
+        "tokens_output": 496,
+        "timestamp": "2026-03-23T07:21:09Z"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      }
+    }
+  ],
+  "A4": [
+    {
+      "condition": "A4_ml_only",
+      "workload": "ior_ior_small_posix_t64_n4_r1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "access_granularity"
+      ],
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0
+      },
+      "shap_top_features": {
+        "access_granularity": [
+          {
+            "feature": "POSIX_FILE_NOT_ALIGNED",
+            "value": 819144.0,
+            "shap_value": 3.395044,
+            "direction": "increases_risk",
+            "abs_importance": 3.395044
+          },
+          {
+            "feature": "POSIX_ACCESS1_COUNT",
+            "value": 819200.0,
+            "shap_value": 1.765648,
+            "direction": "increases_risk",
+            "abs_importance": 1.765648
+          },
+          {
+            "feature": "POSIX_WRITES",
+            "value": 409600.0,
+            "shap_value": 1.422673,
+            "direction": "increases_risk",
+            "abs_importance": 1.422673
+          }
+        ]
+      },
+      "recommendation": null,
+      "metadata": {
+        "latency_ms": 0,
+        "tokens_input": 0,
+        "tokens_output": 0
+      },
+      "groundedness": {
+        "groundedness_score": null,
+        "note": "No LLM \u2014 no recommendations to ground"
+      }
+    },
+    {
+      "condition": "A4_ml_only",
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "interface_choice"
+      ],
+      "predictions": {
+        "access_granularity": 0.0028,
+        "metadata_intensity": 0.0002,
+        "parallelism_efficiency": 0.0001,
+        "access_pattern": 0.0,
+        "interface_choice": 0.9999,
+        "file_strategy": 0.0048,
+        "throughput_utilization": 0.0003,
+        "healthy": 0.0001
+      },
+      "shap_top_features": {
+        "interface_choice": [
+          {
+            "feature": "MPIIO_INDEP_WRITES",
+            "value": 51200.0,
+            "shap_value": 2.045104,
+            "direction": "increases_risk",
+            "abs_importance": 2.045104
+          },
+          {
+            "feature": "MPIIO_ACCESS1_COUNT",
+            "value": 102400.0,
+            "shap_value": 1.76294,
+            "direction": "increases_risk",
+            "abs_importance": 1.76294
+          },
+          {
+            "feature": "MPIIO_INDEP_READS",
+            "value": 51200.0,
+            "shap_value": 1.090828,
+            "direction": "increases_risk",
+            "abs_importance": 1.090828
+          }
+        ]
+      },
+      "recommendation": null,
+      "metadata": {
+        "latency_ms": 0,
+        "tokens_input": 0,
+        "tokens_output": 0
+      },
+      "groundedness": {
+        "groundedness_score": null,
+        "note": "No LLM \u2014 no recommendations to ground"
+      }
+    },
+    {
+      "condition": "A4_ml_only",
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "metadata_intensity"
+      ],
+      "predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0004
+      },
+      "shap_top_features": {
+        "metadata_intensity": [
+          {
+            "feature": "POSIX_F_META_TIME",
+            "value": 6.180927,
+            "shap_value": 2.61792,
+            "direction": "increases_risk",
+            "abs_importance": 2.61792
+          },
+          {
+            "feature": "total_bw_mb_s",
+            "value": 0.0,
+            "shap_value": 1.602965,
+            "direction": "increases_risk",
+            "abs_importance": 1.602965
+          },
+          {
+            "feature": "io_duration",
+            "value": 25.668339,
+            "shap_value": -0.707108,
+            "direction": "decreases_risk",
+            "abs_importance": 0.707108
+          }
+        ]
+      },
+      "recommendation": null,
+      "metadata": {
+        "latency_ms": 0,
+        "tokens_input": 0,
+        "tokens_output": 0
+      },
+      "groundedness": {
+        "groundedness_score": null,
+        "note": "No LLM \u2014 no recommendations to ground"
+      }
+    },
+    {
+      "condition": "A4_ml_only",
+      "workload": "dlio_dlio_ckpt_ms100000000_n4_rep1",
+      "has_ml": true,
+      "has_shap": true,
+      "has_kb": false,
+      "detected": [
+        "healthy"
+      ],
+      "predictions": {
+        "access_granularity": 0.1156,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0147,
+        "healthy": 0.0904
+      },
+      "shap_top_features": {
+        "healthy": [
+          {
+            "feature": "POSIX_READS",
+            "value": 3832.0,
+            "shap_value": -2.706574,
+            "direction": "decreases_risk",
+            "abs_importance": 2.706574
+          },
+          {
+            "feature": "POSIX_MAX_BYTE_WRITTEN",
+            "value": 493.0,
+            "shap_value": 1.191416,
+            "direction": "increases_risk",
+            "abs_importance": 1.191416
+          },
+          {
+            "feature": "POSIX_ACCESS1_COUNT",
+            "value": 8.0,
+            "shap_value": 0.753682,
+            "direction": "increases_risk",
+            "abs_importance": 0.753682
+          }
+        ]
+      },
+      "recommendation": null,
+      "metadata": {
+        "latency_ms": 0,
+        "tokens_input": 0,
+        "tokens_output": 0
+      },
+      "groundedness": {
+        "groundedness_score": null,
+        "note": "No LLM \u2014 no recommendations to ground"
+      }
+    }
+  ]
+}
