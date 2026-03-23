@@ -1,0 +1,18 @@
+{
+  "total_train": 91807,
+  "total_noisy": 28,
+  "total_clean": 91779,
+  "noise_rate": 0.0003,
+  "per_dimension": {
+    "access_granularity": 0,
+    "metadata_intensity": 19,
+    "parallelism_efficiency": 0,
+    "access_pattern": 1,
+    "interface_choice": 0,
+    "file_strategy": 1,
+    "throughput_utilization": 7,
+    "healthy": 0
+  },
+  "phase3_micro_f1": 0.9221,
+  "phase3_macro_f1": 0.898
+}
