@@ -40,7 +40,7 @@ VALIDATION_PAIRS = {
         "description": "Small POSIX writes (64B) → Large writes (1MB)",
         "bottleneck": "access_granularity",
         "bad_config": {
-            "api": "POSIX", "transfer_size": "64", "block_size": "64K",
+            "api": "POSIX", "transfer_size": "64", "block_size": "1M",
             "segments": "100", "file_per_proc": True,
             "extra_flags": "-e -C -w -r",
         },
@@ -169,7 +169,7 @@ echo "============================================================"
 mkdir -p {self.scratch_dir}
 
 # Run IOR with Darshan instrumentation
-srun --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
     {ior_command}
 
 echo ""
