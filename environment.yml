@@ -1,6 +1,6 @@
 name: sc2026
-# On Delta: conda env create -f environment.yml --prefix /projects/bdau/envs/sc2026
-# Elsewhere: conda env create -f environment.yml
+# Install: conda env create -f environment.yml
+# Activate: conda activate sc2026
 channels:
   - conda-forge
   - defaults
