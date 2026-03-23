@@ -254,13 +254,28 @@ Respond in JSON:
             return None, str(e)
 
     def check_groundedness(self, parsed_response, kb_entries):
-        """Check how many recommendations cite valid KB entries."""
+        """Check how many recommendations cite valid KB entries.
+
+        Handles: exact match, comma-separated citations, partial ID match.
+        """
         if not parsed_response or "recommendations" not in parsed_response:
             return {"groundedness_score": 0.0, "n_recommendations": 0, "n_grounded": 0}
 
         kb_ids = {m["entry"]["entry_id"] for m in kb_entries}
         recs = parsed_response["recommendations"]
-        grounded = sum(1 for r in recs if r.get("kb_citation", "") in kb_ids)
+        grounded = 0
+
+        for r in recs:
+            citation = r.get("kb_citation", "")
+            if not citation:
+                continue
+            # Handle comma-separated citations
+            parts = [c.strip() for c in citation.split(",")]
+            if any(p in kb_ids for p in parts):
+                grounded += 1
+            # Also check if any KB ID is a substring of the citation
+            elif any(kb_id in citation for kb_id in kb_ids):
+                grounded += 1
 
         return {
             "groundedness_score": grounded / max(len(recs), 1),
