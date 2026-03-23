@@ -18,17 +18,19 @@ Darshan logs collected and analyzed through IOPrescriber.
 
 ## Comparison: ION vs IOPrescriber
 
-| Aspect | ION | IOPrescriber |
-|--------|-----|-------------|
-| Detection method | LLM in-context learning | ML classifier (0.920 F1) + SHAP |
-| Input | Darshan CSV text | Darshan features (157 dimensions) |
-| Speed | Seconds per job (LLM inference) | <1ms per job (ML) + optional LLM |
-| Recommendations | Generic static code templates | Grounded in benchmark KB with measured speedup |
-| Evaluation | Qualitative | Quantitative (groundedness=1.0, speedup=39x) |
-| ML component | None | XGBoost multi-label, 5 seeds |
-| Benchmark KB | None | 623 entries with source code |
-| Closed-loop | None | Measured speedup on IOR + E2E |
-| Reproducibility | No public code | Anonymous GitHub + LLM cache |
+| Aspect | Drishti | ION | IOPrescriber |
+|--------|--------|-----|-------------|
+| Detection method | 30 threshold rules | LLM in-context learning | ML (0.920 F1) + SHAP + LLM |
+| Input | Darshan log file | Darshan CSV text | Darshan features (157 dims) |
+| Speed | <1s per job | Seconds per job (LLM) | <1ms (ML) + 14s (LLM optional) |
+| Output | Issue flags (HIGH/WARN) | Text diagnosis + code templates | Grounded recommendations + code fixes |
+| ML component | None | None | XGBoost multi-label, 5 seeds |
+| Benchmark KB | None | None | 623 entries with source code |
+| Closed-loop | None | None | Measured speedup (39x IOR, 7x interface) |
+| Reproducibility | Open source (pip) | No public code | Anonymous GitHub + LLM cache |
+
+NOTE: Need to verify from ION paper exactly how they compared with Drishti.
+We should also run Drishti on these IO500 configs for a complete 3-way comparison.
 
 ## Key Advantage
 ION gives generic advice: "consider using larger I/O buffers"
