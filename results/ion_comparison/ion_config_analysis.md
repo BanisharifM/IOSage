@@ -29,8 +29,22 @@ Darshan logs collected and analyzed through IOPrescriber.
 | Closed-loop | None | None | Measured speedup (39x IOR, 7x interface) |
 | Reproducibility | Open source (pip) | No public code | Anonymous GitHub + LLM cache |
 
-NOTE: Need to verify from ION paper exactly how they compared with Drishti.
-We should also run Drishti on these IO500 configs for a complete 3-way comparison.
+**How ION compared with Drishti (from paper slides):**
+ION showed side-by-side text outputs on E2E application:
+  - Drishti: terse threshold flags ("99.81% misaligned", "99.90% load imbalance")
+  - ION: verbose LLM text with reasoning and context
+  - Both detect same issues; ION adds explanation
+ION reports NO quantitative metrics — evaluation is entirely qualitative.
+
+**ION public data:** github.com/cegersdoerfer/io500-trace-ds (14 configs with GT labels)
+**ION CLI:** github.com/cegersdoerfer/ION-cli (web API wrapper, not the analysis code)
+**ION code:** NOT open source (runs on AWS EC2 web service)
+
+**We ran Drishti on these same IO500 configs (3-way comparison, same data):**
+  Config1 (2KB): Drishti=access_gran+metadata, ML=same
+  Config2 (1MB): Drishti=access_gran, ML=access_gran+throughput
+  Config3 (FPP): Both=access_gran
+  Config5 (4KB): Both=throughput
 
 ## Key Advantage
 ION gives generic advice: "consider using larger I/O buffers"
