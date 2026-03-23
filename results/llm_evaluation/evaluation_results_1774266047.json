@@ -1,0 +1,601 @@
+{
+  "claude-sonnet": [
+    {
+      "workload": "ior_ior_small_posix_t64_n4_r1_run0",
+      "pipeline_latency_ms": 29.1,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 1.0,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "step2_shap": {
+        "access_granularity": [
+          {
+            "feature": "POSIX_FILE_NOT_ALIGNED",
+            "value": 819144.0,
+            "shap_value": 3.395044,
+            "direction": "increases_risk",
+            "abs_importance": 3.395044
+          },
+          {
+            "feature": "POSIX_ACCESS1_COUNT",
+            "value": 819200.0,
+            "shap_value": 1.765648,
+            "direction": "increases_risk",
+            "abs_importance": 1.765648
+          },
+          {
+            "feature": "POSIX_WRITES",
+            "value": 409600.0,
+            "shap_value": 1.422673,
+            "direction": "increases_risk",
+            "abs_importance": 1.422673
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+            "similarity": 0.9231,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+            "similarity": 0.9193,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+            "similarity": 0.9165,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe access granularity problems with extremely small I/O operations. The Darshan data shows 819,200 POSIX access operations with an average write size of only 64 bytes, resulting in 819,144 unaligned file accesses. With 26.2MB total written across 409,600 writes, each write operation transfers just 64 bytes on average. This creates massive syscall overhead - the job performs over 800K small I/O operations when it could accomplish the same work with just 25 large operations (26MB \u00f7 1MB chunks). The small_io_ratio of 1.0 confirms that 100% of I/O operations are inefficiently small, leading to poor bandwidth utilization at only 29.1 MB/s.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs 409,600 write operations of 64 bytes each instead of buffering into large chunks. This creates 819,200 total POSIX accesses with excessive syscall overhead. Each 64-byte write requires a full kernel transition, making the I/O bound by syscall latency rather than bandwidth.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "16x-25x based on reducing 819,200 syscalls to ~25 large operations",
+              "kb_citation": "ior_ior_small_posix_t64_n4_r1_0",
+              "confidence": "high",
+              "api_change": "POSIX write buffering - aggregate small writes into 1MB+ chunks"
+            }
+          ],
+          "overall_expected_improvement": "16x-25x speedup by eliminating syscall overhead through write buffering"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13374.8,
+          "tokens_input": 1785,
+          "tokens_output": 537,
+          "timestamp": "2026-03-23T05:59:08Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 0,
+      "run": 0,
+      "model": "claude-sonnet"
+    },
+    {
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep1_run0",
+      "pipeline_latency_ms": 87131.6,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0,
+          "metadata_intensity": 1.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0004
+        },
+        "detected": [
+          "metadata_intensity"
+        ]
+      },
+      "step2_shap": {
+        "metadata_intensity": [
+          {
+            "feature": "POSIX_F_META_TIME",
+            "value": 6.180927,
+            "shap_value": 2.61792,
+            "direction": "increases_risk",
+            "abs_importance": 2.61792
+          },
+          {
+            "feature": "total_bw_mb_s",
+            "value": 0.0,
+            "shap_value": 1.602965,
+            "direction": "increases_risk",
+            "abs_importance": 1.602965
+          },
+          {
+            "feature": "io_duration",
+            "value": 25.668339,
+            "shap_value": -0.707108,
+            "direction": "decreases_risk",
+            "abs_importance": 0.707108
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep2_148",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep3_149",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe metadata intensity bottleneck with 8,000 POSIX file opens consuming 6.18 seconds of metadata time out of 25.67 total I/O duration (metadata_time_ratio = 1.0). The job achieves 0.0 MB/s bandwidth, indicating it performs virtually no data I/O - only metadata operations. This pattern suggests a file-per-process approach where each process creates/opens many small files, overwhelming the filesystem's metadata servers.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "The job performs 8,000 POSIX opens with zero data bandwidth, indicating excessive file creation/opening without meaningful data I/O. This creates severe metadata server contention.",
+              "code_before": "for (i=0; i<50000; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  close(fd);\n}",
+              "code_after": "/* Create files in batches, or use single shared file */\nMPI_File_open(comm, shared_path, MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);",
+              "expected_speedup": "Significant reduction in metadata overhead - benchmark shows this pattern can be eliminated by consolidating to shared files",
+              "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+              "confidence": "high",
+              "api_change": "POSIX open/close -> MPI_File_open for shared file access"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "If file-per-process is required, batch metadata operations to reduce filesystem round trips and metadata server load.",
+              "code_before": "for (i=0; i<files_per_proc; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  stat(path_i, &statbuf);\n  close(fd);\n}",
+              "code_after": "/* Batch create files first, then batch stat operations */\nfor (i=0; i<files_per_proc; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  close(fd);\n}\n/* Separate stat phase if needed */\nfor (i=0; i<files_per_proc; i++) {\n  stat(path_i, &statbuf);\n}",
+              "expected_speedup": "Moderate improvement by reducing interleaved metadata operations",
+              "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep2_148",
+              "confidence": "medium",
+              "api_change": "Restructure POSIX calls to batch similar operations"
+            }
+          ],
+          "overall_expected_improvement": "High improvement potential - eliminating metadata_intensity bottleneck could reduce I/O time from 25.67s to primarily data transfer time, as benchmark evidence shows this pattern can be largely eliminated through file consolidation"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 41898.4,
+          "tokens_input": 1637,
+          "tokens_output": 803,
+          "timestamp": "2026-03-23T06:40:09Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 1,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 105,
+      "run": 0,
+      "model": "claude-sonnet"
+    },
+    {
+      "workload": "custom_custom_imbalance_f2_mb10_n4_r1_run0",
+      "pipeline_latency_ms": 11941.6,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 1.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0001,
+          "healthy": 0.0016
+        },
+        "detected": [
+          "parallelism_efficiency"
+        ]
+      },
+      "step2_shap": {
+        "parallelism_efficiency": [
+          {
+            "feature": "STDIO_FLUSHES",
+            "value": 0.0,
+            "shap_value": 4.040285,
+            "direction": "increases_risk",
+            "abs_importance": 4.040285
+          },
+          {
+            "feature": "POSIX_ACCESS2_ACCESS",
+            "value": 172129.0,
+            "shap_value": 1.789849,
+            "direction": "increases_risk",
+            "abs_importance": 1.789849
+          },
+          {
+            "feature": "time_imbalance",
+            "value": 0.0,
+            "shap_value": -1.591344,
+            "direction": "decreases_risk",
+            "abs_importance": 1.591344
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r1_327",
+            "similarity": 1.0,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r2_328",
+            "similarity": 0.9837,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r3_329",
+            "similarity": 0.8975,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe I/O load imbalance across 4 MPI ranks. The high POSIX_ACCESS2_ACCESS value (172,129) indicates excessive file access operations, while STDIO_READS=1,568 and POSIX_SIZE_READ_1M_4M=3 suggest mixed I/O patterns with some large reads. The small_io_ratio=0.5549 shows over half the I/O operations are small, and seq_write_ratio=0.2 indicates poor sequential access patterns. Most critically, the metadata_time_ratio=0.9154 means 91.5% of I/O time is spent on metadata operations rather than actual data transfer, strongly suggesting rank 0 is doing all the I/O while other ranks wait.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "parallelism_efficiency",
+              "explanation": "The job shows classic symptoms of rank 0 doing all I/O work while other ranks remain idle. With 52MB written across 4 ranks but severe load imbalance, this matches the benchmark pattern where one rank handles all data. The high metadata time ratio (91.5%) confirms ranks are waiting rather than doing parallel I/O.",
+              "code_before": "if (rank == 0) write(fd, all_data, total_size);  /* rank 0 does all I/O */",
+              "code_after": "/* Distribute I/O across all ranks */\nMPI_File_write_all(fh, my_data, my_size, MPI_BYTE, &status);",
+              "expected_speedup": "4x theoretical maximum based on distributing work across 4 ranks",
+              "kb_citation": "custom_custom_imbalance_f2_mb10_n4_r1_327",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_all"
+            }
+          ],
+          "overall_expected_improvement": "3-4x speedup range based on eliminating I/O serialization bottleneck and utilizing all 4 ranks for parallel I/O"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11590.7,
+          "tokens_input": 1602,
+          "tokens_output": 526,
+          "timestamp": "2026-03-23T06:40:21Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 1,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 230,
+      "run": 0,
+      "model": "claude-sonnet"
+    },
+    {
+      "workload": "ior_ior_random_posix_t4096_n4_r1_run0",
+      "pipeline_latency_ms": 14559.0,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0013,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 1.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0004,
+          "throughput_utilization": 0.0001,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_pattern"
+        ]
+      },
+      "step2_shap": {
+        "access_pattern": [
+          {
+            "feature": "POSIX_FILE_NOT_ALIGNED",
+            "value": 2040000.0,
+            "shap_value": 2.789174,
+            "direction": "increases_risk",
+            "abs_importance": 2.789174
+          },
+          {
+            "feature": "POSIX_READS",
+            "value": 1024000.0,
+            "shap_value": 2.053182,
+            "direction": "increases_risk",
+            "abs_importance": 2.053182
+          },
+          {
+            "feature": "seq_read_ratio",
+            "value": 0.499801,
+            "shap_value": 1.93563,
+            "direction": "increases_risk",
+            "abs_importance": 1.93563
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r1_54",
+            "similarity": 0.8983,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r1_127",
+            "similarity": 0.8966,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r2_128",
+            "similarity": 0.896,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe random access patterns that are destroying I/O performance. With 1,024,000 POSIX reads and writes, but only ~50% sequential access ratios (seq_read_ratio=0.4998, seq_write_ratio=0.4994), the application is performing essentially random I/O. The 2,040,000 unaligned file accesses further compound the problem by preventing efficient storage operations. At 4KB average write size with 4GB total written over 6160 seconds, the job achieves only 0.341 MB/s bandwidth - indicating that random seeks are dominating the runtime and defeating OS read-ahead mechanisms.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "The application is performing random file access with ~50% sequential ratio, causing excessive seek overhead and defeating OS prefetching. With 1,024,000 reads/writes at random offsets, each I/O operation requires a disk seek, destroying bandwidth.",
+              "code_before": "for (i=0; i<n; i++) {\n  offset = random_offsets[i];\n  pwrite(fd, buf, size, offset);  /* random offsets */\n}",
+              "code_after": "/* Sort offsets for sequential access */\nqsort(random_offsets, n, sizeof(off_t), compare);\nfor (i=0; i<n; i++) pwrite(fd, buf, size, random_offsets[i]);",
+              "expected_speedup": "Based on benchmark evidence from random vs sequential access patterns, this optimization can provide significant improvement by eliminating seek overhead",
+              "kb_citation": "ior_ior_random_posix_t4096_n4_r1_54",
+              "confidence": "high",
+              "api_change": "No API change - optimization of existing POSIX calls"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "For cases where random access cannot be avoided, switching to MPI-IO with data sieving can aggregate small random accesses into larger sequential operations, reducing the impact of random patterns.",
+              "code_before": "write(fd, buf, transferSize)",
+              "code_after": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
+              "expected_speedup": "MPI-IO data sieving can improve random access performance by aggregating operations",
+              "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write with data sieving enabled"
+            }
+          ],
+          "overall_expected_improvement": "Sorting access offsets should provide the most significant improvement by converting random access to sequential. Combined with MPI-IO optimizations, substantial bandwidth improvement is expected, though exact speedup depends on storage system characteristics."
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 14388.0,
+          "tokens_input": 1774,
+          "tokens_output": 747,
+          "timestamp": "2026-03-23T06:40:36Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 1,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 34,
+      "run": 0,
+      "model": "claude-sonnet"
+    },
+    {
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_run0",
+      "pipeline_latency_ms": 11636.7,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0028,
+          "metadata_intensity": 0.0002,
+          "parallelism_efficiency": 0.0001,
+          "access_pattern": 0.0,
+          "interface_choice": 0.9999,
+          "file_strategy": 0.0048,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0001
+        },
+        "detected": [
+          "interface_choice"
+        ]
+      },
+      "step2_shap": {
+        "interface_choice": [
+          {
+            "feature": "MPIIO_INDEP_WRITES",
+            "value": 51200.0,
+            "shap_value": 2.045104,
+            "direction": "increases_risk",
+            "abs_importance": 2.045104
+          },
+          {
+            "feature": "MPIIO_ACCESS1_COUNT",
+            "value": 102400.0,
+            "shap_value": 1.76294,
+            "direction": "increases_risk",
+            "abs_importance": 1.76294
+          },
+          {
+            "feature": "MPIIO_INDEP_READS",
+            "value": 51200.0,
+            "shap_value": 1.090828,
+            "direction": "increases_risk",
+            "abs_importance": 1.090828
+          }
+        ]
+      },
+      "step3_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141",
+            "similarity": 0.9766,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r2_142",
+            "similarity": 0.9758,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+            "similarity": 0.9673,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          }
+        ]
+      },
+      "step4_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O performance problems due to suboptimal interface choice. With 128 processes writing 53.7 GB of data at only 1.622 MB/s total bandwidth, the job is using MPI-IO independent operations (51,200 independent writes and reads) instead of collective operations for shared file access. The high POSIX_F_SLOWEST_RANK_TIME of 548 seconds indicates significant I/O serialization and contention. The sequential write pattern (seq_write_ratio=1.0) with 1MB average write size suggests this workload would benefit greatly from collective I/O coordination.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "The job is using MPI-IO independent operations (MPI_File_write/read) for shared file access with 128 ranks, causing poor coordination and serialization. The 51,200 independent writes and reads create contention, resulting in extremely low bandwidth (1.622 MB/s total). Collective operations would coordinate these accesses automatically.",
+              "code_before": "/* MPI-IO independent operations on shared file */\nMPI_File_write(fh, buf, transferSize, MPI_BYTE, &status);\nMPI_File_read(fh, buf, transferSize, MPI_BYTE, &status);",
+              "code_after": "/* MPI-IO collective operations with proper file view */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status);\nMPI_File_read_all(fh, buf, transferSize, MPI_BYTE, &status);",
+              "expected_speedup": "Significant improvement expected based on benchmark evidence showing collective operations outperform independent operations for shared file access patterns",
+              "kb_citation": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141, ior_ior_interface_mpiio_indep_t1048576_n128_r2_142, ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+              "confidence": "high",
+              "api_change": "MPI_File_write -> MPI_File_write_all, MPI_File_read -> MPI_File_read_all"
+            }
+          ],
+          "overall_expected_improvement": "Substantial bandwidth improvement expected from eliminating I/O serialization and contention through collective operations, though specific speedup cannot be quantified without direct benchmark comparison data"
+        },
+        "groundedness": {
+          "groundedness_score": 0.0,
+          "n_recommendations": 1,
+          "n_grounded": 0,
+          "n_ungrounded": 1
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11597.3,
+          "tokens_input": 1868,
+          "tokens_output": 676,
+          "timestamp": "2026-03-23T06:40:47Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 1,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 100,
+      "run": 0,
+      "model": "claude-sonnet"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "claude-sonnet": {
+    "n_valid": 12,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "groundedness_mean": 1.0,
+    "groundedness_std": 0.0,
+    "latency_mean_ms": 14433.033333333333,
+    "latency_std_ms": 8484.534570748254,
+    "tokens_mean": 2388.3333333333335,
+    "avg_recommendations": 1.3333333333333333
+  },
+  "gpt-4o": {
+    "n_valid": 12,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "groundedness_mean": 0.9166666666666666,
+    "groundedness_std": 0.2763853991962833,
+    "latency_mean_ms": 4815.316666666667,
+    "latency_std_ms": 1484.162352323881,
+    "tokens_mean": 1752.3333333333333,
+    "avg_recommendations": 1.0
+  },
+  "llama-70b": {
+    "n_valid": 12,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "groundedness_mean": 1.0,
+    "groundedness_std": 0.0,
+    "latency_mean_ms": 13057.85,
+    "latency_std_ms": 3863.2435188366435,
+    "tokens_mean": 1874.0,
+    "avg_recommendations": 1.1666666666666667
+  }
+}
