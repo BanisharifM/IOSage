@@ -55,7 +55,7 @@ Taxonomy Dimensions (8-dimensional binary vector):
     1: metadata_intensity   - High metadata time relative to I/O time
     2: parallelism_efficiency - Load imbalance across ranks
     3: access_pattern       - Random (non-sequential) access
-    4: interface_choice     - Suboptimal interface (STDIO, no collective, blocking)
+    4: interface_choice     - No collective MPI-IO when appropriate (M02/M03)
     5: file_strategy        - Shared-file contention patterns
     6: throughput_utilization - Redundant traffic, low throughput
     7: healthy              - No issues detected in dimensions 0-6
@@ -370,10 +370,15 @@ def codes_to_labels(codes):
     ).astype(int)
 
     # Dimension 4: interface_choice
-    # Only HIGH severity: S01 (STDIO usage), M02/M03 (no collective)
-    # Excluded WARN-level: M01 (no MPI-IO, 72.6%), M06/M07 (blocking, 27%)
+    # M02 (no collective reads) + M03 (no collective writes) only.
+    # S01 (STDIO >10%) REMOVED: STDIO is the correct interface for Python/ML
+    # workloads (40% of Polaris). Labeling correct behavior as "bottleneck"
+    # creates systematic false positives and breaks alignment with benchmark
+    # ground-truth labels. S01 signal preserved as individual drishti_S01 column.
+    # Ref: Snorkel (VLDB'18) requires labeling functions and gold labels to
+    # define the same concept. See docs/SC2026_Training_Strategy.md.
     labels['interface_choice'] = (
-        codes['S01'] | codes['M02'] | codes['M03']
+        codes['M02'] | codes['M03']
     ).astype(int)
 
     # Dimension 5: file_strategy

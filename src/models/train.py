@@ -137,13 +137,20 @@ def load_data(config):
 
     logger.info("Features: %d columns (excluded %d)", len(feature_cols), len(exclude))
 
-    # Load splits
+    # Load splits (pickle or npz format)
     splits_path = PROJECT_DIR / paths["splits"]
     if splits_path.exists():
-        splits = np.load(splits_path)
-        train_idx = splits["train_indices"]
-        val_idx = splits["val_indices"]
-        test_idx = splits["test_indices"]
+        if str(splits_path).endswith(".pkl"):
+            with open(splits_path, "rb") as f:
+                splits = pickle.load(f)
+            train_idx = splits.get("train_idx", splits.get("train_indices"))
+            val_idx = splits.get("val_idx", splits.get("val_indices"))
+            test_idx = splits.get("test_idx", splits.get("test_indices"))
+        else:
+            splits = np.load(splits_path, allow_pickle=True)
+            train_idx = splits["train_indices"]
+            val_idx = splits["val_indices"]
+            test_idx = splits["test_indices"]
     else:
         logger.warning("No splits file found, using random 70/15/15 split")
         np.random.seed(config.get("seed", 42))
