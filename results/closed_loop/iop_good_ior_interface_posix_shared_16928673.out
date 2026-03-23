@@ -1,0 +1,52 @@
+============================================================
+IOPrescriber Closed-Loop Validation
+Job: iop_good_ior_interface_posix_shared
+Command: ior -a MPIIO -t 1048576 -b 100M -s 10 -c -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+Date: Mon Mar 23 08:04:20 CDT 2026
+Host: cn095.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Mon Mar 23 08:04:20 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a MPIIO -t 1048576 -b 100M -s 10 -c -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+Machine             : Linux cn095.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Mon Mar 23 08:04:20 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber
+FS                  : 1.5 TiB   Used FS: 22.8%   Inodes: 2.4 Mi   Used Inodes: 62.5%
+
+Options: 
+api                 : MPIIO
+apiVersion          : (3.1)
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+access              : single-shared-file
+type                : collective
+segments            : 10
+ordering in a file  : sequential
+ordering inter file : no tasks offsets
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 1 MiB
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+write     606.66     607.08     0.263556    102400     1024.00    0.017484   26.36      0.000982   26.37      0   
+read      1882.26    1883.23    0.084928    102400     1024.00    0.003712   8.50       0.004018   8.50       0   
+remove    -          -          -           -          -          -          -          -          4.74       0   
+Max Write: 606.66 MiB/sec (636.13 MB/sec)
+Max Read:  1882.26 MiB/sec (1973.69 MB/sec)
+
+Summary of all tests:
+Operation   Max(MiB)   Min(MiB)  Mean(MiB)     StdDev   Max(OPs)   Min(OPs)  Mean(OPs)     StdDev    Mean(s) Stonewall(s) Stonewall(MiB) Test# #Tasks tPN reps fPP reord reordoff reordrand seed segcnt   blksiz    xsize aggs(MiB)   API RefNum
+write         606.66     606.66     606.66       0.00     606.66     606.66     606.66       0.00   26.37373         NA            NA     0     16  16    1   0     0        1         0    0     10 104857600  1048576   16000.0 MPIIO      0
+read         1882.26    1882.26    1882.26       0.00    1882.26    1882.26    1882.26       0.00    8.50044         NA            NA     0     16  16    1   0     0        1         0    0     10 104857600  1048576   16000.0 MPIIO      0
+Finished            : Mon Mar 23 08:05:00 2026
+
+Exit code: 0
+Completed: Mon Mar 23 08:05:00 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928673-2346560_3-23-29060-15835832162547947877_1.darshan

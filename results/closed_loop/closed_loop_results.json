@@ -1,0 +1,66 @@
+{
+  "ior_small_posix": {
+    "pair_name": "ior_small_posix",
+    "description": "Small POSIX writes (64B) \u2192 Large writes (1MB)",
+    "bottleneck": "access_granularity",
+    "expected_fix": "Increase transfer size from 64B to 1MB",
+    "bad_command": "ior -a POSIX -t 64 -b 1M -s 100 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "good_command": "ior -a POSIX -t 1048576 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "status": "incomplete"
+  },
+  "ior_interface_posix_shared": {
+    "pair_name": "ior_interface_posix_shared",
+    "description": "POSIX on shared file \u2192 MPI-IO collective",
+    "bottleneck": "interface_choice",
+    "expected_fix": "Use MPI-IO collective instead of POSIX for shared file",
+    "bad_command": "ior -a POSIX -t 1048576 -b 100M -s 10 -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "good_command": "ior -a MPIIO -t 1048576 -b 100M -s 10 -c -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "good_metrics": {
+      "total_bw_mb_s": 579.257435823531,
+      "write_bw_mb_s": 338.2867166495324,
+      "read_bw_mb_s": 2013.5959260843445,
+      "avg_write_size": 1048576.0,
+      "seq_write_ratio": 0.8379375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.002471114588074049,
+      "POSIX_BYTES_WRITTEN": 16777216000.0,
+      "POSIX_WRITES": 16000.0,
+      "runtime_seconds": 39.76571464538574
+    },
+    "good_job_id": "16928673",
+    "good_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928673-2346560_3-23-29060-15835832162547947877_1.darshan",
+    "status": "incomplete"
+  },
+  "ior_fsync_heavy": {
+    "pair_name": "ior_fsync_heavy",
+    "description": "fsync after every write \u2192 fsync only at end",
+    "bottleneck": "throughput_utilization",
+    "expected_fix": "Remove per-write fsync (-Y flag)",
+    "bad_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "good_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "bad_metrics": {
+      "total_bw_mb_s": 67.19873151136383,
+      "write_bw_mb_s": 34.00016413702518,
+      "read_bw_mb_s": 2850.270868770693,
+      "avg_write_size": 65536.0,
+      "seq_write_ratio": 0.9999375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.001613387335469021,
+      "POSIX_BYTES_WRITTEN": 16777216000.0,
+      "POSIX_WRITES": 256000.0,
+      "runtime_seconds": 36.05762243270874
+    },
+    "bad_job_id": "16928699",
+    "bad_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928699-3144815_3-23-29315-4846740638249183842_1.darshan",
+    "status": "incomplete"
+  },
+  "ior_random_to_sequential": {
+    "pair_name": "ior_random_to_sequential",
+    "description": "Random access \u2192 Sequential access",
+    "bottleneck": "access_pattern",
+    "expected_fix": "Use sequential access instead of random (-z flag)",
+    "bad_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -z -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "good_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
+    "status": "incomplete"
+  }
+}
