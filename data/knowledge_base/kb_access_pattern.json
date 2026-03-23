@@ -96,11 +96,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -209,11 +215,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -322,11 +334,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -435,11 +453,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -548,11 +572,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -661,11 +691,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -774,11 +810,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -887,11 +929,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -1000,11 +1048,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -1113,11 +1167,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -1226,11 +1286,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -1339,11 +1405,17 @@
     "source_code": {
       "repo": "https://github.com/hpc/ior",
       "language": "C",
+      "source_files": {
+        "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+        "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+        "main": "src/ior.c (main benchmark loop)"
+      },
       "io_functions": {
-        "POSIX": "write(fd, buf, transferSize)",
-        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)"
-      }
+        "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+        "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+        "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */"
+      },
+      "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)"
     },
     "fixes": [
       {
@@ -1452,10 +1524,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {
@@ -1564,10 +1641,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {
@@ -1676,10 +1758,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {
@@ -1788,10 +1875,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {
@@ -1900,10 +1992,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {
@@ -2012,10 +2109,15 @@
     "source_code": {
       "repo": "https://github.com/argonne-lcf/dlio_benchmark",
       "language": "Python",
+      "source_files": {
+        "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+        "writer": "src/storage/storage_factory.py"
+      },
       "io_functions": {
-        "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-        "write": "data.tofile(checkpoint_path)"
-      }
+        "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+        "write": "data.tofile(checkpoint_path)  /* storage_factory.py */"
+      },
+      "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism"
     },
     "fixes": [
       {

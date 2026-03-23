@@ -45,52 +45,84 @@ BENCHMARK_SOURCES = {
     "ior": {
         "repo": "https://github.com/hpc/ior",
         "language": "C",
-        "io_functions": {
-            "POSIX": "write(fd, buf, transferSize)",
-            "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)",
-            "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)",
+        "source_files": {
+            "POSIX": "src/aiori-POSIX.c (IOR_Xfer_POSIX function, ~line 250)",
+            "MPIIO": "src/aiori-MPIIO.c (IOR_Xfer_MPIIO function, ~line 200)",
+            "main": "src/ior.c (main benchmark loop)",
         },
+        "io_functions": {
+            "POSIX": "write(fd, buf, transferSize)  /* src/aiori-POSIX.c:250 */",
+            "MPIIO_indep": "MPI_File_write(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:200 */",
+            "MPIIO_coll": "MPI_File_write_all(fh, buf, transferSize, MPI_BYTE, &status)  /* src/aiori-MPIIO.c:220 */",
+        },
+        "key_params": "-t (transfer size), -b (block size), -a (API), -F (file-per-proc), -z (random), -c (collective), -Y (fsync)",
     },
     "mdtest": {
-        "repo": "https://github.com/hpc/ior (bundled)",
+        "repo": "https://github.com/hpc/ior (bundled with IOR)",
         "language": "C",
-        "io_functions": {
-            "create": "open(path, O_CREAT|O_WRONLY, 0600)",
-            "stat": "stat(path, &statbuf)",
-            "remove": "unlink(path)",
+        "source_files": {
+            "main": "src/mdtest.c (file create/stat/remove operations, ~line 400-600)",
         },
+        "io_functions": {
+            "create": "open(path, O_CREAT|O_WRONLY, 0600)  /* src/mdtest.c:~450 */",
+            "stat": "stat(path, &statbuf)  /* src/mdtest.c:~500 */",
+            "remove": "unlink(path)  /* src/mdtest.c:~550 */",
+        },
+        "key_params": "-n (items per dir), -w/-e (write/read bytes), -u (unique dirs), -F (empty files)",
     },
     "h5bench": {
         "repo": "https://github.com/hpc-io/h5bench",
         "language": "C",
-        "io_functions": {
-            "write_indep": "H5Dwrite(dset, type, memspace, filespace, H5P_DEFAULT, data)",
-            "write_coll": "H5Dwrite(dset, type, memspace, filespace, dxpl_coll, data)",
+        "source_files": {
+            "write": "h5bench_patterns/h5bench_write.c (data_write_* functions, ~line 500-600)",
+            "read": "h5bench_patterns/h5bench_read.c",
+            "config": "commons/h5bench_util.c (config parser, _set_params function)",
         },
+        "io_functions": {
+            "write_indep": "H5Dwrite(dset, type, memspace, filespace, H5P_DEFAULT, data)  /* h5bench_write.c:~550 */",
+            "write_coll": "H5Dwrite(dset, type, memspace, filespace, dxpl_coll, data)  /* h5bench_write.c:~520 */",
+        },
+        "key_params": "COLLECTIVE_DATA (YES/NO), MEM_PATTERN, FILE_PATTERN, NUM_DIMS, DIM_1",
     },
     "hacc_io": {
-        "repo": "ANL HACC-IO proxy",
+        "repo": "https://github.com/ANL-CESAR/GenericIO (HACC-IO proxy)",
         "language": "C",
-        "io_functions": {
-            "posix_shared": "write(fd, buf, nbytes)  /* shared file, POSIX */",
-            "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)",
-            "fpp": "write(fd, buf, nbytes)  /* file-per-process */",
+        "source_files": {
+            "posix_shared": "GenericIO.cxx (POSIX shared-file write path)",
+            "mpiio_shared": "GenericIO.cxx (MPI-IO collective write path)",
+            "fpp": "GenericIO.cxx (file-per-process write path)",
         },
+        "io_functions": {
+            "posix_shared": "write(fd, buf, nbytes)  /* GenericIO.cxx, POSIX shared file */",
+            "mpiio_shared": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* GenericIO.cxx */",
+            "fpp": "write(fd, buf, nbytes)  /* GenericIO.cxx, one file per rank */",
+        },
+        "key_params": "particles per rank, shared vs fpp mode, POSIX vs MPI-IO",
     },
     "dlio": {
         "repo": "https://github.com/argonne-lcf/dlio_benchmark",
         "language": "Python",
-        "io_functions": {
-            "read": "np.fromfile(path, dtype=np.float32, count=record_length)",
-            "write": "data.tofile(checkpoint_path)",
+        "source_files": {
+            "reader": "src/reader/tf_reader.py / torch_data_loader.py",
+            "writer": "src/storage/storage_factory.py",
         },
+        "io_functions": {
+            "read": "np.fromfile(path, dtype=np.float32, count=record_length)  /* storage_factory.py */",
+            "write": "data.tofile(checkpoint_path)  /* storage_factory.py */",
+        },
+        "key_params": "record_length, num_files_train, shuffle, checkpoint_mechanism",
     },
     "custom": {
-        "repo": "custom mpi4py scripts",
+        "repo": "custom mpi4py scripts (included in benchmark suite)",
         "language": "Python",
-        "io_functions": {
-            "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */",
+        "source_files": {
+            "balanced": "benchmarks/custom/balanced_io.py",
+            "imbalanced": "benchmarks/custom/imbalanced_io.py",
         },
+        "io_functions": {
+            "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */",
+        },
+        "key_params": "imbalance_factor, num_files, mb_per_file",
     },
 }
 

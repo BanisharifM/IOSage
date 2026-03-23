@@ -94,11 +94,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -205,11 +210,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -316,11 +326,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -427,11 +442,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -538,11 +558,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -649,11 +674,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -760,11 +790,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -871,11 +906,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -982,11 +1022,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1093,11 +1138,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1204,11 +1254,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1315,11 +1370,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1426,11 +1486,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1537,11 +1602,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1648,11 +1718,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1759,11 +1834,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1870,11 +1950,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -1981,11 +2066,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2092,11 +2182,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2203,11 +2298,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2314,11 +2414,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2425,11 +2530,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2536,11 +2646,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2647,11 +2762,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2758,11 +2878,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2869,11 +2994,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -2980,11 +3110,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3091,11 +3226,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3202,11 +3342,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3313,11 +3458,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3424,11 +3574,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3535,11 +3690,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3646,11 +3806,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3757,11 +3922,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3868,11 +4038,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -3979,11 +4154,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4090,11 +4270,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4201,11 +4386,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4312,11 +4502,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4423,11 +4618,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4534,11 +4734,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4645,11 +4850,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4756,11 +4966,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4867,11 +5082,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -4978,11 +5198,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5089,11 +5314,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5200,11 +5430,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5311,11 +5546,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5422,11 +5662,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5533,11 +5778,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5644,11 +5894,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5755,11 +6010,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5866,11 +6126,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -5977,11 +6242,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6088,11 +6358,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6199,11 +6474,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6310,11 +6590,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6421,11 +6706,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6532,11 +6822,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6643,11 +6938,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6754,11 +7054,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6865,11 +7170,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -6976,11 +7286,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7087,11 +7402,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7198,11 +7518,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7309,11 +7634,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7420,11 +7750,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7531,11 +7866,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7642,11 +7982,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7753,11 +8098,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
@@ -7864,11 +8214,16 @@
       ]
     },
     "source_code": {
-      "repo": "custom mpi4py scripts",
+      "repo": "custom mpi4py scripts (included in benchmark suite)",
       "language": "Python",
+      "source_files": {
+        "balanced": "benchmarks/custom/balanced_io.py",
+        "imbalanced": "benchmarks/custom/imbalanced_io.py"
+      },
       "io_functions": {
-        "write": "f.write(data)  /* via mpi4py + DARSHAN_ENABLE_NONMPI */"
-      }
+        "write": "f.write(data)  /* Python file I/O with DARSHAN_ENABLE_NONMPI */"
+      },
+      "key_params": "imbalance_factor, num_files, mb_per_file"
     },
     "fixes": [
       {
