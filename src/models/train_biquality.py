@@ -199,6 +199,26 @@ def train_biquality(X_prod_train, y_prod_train, X_bench_dev, y_bench_dev,
             params = config["models"]["random_forest"]["params"].copy()
             clf = RandomForestClassifier(**params, random_state=seed)
             clf.fit(X_combined, y_combined[:, i], sample_weight=weights)
+        elif model_type == "mlp":
+            from sklearn.neural_network import MLPClassifier
+            from sklearn.preprocessing import StandardScaler
+            # MLP needs scaled features (unlike tree models)
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X_combined)
+            X_val_scaled = scaler.transform(X_val)
+            clf = MLPClassifier(
+                hidden_layer_sizes=(256, 128, 64),
+                activation="relu",
+                max_iter=500,
+                early_stopping=True,
+                validation_fraction=0.1,
+                n_iter_no_change=20,
+                random_state=seed,
+                verbose=False,
+            )
+            clf.fit(X_scaled, y_combined[:, i])
+            # Store scaler with model for inference
+            clf._ioprescriber_scaler = scaler
         else:
             raise ValueError(f"Unknown model type: {model_type}")
 
@@ -272,9 +292,13 @@ def evaluate_on_gt_test(models, X_test, y_test):
     y_pred = np.zeros_like(y_test)
     y_prob = np.zeros_like(y_test)
     for i, dim in enumerate(DIMENSIONS):
-        y_pred[:, i] = models[dim].predict(X_test)
+        # MLP models have a scaler attached — apply it before predict
+        X_input = X_test
+        if hasattr(models[dim], "_ioprescriber_scaler"):
+            X_input = models[dim]._ioprescriber_scaler.transform(X_test)
+        y_pred[:, i] = models[dim].predict(X_input)
         if hasattr(models[dim], "predict_proba"):
-            y_prob[:, i] = models[dim].predict_proba(X_test)[:, 1]
+            y_prob[:, i] = models[dim].predict_proba(X_input)[:, 1]
 
     metrics = {
         "micro_f1": f1_score(y_test, y_pred, average="micro", zero_division=0),
@@ -329,7 +353,7 @@ def log_results(name, metrics):
 
 def main():
     parser = argparse.ArgumentParser(description="Phase 2: Biquality Learning Training")
-    parser.add_argument("--model", default="xgboost", choices=["xgboost", "lightgbm", "random_forest", "all"])
+    parser.add_argument("--model", default="xgboost", choices=["xgboost", "lightgbm", "random_forest", "mlp", "all"])
     parser.add_argument("--clean-weight", type=float, default=100.0,
                         help="Weight multiplier for clean benchmark samples (default 100)")
     parser.add_argument("--n-seeds", type=int, default=1)
