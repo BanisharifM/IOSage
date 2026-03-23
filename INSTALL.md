@@ -8,8 +8,13 @@ git clone <repo-url>
 cd SC_2026
 
 # Create conda environment
-conda env create -f environment.yml
-conda activate sc2026
+# On Delta (NCSA): use project directory for env
+conda env create -f environment.yml --prefix /projects/bdau/envs/sc2026
+conda activate /projects/bdau/envs/sc2026
+
+# Elsewhere: default location
+# conda env create -f environment.yml
+# conda activate sc2026
 
 # OR: pip install
 pip install -r requirements.txt
