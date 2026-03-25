@@ -96,6 +96,72 @@ VALIDATION_PAIRS = {
         },
         "expected_fix": "Use sequential access instead of random (-z flag)",
     },
+    # --- mdtest pairs (metadata workloads) ---
+    "mdtest_metadata_storm": {
+        "description": "Shared directory MDS contention → Unique directory per rank",
+        "bottleneck": "metadata_intensity",
+        "benchmark": "mdtest",
+        "bad_config": {
+            "items_per_rank": 10000, "write_bytes": 100,
+            "files_only": True, "unique_dir": False,
+        },
+        "good_config": {
+            "items_per_rank": 10000, "write_bytes": 100,
+            "files_only": True, "unique_dir": True,
+        },
+        "expected_fix": "Use unique directory per rank (-u) to reduce MDS contention",
+        "metric": "create_rate_ops_sec",
+    },
+    "mdtest_fpp_explosion": {
+        "description": "Excessive file-per-process (640K files) → Fewer files (6.4K)",
+        "bottleneck": "file_strategy",
+        "benchmark": "mdtest",
+        "bad_config": {
+            "items_per_rank": 5000, "write_bytes": 4096,
+            "files_only": True, "unique_dir": True,
+        },
+        "good_config": {
+            "items_per_rank": 50, "write_bytes": 4096,
+            "files_only": True, "unique_dir": True,
+        },
+        "expected_fix": "Reduce files per rank from 5000 to 50 to lower metadata overhead",
+        "metric": "create_rate_ops_sec",
+        "ntasks_override": 128,
+        "nodes_override": 1,
+    },
+    # --- IOR pairs at scale ---
+    "ior_collective_vs_independent": {
+        "description": "Independent MPI-IO → Collective MPI-IO at 64-rank scale",
+        "bottleneck": "interface_choice",
+        "bad_config": {
+            "api": "MPIIO", "transfer_size": "1048576", "block_size": "100M",
+            "segments": "10", "file_per_proc": False,
+            "extra_flags": "-e -C -w -r",  # no -c = independent
+        },
+        "good_config": {
+            "api": "MPIIO", "transfer_size": "1048576", "block_size": "100M",
+            "segments": "10", "file_per_proc": False,
+            "extra_flags": "-c -w -r",  # -c = collective
+        },
+        "expected_fix": "Enable collective MPI-IO (-c) for shared-file access at scale",
+        "ntasks_override": 64,
+        "nodes_override": 4,
+    },
+    "ior_small_to_large_direct": {
+        "description": "Small O_DIRECT transfers (4KB) → Large O_DIRECT (1MB)",
+        "bottleneck": "access_granularity",
+        "bad_config": {
+            "api": "POSIX", "transfer_size": "4096", "block_size": "1M",
+            "segments": "100", "file_per_proc": True,
+            "extra_flags": "-e -C -w -r -O useO_DIRECT=1",
+        },
+        "good_config": {
+            "api": "POSIX", "transfer_size": "1048576", "block_size": "100M",
+            "segments": "10", "file_per_proc": True,
+            "extra_flags": "-e -C -w -r -O useO_DIRECT=1",
+        },
+        "expected_fix": "Increase transfer size from 4KB to 1MB with O_DIRECT",
+    },
 }
 
 
@@ -135,42 +201,95 @@ class Validator:
         cmd += f" -o {self.scratch_dir}/ior_test_file"
         return cmd
 
-    def _generate_slurm_script(self, job_name, ior_command):
-        """Generate SLURM batch script for IOR benchmark."""
+    def _build_mdtest_command(self, config):
+        """Build mdtest command from config dict."""
+        cmd = "mdtest"
+        cmd += f" -n {config['items_per_rank']}"
+        if config.get("write_bytes", 0) > 0:
+            cmd += f" -w {config['write_bytes']}"
+            cmd += f" -e {config.get('read_bytes', config['write_bytes'])}"
+        if config.get("files_only"):
+            cmd += " -F"
+        if config.get("unique_dir"):
+            cmd += " -u"
+        if config.get("stagger_shift"):
+            cmd += " -N -1"
+        if config.get("tree_depth"):
+            cmd += f" -z {config['tree_depth']}"
+        if config.get("branching"):
+            cmd += f" -b {config['branching']}"
+        cmd += f" -d {self.scratch_dir}/mdtest_out"
+        return cmd
+
+    def _detect_benchmark_type(self, pair_name):
+        """Determine benchmark type from pair config or name."""
+        pair = VALIDATION_PAIRS.get(pair_name, {})
+        if pair.get("benchmark") == "mdtest":
+            return "mdtest"
+        if pair_name.startswith("mdtest_"):
+            return "mdtest"
+        return "ior"
+
+    def _generate_slurm_script(self, job_name, bench_command, benchmark_type="ior",
+                               nodes=None, ntasks=None):
+        """Generate SLURM batch script for IOR or mdtest benchmark.
+
+        Args:
+            job_name: SLURM job name
+            bench_command: Full benchmark command string
+            benchmark_type: 'ior' or 'mdtest' (controls module loading, cleanup)
+            nodes: Override node count (default: self.nodes)
+            ntasks: Override task count (default: self.ntasks)
+        """
+        job_nodes = nodes or self.nodes
+        job_ntasks = ntasks or self.ntasks
+
+        # mdtest is bundled with IOR module on Delta
+        module_load = "module load ior/3.3.0-gcc13.3.1"
+
+        if benchmark_type == "mdtest":
+            cleanup_cmd = f"rm -rf {self.scratch_dir}/mdtest_out* 2>/dev/null || true"
+            scratch_setup = f"mkdir -p {self.scratch_dir}/mdtest_out"
+        else:
+            cleanup_cmd = f"rm -f {self.scratch_dir}/ior_test_file* 2>/dev/null || true"
+            scratch_setup = f"mkdir -p {self.scratch_dir}"
+
         script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={self.partition}
 #SBATCH --account={self.account}
-#SBATCH --nodes={self.nodes}
-#SBATCH --ntasks={self.ntasks}
+#SBATCH --nodes={job_nodes}
+#SBATCH --ntasks={job_ntasks}
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --time={self.walltime}
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
-module load ior/3.3.0-gcc13.3.1
+{module_load}
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
 
 # Cleanup on exit
-cleanup() {{ rm -f {self.scratch_dir}/ior_test_file* 2>/dev/null || true; }}
+cleanup() {{ {cleanup_cmd}; }}
 trap cleanup EXIT
 
 echo "============================================================"
 echo "IOPrescriber Closed-Loop Validation"
 echo "Job: {job_name}"
-echo "Command: {ior_command}"
+echo "Benchmark: {benchmark_type}"
+echo "Command: {bench_command}"
+echo "Nodes: {job_nodes}, Tasks: {job_ntasks}"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
 
-mkdir -p {self.scratch_dir}
+{scratch_setup}
 
-# Run IOR with Darshan instrumentation
+# Run benchmark with Darshan instrumentation
 srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
-    {ior_command}
+    {bench_command}
 
 echo ""
 echo "Exit code: $?"
@@ -279,32 +398,52 @@ fi
             raise ValueError(f"Unknown pair: {pair_name}. Available: {list(VALIDATION_PAIRS.keys())}")
 
         pair = VALIDATION_PAIRS[pair_name]
+        benchmark_type = self._detect_benchmark_type(pair_name)
         logger.info("")
         logger.info("=" * 60)
         logger.info("CLOSED-LOOP VALIDATION: %s", pair_name)
         logger.info("  %s", pair["description"])
         logger.info("  Expected bottleneck: %s", pair["bottleneck"])
+        logger.info("  Benchmark type: %s", benchmark_type)
         logger.info("=" * 60)
 
-        bad_cmd = self._build_ior_command(pair["bad_config"])
-        good_cmd = self._build_ior_command(pair["good_config"])
+        # Build command based on benchmark type
+        if benchmark_type == "mdtest":
+            bad_cmd = self._build_mdtest_command(pair["bad_config"])
+            good_cmd = self._build_mdtest_command(pair["good_config"])
+        else:
+            bad_cmd = self._build_ior_command(pair["bad_config"])
+            good_cmd = self._build_ior_command(pair["good_config"])
+
+        # Per-pair node/task overrides (for multi-node experiments)
+        pair_nodes = pair.get("nodes_override", None)
+        pair_ntasks = pair.get("ntasks_override", None)
 
         logger.info("  Bad command:  %s", bad_cmd)
         logger.info("  Good command: %s", good_cmd)
+        if pair_nodes or pair_ntasks:
+            logger.info("  Override: nodes=%s, ntasks=%s", pair_nodes, pair_ntasks)
 
         result = {
             "pair_name": pair_name,
             "description": pair["description"],
             "bottleneck": pair["bottleneck"],
             "expected_fix": pair["expected_fix"],
+            "benchmark_type": benchmark_type,
             "bad_command": bad_cmd,
             "good_command": good_cmd,
         }
+        if pair.get("metric"):
+            result["metric"] = pair["metric"]
 
         if submit_jobs:
             # Submit bad config
             logger.info("  Submitting 'bad' config...")
-            bad_script = self._generate_slurm_script(f"iop_bad_{pair_name}", bad_cmd)
+            bad_script = self._generate_slurm_script(
+                f"iop_bad_{pair_name}", bad_cmd,
+                benchmark_type=benchmark_type,
+                nodes=pair_nodes, ntasks=pair_ntasks,
+            )
             bad_job = self.submit_and_wait(bad_script)
 
             if bad_job:
@@ -318,7 +457,11 @@ fi
 
             # Submit good config
             logger.info("  Submitting 'good' config...")
-            good_script = self._generate_slurm_script(f"iop_good_{pair_name}", good_cmd)
+            good_script = self._generate_slurm_script(
+                f"iop_good_{pair_name}", good_cmd,
+                benchmark_type=benchmark_type,
+                nodes=pair_nodes, ntasks=pair_ntasks,
+            )
             good_job = self.submit_and_wait(good_script)
 
             if good_job:

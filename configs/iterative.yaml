@@ -174,6 +174,66 @@ workloads:
       extra_flags: "-c -e -C -w -r"
     known_good_config: null  # Already optimal
 
+  # --- Extended closed-loop pairs (mdtest + multi-node IOR) ---
+  mdtest_fpp_explosion:
+    benchmark: mdtest
+    bottleneck: file_strategy
+    description: "Excessive file-per-process (5000/rank) vs moderate (50/rank)"
+    bad_config:
+      items_per_rank: 5000
+      write_bytes: 4096
+      files_only: true
+      unique_dir: true
+    known_good_config:
+      items_per_rank: 50
+      write_bytes: 4096
+      files_only: true
+      unique_dir: true
+    slurm_override:
+      ntasks: 128
+      nodes: 1
+
+  ior_collective_vs_independent:
+    benchmark: ior
+    bottleneck: interface_choice
+    description: "Independent MPI-IO vs collective MPI-IO at 64-rank scale"
+    bad_config:
+      api: MPIIO
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: false
+      extra_flags: "-e -C -w -r"
+    known_good_config:
+      api: MPIIO
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: false
+      extra_flags: "-c -w -r"
+    slurm_override:
+      ntasks: 64
+      nodes: 4
+
+  ior_small_to_large_direct:
+    benchmark: ior
+    bottleneck: access_granularity
+    description: "Small O_DIRECT transfers (4KB) vs large O_DIRECT (1MB)"
+    bad_config:
+      api: POSIX
+      transfer_size: "4096"
+      block_size: "1M"
+      segments: 100
+      file_per_proc: true
+      extra_flags: "-e -C -w -r -O useO_DIRECT=1"
+    known_good_config:
+      api: POSIX
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r -O useO_DIRECT=1"
+
 # --- SLURM Settings ---
 slurm:
   account: bdau-delta-cpu
