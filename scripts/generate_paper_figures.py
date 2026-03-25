@@ -47,6 +47,74 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 # Style Configuration — modify here to change appearance globally
 # ===========================================================================
+COLORS = {
+    'blue':      '#0072B2',
+    'orange':    '#E69F00',
+    'green':     '#009E73',
+    'vermilion': '#D55E00',
+    'purple':    '#CC79A7',
+    'cyan':      '#56B4E9',
+    'yellow':    '#F0E442',
+    'gray':      '#BBBBBB',
+    'black':     '#000000',
+}
+
+PALETTE_8 = ['#0072B2', '#E69F00', '#009E73', '#D55E00',
+             '#CC79A7', '#56B4E9', '#F0E442', '#BBBBBB']
+
+HATCHES = ['', '//', '\\\\', 'xx', '..', '++', 'oo', '**']
+
+RCPARAMS_SC2026 = {
+    # Fonts — serif to match IEEE body text
+    'font.family': 'serif',
+    'font.serif': ['Times New Roman', 'DejaVu Serif', 'serif'],
+    'font.size': 8,
+    'mathtext.fontset': 'stix',
+
+    # Axes
+    'axes.titlesize': 9,
+    'axes.labelsize': 8,
+    'axes.linewidth': 0.5,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'axes.grid': True,
+    'axes.axisbelow': True,
+
+    # Ticks
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'xtick.major.width': 0.5,
+    'ytick.major.width': 0.5,
+    'xtick.major.size': 3,
+    'ytick.major.size': 3,
+    'xtick.direction': 'out',
+    'ytick.direction': 'out',
+
+    # Legend
+    'legend.fontsize': 7,
+    'legend.frameon': False,
+    'legend.handlelength': 1.5,
+
+    # Grid
+    'grid.alpha': 0.3,
+    'grid.linestyle': '--',
+    'grid.linewidth': 0.5,
+
+    # Figure
+    'figure.dpi': 150,
+    'savefig.dpi': 300,
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.02,
+
+    # Lines
+    'lines.linewidth': 1.0,
+    'lines.markersize': 4,
+
+    # Font embedding (CRITICAL)
+    'pdf.fonttype': 42,
+    'ps.fonttype': 42,
+}
+
 STYLE_CONFIG = {
     # Figure sizes (width, height) in inches — IEEE column is 3.5in, double is 7in
     'single_col': (3.5, 2.8),
@@ -127,29 +195,7 @@ def load_data(data_dir):
 
 def apply_style():
     """Apply publication style to matplotlib."""
-    cfg = STYLE_CONFIG
-    plt.rcParams.update({
-        'font.family': 'serif',
-        'font.serif': ['Times New Roman', 'DejaVu Serif', 'serif'],
-        'font.size': cfg['font_size'],
-        'axes.titlesize': cfg['title_size'],
-        'axes.labelsize': cfg['label_size'],
-        'xtick.labelsize': cfg['tick_size'],
-        'ytick.labelsize': cfg['tick_size'],
-        'legend.fontsize': cfg['legend_size'],
-        'figure.dpi': cfg['dpi'],
-        'savefig.dpi': cfg['dpi'],
-        'savefig.bbox': 'tight',
-        'savefig.pad_inches': 0.02,
-        'axes.grid': True,
-        'grid.alpha': cfg['grid_alpha'],
-        'grid.linestyle': cfg['grid_style'],
-        'axes.linewidth': cfg['spine_width'],
-        'axes.spines.top': False,
-        'axes.spines.right': False,
-        'pdf.fonttype': 42,   # TrueType fonts in PDF (required by IEEE)
-        'ps.fonttype': 42,
-    })
+    plt.rcParams.update(RCPARAMS_SC2026)
 
 
 def save_figure(fig, output_dir, name):

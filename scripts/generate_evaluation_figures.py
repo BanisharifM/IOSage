@@ -37,43 +37,81 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 # Colorblind-safe Okabe-Ito palette
 # ---------------------------------------------------------------------------
-OI = {
-    "blue": "#0072B2",
-    "orange": "#E69F00",
-    "green": "#009E73",
+COLORS = {
+    "blue":      "#0072B2",
+    "orange":    "#E69F00",
+    "green":     "#009E73",
     "vermilion": "#D55E00",
-    "sky": "#56B4E9",
-    "pink": "#CC79A7",
-    "yellow": "#F0E442",
-    "black": "#000000",
-    "gray": "#999999",
+    "purple":    "#CC79A7",
+    "cyan":      "#56B4E9",
+    "yellow":    "#F0E442",
+    "gray":      "#BBBBBB",
+    "black":     "#000000",
+}
+
+PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
+             "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB"]
+
+HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
+
+# Alias for backward compat
+OI = COLORS
+
+RCPARAMS_SC2026 = {
+    # Fonts — serif to match IEEE body text
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+    "font.size": 8,
+    "mathtext.fontset": "stix",
+
+    # Axes
+    "axes.titlesize": 9,
+    "axes.labelsize": 8,
+    "axes.linewidth": 0.5,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.grid": True,
+    "axes.axisbelow": True,
+
+    # Ticks
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7,
+    "xtick.major.width": 0.5,
+    "ytick.major.width": 0.5,
+    "xtick.major.size": 3,
+    "ytick.major.size": 3,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+
+    # Legend
+    "legend.fontsize": 7,
+    "legend.frameon": False,
+    "legend.handlelength": 1.5,
+
+    # Grid
+    "grid.alpha": 0.3,
+    "grid.linestyle": "--",
+    "grid.linewidth": 0.5,
+
+    # Figure
+    "figure.dpi": 150,
+    "savefig.dpi": 300,
+    "savefig.bbox": "tight",
+    "savefig.pad_inches": 0.02,
+
+    # Lines
+    "lines.linewidth": 1.0,
+    "lines.markersize": 4,
+
+    # Font embedding (CRITICAL)
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
 }
 
 
 def apply_style():
     """IEEE-compatible publication style."""
-    plt.rcParams.update({
-        "font.family": "serif",
-        "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
-        "font.size": 8,
-        "axes.titlesize": 9,
-        "axes.labelsize": 8,
-        "xtick.labelsize": 7,
-        "ytick.labelsize": 7,
-        "legend.fontsize": 7,
-        "figure.dpi": 300,
-        "savefig.dpi": 300,
-        "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.02,
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "grid.linestyle": "--",
-        "axes.linewidth": 0.5,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
-    })
+    plt.rcParams.update(RCPARAMS_SC2026)
 
 
 def save_fig(fig, name):
@@ -110,11 +148,11 @@ def fig_closed_loop_speedup():
     fig, ax = plt.subplots(figsize=(3.5, 2.8))
 
     bars_b = ax.bar(x - width / 2, before, width,
-                    color=OI["vermilion"], edgecolor="white", linewidth=0.4,
-                    label="Before fix", zorder=3)
+                    color=OI["vermilion"], edgecolor="black", linewidth=0.4,
+                    hatch="//", label="Before fix", zorder=3)
     bars_a = ax.bar(x + width / 2, after, width,
-                    color=OI["green"], edgecolor="white", linewidth=0.4,
-                    label="After fix", zorder=3)
+                    color=OI["green"], edgecolor="black", linewidth=0.4,
+                    hatch="", label="After fix", zorder=3)
 
     # Log scale
     ax.set_yscale("log")
@@ -174,10 +212,10 @@ def fig_llm_groundedness():
     fig, ax = plt.subplots(figsize=(3.5, 2.5))
 
     bars_w = ax.bar(x - width / 2, with_kb, width,
-                    color=OI["blue"], edgecolor="white", linewidth=0.4,
-                    label="With KB", zorder=3)
+                    color=OI["blue"], edgecolor="black", linewidth=0.4,
+                    hatch="", label="With KB", zorder=3)
     bars_wo = ax.bar(x + width / 2, without_kb, width,
-                     color=OI["vermilion"], edgecolor="white", linewidth=0.4,
+                     color=OI["vermilion"], edgecolor="black", linewidth=0.4,
                      hatch="//", label="Without KB", zorder=3)
 
     # Value labels
@@ -224,17 +262,20 @@ def fig_ablation_trackb():
     x = np.arange(len(conditions))
     width = 0.55
 
+    # Hatching patterns per condition for B&W readability
+    condition_hatches = ["", "//", "\\\\", "xx", ".."]
+
     # Plot groundedness bars
     for i, (g, c) in enumerate(zip(groundedness, colors)):
         if g is not None:
-            ax1.bar(x[i], g, width, color=c, edgecolor="white",
-                    linewidth=0.4, zorder=3)
+            ax1.bar(x[i], g, width, color=c, edgecolor="black",
+                    linewidth=0.4, hatch=condition_hatches[i], zorder=3)
             ax1.text(x[i], g + 0.04, f"{g:.1f}", ha="center", va="bottom",
                      fontsize=6.5, fontweight="bold")
         else:
             # N/A case
-            ax1.bar(x[i], 0.05, width, color=c, edgecolor="white",
-                    linewidth=0.4, zorder=3, alpha=0.4)
+            ax1.bar(x[i], 0.05, width, color=c, edgecolor="black",
+                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.4)
             ax1.text(x[i], 0.10, "N/A", ha="center", va="bottom",
                      fontsize=6.5, fontweight="bold", color=OI["gray"])
 
@@ -246,17 +287,17 @@ def fig_ablation_trackb():
 
     # Secondary axis for number of recommendations
     ax2 = ax1.twinx()
-    ax2.plot(x, n_recs, "D-", color=OI["pink"], markersize=4,
+    ax2.plot(x, n_recs, "D-", color=OI["purple"], markersize=4,
              linewidth=1.0, zorder=4, label="Avg. recs/query")
-    ax2.set_ylabel("Avg. Recommendations", color=OI["pink"], fontsize=7)
-    ax2.tick_params(axis="y", labelcolor=OI["pink"], labelsize=6.5)
+    ax2.set_ylabel("Avg. Recommendations", color=OI["purple"], fontsize=7)
+    ax2.tick_params(axis="y", labelcolor=OI["purple"], labelsize=6.5)
     ax2.set_ylim(0, 3.0)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(0.5)
 
     # Combined legend
     bar_patch = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
-    line_patch = plt.Line2D([0], [0], color=OI["pink"], marker="D",
+    line_patch = plt.Line2D([0], [0], color=OI["purple"], marker="D",
                             markersize=3, label="Avg. recs/query")
     ax1.legend(handles=[bar_patch, line_patch], loc="upper center",
                fontsize=6, framealpha=0.8, ncol=2)
@@ -381,7 +422,7 @@ def fig_pipeline_walkthrough():
     bw_vals = [49.24, 2208.43]
     bar_cols = [OI["vermilion"], OI["green"]]
     ax5.bar([0, 1], bw_vals, width=0.6, color=bar_cols,
-            edgecolor="white", linewidth=0.4)
+            edgecolor="black", linewidth=0.4, hatch=["//", ""])
     ax5.set_xticks([0, 1])
     ax5.set_xticklabels(bw_labels, fontsize=5.5)
     ax5.set_ylabel("MiB/s", fontsize=5.5)

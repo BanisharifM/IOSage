@@ -38,6 +38,91 @@ DIMS = ["access_granularity", "metadata_intensity", "parallelism_efficiency",
 DIM_SHORT = ["Granularity", "Metadata", "Parallelism", "Pattern",
              "Interface", "File Strat.", "Throughput", "Healthy"]
 
+# ---------------------------------------------------------------------------
+# Style guide constants
+# ---------------------------------------------------------------------------
+COLORS = {
+    "blue":      "#0072B2",
+    "orange":    "#E69F00",
+    "green":     "#009E73",
+    "vermilion": "#D55E00",
+    "purple":    "#CC79A7",
+    "cyan":      "#56B4E9",
+    "yellow":    "#F0E442",
+    "gray":      "#BBBBBB",
+    "black":     "#000000",
+}
+
+PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
+             "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB"]
+
+HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
+
+RCPARAMS_SC2026 = {
+    # Fonts — serif to match IEEE body text
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+    "font.size": 8,
+    "mathtext.fontset": "stix",
+
+    # Axes
+    "axes.titlesize": 9,
+    "axes.labelsize": 8,
+    "axes.linewidth": 0.5,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.grid": True,
+    "axes.axisbelow": True,
+
+    # Ticks
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7,
+    "xtick.major.width": 0.5,
+    "ytick.major.width": 0.5,
+    "xtick.major.size": 3,
+    "ytick.major.size": 3,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+
+    # Legend
+    "legend.fontsize": 7,
+    "legend.frameon": False,
+    "legend.handlelength": 1.5,
+
+    # Grid
+    "grid.alpha": 0.3,
+    "grid.linestyle": "--",
+    "grid.linewidth": 0.5,
+
+    # Figure
+    "figure.dpi": 150,
+    "savefig.dpi": 300,
+    "savefig.bbox": "tight",
+    "savefig.pad_inches": 0.02,
+
+    # Lines
+    "lines.linewidth": 1.0,
+    "lines.markersize": 4,
+
+    # Font embedding (CRITICAL)
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+}
+
+
+def apply_style():
+    """Apply IEEE publication style."""
+    plt.rcParams.update(RCPARAMS_SC2026)
+
+
+def save_fig(fig, path):
+    """Save figure as PDF and PNG."""
+    fig.savefig(path, format="pdf")
+    png_path = str(path).replace(".pdf", ".png")
+    fig.savefig(png_path, format="png", dpi=300)
+    plt.close(fig)
+    logger.info("Saved: %s (%d bytes)", path, path.stat().st_size)
+
 
 def fig_baseline_comparison():
     """Bar chart comparing all methods on GT test set."""
@@ -48,32 +133,31 @@ def fig_baseline_comparison():
     x = np.arange(len(methods))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars1 = ax.bar(x - width/2, micro_f1, width, label="Micro-F1", color="#2196F3", edgecolor="white")
-    bars2 = ax.bar(x + width/2, macro_f1, width, label="Macro-F1", color="#FF9800", edgecolor="white")
+    fig, ax = plt.subplots(figsize=(7.16, 2.8))
+    bars1 = ax.bar(x - width/2, micro_f1, width, label="Micro-F1",
+                   color=COLORS["blue"], edgecolor="black", linewidth=0.4, hatch="")
+    bars2 = ax.bar(x + width/2, macro_f1, width, label="Macro-F1",
+                   color=COLORS["orange"], edgecolor="black", linewidth=0.4, hatch="//")
 
-    ax.set_ylabel("F1 Score", fontsize=12)
-    ax.set_title("Baseline Comparison on Ground-Truth Test Set (n=436)", fontsize=13)
+    ax.set_ylabel("F1 Score")
+    ax.set_title("Baseline Comparison on Ground-Truth Test Set (n=436)")
     ax.set_xticks(x)
-    ax.set_xticklabels(methods, fontsize=10)
+    ax.set_xticklabels(methods)
     ax.set_ylim(0, 1.05)
-    ax.legend(fontsize=10)
+    ax.legend()
     ax.grid(axis="y", alpha=0.3)
 
     # Add value labels
     for bar in bars1:
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=8)
+                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=6.5)
     for bar in bars2:
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=8)
+                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=6.5)
 
-    plt.tight_layout()
+    fig.tight_layout()
     path = FIG_DIR / "fig_baseline_comparison.pdf"
-    fig.savefig(path, dpi=300, bbox_inches="tight")
-    fig.savefig(str(path).replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    logger.info("Saved: %s", path)
+    save_fig(fig, path)
 
 
 def fig_training_progression():
@@ -84,18 +168,18 @@ def fig_training_progression():
     x = np.arange(len(DIMS))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(7.16, 2.8))
     bars1 = ax.bar(x - width/2, phase1_f1, width, label="Phase 1 (Heuristic Only)",
-                   color="#EF5350", edgecolor="white")
+                   color=COLORS["vermilion"], edgecolor="black", linewidth=0.4, hatch="//")
     bars2 = ax.bar(x + width/2, phase2_f1, width, label="Phase 2 (Biquality)",
-                   color="#4CAF50", edgecolor="white")
+                   color=COLORS["green"], edgecolor="black", linewidth=0.4, hatch="")
 
-    ax.set_ylabel("F1 Score", fontsize=12)
-    ax.set_title("Per-Dimension Detection Quality: Phase 1 vs Phase 2", fontsize=13)
+    ax.set_ylabel("F1 Score")
+    ax.set_title("Per-Dimension Detection Quality: Phase 1 vs Phase 2")
     ax.set_xticks(x)
-    ax.set_xticklabels(DIM_SHORT, fontsize=9, rotation=30, ha="right")
+    ax.set_xticklabels(DIM_SHORT, rotation=30, ha="right")
     ax.set_ylim(0, 1.15)
-    ax.legend(fontsize=10, loc="upper left")
+    ax.legend(loc="upper left")
     ax.grid(axis="y", alpha=0.3)
 
     # Highlight improvement
@@ -104,14 +188,12 @@ def fig_training_progression():
             ax.annotate(f"+{phase2_f1[i]-phase1_f1[i]:.2f}",
                         xy=(x[i] + width/2, phase2_f1[i]),
                         xytext=(0, 5), textcoords="offset points",
-                        ha="center", fontsize=7, color="green", fontweight="bold")
+                        ha="center", fontsize=6.5, color=COLORS["green"],
+                        fontweight="bold")
 
-    plt.tight_layout()
+    fig.tight_layout()
     path = FIG_DIR / "fig_training_progression.pdf"
-    fig.savefig(path, dpi=300, bbox_inches="tight")
-    fig.savefig(str(path).replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    logger.info("Saved: %s", path)
+    save_fig(fig, path)
 
 
 def fig_model_comparison():
@@ -125,26 +207,25 @@ def fig_model_comparison():
     x = np.arange(len(models))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(3.5, 2.8))
     bars1 = ax.bar(x - width/2, micro_means, width, yerr=micro_stds,
-                   label="Micro-F1", color="#2196F3", capsize=5, edgecolor="white")
+                   label="Micro-F1", color=COLORS["blue"], capsize=3,
+                   edgecolor="black", linewidth=0.4, hatch="")
     bars2 = ax.bar(x + width/2, macro_means, width, yerr=macro_stds,
-                   label="Macro-F1", color="#FF9800", capsize=5, edgecolor="white")
+                   label="Macro-F1", color=COLORS["orange"], capsize=3,
+                   edgecolor="black", linewidth=0.4, hatch="//")
 
-    ax.set_ylabel("F1 Score", fontsize=12)
-    ax.set_title("Model Comparison (5 seeds, mean ± std)", fontsize=13)
+    ax.set_ylabel("F1 Score")
+    ax.set_title("Model Comparison (5 seeds, mean +/- std)")
     ax.set_xticks(x)
-    ax.set_xticklabels(models, fontsize=11)
+    ax.set_xticklabels(models)
     ax.set_ylim(0.8, 0.98)
-    ax.legend(fontsize=10)
+    ax.legend()
     ax.grid(axis="y", alpha=0.3)
 
-    plt.tight_layout()
+    fig.tight_layout()
     path = FIG_DIR / "fig_model_comparison.pdf"
-    fig.savefig(path, dpi=300, bbox_inches="tight")
-    fig.savefig(str(path).replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    logger.info("Saved: %s", path)
+    save_fig(fig, path)
 
 
 def fig_confusion_matrices():
@@ -177,42 +258,41 @@ def fig_confusion_matrices():
     X_test = np.column_stack(X_test).astype(np.float32)
     y_test = test_labels[DIMS].values
 
-    fig, axes = plt.subplots(2, 4, figsize=(14, 7))
+    fig, axes = plt.subplots(2, 4, figsize=(7.16, 3.5))
 
     for idx, (dim, ax) in enumerate(zip(DIMS, axes.flat)):
         y_pred = models[dim].predict(X_test)
         cm = confusion_matrix(y_test[:, idx], y_pred, labels=[0, 1])
 
         im = ax.imshow(cm, cmap="Blues", interpolation="nearest")
-        ax.set_title(DIM_SHORT[idx], fontsize=10, fontweight="bold")
+        ax.set_title(DIM_SHORT[idx], fontsize=8, fontweight="bold")
 
         # Labels
         for i in range(2):
             for j in range(2):
                 color = "white" if cm[i, j] > cm.max() / 2 else "black"
                 ax.text(j, i, str(cm[i, j]), ha="center", va="center",
-                        fontsize=11, color=color, fontweight="bold")
+                        fontsize=7, color=color, fontweight="bold")
 
         ax.set_xticks([0, 1])
         ax.set_yticks([0, 1])
-        ax.set_xticklabels(["0", "1"], fontsize=9)
-        ax.set_yticklabels(["0", "1"], fontsize=9)
+        ax.set_xticklabels(["0", "1"])
+        ax.set_yticklabels(["0", "1"])
         if idx >= 4:
-            ax.set_xlabel("Predicted", fontsize=9)
+            ax.set_xlabel("Predicted")
         if idx % 4 == 0:
-            ax.set_ylabel("True", fontsize=9)
+            ax.set_ylabel("True")
 
-    plt.suptitle("Per-Dimension Confusion Matrices (Phase 2 XGBoost, n=436)", fontsize=13, y=1.02)
-    plt.tight_layout()
+    fig.suptitle("Per-Dimension Confusion Matrices (Phase 2 XGBoost, n=436)",
+                 fontsize=9, y=1.02)
+    fig.tight_layout()
 
     path = FIG_DIR / "fig_confusion_matrices.pdf"
-    fig.savefig(path, dpi=300, bbox_inches="tight")
-    fig.savefig(str(path).replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    logger.info("Saved: %s", path)
+    save_fig(fig, path)
 
 
 if __name__ == "__main__":
+    apply_style()
     logger.info("Generating results figures...")
     fig_baseline_comparison()
     fig_training_progression()

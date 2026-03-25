@@ -52,6 +52,74 @@ TAB_DIR = PROJECT_DIR / "paper" / "tables" / "iterative"
 # ---------------------------------------------------------------------------
 # Style Configuration (IEEE paper, consistent with generate_paper_figures.py)
 # ---------------------------------------------------------------------------
+COLORS = {
+    "blue":      "#0072B2",
+    "orange":    "#E69F00",
+    "green":     "#009E73",
+    "vermilion": "#D55E00",
+    "purple":    "#CC79A7",
+    "cyan":      "#56B4E9",
+    "yellow":    "#F0E442",
+    "gray":      "#BBBBBB",
+    "black":     "#000000",
+}
+
+PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
+             "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB"]
+
+HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
+
+RCPARAMS_SC2026 = {
+    # Fonts — serif to match IEEE body text
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+    "font.size": 8,
+    "mathtext.fontset": "stix",
+
+    # Axes
+    "axes.titlesize": 9,
+    "axes.labelsize": 8,
+    "axes.linewidth": 0.5,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.grid": True,
+    "axes.axisbelow": True,
+
+    # Ticks
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7,
+    "xtick.major.width": 0.5,
+    "ytick.major.width": 0.5,
+    "xtick.major.size": 3,
+    "ytick.major.size": 3,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+
+    # Legend
+    "legend.fontsize": 7,
+    "legend.frameon": False,
+    "legend.handlelength": 1.5,
+
+    # Grid
+    "grid.alpha": 0.3,
+    "grid.linestyle": "--",
+    "grid.linewidth": 0.5,
+
+    # Figure
+    "figure.dpi": 150,
+    "savefig.dpi": 300,
+    "savefig.bbox": "tight",
+    "savefig.pad_inches": 0.02,
+
+    # Lines
+    "lines.linewidth": 1.0,
+    "lines.markersize": 4,
+
+    # Font embedding (CRITICAL)
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+}
+
 STYLE_CONFIG = {
     "single_col": (3.5, 2.8),
     "double_col": (7.0, 3.0),
@@ -62,11 +130,10 @@ STYLE_CONFIG = {
     "tick_size": 7,
     "legend_size": 7,
     "annotation_size": 6.5,
-    # Colorblind-friendly palette (Okabe-Ito)
     "palette": {
-        "primary": "#0072B2",    # blue
-        "secondary": "#E69F00",  # orange
-        "tertiary": "#D55E00",   # vermilion
+        "primary": "#0072B2",
+        "secondary": "#E69F00",
+        "tertiary": "#D55E00",
         "green": "#009E73",
         "pink": "#CC79A7",
         "gray": "#BBBBBB",
@@ -128,29 +195,7 @@ TRACKB_MAP = {
 # ---------------------------------------------------------------------------
 def apply_style():
     """Apply IEEE publication style to matplotlib."""
-    cfg = STYLE_CONFIG
-    plt.rcParams.update({
-        "font.family": "serif",
-        "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
-        "font.size": cfg["font_size"],
-        "axes.titlesize": cfg["title_size"],
-        "axes.labelsize": cfg["label_size"],
-        "xtick.labelsize": cfg["tick_size"],
-        "ytick.labelsize": cfg["tick_size"],
-        "legend.fontsize": cfg["legend_size"],
-        "figure.dpi": cfg["dpi"],
-        "savefig.dpi": cfg["dpi"],
-        "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.02,
-        "axes.grid": True,
-        "grid.alpha": cfg["grid_alpha"],
-        "grid.linestyle": cfg["grid_style"],
-        "axes.linewidth": cfg["spine_width"],
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
-    })
+    plt.rcParams.update(RCPARAMS_SC2026)
 
 
 def save_figure(fig, name):
@@ -374,11 +419,7 @@ def fig_convergence(summaries):
     fig, axes = plt.subplots(1, n_models, figsize=(3.5 * n_models, 2.8),
                              squeeze=False, sharey=True)
 
-    if HAS_SEABORN:
-        colors = sns.color_palette("colorblind", n_colors=8)
-    else:
-        colors = [STYLE_CONFIG["palette"][k] for k in
-                  ["primary", "secondary", "tertiary", "green", "pink", "cyan", "gray", "yellow"]]
+    colors = PALETTE_8
 
     for midx, model in enumerate(models_present):
         ax = axes[0, midx]
@@ -506,14 +547,14 @@ def fig_single_vs_iterative(summaries, trackb_data):
     tb_mask = [v is not None for v in trackb_speeds]
     bars_b = ax.bar(x - width / 2, tb_vals, width,
                     label="Track B (single-shot)",
-                    color=cfg["palette"]["secondary"], edgecolor="white",
-                    linewidth=0.5)
+                    color=cfg["palette"]["secondary"], edgecolor="black",
+                    linewidth=0.5, hatch="//")
 
     # Track C bars
     bars_c = ax.bar(x + width / 2, trackc_speeds, width, yerr=trackc_stds,
                     label="Track C (iterative)",
-                    color=cfg["palette"]["primary"], edgecolor="white",
-                    linewidth=0.5, capsize=3)
+                    color=cfg["palette"]["primary"], edgecolor="black",
+                    linewidth=0.5, capsize=3, hatch="")
 
     # Gray out missing Track B bars
     for i, present in enumerate(tb_mask):
@@ -581,13 +622,13 @@ def fig_iterative_ablation(summaries):
     x = np.arange(len(labels))
     fig, ax = plt.subplots(figsize=STYLE_CONFIG["double_col"])
 
-    if HAS_SEABORN:
-        colors = sns.color_palette("colorblind", n_colors=len(labels))
-    else:
-        colors = [STYLE_CONFIG["palette"]["primary"]] * len(labels)
+    colors = [PALETTE_8[i % len(PALETTE_8)] for i in range(len(labels))]
+    hatches = [HATCHES[i % len(HATCHES)] for i in range(len(labels))]
 
-    ax.bar(x, means, yerr=[errs_lo, errs_hi], capsize=4,
-           color=colors, edgecolor="white", linewidth=0.5)
+    bars = ax.bar(x, means, yerr=[errs_lo, errs_hi], capsize=4,
+                  color=colors, edgecolor="black", linewidth=0.5)
+    for bar, h in zip(bars, hatches):
+        bar.set_hatch(h)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel("Geometric Mean Speedup")
@@ -691,7 +732,10 @@ def fig_model_comparison_iterative(summaries):
     colors = [MODEL_COLORS.get(m, cfg["palette"]["primary"]) for m in models]
 
     # Panel (a): Geomean speedup
-    axes[0].bar(x, gm_speedups, color=colors, edgecolor="white", linewidth=0.5)
+    model_hatches = [HATCHES[i % len(HATCHES)] for i in range(len(models))]
+    bars_a = axes[0].bar(x, gm_speedups, color=colors, edgecolor="black", linewidth=0.5)
+    for bar, h in zip(bars_a, model_hatches):
+        bar.set_hatch(h)
     axes[0].set_xticks(x)
     axes[0].set_xticklabels(display_names, rotation=30, ha="right")
     axes[0].set_ylabel("Geo. Mean Speedup")
@@ -702,7 +746,9 @@ def fig_model_comparison_iterative(summaries):
                      ha="center", va="bottom", fontsize=cfg["annotation_size"])
 
     # Panel (b): Mean iterations
-    axes[1].bar(x, mean_iters, color=colors, edgecolor="white", linewidth=0.5)
+    bars_b = axes[1].bar(x, mean_iters, color=colors, edgecolor="black", linewidth=0.5)
+    for bar, h in zip(bars_b, model_hatches):
+        bar.set_hatch(h)
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(display_names, rotation=30, ha="right")
     axes[1].set_ylabel("Mean Iterations")
@@ -712,7 +758,9 @@ def fig_model_comparison_iterative(summaries):
                      ha="center", va="bottom", fontsize=cfg["annotation_size"])
 
     # Panel (c): Mean cost
-    axes[2].bar(x, mean_costs, color=colors, edgecolor="white", linewidth=0.5)
+    bars_c = axes[2].bar(x, mean_costs, color=colors, edgecolor="black", linewidth=0.5)
+    for bar, h in zip(bars_c, model_hatches):
+        bar.set_hatch(h)
     axes[2].set_xticks(x)
     axes[2].set_xticklabels(display_names, rotation=30, ha="right")
     axes[2].set_ylabel("Mean Cost (USD)")
