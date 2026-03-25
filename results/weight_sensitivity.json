@@ -1,0 +1,109 @@
+{
+  "seed": 42,
+  "weights": [
+    1,
+    10,
+    50,
+    100,
+    200,
+    500
+  ],
+  "results": [
+    {
+      "weight": 1,
+      "micro_f1": 0.8593598448108632,
+      "macro_f1": 0.8241287209866933,
+      "per_label_f1": {
+        "access_granularity": 0.9085173501577287,
+        "metadata_intensity": 0.9774436090225563,
+        "parallelism_efficiency": 0.9174311926605505,
+        "access_pattern": 0.6666666666666666,
+        "interface_choice": 0.9142857142857143,
+        "file_strategy": 0.7714285714285715,
+        "throughput_utilization": 0.7547169811320755,
+        "healthy": 0.6825396825396826
+      },
+      "train_time_s": 253.3
+    },
+    {
+      "weight": 10,
+      "micro_f1": 0.892,
+      "macro_f1": 0.8567240466496652,
+      "per_label_f1": {
+        "access_granularity": 0.9285714285714286,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 0.970873786407767,
+        "access_pattern": 0.6451612903225806,
+        "interface_choice": 0.9285714285714286,
+        "file_strategy": 0.8387096774193549,
+        "throughput_utilization": 0.78,
+        "healthy": 0.7619047619047619
+      },
+      "train_time_s": 285.3
+    },
+    {
+      "weight": 50,
+      "micro_f1": 0.9039433771486349,
+      "macro_f1": 0.878657083513986,
+      "per_label_f1": {
+        "access_granularity": 0.922077922077922,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 0.970873786407767,
+        "access_pattern": 0.7407407407407407,
+        "interface_choice": 0.9242424242424242,
+        "file_strategy": 0.8235294117647058,
+        "throughput_utilization": 0.8260869565217391,
+        "healthy": 0.8217054263565892
+      },
+      "train_time_s": 329.7
+    },
+    {
+      "weight": 100,
+      "micro_f1": 0.9230769230769231,
+      "macro_f1": 0.8997640291617707,
+      "per_label_f1": {
+        "access_granularity": 0.9260450160771704,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 1.0,
+        "access_pattern": 0.6896551724137931,
+        "interface_choice": 0.9558823529411765,
+        "file_strategy": 0.9032258064516129,
+        "throughput_utilization": 0.898876404494382,
+        "healthy": 0.8244274809160306
+      },
+      "train_time_s": 322.2
+    },
+    {
+      "weight": 200,
+      "micro_f1": 0.9174311926605505,
+      "macro_f1": 0.8992410025871863,
+      "per_label_f1": {
+        "access_granularity": 0.9260450160771704,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 0.970873786407767,
+        "access_pattern": 0.7692307692307693,
+        "interface_choice": 0.9481481481481482,
+        "file_strategy": 0.9032258064516129,
+        "throughput_utilization": 0.8764044943820225,
+        "healthy": 0.8
+      },
+      "train_time_s": 356.6
+    },
+    {
+      "weight": 500,
+      "micro_f1": 0.9244712990936556,
+      "macro_f1": 0.9061809836662095,
+      "per_label_f1": {
+        "access_granularity": 0.9358974358974359,
+        "metadata_intensity": 1.0,
+        "parallelism_efficiency": 0.970873786407767,
+        "access_pattern": 0.7692307692307693,
+        "interface_choice": 0.927536231884058,
+        "file_strategy": 0.9206349206349206,
+        "throughput_utilization": 0.8791208791208791,
+        "healthy": 0.8461538461538461
+      },
+      "train_time_s": 285.9
+    }
+  ]
+}

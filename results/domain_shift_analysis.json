@@ -1,0 +1,847 @@
+{
+  "method": "t-SNE",
+  "n_production_samples": 2000,
+  "n_benchmark_samples": 623,
+  "n_features": 157,
+  "median_ks_statistic": 0.2341653290529695,
+  "top_10_shifted_features": [
+    {
+      "feature": "has_apmpi",
+      "ks_statistic": 0.988,
+      "p_value": 0.0
+    },
+    {
+      "feature": "io_active_fraction",
+      "ks_statistic": 0.7522969502407705,
+      "p_value": 2.669336688235488e-267
+    },
+    {
+      "feature": "STDIO_BYTES_WRITTEN",
+      "ks_statistic": 0.6635,
+      "p_value": 1.396209941137566e-200
+    },
+    {
+      "feature": "STDIO_WRITES",
+      "ks_statistic": 0.6493691813804173,
+      "p_value": 3.295754090422438e-191
+    },
+    {
+      "feature": "STDIO_FLUSHES",
+      "ks_statistic": 0.6458836276083467,
+      "p_value": 5.941369375425625e-189
+    },
+    {
+      "feature": "STDIO_MAX_BYTE_WRITTEN",
+      "ks_statistic": 0.6438691813804174,
+      "p_value": 1.2099581138262687e-187
+    },
+    {
+      "feature": "POSIX_FILENOS",
+      "ks_statistic": 0.6423346709470305,
+      "p_value": 1.1592309213798216e-186
+    },
+    {
+      "feature": "POSIX_STATS",
+      "ks_statistic": 0.5928346709470305,
+      "p_value": 1.1687495659844818e-156
+    },
+    {
+      "feature": "stats_per_op",
+      "ks_statistic": 0.5928346709470305,
+      "p_value": 1.1687495659844818e-156
+    },
+    {
+      "feature": "POSIX_F_META_TIME",
+      "ks_statistic": 0.5913972712680577,
+      "p_value": 7.832663853729003e-156
+    }
+  ],
+  "all_ks_results": [
+    {
+      "feature": "has_apmpi",
+      "ks_statistic": 0.988,
+      "p_value": 0.0
+    },
+    {
+      "feature": "io_active_fraction",
+      "ks_statistic": 0.7522969502407705,
+      "p_value": 2.669336688235488e-267
+    },
+    {
+      "feature": "STDIO_BYTES_WRITTEN",
+      "ks_statistic": 0.6635,
+      "p_value": 1.396209941137566e-200
+    },
+    {
+      "feature": "STDIO_WRITES",
+      "ks_statistic": 0.6493691813804173,
+      "p_value": 3.295754090422438e-191
+    },
+    {
+      "feature": "STDIO_FLUSHES",
+      "ks_statistic": 0.6458836276083467,
+      "p_value": 5.941369375425625e-189
+    },
+    {
+      "feature": "STDIO_MAX_BYTE_WRITTEN",
+      "ks_statistic": 0.6438691813804174,
+      "p_value": 1.2099581138262687e-187
+    },
+    {
+      "feature": "POSIX_FILENOS",
+      "ks_statistic": 0.6423346709470305,
+      "p_value": 1.1592309213798216e-186
+    },
+    {
+      "feature": "POSIX_STATS",
+      "ks_statistic": 0.5928346709470305,
+      "p_value": 1.1687495659844818e-156
+    },
+    {
+      "feature": "stats_per_op",
+      "ks_statistic": 0.5928346709470305,
+      "p_value": 1.1687495659844818e-156
+    },
+    {
+      "feature": "POSIX_F_META_TIME",
+      "ks_statistic": 0.5913972712680577,
+      "p_value": 7.832663853729003e-156
+    },
+    {
+      "feature": "read_ratio",
+      "ks_statistic": 0.540145264847512,
+      "p_value": 2.607159209413141e-128
+    },
+    {
+      "feature": "total_bw_mb_s",
+      "ks_statistic": 0.5289727126805779,
+      "p_value": 9.448891727046965e-123
+    },
+    {
+      "feature": "opens_per_op",
+      "ks_statistic": 0.5223836276083467,
+      "p_value": 1.567316477052202e-119
+    },
+    {
+      "feature": "STDIO_MAX_BYTE_READ",
+      "ks_statistic": 0.514,
+      "p_value": 1.5980183622158948e-115
+    },
+    {
+      "feature": "POSIX_SEEKS",
+      "ks_statistic": 0.5114799357945425,
+      "p_value": 2.496404149459843e-114
+    },
+    {
+      "feature": "STDIO_F_WRITE_TIME",
+      "ks_statistic": 0.5037407704654896,
+      "p_value": 1.0173068093864055e-110
+    },
+    {
+      "feature": "read_time_fraction",
+      "ks_statistic": 0.5024069020866774,
+      "p_value": 4.2338341619603266e-110
+    },
+    {
+      "feature": "STDIO_BYTES_READ",
+      "ks_statistic": 0.4973459069020867,
+      "p_value": 8.705044706031476e-108
+    },
+    {
+      "feature": "STDIO_SEEKS",
+      "ks_statistic": 0.4925,
+      "p_value": 1.3470396546581181e-105
+    },
+    {
+      "feature": "STDIO_F_META_TIME",
+      "ks_statistic": 0.4904028892455859,
+      "p_value": 1.1835040740825327e-104
+    },
+    {
+      "feature": "POSIX_F_MAX_WRITE_TIME",
+      "ks_statistic": 0.48686757624398075,
+      "p_value": 4.39463372256358e-103
+    },
+    {
+      "feature": "STDIO_OPENS",
+      "ks_statistic": 0.47976886035313,
+      "p_value": 5.806446417412471e-100
+    },
+    {
+      "feature": "seeks_per_op",
+      "ks_statistic": 0.4797648475120385,
+      "p_value": 5.806446417428441e-100
+    },
+    {
+      "feature": "POSIX_F_WRITE_TIME",
+      "ks_statistic": 0.4748956661316212,
+      "p_value": 7.417013536813891e-98
+    },
+    {
+      "feature": "POSIX_RW_SWITCHES",
+      "ks_statistic": 0.46684911717495986,
+      "p_value": 1.9832050089213746e-94
+    },
+    {
+      "feature": "nprocs",
+      "ks_statistic": 0.4187062600321027,
+      "p_value": 2.2227767141134615e-75
+    },
+    {
+      "feature": "medium_read_ratio",
+      "ks_statistic": 0.4180449438202247,
+      "p_value": 3.945461171221591e-75
+    },
+    {
+      "feature": "POSIX_ACCESS2_ACCESS",
+      "ks_statistic": 0.4140714285714286,
+      "p_value": 1.1388749194167881e-73
+    },
+    {
+      "feature": "POSIX_ACCESS2_COUNT",
+      "ks_statistic": 0.4140714285714286,
+      "p_value": 1.1388749194167881e-73
+    },
+    {
+      "feature": "avg_read_size",
+      "ks_statistic": 0.40747752808988763,
+      "p_value": 2.7828948773811575e-71
+    },
+    {
+      "feature": "rw_ratio",
+      "ks_statistic": 0.38178812199036916,
+      "p_value": 2.213782429511562e-62
+    },
+    {
+      "feature": "POSIX_READS",
+      "ks_statistic": 0.37631861958266455,
+      "p_value": 1.4316271787093147e-60
+    },
+    {
+      "feature": "num_files",
+      "ks_statistic": 0.37375601926163726,
+      "p_value": 9.969497958981755e-60
+    },
+    {
+      "feature": "rw_switch_ratio",
+      "ks_statistic": 0.3733491171749599,
+      "p_value": 1.3430932046787472e-59
+    },
+    {
+      "feature": "file_misalign_ratio",
+      "ks_statistic": 0.36643820224719104,
+      "p_value": 2.278875325482339e-57
+    },
+    {
+      "feature": "write_time_fraction",
+      "ks_statistic": 0.34934430176565007,
+      "p_value": 4.600961453850956e-52
+    },
+    {
+      "feature": "POSIX_FILE_NOT_ALIGNED",
+      "ks_statistic": 0.3474983948635634,
+      "p_value": 1.6668430289755886e-51
+    },
+    {
+      "feature": "POSIX_SEQ_READS",
+      "ks_statistic": 0.3439518459069021,
+      "p_value": 1.906585082386608e-50
+    },
+    {
+      "feature": "POSIX_F_READ_TIME",
+      "ks_statistic": 0.3419983948635634,
+      "p_value": 7.270205562051772e-50
+    },
+    {
+      "feature": "access_size_concentration",
+      "ks_statistic": 0.33691492776886034,
+      "p_value": 2.2537232900674103e-48
+    },
+    {
+      "feature": "POSIX_ACCESS1_ACCESS",
+      "ks_statistic": 0.3363796147672552,
+      "p_value": 3.2090019482792664e-48
+    },
+    {
+      "feature": "dominant_access_size",
+      "ks_statistic": 0.3363796147672552,
+      "p_value": 3.2090019482792664e-48
+    },
+    {
+      "feature": "POSIX_SIZE_READ_1K_10K",
+      "ks_statistic": 0.3251131621187801,
+      "p_value": 5.1871184681081206e-45
+    },
+    {
+      "feature": "POSIX_MAX_WRITE_TIME_SIZE",
+      "ks_statistic": 0.32347030497592294,
+      "p_value": 1.5004676881913408e-44
+    },
+    {
+      "feature": "small_io_ratio",
+      "ks_statistic": 0.32283547351524877,
+      "p_value": 2.2509010553158193e-44
+    },
+    {
+      "feature": "POSIX_BYTES_WRITTEN",
+      "ks_statistic": 0.3197134831460674,
+      "p_value": 1.6235345673919837e-43
+    },
+    {
+      "feature": "POSIX_ACCESS3_ACCESS",
+      "ks_statistic": 0.31707142857142856,
+      "p_value": 8.63400099316883e-43
+    },
+    {
+      "feature": "POSIX_ACCESS3_COUNT",
+      "ks_statistic": 0.31707142857142856,
+      "p_value": 8.63400099316883e-43
+    },
+    {
+      "feature": "POSIX_WRITES",
+      "ks_statistic": 0.3155425361155698,
+      "p_value": 2.241682639721532e-42
+    },
+    {
+      "feature": "POSIX_SIZE_READ_0_100",
+      "ks_statistic": 0.3057134831460674,
+      "p_value": 9.212950830607066e-40
+    },
+    {
+      "feature": "runtime_seconds",
+      "ks_statistic": 0.30564767255216696,
+      "p_value": 9.637450194500166e-40
+    },
+    {
+      "feature": "io_duration",
+      "ks_statistic": 0.2975,
+      "p_value": 1.2131755945787288e-37
+    },
+    {
+      "feature": "POSIX_F_SLOWEST_RANK_TIME",
+      "ks_statistic": 0.29331701444622793,
+      "p_value": 1.3731349223368162e-36
+    },
+    {
+      "feature": "POSIX_F_FASTEST_RANK_TIME",
+      "ks_statistic": 0.28871187800963083,
+      "p_value": 1.9095710271250013e-35
+    },
+    {
+      "feature": "POSIX_CONSEC_WRITES",
+      "ks_statistic": 0.28786516853932587,
+      "p_value": 3.1065031622765083e-35
+    },
+    {
+      "feature": "write_bw_mb_s",
+      "ks_statistic": 0.2878250401284109,
+      "p_value": 3.156262992192771e-35
+    },
+    {
+      "feature": "POSIX_BYTES_READ",
+      "ks_statistic": 0.28362921348314607,
+      "p_value": 3.3372691747150052e-34
+    },
+    {
+      "feature": "POSIX_CONSEC_READS",
+      "ks_statistic": 0.28295906902086676,
+      "p_value": 4.8171257217339925e-34
+    },
+    {
+      "feature": "POSIX_MAX_BYTE_WRITTEN",
+      "ks_statistic": 0.2815826645264847,
+      "p_value": 1.0303038970049721e-33
+    },
+    {
+      "feature": "consec_write_ratio",
+      "ks_statistic": 0.2797857142857143,
+      "p_value": 2.786693036802465e-33
+    },
+    {
+      "feature": "POSIX_SLOWEST_RANK_BYTES",
+      "ks_statistic": 0.2792118780096308,
+      "p_value": 3.790448855326189e-33
+    },
+    {
+      "feature": "seq_read_ratio",
+      "ks_statistic": 0.27413242375601926,
+      "p_value": 5.944169066161182e-32
+    },
+    {
+      "feature": "time_imbalance",
+      "ks_statistic": 0.2708170144462279,
+      "p_value": 3.4790208756950627e-31
+    },
+    {
+      "feature": "small_read_ratio",
+      "ks_statistic": 0.2677560192616372,
+      "p_value": 1.7500364604462054e-30
+    },
+    {
+      "feature": "is_shared_file",
+      "ks_statistic": 0.2663170144462279,
+      "p_value": 3.6940423498929626e-30
+    },
+    {
+      "feature": "POSIX_ACCESS1_COUNT",
+      "ks_statistic": 0.2640529695024077,
+      "p_value": 1.1948670550008742e-29
+    },
+    {
+      "feature": "POSIX_SLOWEST_RANK",
+      "ks_statistic": 0.2530577849117175,
+      "p_value": 3.0505689283159242e-27
+    },
+    {
+      "feature": "POSIX_SEQ_WRITES",
+      "ks_statistic": 0.2493370786516854,
+      "p_value": 1.8958429237180038e-26
+    },
+    {
+      "feature": "POSIX_OPENS",
+      "ks_statistic": 0.2487327447833066,
+      "p_value": 2.5409088141933067e-26
+    },
+    {
+      "feature": "POSIX_FASTEST_RANK",
+      "ks_statistic": 0.24613483146067416,
+      "p_value": 8.838267010479584e-26
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_100_1K",
+      "ks_statistic": 0.2435521669341894,
+      "p_value": 3.040237724716174e-25
+    },
+    {
+      "feature": "STDIO_F_READ_TIME",
+      "ks_statistic": 0.2429446227929374,
+      "p_value": 4.053814860070126e-25
+    },
+    {
+      "feature": "POSIX_ACCESS4_COUNT",
+      "ks_statistic": 0.23992134831460674,
+      "p_value": 1.6749313261549162e-24
+    },
+    {
+      "feature": "POSIX_FASTEST_RANK_BYTES",
+      "ks_statistic": 0.23947833065810595,
+      "p_value": 2.0481549375697104e-24
+    },
+    {
+      "feature": "fsync_ratio",
+      "ks_statistic": 0.2385,
+      "p_value": 3.2413509219149668e-24
+    },
+    {
+      "feature": "POSIX_SIZE_READ_100_1K",
+      "ks_statistic": 0.2352094703049759,
+      "p_value": 1.4732378377863116e-23
+    },
+    {
+      "feature": "POSIX_FSYNCS",
+      "ks_statistic": 0.23491252006420546,
+      "p_value": 1.685654381354484e-23
+    },
+    {
+      "feature": "POSIX_F_MAX_READ_TIME",
+      "ks_statistic": 0.23435634028892455,
+      "p_value": 2.1684403221518285e-23
+    },
+    {
+      "feature": "POSIX_DUPS",
+      "ks_statistic": 0.2341653290529695,
+      "p_value": 2.359779539495979e-23
+    },
+    {
+      "feature": "POSIX_ACCESS4_ACCESS",
+      "ks_statistic": 0.2326019261637239,
+      "p_value": 4.818341041730862e-23
+    },
+    {
+      "feature": "POSIX_MAX_READ_TIME_SIZE",
+      "ks_statistic": 0.22448234349919743,
+      "p_value": 1.7562907450399565e-21
+    },
+    {
+      "feature": "mem_misalign_ratio",
+      "ks_statistic": 0.2201653290529695,
+      "p_value": 1.127762317737434e-20
+    },
+    {
+      "feature": "large_read_ratio",
+      "ks_statistic": 0.2171685393258427,
+      "p_value": 4.015364170716366e-20
+    },
+    {
+      "feature": "read_bw_mb_s",
+      "ks_statistic": 0.21625361155698233,
+      "p_value": 5.907729073052799e-20
+    },
+    {
+      "feature": "opens_per_mb",
+      "ks_statistic": 0.2153836276083467,
+      "p_value": 8.492161438804426e-20
+    },
+    {
+      "feature": "STDIO_READS",
+      "ks_statistic": 0.21240288924558587,
+      "p_value": 2.9144386109200813e-19
+    },
+    {
+      "feature": "consec_read_ratio",
+      "ks_statistic": 0.21112520064205456,
+      "p_value": 4.932901869253525e-19
+    },
+    {
+      "feature": "metadata_time_ratio",
+      "ks_statistic": 0.2046653290529695,
+      "p_value": 6.6006898844920636e-18
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_10M_100M",
+      "ks_statistic": 0.20258105939004814,
+      "p_value": 1.502862729796869e-17
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_10K_100K",
+      "ks_statistic": 0.19863563402889245,
+      "p_value": 6.932132072674949e-17
+    },
+    {
+      "feature": "POSIX_SIZE_READ_10K_100K",
+      "ks_statistic": 0.1947680577849117,
+      "p_value": 3.008379349410746e-16
+    },
+    {
+      "feature": "MPIIO_F_SLOWEST_RANK_TIME",
+      "ks_statistic": 0.19400882825040128,
+      "p_value": 3.9951777135794387e-16
+    },
+    {
+      "feature": "MPIIO_F_FASTEST_RANK_TIME",
+      "ks_statistic": 0.1936139646869984,
+      "p_value": 4.631192481970442e-16
+    },
+    {
+      "feature": "STDIO_F_SLOWEST_RANK_TIME",
+      "ks_statistic": 0.1891163723916533,
+      "p_value": 2.437390558383028e-15
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_1K_10K",
+      "ks_statistic": 0.1873322632423756,
+      "p_value": 4.664519317542596e-15
+    },
+    {
+      "feature": "medium_write_ratio",
+      "ks_statistic": 0.1842704654895666,
+      "p_value": 1.3955044139235321e-14
+    },
+    {
+      "feature": "STDIO_F_FASTEST_RANK_TIME",
+      "ks_statistic": 0.1836163723916533,
+      "p_value": 1.7590805949213997e-14
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_0_100",
+      "ks_statistic": 0.1835561797752809,
+      "p_value": 1.8013462028950863e-14
+    },
+    {
+      "feature": "avg_write_size",
+      "ks_statistic": 0.17502728731942216,
+      "p_value": 3.428171586032309e-13
+    },
+    {
+      "feature": "POSIX_MAX_BYTE_READ",
+      "ks_statistic": 0.1745593900481541,
+      "p_value": 4.009685848542964e-13
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_100K_1M",
+      "ks_statistic": 0.16876886035313002,
+      "p_value": 2.7162117333419973e-12
+    },
+    {
+      "feature": "POSIX_MEM_NOT_ALIGNED",
+      "ks_statistic": 0.1666653290529695,
+      "p_value": 5.349417191626508e-12
+    },
+    {
+      "feature": "POSIX_SIZE_READ_10M_100M",
+      "ks_statistic": 0.15463483146067417,
+      "p_value": 2.2001265298438079e-10
+    },
+    {
+      "feature": "MPIIO_ACCESS2_ACCESS",
+      "ks_statistic": 0.15323836276083466,
+      "p_value": 3.3270786796591464e-10
+    },
+    {
+      "feature": "MPIIO_INDEP_OPENS",
+      "ks_statistic": 0.144,
+      "p_value": 4.644768198339277e-09
+    },
+    {
+      "feature": "large_write_ratio",
+      "ks_statistic": 0.14163483146067415,
+      "p_value": 8.87702861402329e-09
+    },
+    {
+      "feature": "byte_imbalance",
+      "ks_statistic": 0.13719823434991973,
+      "p_value": 2.9050684743543218e-08
+    },
+    {
+      "feature": "MPIIO_ACCESS4_COUNT",
+      "ks_statistic": 0.137,
+      "p_value": 3.065260345696772e-08
+    },
+    {
+      "feature": "MPIIO_COLL_WRITES",
+      "ks_statistic": 0.13553049759229535,
+      "p_value": 4.499553479095225e-08
+    },
+    {
+      "feature": "seq_write_ratio",
+      "ks_statistic": 0.1335,
+      "p_value": 7.598714581252592e-08
+    },
+    {
+      "feature": "POSIX_STRIDE1_STRIDE",
+      "ks_statistic": 0.12469341894060995,
+      "p_value": 6.711967792714016e-07
+    },
+    {
+      "feature": "MPIIO_ACCESS3_COUNT",
+      "ks_statistic": 0.12373836276083468,
+      "p_value": 8.432872393827568e-07
+    },
+    {
+      "feature": "small_write_ratio",
+      "ks_statistic": 0.11839807383627608,
+      "p_value": 2.910884211910203e-06
+    },
+    {
+      "feature": "MPIIO_BYTES_READ",
+      "ks_statistic": 0.11606099518459069,
+      "p_value": 4.91715322688909e-06
+    },
+    {
+      "feature": "MPIIO_F_MAX_READ_TIME",
+      "ks_statistic": 0.11606099518459069,
+      "p_value": 4.91715322688909e-06
+    },
+    {
+      "feature": "MPIIO_F_READ_TIME",
+      "ks_statistic": 0.11606099518459069,
+      "p_value": 4.91715322688909e-06
+    },
+    {
+      "feature": "MPIIO_ACCESS1_COUNT",
+      "ks_statistic": 0.11282423756019262,
+      "p_value": 9.994127779277544e-06
+    },
+    {
+      "feature": "MPIIO_SYNCS",
+      "ks_statistic": 0.11201605136436597,
+      "p_value": 1.1891559679642766e-05
+    },
+    {
+      "feature": "MPIIO_COLL_READS",
+      "ks_statistic": 0.11197672552166935,
+      "p_value": 1.2000487052338241e-05
+    },
+    {
+      "feature": "MPIIO_INDEP_READS",
+      "ks_statistic": 0.10937640449438202,
+      "p_value": 2.0818217201361876e-05
+    },
+    {
+      "feature": "collective_ratio",
+      "ks_statistic": 0.10582263242375602,
+      "p_value": 4.3295379765840944e-05
+    },
+    {
+      "feature": "MPIIO_VIEWS",
+      "ks_statistic": 0.10513804173354735,
+      "p_value": 4.97152371935648e-05
+    },
+    {
+      "feature": "POSIX_SIZE_READ_100K_1M",
+      "ks_statistic": 0.10239646869983948,
+      "p_value": 8.570163425088556e-05
+    },
+    {
+      "feature": "MPIIO_COLL_OPENS",
+      "ks_statistic": 0.10097672552166934,
+      "p_value": 0.00011299520619756927
+    },
+    {
+      "feature": "MPIIO_INDEP_WRITES",
+      "ks_statistic": 0.09919181380417336,
+      "p_value": 0.00015904664340676315
+    },
+    {
+      "feature": "POSIX_STRIDE3_STRIDE",
+      "ks_statistic": 0.09606982343499197,
+      "p_value": 0.0002849637459168478
+    },
+    {
+      "feature": "POSIX_STRIDE4_COUNT",
+      "ks_statistic": 0.09371508828250401,
+      "p_value": 0.00043715304270511946
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_4M_10M",
+      "ks_statistic": 0.09228009630818619,
+      "p_value": 0.000564225158875935
+    },
+    {
+      "feature": "MPIIO_ACCESS1_ACCESS",
+      "ks_statistic": 0.08838523274478331,
+      "p_value": 0.0011063337476165938
+    },
+    {
+      "feature": "MPIIO_ACCESS4_ACCESS",
+      "ks_statistic": 0.08823836276083467,
+      "p_value": 0.001134300051421656
+    },
+    {
+      "feature": "MPIIO_F_MAX_WRITE_TIME",
+      "ks_statistic": 0.0837223113964687,
+      "p_value": 0.002384695765968173
+    },
+    {
+      "feature": "MPIIO_F_WRITE_TIME",
+      "ks_statistic": 0.0837223113964687,
+      "p_value": 0.002384695765968173
+    },
+    {
+      "feature": "MPIIO_ACCESS3_ACCESS",
+      "ks_statistic": 0.08323836276083467,
+      "p_value": 0.002576287244867284
+    },
+    {
+      "feature": "POSIX_SIZE_READ_1M_4M",
+      "ks_statistic": 0.08239967897271268,
+      "p_value": 0.002942559283020599
+    },
+    {
+      "feature": "MPIIO_BYTES_WRITTEN",
+      "ks_statistic": 0.0807223113964687,
+      "p_value": 0.0038232919063035608
+    },
+    {
+      "feature": "POSIX_SIZE_READ_100M_1G",
+      "ks_statistic": 0.079,
+      "p_value": 0.004974173143054136
+    },
+    {
+      "feature": "POSIX_STRIDE4_STRIDE",
+      "ks_statistic": 0.07530818619582665,
+      "p_value": 0.008579430263288619
+    },
+    {
+      "feature": "MPIIO_ACCESS2_COUNT",
+      "ks_statistic": 0.07297672552166934,
+      "p_value": 0.011943257644773182
+    },
+    {
+      "feature": "POSIX_STRIDE2_STRIDE",
+      "ks_statistic": 0.07012359550561797,
+      "p_value": 0.01765331372074886
+    },
+    {
+      "feature": "MPIIO_HINTS",
+      "ks_statistic": 0.06067736757624398,
+      "p_value": 0.057605400495609124
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_100M_1G",
+      "ks_statistic": 0.0605,
+      "p_value": 0.058800372654092256
+    },
+    {
+      "feature": "POSIX_STRIDE1_COUNT",
+      "ks_statistic": 0.059675762439807385,
+      "p_value": 0.06465888298825045
+    },
+    {
+      "feature": "POSIX_RENAME_SOURCES",
+      "ks_statistic": 0.0515,
+      "p_value": 0.15435274374709246
+    },
+    {
+      "feature": "POSIX_RENAME_TARGETS",
+      "ks_statistic": 0.0515,
+      "p_value": 0.15435274374709246
+    },
+    {
+      "feature": "POSIX_STRIDE2_COUNT",
+      "ks_statistic": 0.049354735152487964,
+      "p_value": 0.1898486806797023
+    },
+    {
+      "feature": "POSIX_STRIDE3_COUNT",
+      "ks_statistic": 0.048799357945425365,
+      "p_value": 0.20000900447310796
+    },
+    {
+      "feature": "MPIIO_F_META_TIME",
+      "ks_statistic": 0.04717576243980738,
+      "p_value": 0.2321129656081928
+    },
+    {
+      "feature": "has_mpiio",
+      "ks_statistic": 0.04717576243980738,
+      "p_value": 0.2321129656081928
+    },
+    {
+      "feature": "POSIX_SIZE_READ_4M_10M",
+      "ks_statistic": 0.041166131621187804,
+      "p_value": 0.3840839063552135
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_1M_4M",
+      "ks_statistic": 0.04060032102728732,
+      "p_value": 0.4010878776701161
+    },
+    {
+      "feature": "MPIIO_RW_SWITCHES",
+      "ks_statistic": 0.018892455858747995,
+      "p_value": 0.994406192962741
+    },
+    {
+      "feature": "POSIX_SIZE_READ_1G_PLUS",
+      "ks_statistic": 0.008,
+      "p_value": 1.0
+    },
+    {
+      "feature": "has_stdio",
+      "ks_statistic": 0.0065,
+      "p_value": 1.0
+    },
+    {
+      "feature": "POSIX_SIZE_WRITE_1G_PLUS",
+      "ks_statistic": 0.006,
+      "p_value": 1.0
+    },
+    {
+      "feature": "STDIO_FDOPENS",
+      "ks_statistic": 0.005,
+      "p_value": 1.0
+    },
+    {
+      "feature": "MPIIO_NB_WRITES",
+      "ks_statistic": 0.0005,
+      "p_value": 1.0
+    },
+    {
+      "feature": "nonblocking_ratio",
+      "ks_statistic": 0.0005,
+      "p_value": 1.0
+    }
+  ],
+  "seed": 42
+}

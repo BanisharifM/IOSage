@@ -1,0 +1,710 @@
+[
+  {
+    "workload": "polaris_job_6253508_pathological",
+    "pipeline_latency_ms": 286416.5,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.9994,
+        "interface_choice": 0.0001,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.9996,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity",
+        "access_pattern",
+        "throughput_utilization"
+      ]
+    },
+    "step2_shap": {
+      "access_granularity": [
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "value": 1551.0,
+          "shap_value": 2.336907,
+          "direction": "increases_risk",
+          "abs_importance": 2.336907
+        },
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 3429.0,
+          "shap_value": 1.987502,
+          "direction": "increases_risk",
+          "abs_importance": 1.987502
+        },
+        {
+          "feature": "POSIX_READS",
+          "value": 5117.0,
+          "shap_value": 1.795186,
+          "direction": "increases_risk",
+          "abs_importance": 1.795186
+        }
+      ],
+      "access_pattern": [
+        {
+          "feature": "POSIX_READS",
+          "value": 5117.0,
+          "shap_value": 3.129831,
+          "direction": "increases_risk",
+          "abs_importance": 3.129831
+        },
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 3429.0,
+          "shap_value": 2.028406,
+          "direction": "increases_risk",
+          "abs_importance": 2.028406
+        },
+        {
+          "feature": "seq_read_ratio",
+          "value": 0.762947,
+          "shap_value": 0.909931,
+          "direction": "increases_risk",
+          "abs_importance": 0.909931
+        }
+      ],
+      "throughput_utilization": [
+        {
+          "feature": "POSIX_MAX_BYTE_READ",
+          "value": 11184656384.0,
+          "shap_value": 4.677654,
+          "direction": "increases_risk",
+          "abs_importance": 4.677654
+        },
+        {
+          "feature": "POSIX_STRIDE2_STRIDE",
+          "value": 12032.0,
+          "shap_value": 0.505765,
+          "direction": "increases_risk",
+          "abs_importance": 0.505765
+        },
+        {
+          "feature": "seq_write_ratio",
+          "value": 0.935115,
+          "shap_value": -0.454807,
+          "direction": "decreases_risk",
+          "abs_importance": 0.454807
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "similarity": 0.373,
+          "matched_dims": [
+            "access_granularity",
+            "throughput_utilization"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+          "similarity": 0.3664,
+          "matched_dims": [
+            "access_granularity",
+            "throughput_utilization"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+          "similarity": 0.3631,
+          "matched_dims": [
+            "access_granularity",
+            "throughput_utilization"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": {
+        "diagnosis": "This HPC job exhibits severe I/O inefficiencies across three dimensions. With 5,117 POSIX reads and 3,429 unaligned file accesses, the application is performing excessive small I/O operations (small_io_ratio=0.6419) that generate significant syscall overhead. The average write size of 29KB is far below optimal transfer sizes. Additionally, despite a decent sequential write ratio (0.9351), the high number of random reads (seq_read_ratio=0.7629) defeats storage prefetching mechanisms. The metadata_time_ratio of 0.4528 indicates nearly half the I/O time is spent on metadata operations rather than data transfer, suggesting poor access patterns and potential file handle management issues.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "The job performs 5,117 small POSIX reads with average write size of only 29KB, causing excessive syscall overhead. The benchmark evidence shows identical small transfer patterns can be optimized by buffering operations into 1MB+ chunks.",
+            "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+            "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+            "expected_speedup": "2-4x based on transfer size optimization",
+            "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+            "confidence": "high",
+            "api_change": "POSIX write buffering strategy"
+          },
+          {
+            "priority": 2,
+            "bottleneck_dimension": "interface_choice",
+            "explanation": "With 3,429 unaligned file accesses and collective_ratio of only 0.3911, the job would benefit from switching to MPI-IO collective operations which can handle alignment and coordination automatically.",
+            "code_before": "write(fd, buf, nbytes)  /* GenericIO.cxx, POSIX shared file */",
+            "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* GenericIO.cxx */",
+            "expected_speedup": "1.5-2x from collective I/O coordination",
+            "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+            "confidence": "medium",
+            "api_change": "POSIX write -> MPI_File_write_at_all"
+          },
+          {
+            "priority": 3,
+            "bottleneck_dimension": "throughput_utilization",
+            "explanation": "The POSIX_MAX_BYTE_READ of 11GB with stride pattern (POSIX_STRIDE2_STRIDE=12032) indicates large but inefficient data access. Combined with opens_per_op=0.1288, this suggests file handle reuse issues limiting throughput.",
+            "code_before": "/* Multiple small opens/reads with stride access */\nfor (i=0; i<n; i++) {\n  fd = open(filename, O_RDONLY);\n  lseek(fd, stride*i, SEEK_SET);\n  read(fd, buf, small_size);\n  close(fd);\n}",
+            "code_after": "/* Single open with large buffered reads */\nfd = open(filename, O_RDONLY);\nfor (i=0; i<n; i+=chunk_size) {\n  read(fd, large_buf, 1048576);  /* 1MB chunks */\n  /* Extract needed data from large_buf */\n}\nclose(fd);",
+            "expected_speedup": "1.3-1.8x from reduced metadata overhead",
+            "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+            "confidence": "medium",
+            "api_change": "File handle management optimization"
+          }
+        ],
+        "overall_expected_improvement": "3-7x total speedup from combined optimizations"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 3,
+        "n_grounded": 3,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 93472.1,
+        "tokens_input": 2435,
+        "tokens_output": 1107,
+        "timestamp": "2026-03-25T00:32:20Z"
+      }
+    },
+    "candidate_info": {
+      "idx": 156,
+      "name": "polaris_job_6253508_pathological",
+      "description": "Production job with 3 bottlenecks: access_granularity, access_pattern, throughput_utilization",
+      "category": "pathological",
+      "jobid": 6253508,
+      "bottlenecks": [
+        "access_granularity",
+        "access_pattern",
+        "throughput_utilization"
+      ]
+    },
+    "ground_truth": {
+      "access_granularity": 1,
+      "metadata_intensity": 0,
+      "parallelism_efficiency": 0,
+      "access_pattern": 1,
+      "interface_choice": 0,
+      "file_strategy": 0,
+      "throughput_utilization": 1,
+      "healthy": 0
+    },
+    "job_summary": {
+      "jobid": 6253508,
+      "nprocs": 32,
+      "runtime_seconds": 16.2,
+      "POSIX_BYTES_WRITTEN": 7654158.0,
+      "POSIX_BYTES_READ": 4126925816.0,
+      "POSIX_WRITES": 262.0,
+      "POSIX_READS": 5117.0,
+      "avg_write_size": 29214.3,
+      "total_bw_mb_s": 5697.84,
+      "small_io_ratio": 0.6419,
+      "seq_write_ratio": 0.9351,
+      "metadata_time_ratio": 0.4528
+    },
+    "ml_vs_gt": {
+      "ground_truth_bottlenecks": [
+        "access_granularity",
+        "access_pattern",
+        "throughput_utilization"
+      ],
+      "predicted_bottlenecks": [
+        "access_granularity",
+        "access_pattern",
+        "throughput_utilization"
+      ],
+      "true_positives": [
+        "access_granularity",
+        "access_pattern",
+        "throughput_utilization"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "correct": true
+    }
+  },
+  {
+    "workload": "polaris_job_6129997_small_writes",
+    "pipeline_latency_ms": 29928.9,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0002,
+        "interface_choice": 0.0001,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0003,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity"
+      ]
+    },
+    "step2_shap": {
+      "access_granularity": [
+        {
+          "feature": "POSIX_FILE_NOT_ALIGNED",
+          "value": 9154.0,
+          "shap_value": 2.466043,
+          "direction": "increases_risk",
+          "abs_importance": 2.466043
+        },
+        {
+          "feature": "POSIX_ACCESS1_COUNT",
+          "value": 2442.0,
+          "shap_value": 2.126712,
+          "direction": "increases_risk",
+          "abs_importance": 2.126712
+        },
+        {
+          "feature": "POSIX_WRITES",
+          "value": 1231.0,
+          "shap_value": 0.993659,
+          "direction": "increases_risk",
+          "abs_importance": 0.993659
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+          "similarity": 0.3527,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+          "similarity": 0.3483,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+          "similarity": 0.3473,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": {
+        "diagnosis": "This HPC job suffers from severe access granularity issues. With 9,154 unaligned POSIX operations, 2,442 small access patterns, and a small I/O ratio of 52.44%, the application is making excessive system calls with tiny transfer sizes. Despite writing 126MB total, the average write size is only ~103KB, well below the 1MB threshold for efficient I/O. The high number of POSIX reads (13,146) and writes (1,231) combined with poor alignment creates significant syscall overhead that dominates the I/O time.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "The job performs thousands of small, unaligned I/O operations (<1MB each) causing excessive syscall overhead. With 9,154 unaligned operations and 52.44% small I/O ratio, the application needs to aggregate small writes into large buffers before flushing to storage.",
+            "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+            "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+            "expected_speedup": "2-4x based on reducing syscall overhead from small transfers",
+            "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+            "confidence": "high",
+            "api_change": "POSIX write buffering -> large chunk writes"
+          },
+          {
+            "priority": 2,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "For MPI applications (has_apmpi=1), switching from individual POSIX writes to collective MPI-IO can eliminate the small transfer problem entirely by allowing the MPI library to optimize data movement and reduce per-operation overhead.",
+            "code_before": "write(fd, buf, nbytes)  /* POSIX shared file */",
+            "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* Collective MPI-IO */",
+            "expected_speedup": "2-3x from collective I/O optimization and reduced syscall overhead",
+            "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+            "confidence": "high",
+            "api_change": "POSIX write -> MPI_File_write_at_all"
+          }
+        ],
+        "overall_expected_improvement": "3-6x total speedup from eliminating small transfer overhead and improving alignment"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 2,
+        "n_grounded": 2,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 18830.5,
+        "tokens_input": 1955,
+        "tokens_output": 724,
+        "timestamp": "2026-03-25T00:32:49Z"
+      }
+    },
+    "candidate_info": {
+      "idx": 98,
+      "name": "polaris_job_6129997_small_writes",
+      "description": "Production job with small I/O access granularity",
+      "category": "single_bottleneck",
+      "jobid": 6129997,
+      "bottlenecks": [
+        "access_granularity"
+      ]
+    },
+    "ground_truth": {
+      "access_granularity": 1,
+      "metadata_intensity": 0,
+      "parallelism_efficiency": 0,
+      "access_pattern": 0,
+      "interface_choice": 0,
+      "file_strategy": 0,
+      "throughput_utilization": 0,
+      "healthy": 0
+    },
+    "job_summary": {
+      "jobid": 6129997,
+      "nprocs": 64,
+      "runtime_seconds": 88.0,
+      "POSIX_BYTES_WRITTEN": 126291939.0,
+      "POSIX_BYTES_READ": 6876724120.0,
+      "POSIX_WRITES": 1231.0,
+      "POSIX_READS": 13146.0,
+      "avg_write_size": 102593.0,
+      "total_bw_mb_s": 2185.05,
+      "small_io_ratio": 0.5244,
+      "seq_write_ratio": 0.9821,
+      "metadata_time_ratio": 0.2015
+    },
+    "ml_vs_gt": {
+      "ground_truth_bottlenecks": [
+        "access_granularity"
+      ],
+      "predicted_bottlenecks": [
+        "access_granularity"
+      ],
+      "true_positives": [
+        "access_granularity"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "correct": true
+    }
+  },
+  {
+    "workload": "polaris_job_6075458_low_throughput",
+    "pipeline_latency_ms": 26409.2,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 0.0034,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.9996,
+        "healthy": 0.0036
+      },
+      "detected": [
+        "throughput_utilization"
+      ]
+    },
+    "step2_shap": {
+      "throughput_utilization": [
+        {
+          "feature": "POSIX_MAX_BYTE_READ",
+          "value": 11184656384.0,
+          "shap_value": 4.940729,
+          "direction": "increases_risk",
+          "abs_importance": 4.940729
+        },
+        {
+          "feature": "seq_write_ratio",
+          "value": 0.925439,
+          "shap_value": -0.635892,
+          "direction": "decreases_risk",
+          "abs_importance": 0.635892
+        },
+        {
+          "feature": "POSIX_STRIDE1_STRIDE",
+          "value": 4194304.0,
+          "shap_value": 0.522992,
+          "direction": "increases_risk",
+          "abs_importance": 0.522992
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_single_ost_p500000_n32_r2_588",
+          "similarity": 0.2986,
+          "matched_dims": [
+            "throughput_utilization"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_many_single_ost_p500000_n32_r3_616",
+          "similarity": 0.2985,
+          "matched_dims": [
+            "throughput_utilization"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_posix_shared_single_ost_p500000_n32_r3_589",
+          "similarity": 0.2962,
+          "matched_dims": [
+            "throughput_utilization"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": {
+        "diagnosis": "This job exhibits poor I/O throughput utilization (423 MB/s) despite having good sequential write patterns (92.5% sequential). The primary issues are: (1) Large individual read operations (11.2 GB max) causing potential memory pressure and serialization, (2) Frequent file open/close operations (opens_per_op=0.28) creating metadata overhead, (3) Large stride patterns (4MB) suggesting inefficient access patterns, and (4) Very low read/write switching (0.06%) indicating potential for better I/O batching. The job uses POSIX I/O with only 25% collective operations, missing opportunities for MPI-IO optimizations.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "throughput_utilization",
+            "explanation": "The job is likely performing excessive fsync operations after each write, causing serialization and poor throughput. With 32 processes and large writes, removing unnecessary synchronization can dramatically improve performance.",
+            "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+            "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+            "expected_speedup": "2-5x based on KB evidence from similar HACC workloads",
+            "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n32_r2_588",
+            "confidence": "high",
+            "api_change": "Remove per-operation fsync, batch synchronization"
+          },
+          {
+            "priority": 2,
+            "bottleneck_dimension": "throughput_utilization",
+            "explanation": "With 32 processes and low collective ratio (25%), the job is likely using POSIX for shared-file parallel I/O instead of MPI-IO collective operations. This causes coordination overhead and suboptimal bandwidth utilization.",
+            "code_before": "/* POSIX on shared file \u2014 each rank seeks and writes independently */\nlseek(fd, my_offset, SEEK_SET);\nwrite(fd, buf, size);",
+            "code_after": "/* MPI-IO collective \u2014 automatic coordination */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, size, MPI_BYTE, &status);",
+            "expected_speedup": "1.5-3x for shared file operations",
+            "kb_citation": "hacc_io_hacc_posix_shared_many_single_ost_p500000_n32_r3_616",
+            "confidence": "high",
+            "api_change": "POSIX write -> MPI_File_write_all"
+          },
+          {
+            "priority": 3,
+            "bottleneck_dimension": "throughput_utilization",
+            "explanation": "High opens_per_op ratio (0.28) suggests frequent file open/close operations creating metadata overhead. The large stride pattern (4MB) may indicate single-OST usage limiting parallelism.",
+            "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+            "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+            "expected_speedup": "1.2-2x by reducing metadata operations",
+            "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n32_r3_589",
+            "confidence": "medium",
+            "api_change": "Reduce file operations, improve Lustre striping"
+          }
+        ],
+        "overall_expected_improvement": "3-8x total speedup by combining fsync elimination, MPI-IO collective operations, and reduced metadata overhead"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 3,
+        "n_grounded": 3,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 17044.3,
+        "tokens_input": 1972,
+        "tokens_output": 1068,
+        "timestamp": "2026-03-25T00:33:17Z"
+      }
+    },
+    "candidate_info": {
+      "idx": 5759,
+      "name": "polaris_job_6075458_low_throughput",
+      "description": "Production job with low throughput utilization",
+      "category": "single_bottleneck",
+      "jobid": 6075458,
+      "bottlenecks": [
+        "throughput_utilization"
+      ]
+    },
+    "ground_truth": {
+      "access_granularity": 0,
+      "metadata_intensity": 0,
+      "parallelism_efficiency": 0,
+      "access_pattern": 0,
+      "interface_choice": 0,
+      "file_strategy": 0,
+      "throughput_utilization": 1,
+      "healthy": 0
+    },
+    "job_summary": {
+      "jobid": 6075458,
+      "nprocs": 32,
+      "runtime_seconds": 34.6,
+      "POSIX_BYTES_WRITTEN": 129559468.0,
+      "POSIX_BYTES_READ": 4012536532.0,
+      "POSIX_WRITES": 456.0,
+      "POSIX_READS": 1299.0,
+      "avg_write_size": 284121.6,
+      "total_bw_mb_s": 423.08,
+      "small_io_ratio": 0.2473,
+      "seq_write_ratio": 0.9254,
+      "metadata_time_ratio": 0.0564
+    },
+    "ml_vs_gt": {
+      "ground_truth_bottlenecks": [
+        "throughput_utilization"
+      ],
+      "predicted_bottlenecks": [
+        "throughput_utilization"
+      ],
+      "true_positives": [
+        "throughput_utilization"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "correct": true
+    }
+  },
+  {
+    "workload": "polaris_job_6020463_healthy",
+    "pipeline_latency_ms": 10024.8,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.9996
+      },
+      "detected": [
+        "healthy"
+      ]
+    },
+    "step2_shap": {
+      "healthy": [
+        {
+          "feature": "io_active_fraction",
+          "value": 0.00014,
+          "shap_value": 2.079029,
+          "direction": "increases_risk",
+          "abs_importance": 2.079029
+        },
+        {
+          "feature": "POSIX_READS",
+          "value": 419.0,
+          "shap_value": 0.776043,
+          "direction": "increases_risk",
+          "abs_importance": 0.776043
+        },
+        {
+          "feature": "STDIO_FLUSHES",
+          "value": 59093.0,
+          "shap_value": 0.754786,
+          "direction": "increases_risk",
+          "abs_importance": 0.754786
+        }
+      ]
+    },
+    "step3_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n32_r1_569",
+          "similarity": 0.5104,
+          "matched_dims": [
+            "healthy"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n32_r3_571",
+          "similarity": 0.4789,
+          "matched_dims": [
+            "healthy"
+          ]
+        },
+        {
+          "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n32_r2_570",
+          "similarity": 0.4597,
+          "matched_dims": [
+            "healthy"
+          ]
+        }
+      ]
+    },
+    "step4_recommendation": {
+      "parsed": {
+        "diagnosis": "This HPC job shows healthy I/O performance with no significant bottlenecks detected. The ML classifier indicates 'healthy' status with 100% confidence. Key metrics support this: decent average write size (8.6KB), high sequential write ratio (92.1%), low metadata overhead (4.1%), and good overall bandwidth (1.6 GB/s). The SHAP analysis shows some risk factors like low I/O active fraction (0.01%) and moderate POSIX operation counts, but these don't constitute actual performance problems requiring optimization.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "healthy_status",
+            "explanation": "No optimization needed. The job already demonstrates efficient I/O patterns similar to well-performing HACC-IO benchmarks using collective MPI-IO operations with large transfer sizes.",
+            "code_before": "/* Current I/O pattern is already efficient */\nwrite(fd, buf, 8592);  /* Average write size from Darshan */",
+            "code_after": "/* No change recommended - maintain current pattern */\nwrite(fd, buf, 8592);  /* Keep existing efficient I/O */",
+            "expected_speedup": "No speedup expected - already optimal",
+            "kb_citation": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n32_r1_569",
+            "confidence": "high",
+            "api_change": "No API change needed"
+          }
+        ],
+        "overall_expected_improvement": "No improvement needed - job already performs optimally"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "anthropic/claude-sonnet-4",
+        "latency_ms": 8978.2,
+        "tokens_input": 1692,
+        "tokens_output": 395,
+        "timestamp": "2026-03-25T00:33:27Z"
+      }
+    },
+    "candidate_info": {
+      "idx": 35,
+      "name": "polaris_job_6020463_healthy",
+      "description": "Production job with healthy I/O (1607 MB/s)",
+      "category": "healthy",
+      "jobid": 6020463,
+      "bottlenecks": [
+        "healthy"
+      ]
+    },
+    "ground_truth": {
+      "access_granularity": 0,
+      "metadata_intensity": 0,
+      "parallelism_efficiency": 0,
+      "access_pattern": 0,
+      "interface_choice": 0,
+      "file_strategy": 0,
+      "throughput_utilization": 0,
+      "healthy": 1
+    },
+    "job_summary": {
+      "jobid": 6020463,
+      "nprocs": 32,
+      "runtime_seconds": 6839.1,
+      "POSIX_BYTES_WRITTEN": 2294090.0,
+      "POSIX_BYTES_READ": 1473761436.0,
+      "POSIX_WRITES": 267.0,
+      "POSIX_READS": 419.0,
+      "avg_write_size": 8592.1,
+      "total_bw_mb_s": 1606.53,
+      "small_io_ratio": 0.3469,
+      "seq_write_ratio": 0.9213,
+      "metadata_time_ratio": 0.0407
+    },
+    "ml_vs_gt": {
+      "ground_truth_bottlenecks": [],
+      "predicted_bottlenecks": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "correct": true
+    }
+  }
+]
