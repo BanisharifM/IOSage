@@ -1,0 +1,959 @@
+{
+  "ablation1_no_derived": {
+    "all_features": {
+      "n_features": 157,
+      "micro_f1": 0.9230769230769231,
+      "macro_f1": 0.8997640291617707,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9260450160771704,
+          "precision": 0.9290322580645162,
+          "recall": 0.9230769230769231,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.6896551724137931,
+          "precision": 0.625,
+          "recall": 0.7692307692307693,
+          "support": 13
+        },
+        "interface_choice": {
+          "f1": 0.9558823529411765,
+          "precision": 0.9154929577464789,
+          "recall": 1.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.9032258064516129,
+          "precision": 1.0,
+          "recall": 0.8235294117647058,
+          "support": 34
+        },
+        "throughput_utilization": {
+          "f1": 0.898876404494382,
+          "precision": 0.8888888888888888,
+          "recall": 0.9090909090909091,
+          "support": 44
+        },
+        "healthy": {
+          "f1": 0.8244274809160306,
+          "precision": 0.9473684210526315,
+          "recall": 0.7297297297297297,
+          "support": 74
+        }
+      }
+    },
+    "raw_only": {
+      "n_features": 120,
+      "micro_f1": 0.908183632734531,
+      "macro_f1": 0.8764265913868599,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9250814332247557,
+          "precision": 0.9403973509933775,
+          "recall": 0.9102564102564102,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.9900990099009901,
+          "precision": 0.9803921568627451,
+          "recall": 1.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.6451612903225806,
+          "precision": 0.5555555555555556,
+          "recall": 0.7692307692307693,
+          "support": 13
+        },
+        "interface_choice": {
+          "f1": 0.948905109489051,
+          "precision": 0.9027777777777778,
+          "recall": 1.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.8615384615384616,
+          "precision": 0.9032258064516129,
+          "recall": 0.8235294117647058,
+          "support": 34
+        },
+        "throughput_utilization": {
+          "f1": 0.8085106382978723,
+          "precision": 0.76,
+          "recall": 0.8636363636363636,
+          "support": 44
+        },
+        "healthy": {
+          "f1": 0.8321167883211679,
+          "precision": 0.9047619047619048,
+          "recall": 0.7702702702702703,
+          "support": 74
+        }
+      }
+    },
+    "derived_features_dropped": [
+      "access_size_concentration",
+      "avg_read_size",
+      "avg_write_size",
+      "byte_imbalance",
+      "collective_ratio",
+      "consec_read_ratio",
+      "consec_write_ratio",
+      "dominant_access_size",
+      "file_misalign_ratio",
+      "fsync_ratio",
+      "io_active_fraction",
+      "io_duration",
+      "large_read_ratio",
+      "large_write_ratio",
+      "medium_read_ratio",
+      "medium_write_ratio",
+      "mem_misalign_ratio",
+      "metadata_time_ratio",
+      "nonblocking_ratio",
+      "opens_per_mb",
+      "opens_per_op",
+      "read_bw_mb_s",
+      "read_ratio",
+      "read_time_fraction",
+      "rw_ratio",
+      "rw_switch_ratio",
+      "seeks_per_op",
+      "seq_read_ratio",
+      "seq_write_ratio",
+      "small_io_ratio",
+      "small_read_ratio",
+      "small_write_ratio",
+      "stats_per_op",
+      "time_imbalance",
+      "total_bw_mb_s",
+      "write_bw_mb_s",
+      "write_time_fraction"
+    ],
+    "n_derived_dropped": 37
+  },
+  "ablation2_gt_only": {
+    "biquality": {
+      "n_heuristic": 91807,
+      "n_gt": 187,
+      "micro_f1": 0.9230769230769231,
+      "macro_f1": 0.8997640291617707,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9260450160771704,
+          "precision": 0.9290322580645162,
+          "recall": 0.9230769230769231,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.6896551724137931,
+          "precision": 0.625,
+          "recall": 0.7692307692307693,
+          "support": 13
+        },
+        "interface_choice": {
+          "f1": 0.9558823529411765,
+          "precision": 0.9154929577464789,
+          "recall": 1.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.9032258064516129,
+          "precision": 1.0,
+          "recall": 0.8235294117647058,
+          "support": 34
+        },
+        "throughput_utilization": {
+          "f1": 0.898876404494382,
+          "precision": 0.8888888888888888,
+          "recall": 0.9090909090909091,
+          "support": 44
+        },
+        "healthy": {
+          "f1": 0.8244274809160306,
+          "precision": 0.9473684210526315,
+          "recall": 0.7297297297297297,
+          "support": 74
+        }
+      }
+    },
+    "gt_only": {
+      "n_samples": 187,
+      "micro_f1": 0.8869731800766284,
+      "macro_f1": 0.8292246408763673,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9283489096573209,
+          "precision": 0.9030303030303031,
+          "recall": 0.9551282051282052,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.9701492537313433,
+          "precision": 0.9420289855072463,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.8695652173913043,
+          "precision": 0.7692307692307693,
+          "recall": 1.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.43478260869565216,
+          "precision": 0.5,
+          "recall": 0.38461538461538464,
+          "support": 13
+        },
+        "interface_choice": {
+          "f1": 0.863013698630137,
+          "precision": 0.7777777777777778,
+          "recall": 0.9692307692307692,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.8709677419354839,
+          "precision": 0.9642857142857143,
+          "recall": 0.7941176470588235,
+          "support": 34
+        },
+        "throughput_utilization": {
+          "f1": 0.8080808080808081,
+          "precision": 0.7272727272727273,
+          "recall": 0.9090909090909091,
+          "support": 44
+        },
+        "healthy": {
+          "f1": 0.8888888888888888,
+          "precision": 0.9142857142857143,
+          "recall": 0.8648648648648649,
+          "support": 74
+        }
+      }
+    }
+  },
+  "ablation3_lobo": {
+    "custom": {
+      "n_dev_with": 187,
+      "n_dev_without": 163,
+      "n_dev_removed": 24,
+      "n_test": 65,
+      "with_benchmark": {
+        "micro_f1": 0.9344262295081968,
+        "macro_f1": 0.20454545454545453,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 50
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.6363636363636364,
+            "precision": 1.0,
+            "recall": 0.4666666666666667,
+            "support": 15
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.0,
+        "macro_f1": 0.0,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 50
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 15
+          }
+        }
+      },
+      "delta_micro_f1": 0.9344262295081968
+    },
+    "dlio": {
+      "n_dev_with": 187,
+      "n_dev_without": 168,
+      "n_dev_removed": 19,
+      "n_test": 41,
+      "with_benchmark": {
+        "micro_f1": 0.4810126582278481,
+        "macro_f1": 0.17520311813790077,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.6111111111111112,
+            "precision": 0.5789473684210527,
+            "recall": 0.6470588235294118,
+            "support": 17
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.18181818181818182,
+            "precision": 0.14285714285714285,
+            "recall": 0.25,
+            "support": 4
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 0.6086956521739131,
+            "precision": 0.5833333333333334,
+            "recall": 0.6363636363636364,
+            "support": 11
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 9
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.32558139534883723,
+        "macro_f1": 0.09549808429118774,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.5862068965517241,
+            "precision": 0.4146341463414634,
+            "recall": 1.0,
+            "support": 17
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.17777777777777778,
+            "precision": 0.0975609756097561,
+            "recall": 1.0,
+            "support": 4
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 11
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 9
+          }
+        }
+      },
+      "delta_micro_f1": 0.15543126287901088
+    },
+    "h5bench": {
+      "n_dev_with": 187,
+      "n_dev_without": 144,
+      "n_dev_removed": 43,
+      "n_test": 80,
+      "with_benchmark": {
+        "micro_f1": 0.9866666666666667,
+        "macro_f1": 0.4938524590163934,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.9508196721311475,
+            "precision": 1.0,
+            "recall": 0.90625,
+            "support": 32
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 37
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 14
+          },
+          "healthy": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 31
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.4043321299638989,
+        "macro_f1": 0.2173705940709617,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.6352941176470588,
+            "precision": 0.5094339622641509,
+            "recall": 0.84375,
+            "support": 32
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.6071428571428571,
+            "precision": 0.8947368421052632,
+            "recall": 0.4594594594594595,
+            "support": 37
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "throughput_utilization": {
+            "f1": 0.21875,
+            "precision": 0.14,
+            "recall": 0.5,
+            "support": 14
+          },
+          "healthy": {
+            "f1": 0.2777777777777778,
+            "precision": 1.0,
+            "recall": 0.16129032258064516,
+            "support": 31
+          }
+        }
+      },
+      "delta_micro_f1": 0.5823345367027678
+    },
+    "hacc_io": {
+      "n_dev_with": 187,
+      "n_dev_without": 164,
+      "n_dev_removed": 23,
+      "n_test": 61,
+      "with_benchmark": {
+        "micro_f1": 0.9021739130434783,
+        "macro_f1": 0.5489737274220032,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.9142857142857143,
+            "precision": 1.0,
+            "recall": 0.8421052631578947,
+            "support": 19
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.896551724137931,
+            "precision": 0.8125,
+            "recall": 1.0,
+            "support": 26
+          },
+          "file_strategy": {
+            "f1": 0.6666666666666666,
+            "precision": 1.0,
+            "recall": 0.5,
+            "support": 12
+          },
+          "throughput_utilization": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 19
+          },
+          "healthy": {
+            "f1": 0.9142857142857143,
+            "precision": 0.8421052631578947,
+            "recall": 1.0,
+            "support": 16
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.2236842105263158,
+        "macro_f1": 0.09909090909090909,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.32,
+            "precision": 0.6666666666666666,
+            "recall": 0.21052631578947367,
+            "support": 19
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 26
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 12
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 19
+          },
+          "healthy": {
+            "f1": 0.4727272727272727,
+            "precision": 0.3333333333333333,
+            "recall": 0.8125,
+            "support": 16
+          }
+        }
+      },
+      "delta_micro_f1": 0.6784897025171625
+    },
+    "ior": {
+      "n_dev_with": 187,
+      "n_dev_without": 145,
+      "n_dev_removed": 42,
+      "n_test": 105,
+      "with_benchmark": {
+        "micro_f1": 0.9714285714285714,
+        "macro_f1": 0.4979050279329609,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.9832402234636871,
+            "precision": 0.967032967032967,
+            "recall": 1.0,
+            "support": 88
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 9
+          },
+          "interface_choice": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2
+          },
+          "file_strategy": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 3
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 3
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.8063241106719368,
+        "macro_f1": 0.3867760617760618,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.9513513513513514,
+            "precision": 0.9072164948453608,
+            "recall": 1.0,
+            "support": 88
+          },
+          "metadata_intensity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 9
+          },
+          "interface_choice": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2
+          },
+          "file_strategy": {
+            "f1": 0.14285714285714285,
+            "precision": 0.07692307692307693,
+            "recall": 1.0,
+            "support": 3
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 3
+          }
+        }
+      },
+      "delta_micro_f1": 0.16510446075663465
+    },
+    "mdtest": {
+      "n_dev_with": 187,
+      "n_dev_without": 151,
+      "n_dev_removed": 36,
+      "n_test": 84,
+      "with_benchmark": {
+        "micro_f1": 1.0,
+        "macro_f1": 0.25,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "metadata_intensity": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 65
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 19
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          }
+        }
+      },
+      "without_benchmark": {
+        "micro_f1": 0.34418604651162793,
+        "macro_f1": 0.08185840707964602,
+        "per_label": {
+          "access_granularity": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "metadata_intensity": {
+            "f1": 0.6548672566371682,
+            "precision": 0.7708333333333334,
+            "recall": 0.5692307692307692,
+            "support": 65
+          },
+          "parallelism_efficiency": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "access_pattern": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "interface_choice": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "file_strategy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 19
+          },
+          "throughput_utilization": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "healthy": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          }
+        }
+      },
+      "delta_micro_f1": 0.655813953488372
+    }
+  }
+}
