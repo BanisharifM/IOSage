@@ -151,3 +151,20 @@ coverage.xml
 output.csv
 .local_pkgs/
 data/benchmark_results/
+
+# External repos (cloned, not ours)
+external/
+
+# Parquet metadata artifacts
+_metadata
+_common_metadata
+part.0.parquet
+
+# Temporary outputs
+outputs/
+
+# Data directories (large, on Zenodo)
+data/external/
+data/processed/benchmark/
+data/processed/production/
+data/llm_cache/
