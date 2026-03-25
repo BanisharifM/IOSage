@@ -1,6 +1,6 @@
 # Remaining Tasks Before SC 2026 Submission
 
-**Last updated**: 2026-03-24 21:50
+**Last updated**: 2026-03-25 00:00
 **Abstract deadline**: Apr 1, 2026 (7 days)
 **Paper deadline**: Apr 8, 2026 (14 days)
 **AD deadline**: Apr 24, 2026 (30 days)
@@ -41,13 +41,20 @@
 - [x] Track C SLURM scripts: single, sweep, ablation
 - [x] Track C figures script: scripts/generate_iterative_figures.py (5 figs + 4 tables)
 - [x] Track C dry-run verified: LLM correctly proposes 64B→1MB fix
+- [x] **26. Extended closed-loop configs** -- 4 new pairs (mdtest metadata/fpp, IOR collective 64-rank, IOR O_DIRECT)
+- [x] **27. ML ablations** -- 3 studies: feature removal (+1.5%), GT-only (+3.6%), LOBO (each benchmark essential)
+- [x] **ML ablation table + figures** -- tab_ml_ablations.tex, fig_lobo.pdf, fig_training_data_ablation.pdf
+- [x] **Figure style audit** -- all 5 scripts fixed to match figure_style_guide.md, 14 figures regenerated
+- [x] **IONavigator venv fix** -- Python 3.13 venv with llama_index working
+- [x] **paper_materials.md** -- Section 10 writing guide, ablation numbers, placement annotations
 
 ---
 
 ## IN PROGRESS
 
-- [ ] **8. Track C real execution test** -- running from login node, SLURM benchmark jobs submitting
-- [ ] **9-10. Track C convergence + comparison** -- waiting on execution results
+- [ ] **28. IONavigator full 50-trace** -- 34/50 done (running via nohup, ~1h remaining)
+- [ ] **8. Track C real execution test** -- SLURM queue congested (6K pending), code verified via dry-run
+- [ ] **9-10. Track C convergence + comparison** -- waiting on SLURM queue
 
 ---
 
@@ -77,9 +84,8 @@
 
 ## NICE TO HAVE
 
-- [ ] **26. More closed-loop pairs** -- mdtest metadata, DLIO checkpoint
-- [ ] **27. Additional ML ablations** -- feature removal, GT-only, leave-one-out
-- [ ] **28. IONavigator full 50-trace** -- 22/50 done
+- [ ] **Run extended closed-loop pairs** -- submit scripts/run_closed_loop_extended.slurm when SLURM clears
+- [ ] **DLIO closed-loop pair** -- checkpoint bottleneck pair (not yet configured)
 
 ---
 
