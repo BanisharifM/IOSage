@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\caption{Per-dimension XGBoost results on the 436-sample GT test set.
+Dimensions with perfect scores reflect well-separated benchmark signatures.}
+\label{tab:per_label}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Dimension} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{Support} \\
+\midrule
+Access granularity        & 0.926 & 0.929 & 0.923 & 156 \\
+Metadata intensity        & 1.000 & 1.000 & 1.000 &  65 \\
+Parallelism efficiency    & 1.000 & 1.000 & 1.000 &  50 \\
+Access pattern            & 0.690 & 0.625 & 0.769 &  13 \\
+Interface choice          & 0.956 & 0.915 & 1.000 &  65 \\
+File strategy             & 0.903 & 1.000 & 0.824 &  34 \\
+Throughput utilization    & 0.899 & 0.889 & 0.909 &  44 \\
+Healthy                   & 0.824 & 0.947 & 0.730 &  74 \\
+\midrule
+\textbf{Micro-average}    & \textbf{0.923} & 0.936 & 0.910 & 436 \\
+\textbf{Macro-average}    & \textbf{0.900} & 0.913 & 0.928 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}

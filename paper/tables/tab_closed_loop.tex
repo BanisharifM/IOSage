@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Closed-loop validation: LLM-recommended fixes applied to IOR
+benchmarks on NCSA Delta (1 node, 16 MPI tasks, Lustre). Speedup measured
+on write bandwidth following Hoefler and Belli~\cite{hoefler2015} guidelines.}
+\label{tab:closed_loop}
+\small
+\begin{tabular}{llccc}
+\toprule
+\textbf{Bottleneck} & \textbf{Fix Applied} & \textbf{Before} & \textbf{After} & \textbf{Speedup} \\
+ & & \textbf{(MiB/s)} & \textbf{(MiB/s)} & \\
+\midrule
+Access granularity     & 64B $\rightarrow$ 1\,MB xfer      &    49 & 2,208 & 44.8$\times$ \\
+Throughput util.       & fsync $\rightarrow$ end-only       &   500 & 3,408 &  6.8$\times$ \\
+Access pattern         & random $\rightarrow$ sequential    & 2,212 & 3,281 &  1.5$\times$ \\
+\midrule
+Geometric mean         &                                    &       &       &  7.7$\times$ \\
+Harmonic mean          &                                    &       &       &  3.6$\times$ \\
+Range                  &                                    &       &       & 1.5--44.8$\times$ \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+\raggedright
+\footnotesize
+\textit{Note:} Interface choice excluded (MPI-IO collective overhead exceeds
+POSIX benefit at 16 procs/1 node; fix materializes at scale with 64+
+processes across multiple nodes).
+\end{table}
