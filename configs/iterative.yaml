@@ -1,0 +1,254 @@
+# =============================================================================
+# Track C: Iterative LLM Code Optimization Configuration
+# =============================================================================
+# ML-guided iterative refinement: detect -> recommend -> execute -> feedback -> iterate
+# References: STELLAR (SC'25), PerfCoder (2025), POLO (IJCAI'25), Self-Refine (NeurIPS'23)
+# =============================================================================
+
+# --- Iteration Settings ---
+iteration:
+  max_iterations: 5          # STELLAR converges in 5, we target 2-3 with ML warm-start
+  convergence_threshold: 0.3 # Bottleneck confidence below this = resolved
+  plateau_threshold: 0.05    # <5% speedup improvement between iterations = plateau
+  max_parse_retries: 3       # Retry LLM if response is not valid JSON
+  temperature: 0.0           # Deterministic (PerfCodeGen protocol)
+
+# --- LLM Models ---
+models:
+  claude-sonnet:
+    id: "anthropic/claude-sonnet-4"
+    cost_per_mtok_input: 3.0    # USD
+    cost_per_mtok_output: 15.0
+  gpt-4o:
+    id: "openai/gpt-4o"
+    cost_per_mtok_input: 2.50
+    cost_per_mtok_output: 10.0
+  llama-70b:
+    id: "meta-llama/llama-3.1-70b-instruct"
+    cost_per_mtok_input: 0.59
+    cost_per_mtok_output: 0.79
+
+# --- Workload Definitions ---
+# Each workload: a "bad" IOR/mdtest config that has a known bottleneck
+# The LLM must discover and propose the fix through iterative refinement
+workloads:
+  ior_small_posix:
+    benchmark: ior
+    bottleneck: access_granularity
+    description: "Small POSIX writes (64B transfers)"
+    bad_config:
+      api: POSIX
+      transfer_size: "64"
+      block_size: "1M"
+      segments: 100
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+    known_good_config:  # For comparison only, not given to LLM
+      api: POSIX
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+
+  ior_fsync_heavy:
+    benchmark: ior
+    bottleneck: throughput_utilization
+    description: "fsync after every write (-Y flag)"
+    bad_config:
+      api: POSIX
+      transfer_size: "65536"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -Y -w -r"
+    known_good_config:
+      api: POSIX
+      transfer_size: "65536"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+
+  ior_random_access:
+    benchmark: ior
+    bottleneck: access_pattern
+    description: "Random offset access (-z flag)"
+    bad_config:
+      api: POSIX
+      transfer_size: "65536"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -z -w -r"
+    known_good_config:
+      api: POSIX
+      transfer_size: "65536"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+
+  ior_interface_shared:
+    benchmark: ior
+    bottleneck: interface_choice
+    description: "POSIX on shared file (should use MPI-IO collective)"
+    bad_config:
+      api: POSIX
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: false
+      extra_flags: "-e -C -w -r"
+    known_good_config:
+      api: MPIIO
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: false
+      extra_flags: "-c -w -r"
+
+  ior_misaligned:
+    benchmark: ior
+    bottleneck: access_granularity
+    description: "Non-power-of-2 transfer size (1000 bytes)"
+    bad_config:
+      api: POSIX
+      transfer_size: "1000"
+      block_size: "1M"
+      segments: 50
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+    known_good_config:
+      api: POSIX
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r"
+
+  ior_small_direct:
+    benchmark: ior
+    bottleneck: access_granularity
+    description: "Small I/O with O_DIRECT (4KB transfers)"
+    bad_config:
+      api: POSIX
+      transfer_size: "4096"
+      block_size: "1M"
+      segments: 100
+      file_per_proc: true
+      extra_flags: "-e -C -w -r -O useO_DIRECT=1"
+    known_good_config:
+      api: POSIX
+      transfer_size: "1048576"
+      block_size: "100M"
+      segments: 10
+      file_per_proc: true
+      extra_flags: "-e -C -w -r -O useO_DIRECT=1"
+
+  mdtest_metadata_storm:
+    benchmark: mdtest
+    bottleneck: metadata_intensity
+    description: "Many file creates in shared directory"
+    bad_config:
+      items_per_rank: 10000
+      write_bytes: 100
+      files_only: true
+      unique_dir: false
+    known_good_config:
+      items_per_rank: 10000
+      write_bytes: 100
+      files_only: true
+      unique_dir: true
+
+  ior_healthy_baseline:
+    benchmark: ior
+    bottleneck: healthy
+    description: "Already optimal MPI-IO collective (should not degrade)"
+    bad_config:
+      api: MPIIO
+      transfer_size: "4194304"
+      block_size: "1G"
+      segments: 4
+      file_per_proc: false
+      extra_flags: "-c -e -C -w -r"
+    known_good_config: null  # Already optimal
+
+# --- SLURM Settings ---
+slurm:
+  account: bdau-delta-cpu
+  partition: cpu
+  nodes: 1
+  ntasks: 16
+  walltime: "00:10:00"
+  orchestrator_walltime: "12:00:00"
+  scratch_dir: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
+  darshan_log_dir: data/benchmark_logs/iterative
+  darshan_lib: /work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so
+
+# --- IOR Parameter Allowlists (for BenchmarkCommandBuilder safety) ---
+ior_allowlist:
+  api: [POSIX, MPIIO]
+  transfer_size_range: [64, 16777216]    # 64B to 16MB
+  block_size_range: [65536, 1073741824]  # 64KB to 1GB
+  segments_range: [1, 1000]
+  max_flags: ["-F", "-c", "-e", "-C", "-Y", "-z", "-w", "-r", "-k",
+              "-O useO_DIRECT=1"]
+
+# --- Evaluation Settings ---
+evaluation:
+  n_runs: 5                # Repetitions per (workload, model) pair
+  seeds: [42, 123, 456, 789, 1024]
+  metrics:
+    - speedup              # BW after / BW before
+    - iterations_to_converge
+    - parse_success_rate
+    - groundedness_score
+    - total_tokens
+    - total_cost_usd
+    - total_latency_s
+
+# --- Ablation Conditions ---
+ablations:
+  full:
+    description: "Full system: ML + SHAP + KB + iterative"
+    ml: true
+    shap: true
+    kb: true
+    max_iterations: 5
+
+  no_ml:
+    description: "No ML: raw Darshan counters to LLM (IOAgent-style)"
+    ml: false
+    shap: false
+    kb: true
+    max_iterations: 5
+
+  no_kb:
+    description: "No KB: ML detection but no benchmark evidence"
+    ml: true
+    shap: true
+    kb: false
+    max_iterations: 5
+
+  no_shap:
+    description: "No SHAP: ML labels + KB but no feature attribution"
+    ml: true
+    shap: false
+    kb: true
+    max_iterations: 5
+
+  single_shot:
+    description: "Single-shot (1 iteration, like Track B)"
+    ml: true
+    shap: true
+    kb: true
+    max_iterations: 1
+
+  no_feedback:
+    description: "No iteration feedback: iterate but omit previous Darshan"
+    ml: true
+    shap: true
+    kb: true
+    max_iterations: 5
+    no_feedback: true
