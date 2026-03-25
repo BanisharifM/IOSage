@@ -1,0 +1,75 @@
+{
+  "polaris_test": {
+    "n_samples": 436,
+    "default_threshold": {
+      "micro_f1": 0.9231,
+      "macro_f1": 0.8998
+    },
+    "loo_cv_recalibrated": {
+      "micro_f1": 0.8484,
+      "macro_f1": 0.8035
+    },
+    "oracle_thresholds": {
+      "micro_f1": 0.8484,
+      "macro_f1": 0.8035
+    },
+    "per_dimension": {
+      "access_granularity": {
+        "support": 156,
+        "f1_default": 0.926,
+        "f1_recalibrated": 0.8876,
+        "f1_oracle": 0.8876,
+        "recal_threshold": 0.01
+      },
+      "metadata_intensity": {
+        "support": 65,
+        "f1_default": 1.0,
+        "f1_recalibrated": 1.0,
+        "f1_oracle": 1.0,
+        "recal_threshold": 0.077
+      },
+      "parallelism_efficiency": {
+        "support": 50,
+        "f1_default": 1.0,
+        "f1_recalibrated": 0.9091,
+        "f1_oracle": 0.9091,
+        "recal_threshold": 0.01
+      },
+      "access_pattern": {
+        "support": 13,
+        "f1_default": 0.6897,
+        "f1_recalibrated": 0.5556,
+        "f1_oracle": 0.5556,
+        "recal_threshold": 0.01
+      },
+      "interface_choice": {
+        "support": 65,
+        "f1_default": 0.9559,
+        "f1_recalibrated": 0.8784,
+        "f1_oracle": 0.8784,
+        "recal_threshold": 0.01
+      },
+      "file_strategy": {
+        "support": 34,
+        "f1_default": 0.9032,
+        "f1_recalibrated": 0.7778,
+        "f1_oracle": 0.7778,
+        "recal_threshold": 0.01
+      },
+      "throughput_utilization": {
+        "support": 44,
+        "f1_default": 0.8989,
+        "f1_recalibrated": 0.8158,
+        "f1_oracle": 0.8158,
+        "recal_threshold": 0.99
+      },
+      "healthy": {
+        "support": 74,
+        "f1_default": 0.8244,
+        "f1_recalibrated": 0.6038,
+        "f1_oracle": 0.6038,
+        "recal_threshold": 0.99
+      }
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "per_dimension": {
+    "access_granularity": {
+      "n_positive": 13,
+      "n_negative": 15,
+      "mean_proba_true_positive": 0.0008,
+      "mean_proba_true_negative": 0.0043,
+      "auc_roc": 0.3846,
+      "auc_pr": 0.4008,
+      "optimal_threshold": 0.01,
+      "optimal_f1": 0.0,
+      "loo_cv_f1": 0.0,
+      "loo_cv_mean_threshold": 0.01,
+      "signal_assessment": "INVERSE"
+    },
+    "metadata_intensity": {
+      "n_positive": 3,
+      "n_negative": 25,
+      "mean_proba_true_positive": 0.0892,
+      "mean_proba_true_negative": 0.0734,
+      "auc_roc": 0.86,
+      "auc_pr": 0.3417,
+      "optimal_threshold": 0.08,
+      "optimal_f1": 0.5,
+      "loo_cv_f1": 0.4444,
+      "loo_cv_mean_threshold": 0.077,
+      "signal_assessment": "STRONG"
+    },
+    "parallelism_efficiency": {
+      "n_positive": 18,
+      "n_negative": 10,
+      "mean_proba_true_positive": 0.225,
+      "mean_proba_true_negative": 0.0003,
+      "auc_roc": 0.5556,
+      "auc_pr": 0.7998,
+      "optimal_threshold": 0.01,
+      "optimal_f1": 0.4348,
+      "loo_cv_f1": 0.4348,
+      "loo_cv_mean_threshold": 0.01,
+      "signal_assessment": "PARTIAL"
+    },
+    "access_pattern": {
+      "n_positive": 3,
+      "n_negative": 25,
+      "mean_proba_true_positive": 0.0,
+      "mean_proba_true_negative": 0.0,
+      "auc_roc": 0.7867,
+      "auc_pr": 0.3388,
+      "optimal_threshold": 0.01,
+      "optimal_f1": 0.0,
+      "loo_cv_f1": 0.0,
+      "loo_cv_mean_threshold": 0.01,
+      "signal_assessment": "STRONG"
+    },
+    "interface_choice": {
+      "n_positive": 21,
+      "n_negative": 7,
+      "mean_proba_true_positive": 0.0004,
+      "mean_proba_true_negative": 0.0008,
+      "auc_roc": 0.4456,
+      "auc_pr": 0.7348,
+      "optimal_threshold": 0.01,
+      "optimal_f1": 0.0,
+      "loo_cv_f1": 0.0,
+      "loo_cv_mean_threshold": 0.01,
+      "signal_assessment": "INVERSE"
+    },
+    "file_strategy": {
+      "n_positive": 14,
+      "n_negative": 14,
+      "mean_proba_true_positive": 0.0001,
+      "mean_proba_true_negative": 0.0001,
+      "auc_roc": 0.5128,
+      "auc_pr": 0.5779,
+      "optimal_threshold": 0.01,
+      "optimal_f1": 0.0,
+      "loo_cv_f1": 0.0,
+      "loo_cv_mean_threshold": 0.01,
+      "signal_assessment": "PARTIAL"
+    },
+    "throughput_utilization": {
+      "n_positive": 0,
+      "n_negative": 28,
+      "mean_proba_true_negative": 0.1725,
+      "auc_roc": null,
+      "auc_roc_note": "undefined (all same class)",
+      "auc_pr": null,
+      "optimal_threshold": 0.99,
+      "optimal_f1": null,
+      "loo_cv_f1": null,
+      "loo_cv_note": "insufficient positive/negative examples for LOO",
+      "signal_assessment": "N/A"
+    },
+    "healthy": {
+      "n_positive": 0,
+      "n_negative": 28,
+      "mean_proba_true_negative": 0.2818,
+      "auc_roc": null,
+      "auc_roc_note": "undefined (all same class)",
+      "auc_pr": null,
+      "optimal_threshold": 0.99,
+      "optimal_f1": null,
+      "loo_cv_f1": null,
+      "loo_cv_note": "insufficient positive/negative examples for LOO",
+      "signal_assessment": "N/A"
+    }
+  },
+  "overall": {
+    "default_threshold_0.5": {
+      "micro_f1": 0.1026,
+      "macro_f1": 0.0606
+    },
+    "oracle_optimal_threshold": {
+      "micro_f1": 0.1647,
+      "macro_f1": 0.1558,
+      "thresholds": {
+        "access_granularity": 0.01,
+        "metadata_intensity": 0.08,
+        "parallelism_efficiency": 0.01,
+        "access_pattern": 0.01,
+        "interface_choice": 0.01,
+        "file_strategy": 0.01,
+        "throughput_utilization": 0.99,
+        "healthy": 0.99
+      }
+    },
+    "loo_cv_threshold": {
+      "micro_f1": 0.1628,
+      "macro_f1": 0.1465
+    },
+    "n_traces": 28
+  },
+  "verdict": {
+    "mean_auc_roc_covered": 0.5909,
+    "n_dims_with_auc": 6
+  }
+}

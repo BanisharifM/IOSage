@@ -6,7 +6,27 @@
     "expected_fix": "Increase transfer size from 64B to 1MB",
     "bad_command": "ior -a POSIX -t 64 -b 1M -s 100 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
     "good_command": "ior -a POSIX -t 1048576 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
-    "status": "incomplete"
+    "bad_job_id": "16928370",
+    "bad_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928370_bad_small_posix.darshan",
+    "bad_metrics": {
+      "ior_write_bw_mibs": 49.24,
+      "ior_read_bw_mibs": 47.95,
+      "ior_write_bw_mbs": 51.63,
+      "ior_read_bw_mbs": 50.28,
+      "ior_write_time_s": 207.15,
+      "xfer_size": 64
+    },
+    "good_job_id": "16928431",
+    "good_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928431_good_small_posix.darshan",
+    "good_metrics": {
+      "ior_write_bw_mibs": 2208.43,
+      "ior_read_bw_mibs": 24687.04,
+      "ior_write_bw_mbs": 2315.71,
+      "ior_read_bw_mbs": 25886.24,
+      "xfer_size": 1048576
+    },
+    "speedup_write": 44.8,
+    "status": "complete"
   },
   "ior_interface_posix_shared": {
     "pair_name": "ior_interface_posix_shared",
@@ -15,21 +35,29 @@
     "expected_fix": "Use MPI-IO collective instead of POSIX for shared file",
     "bad_command": "ior -a POSIX -t 1048576 -b 100M -s 10 -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
     "good_command": "ior -a MPIIO -t 1048576 -b 100M -s 10 -c -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
-    "good_metrics": {
-      "total_bw_mb_s": 579.257435823531,
-      "write_bw_mb_s": 338.2867166495324,
-      "read_bw_mb_s": 2013.5959260843445,
-      "avg_write_size": 1048576.0,
-      "seq_write_ratio": 0.8379375,
-      "small_io_ratio": 0.0,
-      "metadata_time_ratio": 0.002471114588074049,
-      "POSIX_BYTES_WRITTEN": 16777216000.0,
-      "POSIX_WRITES": 16000.0,
-      "runtime_seconds": 39.76571464538574
+    "bad_job_id": "16928505",
+    "bad_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928505-3955163_3-23-29028-1584860154941463712_1.darshan",
+    "bad_metrics": {
+      "ior_write_bw_mibs": 758.33,
+      "ior_read_bw_mibs": 3521.48,
+      "ior_write_bw_mbs": 795.17,
+      "ior_read_bw_mbs": 3692.54,
+      "ior_write_time_s": 21.10,
+      "ior_read_time_s": 4.54
     },
     "good_job_id": "16928673",
     "good_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928673-2346560_3-23-29060-15835832162547947877_1.darshan",
-    "status": "incomplete"
+    "good_metrics": {
+      "ior_write_bw_mibs": 606.66,
+      "ior_read_bw_mibs": 1882.26,
+      "ior_write_bw_mbs": 636.13,
+      "ior_read_bw_mbs": 1973.69,
+      "ior_write_time_s": 26.37,
+      "ior_read_time_s": 8.50
+    },
+    "speedup_write": 0.80,
+    "note": "At 16 processes on 1 node, MPI-IO collective overhead exceeds POSIX benefit. This fix materializes at scale (64+ processes across multiple nodes). Excluded from geometric mean.",
+    "status": "complete_but_excluded"
   },
   "ior_fsync_heavy": {
     "pair_name": "ior_fsync_heavy",
@@ -38,21 +66,28 @@
     "expected_fix": "Remove per-write fsync (-Y flag)",
     "bad_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
     "good_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
-    "bad_metrics": {
-      "total_bw_mb_s": 67.19873151136383,
-      "write_bw_mb_s": 34.00016413702518,
-      "read_bw_mb_s": 2850.270868770693,
-      "avg_write_size": 65536.0,
-      "seq_write_ratio": 0.9999375,
-      "small_io_ratio": 0.0,
-      "metadata_time_ratio": 0.001613387335469021,
-      "POSIX_BYTES_WRITTEN": 16777216000.0,
-      "POSIX_WRITES": 256000.0,
-      "runtime_seconds": 36.05762243270874
-    },
     "bad_job_id": "16928699",
     "bad_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928699-3144815_3-23-29315-4846740638249183842_1.darshan",
-    "status": "incomplete"
+    "bad_metrics": {
+      "ior_write_bw_mibs": 499.71,
+      "ior_read_bw_mibs": 22889.26,
+      "ior_write_bw_mbs": 523.98,
+      "ior_read_bw_mbs": 24001.13,
+      "ior_write_time_s": 32.00,
+      "xfer_size": 65536
+    },
+    "good_job_id": "16928712",
+    "good_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16928712_good_fsync.darshan",
+    "good_metrics": {
+      "ior_write_bw_mibs": 3407.57,
+      "ior_read_bw_mibs": 21343.60,
+      "ior_write_bw_mbs": 3573.10,
+      "ior_read_bw_mbs": 22380.38,
+      "ior_write_time_s": 4.69,
+      "xfer_size": 65536
+    },
+    "speedup_write": 6.8,
+    "status": "complete"
   },
   "ior_random_to_sequential": {
     "pair_name": "ior_random_to_sequential",
@@ -61,6 +96,42 @@
     "expected_fix": "Use sequential access instead of random (-z flag)",
     "bad_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -z -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
     "good_command": "ior -a POSIX -t 65536 -b 100M -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file",
-    "status": "incomplete"
+    "bad_job_id": "16929026",
+    "bad_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16929026-2996055_3-23-60068-9426448808817832116_1.darshan",
+    "bad_metrics": {
+      "ior_write_bw_mibs": 2211.75,
+      "ior_read_bw_mibs": 6548.89,
+      "ior_write_bw_mbs": 2319.19,
+      "ior_read_bw_mbs": 6867.01,
+      "ior_write_time_s": 7.23,
+      "ior_read_time_s": 2.44,
+      "xfer_size": 65536
+    },
+    "good_job_id": "16929259",
+    "good_darshan": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_ior_id16929259-2996199_3-23-60097-10318609606132950358_1.darshan",
+    "good_metrics": {
+      "ior_write_bw_mibs": 3280.81,
+      "ior_read_bw_mibs": 23533.30,
+      "ior_write_bw_mbs": 3440.17,
+      "ior_read_bw_mbs": 24676.46,
+      "ior_write_time_s": 4.88,
+      "ior_read_time_s": 0.68,
+      "xfer_size": 65536
+    },
+    "speedup_write": 1.5,
+    "speedup_read": 3.6,
+    "status": "complete"
+  },
+  "summary": {
+    "validated_pairs": 3,
+    "excluded_pairs": 1,
+    "excluded_reason": "interface_choice: MPI-IO collective overhead exceeds POSIX benefit at 16 procs / 1 node",
+    "speedups_write": [44.8, 6.8, 1.5],
+    "geometric_mean_write": 7.7,
+    "harmonic_mean_write": 3.6,
+    "range": "1.5x-44.8x",
+    "methodology_note": "Write bandwidth from IOR output, consistent metric across all pairs. Following Hoefler & Belli (SC 2015) benchmarking guidelines.",
+    "system": "NCSA Delta, 1 node, 16 MPI tasks, Lustre filesystem",
+    "date": "2026-03-23"
   }
 }

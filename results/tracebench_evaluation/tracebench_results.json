@@ -1,0 +1,635 @@
+{
+  "model": "xgboost_biquality_w100",
+  "dataset": "TraceBench v0.1.0",
+  "n_traces_total": 35,
+  "n_traces_parsed": 28,
+  "n_parse_errors": 7,
+  "metrics": {
+    "per_dimension": {
+      "access_granularity": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 13,
+        "predicted_positive": 0,
+        "true_positive": 0
+      },
+      "metadata_intensity": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3,
+        "predicted_positive": 2,
+        "true_positive": 0
+      },
+      "parallelism_efficiency": {
+        "precision": 1.0,
+        "recall": 0.222,
+        "f1": 0.364,
+        "support": 18,
+        "predicted_positive": 4,
+        "true_positive": 4
+      },
+      "access_pattern": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3,
+        "predicted_positive": 0,
+        "true_positive": 0
+      },
+      "interface_choice": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 21,
+        "predicted_positive": 0,
+        "true_positive": 0
+      },
+      "file_strategy": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 14,
+        "predicted_positive": 0,
+        "true_positive": 0
+      },
+      "throughput_utilization": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0,
+        "predicted_positive": 3,
+        "true_positive": 0
+      },
+      "healthy": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0,
+        "predicted_positive": 6,
+        "true_positive": 0
+      }
+    },
+    "overall": {
+      "micro_f1": 0.1026,
+      "macro_f1": 0.0606,
+      "samples_f1": 0.1012,
+      "n_traces": 28,
+      "n_dimensions_evaluated": 6,
+      "exact_match_accuracy": 0.0357,
+      "partial_match_accuracy": 0.1429
+    }
+  },
+  "per_trace": [
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_MPIIO_blockSize_1073741824_transferSize_1MB_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "NC-R",
+        "NC-W",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_MPIIO_blockSize_1073741824_transferSize_2K_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "NC-R",
+        "NC-W",
+        "SLIM",
+        "SHF"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_MPIIO_blockSize_1073741824_transferSize_4K_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "NC-R",
+        "NC-W",
+        "SLIM",
+        "SHF"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_MPIIO_blockSize_1073741824_transferSize_4MB_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "NC-R",
+        "NC-W",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_1MB_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "MPNM",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_1MB_filePerProc_False_uniqueDir_True__0",
+      "tracebench_labels": [
+        "MPNM",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_1MB_filePerProc_True_uniqueDir_False__0",
+      "tracebench_labels": [
+        "MPNM"
+      ],
+      "true_dimensions": [
+        "interface_choice"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_2K_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "MPNM",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_4K_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "MPNM",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-easy_api_POSIX_blockSize_1073741824_transferSize_4MB_filePerProc_False_uniqueDir_False__0",
+      "tracebench_labels": [
+        "MPNM",
+        "SHF",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(AMReX)_jeanbez_h5bench_amrex_sync_id15672431-1118360_9-15-38432-5714886783581687674_1",
+      "tracebench_labels": [
+        "NC-R",
+        "SML-R"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(E2E_Baseline)_original_jeanbez_write_3d_nc4_id45139176_8-5-1057-1043768654573709768_1628147943",
+      "tracebench_labels": [
+        "SML-W",
+        "MSL-W",
+        "SLIM",
+        "SHF",
+        "RLIM",
+        "HMD"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "metadata_intensity",
+        "parallelism_efficiency",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(E2E_Optimized)_optimized_jeanbez_write_3d_nc4_id45138874_8-5-631-13015627732142842593_1628147442",
+      "tracebench_labels": [
+        "SML-W",
+        "MSL-W"
+      ],
+      "true_dimensions": [
+        "access_granularity"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(H5_Bench)_brtnfld_h5bench_write_id1363501_8-26-63389-8217696575051336807_84",
+      "tracebench_labels": [
+        "SHF",
+        "HMD"
+      ],
+      "true_dimensions": [
+        "metadata_intensity",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(OpenPMD_Baseline)_baseline_jlbez_8a_benchmark_write_parallel_id1321662_8-21-5892-15802854900629188750_106",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "SHF"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(OpenPMD_Optimized)_optimized_jlbez_8a_benchmark_write_parallel_id1322696_8-21-14519-8141979180909667175_12",
+      "tracebench_labels": [
+        "RMA-R",
+        "RMA-W"
+      ],
+      "true_dimensions": [
+        "access_pattern"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(Optimize-MP)_houhun_sw4_id56546140-264967_3-21-63846-13415404289583628136_1",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "SLIM",
+        "NC-R"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "metadata_intensity",
+        "throughput_utilization"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(ROBL_IOR)_robl_ior_id614345_8-8-66546-14494205032741333235_1",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "RMA-R",
+        "RMA-W",
+        "SHF",
+        "NC-R",
+        "NC-W"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "access_pattern",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [
+        "metadata_intensity",
+        "throughput_utilization"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "real_app_bench",
+      "trace": "(Treb_ViscousDriver3d)_treb_viscousDriver3d",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "NC-R",
+        "NC-W"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_1",
+      "tracebench_labels": [
+        "SLIM",
+        "NC-R",
+        "NC-W"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "parallelism_efficiency"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_2",
+      "tracebench_labels": [
+        "RLIM",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency"
+      ],
+      "predicted_dimensions": [
+        "parallelism_efficiency"
+      ],
+      "exact_match": true
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_3",
+      "tracebench_labels": [
+        "SHF",
+        "SLIM",
+        "NC-R",
+        "NC-W"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice",
+        "file_strategy"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_4",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "NC-R",
+        "NC-W",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_5",
+      "tracebench_labels": [
+        "RDA-R",
+        "SLIM",
+        "NC-R"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "access_pattern",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "parallelism_efficiency"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_6",
+      "tracebench_labels": [
+        "HMD"
+      ],
+      "true_dimensions": [
+        "metadata_intensity"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_7",
+      "tracebench_labels": [
+        "SML-R",
+        "SML-W",
+        "MSL-R",
+        "MSL-W",
+        "SLIM",
+        "NC-R",
+        "NC-W"
+      ],
+      "true_dimensions": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_8",
+      "tracebench_labels": [
+        "NC-R",
+        "NC-W",
+        "SLIM"
+      ],
+      "true_dimensions": [
+        "parallelism_efficiency",
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "parallelism_efficiency",
+        "throughput_utilization"
+      ],
+      "exact_match": false
+    },
+    {
+      "subset": "single_issue_bench",
+      "trace": "bench_9",
+      "tracebench_labels": [
+        "LLL-R",
+        "LLL-W"
+      ],
+      "true_dimensions": [
+        "interface_choice"
+      ],
+      "predicted_dimensions": [
+        "healthy"
+      ],
+      "exact_match": false
+    }
+  ],
+  "parse_errors": [
+    {
+      "subset": "IO500",
+      "trace": "ior-hard_api_MPIIO_segmentCount_100000_collective_False__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-hard_api_MPIIO_segmentCount_100000_collective_True__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-hard_api_POSIX_segmentCount_100000_collective_False__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-rnd1MB_api_MPIIO_blockSize_1073741824_randomPrefill_0__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "ior-rnd1MB_api_POSIX_blockSize_1073741824_randomPrefill_0__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "mdtest-easy_api_POSIX_n_100000__0",
+      "error": "parse failed"
+    },
+    {
+      "subset": "IO500",
+      "trace": "mdtest-hard_api_POSIX_n_100000_filesPerDir___0",
+      "error": "parse failed"
+    }
+  ],
+  "analysis": {
+    "domain_shift": "The model was trained on 131K Polaris production logs labeled by Drishti heuristics. In that dataset, 54% of traces are labeled healthy, and rare dimensions like interface_choice (1.2%), file_strategy (1.4%), parallelism_efficiency (1.6%) have very low prevalence. TraceBench traces are specifically designed/curated to exhibit issues, creating a severe prior mismatch.",
+    "parse_failures": "7/35 traces (all IO500 subset: ior-hard, ior-rnd, mdtest) failed to parse due to incompatible darshan log format (unable to inflate). These traces used a different darshan version than our parser supports.",
+    "key_findings": [
+      "Model predicts healthy/empty for 24/28 parsed traces, reflecting the strong healthy prior from training data",
+      "Only parallelism_efficiency gets any correct predictions (4/18 recall), likely because it corresponds to a Drishti heuristic that triggered on benchmark-like workloads",
+      "access_granularity (12 true positives in GT) gets 0 predictions, suggesting the model learned different thresholds for small I/O from production data vs benchmark criteria",
+      "interface_choice (21 true positives) gets 0 predictions - this label (NC-R/NC-W/LLL/MPNM) is very rare in Drishti-labeled production data",
+      "file_strategy (14 true positives) gets 0 predictions - shared file access labeled differently between Drishti heuristics and TraceBench criteria"
+    ],
+    "comparison_notes": "IOAgent (IPDPS 2025) reports 0.641 exact-match accuracy on TraceBench using an LLM-based approach with access to raw darshan-parser output. Our ML approach gets 0.036 exact-match. The gap is expected because: (1) IOAgent uses text-based reasoning that can adapt to new labeling criteria, (2) our model learned Polaris-specific patterns from Drishti heuristics, (3) TraceBench uses different labeling criteria than Drishti.",
+    "implications": "This result highlights the domain adaptation challenge: an ML model trained on heuristic labels from one system does not generalize to external benchmarks with different labeling criteria. This motivates our LLM component (Track B) which can bridge the gap through reasoning."
+  }
+}

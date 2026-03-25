@@ -26,7 +26,7 @@ Darshan logs collected and analyzed through IOPrescriber.
 | Output | Issue flags (HIGH/WARN) | Text diagnosis + code templates | Grounded recommendations + code fixes |
 | ML component | None | None | XGBoost multi-label, 5 seeds |
 | Benchmark KB | None | None | 623 entries with source code |
-| Closed-loop | None | None | Measured speedup (39x IOR, 7x interface) |
+| Closed-loop | None | None | Measured speedup (geomean 7.7x, 3 IOR pairs) |
 | Reproducibility | Open source (pip) | No public code | Anonymous GitHub + LLM cache |
 
 **How ION compared with Drishti (from paper slides):**

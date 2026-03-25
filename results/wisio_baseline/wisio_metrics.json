@@ -1,0 +1,630 @@
+{
+  "overall": {
+    "micro_precision": 0.23014383989993747,
+    "micro_recall": 0.5161290322580645,
+    "micro_f1": 0.31833910034602075,
+    "macro_f1": 0.20903642073334833,
+    "mapped_micro_f1": 0.35760924158714213,
+    "mapped_macro_f1": 0.3667907901846454,
+    "n_samples": 623,
+    "n_dimensions": 8,
+    "mapped_dimensions": [
+      "access_granularity",
+      "metadata_intensity",
+      "parallelism_efficiency",
+      "access_pattern"
+    ],
+    "unmapped_dimensions": [
+      "interface_choice",
+      "file_strategy",
+      "throughput_utilization"
+    ]
+  },
+  "per_dimension": {
+    "access_granularity": {
+      "precision": 0.44529262086513993,
+      "recall": 0.7882882882882883,
+      "f1": 0.5691056910569106,
+      "support_positive": 222,
+      "support_negative": 401,
+      "predicted_positive": 393
+    },
+    "metadata_intensity": {
+      "precision": 0.2697947214076246,
+      "recall": 0.989247311827957,
+      "f1": 0.423963133640553,
+      "support_positive": 93,
+      "support_negative": 530,
+      "predicted_positive": 341
+    },
+    "parallelism_efficiency": {
+      "precision": 0.2610294117647059,
+      "recall": 1.0,
+      "f1": 0.41399416909620995,
+      "support_positive": 71,
+      "support_negative": 552,
+      "predicted_positive": 272
+    },
+    "access_pattern": {
+      "precision": 0.03098106712564544,
+      "recall": 1.0,
+      "f1": 0.06010016694490818,
+      "support_positive": 18,
+      "support_negative": 605,
+      "predicted_positive": 581
+    },
+    "interface_choice": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support_positive": 93,
+      "support_negative": 530,
+      "predicted_positive": 0
+    },
+    "file_strategy": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support_positive": 48,
+      "support_negative": 575,
+      "predicted_positive": 0
+    },
+    "throughput_utilization": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support_positive": 63,
+      "support_negative": 560,
+      "predicted_positive": 0
+    },
+    "healthy": {
+      "precision": 1.0,
+      "recall": 0.11428571428571428,
+      "f1": 0.20512820512820512,
+      "support_positive": 105,
+      "support_negative": 518,
+      "predicted_positive": 12
+    }
+  },
+  "per_benchmark": {
+    "custom": {
+      "aggregate": {
+        "micro_precision": 0.2088235294117647,
+        "micro_recall": 0.797752808988764,
+        "micro_f1": 0.331002331002331,
+        "macro_f1": 0.1109375,
+        "mapped_micro_f1": 0.34549878345498786,
+        "mapped_macro_f1": 0.221875,
+        "n_samples": 89,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 73
+        },
+        "metadata_intensity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 89
+        },
+        "parallelism_efficiency": {
+          "precision": 0.797752808988764,
+          "recall": 1.0,
+          "f1": 0.8875,
+          "support_positive": 71,
+          "support_negative": 18,
+          "predicted_positive": 89
+        },
+        "access_pattern": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 89
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 89,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 18,
+          "support_negative": 71,
+          "predicted_positive": 0
+        }
+      }
+    },
+    "dlio": {
+      "aggregate": {
+        "micro_precision": 0.03825136612021858,
+        "micro_recall": 0.11666666666666667,
+        "micro_f1": 0.05761316872427983,
+        "macro_f1": 0.03198653198653199,
+        "mapped_micro_f1": 0.06572769953051644,
+        "mapped_macro_f1": 0.06397306397306397,
+        "n_samples": 60,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.3333333333333333,
+          "recall": 0.041666666666666664,
+          "f1": 0.07407407407407407,
+          "support_positive": 24,
+          "support_negative": 36,
+          "predicted_positive": 3
+        },
+        "metadata_intensity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 60,
+          "predicted_positive": 60
+        },
+        "parallelism_efficiency": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 60,
+          "predicted_positive": 60
+        },
+        "access_pattern": {
+          "precision": 0.1,
+          "recall": 1.0,
+          "f1": 0.18181818181818182,
+          "support_positive": 6,
+          "support_negative": 54,
+          "predicted_positive": 60
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 60,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 60,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 18,
+          "support_negative": 42,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 12,
+          "support_negative": 48,
+          "predicted_positive": 0
+        }
+      }
+    },
+    "h5bench": {
+      "aggregate": {
+        "micro_precision": 0.11081794195250659,
+        "micro_recall": 0.25,
+        "micro_f1": 0.1535648994515539,
+        "macro_f1": 0.07894736842105264,
+        "mapped_micro_f1": 0.1981132075471698,
+        "mapped_macro_f1": 0.15789473684210528,
+        "n_samples": 123,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.4772727272727273,
+          "recall": 0.9333333333333333,
+          "f1": 0.6315789473684211,
+          "support_positive": 45,
+          "support_negative": 78,
+          "predicted_positive": 88
+        },
+        "metadata_intensity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 123,
+          "predicted_positive": 69
+        },
+        "parallelism_efficiency": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 123,
+          "predicted_positive": 123
+        },
+        "access_pattern": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 123,
+          "predicted_positive": 99
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 54,
+          "support_negative": 69,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 123,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 18,
+          "support_negative": 105,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 51,
+          "support_negative": 72,
+          "predicted_positive": 0
+        }
+      }
+    },
+    "hacc_io": {
+      "aggregate": {
+        "micro_precision": 0.2206896551724138,
+        "micro_recall": 0.24806201550387597,
+        "micro_f1": 0.23357664233576642,
+        "macro_f1": 0.1511500547645126,
+        "mapped_micro_f1": 0.25,
+        "mapped_macro_f1": 0.12048192771084336,
+        "n_samples": 84,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.35714285714285715,
+          "recall": 0.7407407407407407,
+          "f1": 0.48192771084337344,
+          "support_positive": 27,
+          "support_negative": 57,
+          "predicted_positive": 56
+        },
+        "metadata_intensity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 84,
+          "predicted_positive": 5
+        },
+        "parallelism_efficiency": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 84,
+          "predicted_positive": 0
+        },
+        "access_pattern": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 84,
+          "predicted_positive": 72
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 36,
+          "support_negative": 48,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 18,
+          "support_negative": 66,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 27,
+          "support_negative": 57,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 1.0,
+          "recall": 0.5714285714285714,
+          "f1": 0.7272727272727273,
+          "support_positive": 21,
+          "support_negative": 63,
+          "predicted_positive": 12
+        }
+      }
+    },
+    "ior": {
+      "aggregate": {
+        "micro_precision": 0.45255474452554745,
+        "micro_recall": 0.8435374149659864,
+        "micro_f1": 0.5890736342042755,
+        "macro_f1": 0.127715951245363,
+        "mapped_micro_f1": 0.6019417475728155,
+        "mapped_macro_f1": 0.255431902490726,
+        "n_samples": 147,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.8421052631578947,
+          "recall": 0.8888888888888888,
+          "f1": 0.8648648648648649,
+          "support_positive": 126,
+          "support_negative": 21,
+          "predicted_positive": 133
+        },
+        "metadata_intensity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 147,
+          "predicted_positive": 0
+        },
+        "parallelism_efficiency": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 147,
+          "predicted_positive": 0
+        },
+        "access_pattern": {
+          "precision": 0.0851063829787234,
+          "recall": 1.0,
+          "f1": 0.1568627450980392,
+          "support_positive": 12,
+          "support_negative": 135,
+          "predicted_positive": 141
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 3,
+          "support_negative": 144,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 3,
+          "support_negative": 144,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 147,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 3,
+          "support_negative": 144,
+          "predicted_positive": 0
+        }
+      }
+    },
+    "mdtest": {
+      "aggregate": {
+        "micro_precision": 0.33093525179856115,
+        "micro_recall": 0.7666666666666667,
+        "micro_f1": 0.46231155778894467,
+        "macro_f1": 0.10900473933649288,
+        "mapped_micro_f1": 0.4959568733153639,
+        "mapped_macro_f1": 0.21800947867298576,
+        "n_samples": 120,
+        "n_dimensions": 8,
+        "mapped_dimensions": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern"
+        ],
+        "unmapped_dimensions": [
+          "interface_choice",
+          "file_strategy",
+          "throughput_utilization"
+        ]
+      },
+      "per_dimension": {
+        "access_granularity": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 40
+        },
+        "metadata_intensity": {
+          "precision": 0.7796610169491526,
+          "recall": 0.989247311827957,
+          "f1": 0.872037914691943,
+          "support_positive": 93,
+          "support_negative": 27,
+          "predicted_positive": 118
+        },
+        "parallelism_efficiency": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 0
+        },
+        "access_pattern": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 120
+        },
+        "interface_choice": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 0
+        },
+        "file_strategy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 27,
+          "support_negative": 93,
+          "predicted_positive": 0
+        },
+        "throughput_utilization": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 0
+        },
+        "healthy": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support_positive": 0,
+          "support_negative": 120,
+          "predicted_positive": 0
+        }
+      }
+    }
+  },
+  "errors_count": 0,
+  "total_unique_jobs": 575,
+  "successful_jobs": 575,
+  "total_label_rows": 623,
+  "elapsed_seconds": 1722.2799973487854
+}
