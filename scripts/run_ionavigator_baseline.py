@@ -31,11 +31,12 @@ import numpy as np
 import pandas as pd
 
 # OpenAI
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), '..', 'external', 'IONavigator', 'ION'))
+_ion_utils_path = os.path.join(
+    os.path.dirname(__file__), '..', 'external', 'IONavigator', 'ION', 'ion', 'Steps', 'Utils')
+sys.path.insert(0, _ion_utils_path)
 
-# We import ION's darshan module classes directly (they work on 3.9)
-from ion.Steps.Utils.darshan_modules import (
+# Import darshan_modules directly (avoid ion/__init__.py which pulls in llama_index)
+from darshan_modules import (
     get_darshan_modules, extract_class_methods,
     process_trace_header, summarize_trace_header,
     POSIX, STDIO, MPIIO, DarshanModules
@@ -187,9 +188,13 @@ def parse_darshan_to_csvs(darshan_path, output_dir):
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Run darshan-parser
+    # Run darshan-parser (use full path if not on PATH)
+    darshan_parser_bin = 'darshan-parser'
+    conda_bin = os.path.join(sys.prefix, 'bin', 'darshan-parser')
+    if os.path.isfile(conda_bin):
+        darshan_parser_bin = conda_bin
     result = subprocess.run(
-        ['darshan-parser', '--show-incomplete', darshan_path],
+        [darshan_parser_bin, '--show-incomplete', darshan_path],
         capture_output=True, text=True, timeout=30
     )
 
@@ -747,9 +752,27 @@ async def main():
     # Initialize OpenAI client
     client = OpenAIClient(api_key=api_key, model=args.model)
 
-    # Process traces sequentially (to respect rate limits and track costs)
+    # Resume support: load existing results and skip already-processed traces
     all_results = []
+    done_trace_names = set()
+    raw_results_path = output_dir / 'raw_results.json'
+    if raw_results_path.exists():
+        try:
+            with open(raw_results_path) as f:
+                all_results = json.load(f)
+            done_trace_names = {r['trace_name'] for r in all_results}
+            logger.info(f"Resuming: loaded {len(all_results)} existing results, skipping already-done traces")
+        except Exception as e:
+            logger.warning(f"Failed to load existing results, starting fresh: {e}")
+            all_results = []
+
+    # Process traces sequentially (to respect rate limits and track costs)
     for i, trace in enumerate(trace_list):
+        # Check if already done
+        darshan_stem = Path(trace['darshan_path']).stem
+        if darshan_stem in done_trace_names:
+            logger.info(f"Skipping trace {i+1}/{len(trace_list)}: {trace['job_id']} (already done)")
+            continue
         logger.info(f"Processing trace {i+1}/{len(trace_list)}: {trace['job_id']} ({trace['benchmark']})")
 
         result, elapsed = await process_single_trace(
