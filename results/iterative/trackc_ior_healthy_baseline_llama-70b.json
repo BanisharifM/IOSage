@@ -1,0 +1,337 @@
+[
+  {
+    "workload": "ior_healthy_baseline",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.3627
+        },
+        "strategy": "Improve parallelism efficiency by adjusting collective I/O settings",
+        "config_changes": {
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "changes_made": [
+          "Added -F flag to enable file-per-process, which can help balance I/O workload across ranks"
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f10_mb50_n16_r3_376",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 14340.6,
+          "tokens_input": 1311,
+          "tokens_output": 156,
+          "timestamp": "2026-03-26T01:43:08Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": false,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.32720804214478,
+        "new_predictions": {
+          "access_granularity": 0.3853,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0005,
+          "throughput_utilization": 0.0009,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.5,
+        "new_bw": 155.80721018604194,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.3627
+        },
+        "strategy": "Improve parallelism efficiency by adjusting collective I/O and file-per-proc settings",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "changes_made": [
+          "Enabled file-per-proc to allow each rank to write to its own file, reducing contention and improving parallelism efficiency.",
+          "Added -F flag to enable file-per-proc mode."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f10_mb50_n16_r3_376",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 5469.5,
+          "tokens_input": 1520,
+          "tokens_output": 175,
+          "timestamp": "2026-03-26T01:44:45Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.94856834411621,
+        "new_predictions": {
+          "access_granularity": 0.5834,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.001,
+          "throughput_utilization": 0.001,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.53,
+        "new_bw": 164.7527619904309,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.3627
+        },
+        "strategy": "Improve parallelism efficiency by adjusting collective I/O settings",
+        "config_changes": {
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "changes_made": [
+          "Added -F flag to enable file-per-process, which can help balance I/O workload across ranks"
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f10_mb50_n16_r3_376",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 4324.9,
+          "tokens_input": 1520,
+          "tokens_output": 150,
+          "timestamp": "2026-03-26T01:45:50Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": false,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 76.11881637573242,
+        "new_predictions": {
+          "access_granularity": 0.4054,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0001,
+          "file_strategy": 0.0015,
+          "throughput_utilization": 0.0012,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.6,
+        "new_bw": 186.07720854210996,
+        "rollback": true
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.3627
+        },
+        "strategy": "Improve parallelism efficiency by balancing I/O workload across ranks",
+        "config_changes": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1G",
+          "segments": 4,
+          "file_per_proc": false,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "changes_made": [
+          "Added -F flag to enable file-per-process, allowing each rank to write to its own file and improving parallelism efficiency."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f10_mb50_n16_r3_376",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 5660.3,
+          "tokens_input": 1520,
+          "tokens_output": 198,
+          "timestamp": "2026-03-26T01:47:12Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": false,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 75.92660355567932,
+        "new_predictions": {
+          "access_granularity": 0.4213,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0014,
+          "throughput_utilization": 0.001,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.56,
+        "new_bw": 172.84933439468816,
+        "rollback": true
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.3627
+        },
+        "strategy": "Improve parallelism efficiency by adjusting collective I/O and file-per-proc settings",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "changes_made": [
+          "Enabled file-per-proc to allow each rank to write to its own file, reducing contention and improving parallelism efficiency.",
+          "Added -F flag to enable file-per-proc mode."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f10_mb50_n16_r3_376",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 5298.8,
+          "tokens_input": 1520,
+          "tokens_output": 175,
+          "timestamp": "2026-03-26T01:48:34Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -C -w -r -F"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 107.89510416984558,
+        "new_predictions": {
+          "access_granularity": 0.5991,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0004,
+          "throughput_utilization": 0.001,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.49,
+        "new_bw": 149.9073909471712,
+        "rollback": true
+      }
+    ],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": {
+      "api": "MPIIO",
+      "transfer_size": "4194304",
+      "block_size": "1G",
+      "segments": 4,
+      "file_per_proc": false,
+      "extra_flags": "-c -e -C -w -r"
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.005,
+    "total_tokens": 8245,
+    "total_llm_latency_ms": 35094.1,
+    "total_execution_time_s": 412.2163004875183,
+    "baseline_bw": 308.53384110608175,
+    "baseline_metrics": {
+      "total_bw_mb_s": 294.00144023155485,
+      "write_bw_mb_s": 308.53384110608175,
+      "read_bw_mb_s": 280.77645342717784,
+      "avg_write_size": 1048576.0,
+      "seq_write_ratio": 0.94940185546875,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.0004889864691261347,
+      "POSIX_BYTES_WRITTEN": 68719476736.0,
+      "POSIX_WRITES": 65536.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 195.01607584953308,
+      "nprocs": 16
+    },
+    "total_iterations": 5
+  }
+]

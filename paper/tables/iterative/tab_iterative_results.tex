@@ -1,17 +1,24 @@
 \begin{table}[t]
 \caption{Track C iterative optimization results per workload
-(Claude Sonnet).}
+(GPT-4o).}
 \label{tab:iterative_results}
 \centering\small
 \begin{tabular}{llrrrl}
 \toprule
 \textbf{Workload} & \textbf{Bottleneck} & \textbf{Speedup} & \textbf{Iters} & \textbf{Cost} & \textbf{Status} \\
 \midrule
-Small I/O & Small Posix & 1.0$\times$ & 0.0 & \$0.000 & BL fail \\
+Fsync & Fsync Heavy & 21.9$\pm$12.6$\times$ & 2.3 & \$0.014 & Conv. \\
+Healthy & Healthy Baseline & 1.0$\times$ & 5.0 & \$0.029 & max_iterations_reached \\
+Interface & Interface Shared & 1.0$\times$ & 0.0 & \$0.000 & already_healthy \\
+Misaligned & Misaligned & 1.0$\times$ & 1.0 & \$0.005 & Conv. \\
+Random & Random Access & 1.5$\times$ & 2.0 & \$0.012 & Conv. \\
+O_DIRECT & Small Direct & 14.2$\pm$3.3$\times$ & 1.0 & \$0.005 & Conv. \\
+Small I/O & Small Posix & 6.2$\pm$0.8$\times$ & 1.3 & \$0.008 & Conv. \\
+Metadata & Metadata Storm & 1.0$\times$ & 5.0 & \$0.026 & max_iterations_reached \\
 \midrule
-\multicolumn{2}{l}{Geometric mean} & \textbf{1.0$\times$} & & & \\
-\multicolumn{2}{l}{Harmonic mean} & \textbf{1.0$\times$} & & & \\
-\multicolumn{2}{l}{Range} & 1.0--1.0$\times$ & & & \\
+\multicolumn{2}{l}{Geometric mean} & \textbf{7.0$\times$} & & & \\
+\multicolumn{2}{l}{Harmonic mean} & \textbf{3.6$\times$} & & & \\
+\multicolumn{2}{l}{Range} & 1.0--43.7$\times$ & & & \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -1,0 +1,340 @@
+[
+  {
+    "workload": "ior_healthy_baseline",
+    "run_id": 0,
+    "model": "gpt-4o",
+    "model_id": "openai/gpt-4o",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.4485
+        },
+        "strategy": "Enable file-per-process to improve load distribution across MPI ranks.",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r",
+          "collective": true
+        },
+        "changes_made": [
+          "Enabled file-per-process to ensure each MPI rank handles its own file, reducing time and byte imbalance.",
+          "Removed task reordering (-C) as it may interfere with file-per-process efficiency."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f10_mb50_n16_r1_374",
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 12387.2,
+          "tokens_input": 1319,
+          "tokens_output": 197,
+          "timestamp": "2026-03-26T00:52:11Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.84792566299438,
+        "new_predictions": {
+          "access_granularity": 0.4362,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0007,
+          "throughput_utilization": 0.001,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.79,
+        "new_bw": 241.59776443434617,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.4485
+        },
+        "strategy": "Improve parallelism efficiency by ensuring balanced I/O workload across ranks using file-per-process to reduce contention.",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r",
+          "collective": true
+        },
+        "changes_made": [
+          "Enabled file-per-process to reduce I/O contention and ensure each rank handles its own file, which can help balance the I/O workload.",
+          "Removed '-C' flag as task reordering is not necessary with file-per-process and may introduce unnecessary complexity."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f10_mb50_n16_r1_374",
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3350.7,
+          "tokens_input": 1531,
+          "tokens_output": 217,
+          "timestamp": "2026-03-26T00:53:46Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 75.8765196800232,
+        "new_predictions": {
+          "access_granularity": 0.4656,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0008,
+          "throughput_utilization": 0.0011,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.78,
+        "new_bw": 238.08197524796338,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.4485
+        },
+        "strategy": "Switch to file-per-process to improve load distribution across ranks",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r",
+          "collective": false
+        },
+        "changes_made": [
+          "Changed file_per_proc to true to ensure each rank writes to its own file, reducing time imbalance and byte imbalance.",
+          "Removed -C flag as task reordering is not needed with file-per-process.",
+          "Disabled collective I/O since file-per-process inherently balances load."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f10_mb50_n16_r1_374",
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3956.7,
+          "tokens_input": 1531,
+          "tokens_output": 210,
+          "timestamp": "2026-03-26T00:55:06Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.980562686920166,
+        "new_predictions": {
+          "access_granularity": 0.4365,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0011,
+          "throughput_utilization": 0.0011,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.83,
+        "new_bw": 255.83514840651281,
+        "rollback": true
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.4485
+        },
+        "strategy": "Remove task reordering to improve parallelism efficiency by ensuring even I/O load distribution across MPI ranks.",
+        "config_changes": {
+          "extra_flags": "-c -e -w -r"
+        },
+        "changes_made": [
+          "Removed '-C' flag to prevent task reordering, which can cause uneven I/O load distribution across ranks."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f10_mb50_n16_r1_374",
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3060.4,
+          "tokens_input": 1531,
+          "tokens_output": 181,
+          "timestamp": "2026-03-26T00:56:10Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": false,
+          "extra_flags": "-c -e -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 166.36505651474,
+        "new_predictions": {
+          "access_granularity": 0.0137,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.4582,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0008,
+          "file_strategy": 0.0364,
+          "throughput_utilization": 0.022,
+          "healthy": 0.0002
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 0.94,
+        "new_bw": 287.7646595532787
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.4582
+        },
+        "strategy": "Improve parallelism efficiency by ensuring balanced I/O workload across ranks using file-per-process to reduce contention.",
+        "config_changes": {
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r",
+          "collective": true
+        },
+        "changes_made": [
+          "Enabled file-per-process to reduce contention and ensure each rank handles its own file, improving load distribution.",
+          "Maintained collective I/O to leverage automatic load balancing across ranks."
+        ],
+        "kb_citations": [
+          "custom_custom_imbalance_f10_mb50_n16_r1_374",
+          "custom_custom_imbalance_f20_mb10_n16_r2_384",
+          "custom_custom_imbalance_f20_mb50_n16_r2_393"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3215.6,
+          "tokens_input": 1515,
+          "tokens_output": 203,
+          "timestamp": "2026-03-26T00:59:00Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "4194304",
+          "block_size": "1073741824",
+          "segments": "4",
+          "file_per_proc": true,
+          "extra_flags": "-c -e -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 75.75192451477051,
+        "new_predictions": {
+          "access_granularity": 0.4174,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.0006,
+          "throughput_utilization": 0.0011,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 0.57,
+        "new_bw": 174.39035348177384,
+        "rollback": true
+      }
+    ],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": {
+      "api": "MPIIO",
+      "transfer_size": "4194304",
+      "block_size": "1G",
+      "segments": 4,
+      "file_per_proc": false,
+      "extra_flags": "-c -e -C -w -r"
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0286,
+    "total_tokens": 8435,
+    "total_llm_latency_ms": 25970.600000000002,
+    "total_execution_time_s": 470.82198905944824,
+    "baseline_bw": 306.476570649264,
+    "baseline_metrics": {
+      "total_bw_mb_s": 527.9507775328682,
+      "write_bw_mb_s": 306.476570649264,
+      "read_bw_mb_s": 1903.529932602341,
+      "avg_write_size": 1048576.0,
+      "seq_write_ratio": 0.94940185546875,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.000602752086292697,
+      "POSIX_BYTES_WRITTEN": 68719476736.0,
+      "POSIX_WRITES": 65536.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 115.69070816040039,
+      "nprocs": 16
+    },
+    "total_iterations": 5
+  }
+]

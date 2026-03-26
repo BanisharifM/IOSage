@@ -1,0 +1,39 @@
+[
+  {
+    "workload": "ior_interface_shared",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": null,
+    "final_status": "already_healthy",
+    "total_cost_usd": 0,
+    "total_tokens": 0,
+    "total_llm_latency_ms": 0,
+    "total_execution_time_s": 0,
+    "baseline_bw": 49.9086332492793,
+    "baseline_metrics": {
+      "total_bw_mb_s": 94.0668043148629,
+      "write_bw_mb_s": 49.9086332492793,
+      "read_bw_mb_s": 816.411879169164,
+      "avg_write_size": 1048576.0,
+      "seq_write_ratio": 0.9999375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.0003204920530414187,
+      "POSIX_BYTES_WRITTEN": 16777216000.0,
+      "POSIX_WRITES": 16000.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 27.4661066532135,
+      "nprocs": 16
+    }
+  }
+]

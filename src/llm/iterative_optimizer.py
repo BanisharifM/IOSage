@@ -144,6 +144,12 @@ class IterativeOptimizer:
         with open(train_config_path) as f:
             self.train_config = yaml.safe_load(f)
 
+        # Defaults for optional components
+        self.models = {}
+        self.feature_cols = []
+        self.explainer = None
+        self.kb = []
+
         # Load ML models
         if self.use_ml:
             self._load_ml_models()
@@ -322,10 +328,17 @@ RULES:
 3. Target the specific bottleneck dimensions detected by the ML classifier.
 4. If a previous iteration made things worse, try a COMPLETELY DIFFERENT strategy.
 5. Do NOT fabricate performance numbers.
-6. Valid IOR parameters: -a (POSIX/MPIIO), -t (transfer size in bytes), -b (block size),
+6. CRITICAL: Maintain the SAME total data volume (block_size * segments * nprocs).
+   If you increase transfer_size, keep block_size and segments so total bytes stay the same.
+   For example, if original is -t 64 -b 1M -s 100, change to -t 1048576 -b 1M -s 100
+   (only change transfer size, NOT block or segments). This ensures fair speedup comparison.
+7. Valid IOR parameters: -a (POSIX/MPIIO), -t (transfer size in bytes), -b (block size),
    -s (segments), -F (file-per-proc), -c (collective MPI-IO), -e (fsync at end),
    -C (reorder tasks), -Y (fsync per write), -z (random offsets),
    -O useO_DIRECT=1 (bypass page cache, requires -t >= 4096).
+8. The transfer_size (-t) controls I/O granularity. The block_size (-b) and segments (-s)
+   control total data volume. Only change -t to fix access_granularity. Only change -a/-c
+   to fix interface_choice. Only remove -Y to fix throughput. Only remove -z to fix access_pattern.
 """
 
         # ML detection section
@@ -426,7 +439,27 @@ RULES:
 ## WARNING: Previous iteration caused REGRESSION. Try a DIFFERENT strategy.
 """
 
-        user_prompt += """
+        benchmark_type = workload_config.get("benchmark", "ior")
+        if benchmark_type == "mdtest":
+            user_prompt += """
+## Task:
+Propose mdtest parameter changes to fix the detected bottlenecks.
+Respond in JSON:
+{
+  "strategy": "brief description of optimization strategy",
+  "config_changes": {
+    "items_per_rank": "new item count (optional)",
+    "write_bytes": "new write size per file (optional)",
+    "unique_dir": true/false,
+    "files_only": true/false
+  },
+  "expected_improvement": "estimated speedup based on KB evidence",
+  "changes_made": ["list of specific changes and WHY they help"],
+  "kb_citations": ["list of KB entry IDs used"]
+}
+"""
+        else:
+            user_prompt += """
 ## Task:
 Propose benchmark parameter changes to fix the detected bottlenecks.
 Respond in JSON:
@@ -591,16 +624,25 @@ Respond in JSON:
             "total_execution_time_s": 0,
         }
 
+        # Determine benchmark type
+        benchmark_type = workload_config.get("benchmark", "ior")
+
         # Step 1: Execute the "bad" baseline config to get initial Darshan
         logger.info("  Step 1: Running baseline (bad) config...")
         current_config = dict(bad_config)
 
         if not self.dry_run:
-            valid, sanitized, errs = self.builder.validate_ior_params(current_config)
-            baseline_cmd = self.builder.build_ior_command(sanitized)
+            if benchmark_type == "mdtest":
+                sanitized = dict(current_config)
+                baseline_cmd = self.builder.build_mdtest_command(sanitized)
+                errs = []
+            else:
+                valid, sanitized, errs = self.builder.validate_ior_params(current_config)
+                baseline_cmd = self.builder.build_ior_command(sanitized)
             baseline_result = self.executor.execute_benchmark(
                 baseline_cmd,
                 job_name=f"iter_{workload_name}_r{run_id}_baseline",
+                benchmark_type=benchmark_type,
             )
 
             if not baseline_result["success"]:
@@ -717,20 +759,30 @@ Respond in JSON:
 
             new_config = self.builder.apply_changes_to_config(current_config, config_changes)
 
-            # Validate
-            valid, sanitized, errs = self.builder.validate_ior_params(new_config)
-            if errs:
-                logger.warning("  Config validation warnings: %s", errs[:3])
-            iteration_record["validated_config"] = sanitized
-            iteration_record["validation_errors"] = errs
+            # Validate and build command
+            if benchmark_type == "mdtest":
+                sanitized = dict(new_config)
+                errs = []
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
+            else:
+                valid, sanitized, errs = self.builder.validate_ior_params(new_config)
+                if errs:
+                    logger.warning("  Config validation warnings: %s", errs[:3])
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
 
             # Execute
             if not self.dry_run:
-                cmd = self.builder.build_ior_command(sanitized)
+                if benchmark_type == "mdtest":
+                    cmd = self.builder.build_mdtest_command(sanitized)
+                else:
+                    cmd = self.builder.build_ior_command(sanitized)
                 logger.info("  Executing: %s", cmd[:120])
                 exec_result = self.executor.execute_benchmark(
                     cmd,
                     job_name=f"iter_{workload_name}_r{run_id}_i{iteration}",
+                    benchmark_type=benchmark_type,
                 )
 
                 iteration_record["executed"] = exec_result["success"]
@@ -801,10 +853,11 @@ Respond in JSON:
                 history["final_status"] = "converged"
                 break
 
-            # Plateau check (only after iteration 1)
-            if iteration > 0 and not rollback:
+            # Plateau check (only after iteration 1, only if execution succeeded)
+            if iteration > 0 and not rollback and iteration_record.get("executed"):
                 prev_speedup = history["iterations"][-2].get("speedup", 1.0) if len(history["iterations"]) > 1 else 1.0
-                if abs(speedup - prev_speedup) / max(prev_speedup, 0.001) < plateau_threshold:
+                cur_speedup = iteration_record.get("speedup", 1.0)
+                if abs(cur_speedup - prev_speedup) / max(prev_speedup, 0.001) < plateau_threshold:
                     logger.info("  PLATEAU: <%.0f%% improvement, stopping", plateau_threshold * 100)
                     history["final_status"] = "plateau"
                     break

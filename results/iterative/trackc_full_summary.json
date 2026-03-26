@@ -1,0 +1,205 @@
+{
+  "total_runs": 24,
+  "per_model": {
+    "claude-sonnet": {
+      "n_workloads": 6,
+      "geomean": 5.895056737278573,
+      "harmonic": 3.958000054712321,
+      "range": [
+        1.55,
+        26.54
+      ],
+      "improved": 6,
+      "total_cost": 0.0951,
+      "avg_iterations": 1.125
+    },
+    "gpt-4o": {
+      "n_workloads": 6,
+      "geomean": 4.17917934756503,
+      "harmonic": 2.031424028469269,
+      "range": [
+        1.0,
+        34.09
+      ],
+      "improved": 4,
+      "total_cost": 0.09480000000000001,
+      "avg_iterations": 2.125
+    },
+    "llama-70b": {
+      "n_workloads": 6,
+      "geomean": 3.5541322761633185,
+      "harmonic": 2.2177704668069045,
+      "range": [
+        1.0,
+        20.92
+      ],
+      "improved": 5,
+      "total_cost": 0.016,
+      "avg_iterations": 2.0
+    }
+  },
+  "per_workload": {
+    "ior_fsync_heavy": {
+      "claude-sonnet": {
+        "speedup": 8.41,
+        "iterations": 3,
+        "status": "converged",
+        "cost": 0.0348
+      },
+      "gpt-4o": {
+        "speedup": 34.09,
+        "iterations": 2,
+        "status": "converged",
+        "cost": 0.0117
+      },
+      "llama-70b": {
+        "speedup": 3.22,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.001
+      }
+    },
+    "ior_healthy_baseline": {
+      "claude-sonnet": {
+        "speedup": 1.0,
+        "iterations": 0,
+        "status": "already_healthy",
+        "cost": 0
+      },
+      "gpt-4o": {
+        "speedup": 1.0,
+        "iterations": 5,
+        "status": "max_iterations_reached",
+        "cost": 0.0286
+      },
+      "llama-70b": {
+        "speedup": 1.0,
+        "iterations": 5,
+        "status": "max_iterations_reached",
+        "cost": 0.005
+      }
+    },
+    "ior_interface_shared": {
+      "claude-sonnet": {
+        "speedup": 1.0,
+        "iterations": 0,
+        "status": "already_healthy",
+        "cost": 0
+      },
+      "gpt-4o": {
+        "speedup": 1.0,
+        "iterations": 0,
+        "status": "already_healthy",
+        "cost": 0
+      },
+      "llama-70b": {
+        "speedup": 1.0,
+        "iterations": 0,
+        "status": "already_healthy",
+        "cost": 0
+      }
+    },
+    "ior_misaligned": {
+      "claude-sonnet": {
+        "speedup": 2.35,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0098
+      },
+      "gpt-4o": {
+        "speedup": 1.0,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0055
+      },
+      "llama-70b": {
+        "speedup": 1.97,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.001
+      }
+    },
+    "ior_random_access": {
+      "claude-sonnet": {
+        "speedup": 1.55,
+        "iterations": 2,
+        "status": "plateau",
+        "cost": 0.0225
+      },
+      "gpt-4o": {
+        "speedup": 1.48,
+        "iterations": 2,
+        "status": "converged",
+        "cost": 0.012
+      },
+      "llama-70b": {
+        "speedup": 1.33,
+        "iterations": 2,
+        "status": "converged",
+        "cost": 0.0021
+      }
+    },
+    "ior_small_direct": {
+      "claude-sonnet": {
+        "speedup": 26.54,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0093
+      },
+      "gpt-4o": {
+        "speedup": 21.29,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0055
+      },
+      "llama-70b": {
+        "speedup": 11.42,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.001
+      }
+    },
+    "ior_small_posix": {
+      "claude-sonnet": {
+        "speedup": 5.48,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0094
+      },
+      "gpt-4o": {
+        "speedup": 4.96,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0054
+      },
+      "llama-70b": {
+        "speedup": 20.92,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0011
+      }
+    },
+    "mdtest_metadata_storm": {
+      "claude-sonnet": {
+        "speedup": 9.42,
+        "iterations": 1,
+        "status": "converged",
+        "cost": 0.0093
+      },
+      "gpt-4o": {
+        "speedup": 1.0,
+        "iterations": 5,
+        "status": "max_iterations_reached",
+        "cost": 0.0261
+      },
+      "llama-70b": {
+        "speedup": 1.0,
+        "iterations": 5,
+        "status": "max_iterations_reached",
+        "cost": 0.0048
+      }
+    }
+  },
+  "trackb_comparison": {},
+  "cost": {}
+}

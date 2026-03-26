@@ -6,12 +6,16 @@
 \toprule
 \textbf{Workload} & \textbf{Track B} & \textbf{Track C} & \textbf{Impr.} \\
 \midrule
-Fsync & 6.8$\times$ & -- & -- \\
-Interface & -- & -- & -- \\
-Random & 1.5$\times$ & -- & -- \\
-Small I/O & 44.8$\times$ & 1.0$\times$ & 0.02$\times$ \\
+Fsync & 6.8$\times$ & 21.9$\times$ & 3.23$\times$ \\
+Healthy & -- & 1.0$\times$ & -- \\
+Interface & -- & 1.0$\times$ & -- \\
+Misaligned & -- & 1.0$\times$ & -- \\
+Random & 1.5$\times$ & 1.5$\times$ & 0.99$\times$ \\
+O_DIRECT & -- & 14.2$\times$ & -- \\
+Small I/O & 44.8$\times$ & 6.2$\times$ & 0.14$\times$ \\
+Metadata & -- & 1.0$\times$ & -- \\
 \midrule
-Geo. mean & 44.8$\times$ & 1.0$\times$ & 0.02$\times$ \\
+Geo. mean & 7.7$\times$ & 5.9$\times$ & 0.76$\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}

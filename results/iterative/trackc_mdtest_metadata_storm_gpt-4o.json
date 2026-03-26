@@ -1,0 +1,300 @@
+[
+  {
+    "workload": "mdtest_metadata_storm",
+    "run_id": 0,
+    "model": "gpt-4o",
+    "model_id": "openai/gpt-4o",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9991
+        },
+        "strategy": "Reduce metadata operations by using a shared directory for file creation.",
+        "config_changes": {
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Set 'unique_dir' to true to reduce contention and metadata operations in a shared directory."
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227",
+          "mdtest_mdtest_meta_cross_n10000_r32_rep2_236"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 11327.7,
+          "tokens_input": 1269,
+          "tokens_output": 148,
+          "timestamp": "2026-03-26T01:57:18Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 10000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 305.68811321258545,
+        "new_predictions": {
+          "access_granularity": 0.0131,
+          "metadata_intensity": 0.9995,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0008,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0006,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 0.8,
+        "new_bw": 0.005068024957257094,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9991
+        },
+        "strategy": "Reduce metadata operations by using a unique directory per process to decrease contention and improve parallelism.",
+        "config_changes": {
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Set unique_dir to true to reduce metadata contention by allowing each process to operate in its own directory, thus decreasing the number of metadata operations in a shared directory."
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227",
+          "mdtest_mdtest_meta_cross_n10000_r32_rep2_236"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3153.5,
+          "tokens_input": 1456,
+          "tokens_output": 177,
+          "timestamp": "2026-03-26T02:02:27Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 10000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 290.36684679985046,
+        "new_predictions": {
+          "access_granularity": 0.0128,
+          "metadata_intensity": 0.9903,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0008,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0005,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 0.64,
+        "new_bw": 0.004003239265989773,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9991
+        },
+        "strategy": "Reduce metadata operations by using unique directories per process to decrease contention and improve parallelism.",
+        "config_changes": {
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Set 'unique_dir' to true to allow each process to operate in its own directory, reducing metadata contention and improving parallelism."
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227",
+          "mdtest_mdtest_meta_cross_n10000_r32_rep2_236"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 2907.6,
+          "tokens_input": 1456,
+          "tokens_output": 166,
+          "timestamp": "2026-03-26T02:07:20Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 10000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 293.17344903945923,
+        "new_predictions": {
+          "access_granularity": 0.0143,
+          "metadata_intensity": 0.9903,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0008,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0011,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 0.78,
+        "new_bw": 0.004933018267748213,
+        "rollback": true
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9991
+        },
+        "strategy": "Reduce metadata operations by using a unique directory per process to decrease contention and improve parallelism.",
+        "config_changes": {
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Set unique_dir to true to allow each process to operate in its own directory, reducing metadata contention and improving parallelism."
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227",
+          "mdtest_mdtest_meta_cross_n10000_r32_rep2_236"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 2355.5,
+          "tokens_input": 1456,
+          "tokens_output": 175,
+          "timestamp": "2026-03-26T02:12:16Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 10000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 290.66926312446594,
+        "new_predictions": {
+          "access_granularity": 0.0143,
+          "metadata_intensity": 0.9995,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0008,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0011,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 0.82,
+        "new_bw": 0.005140460805067281,
+        "rollback": true
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9991
+        },
+        "strategy": "Reduce metadata operations by using a unique directory per process to decrease contention and improve parallelism.",
+        "config_changes": {
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Set 'unique_dir' to true to allow each process to create files in its own directory, reducing metadata contention and improving parallelism."
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227",
+          "mdtest_mdtest_meta_cross_n10000_r32_rep2_236"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 3108.6,
+          "tokens_input": 1456,
+          "tokens_output": 172,
+          "timestamp": "2026-03-26T02:17:10Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 10000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": false,
+        "execution_time_s": 287.55134773254395
+      }
+    ],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": {
+      "items_per_rank": 10000,
+      "write_bytes": 100,
+      "files_only": true,
+      "unique_dir": false
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0261,
+    "total_tokens": 7931,
+    "total_llm_latency_ms": 22852.899999999998,
+    "total_execution_time_s": 1467.449019908905,
+    "baseline_bw": 0.006303775086285046,
+    "baseline_metrics": {
+      "total_bw_mb_s": 0.006303775086285046,
+      "write_bw_mb_s": 0.006303775086285046,
+      "read_bw_mb_s": 0.0,
+      "avg_write_size": 100.0,
+      "seq_write_ratio": 0.0,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.1432797177042323,
+      "POSIX_BYTES_WRITTEN": 1638400.0,
+      "POSIX_WRITES": 16384.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 190.01780033111572,
+      "nprocs": 16
+    },
+    "total_iterations": 5
+  }
+]
