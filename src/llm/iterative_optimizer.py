@@ -632,16 +632,18 @@ Respond in JSON:
         current_config = dict(bad_config)
 
         if not self.dry_run:
+            job_base = f"iter_{workload_name}_r{run_id}_baseline"
+            job_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{job_base}"
             if benchmark_type == "mdtest":
                 sanitized = dict(current_config)
-                baseline_cmd = self.builder.build_mdtest_command(sanitized)
+                baseline_cmd = self.builder.build_mdtest_command(sanitized, output_dir=job_scratch)
                 errs = []
             else:
                 valid, sanitized, errs = self.builder.validate_ior_params(current_config)
-                baseline_cmd = self.builder.build_ior_command(sanitized)
+                baseline_cmd = self.builder.build_ior_command(sanitized, output_dir=job_scratch)
             baseline_result = self.executor.execute_benchmark(
                 baseline_cmd,
-                job_name=f"iter_{workload_name}_r{run_id}_baseline",
+                job_name=job_base,
                 benchmark_type=benchmark_type,
             )
 
@@ -774,14 +776,16 @@ Respond in JSON:
 
             # Execute
             if not self.dry_run:
+                iter_job = f"iter_{workload_name}_r{run_id}_i{iteration}"
+                iter_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{iter_job}"
                 if benchmark_type == "mdtest":
-                    cmd = self.builder.build_mdtest_command(sanitized)
+                    cmd = self.builder.build_mdtest_command(sanitized, output_dir=iter_scratch)
                 else:
-                    cmd = self.builder.build_ior_command(sanitized)
+                    cmd = self.builder.build_ior_command(sanitized, output_dir=iter_scratch)
                 logger.info("  Executing: %s", cmd[:120])
                 exec_result = self.executor.execute_benchmark(
                     cmd,
-                    job_name=f"iter_{workload_name}_r{run_id}_i{iteration}",
+                    job_name=iter_job,
                     benchmark_type=benchmark_type,
                 )
 

@@ -70,6 +70,9 @@ class IterativeExecutor:
         """
         module_load = "module load ior/3.3.0-gcc13.3.1"
 
+        # Use per-job scratch directory to prevent file conflicts between concurrent runs
+        job_scratch = f"{self.scratch_dir}/{job_name}"
+
         script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={self.partition}
@@ -78,7 +81,7 @@ class IterativeExecutor:
 #SBATCH --ntasks={self.ntasks}
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
-#SBATCH --time={self.walltime}
+#SBATCH --time=00:30:00
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
@@ -87,8 +90,15 @@ class IterativeExecutor:
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
 
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK 2>/dev/null
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="{job_scratch}"
+mkdir -p "$JOB_SCRATCH"
+
 # Cleanup benchmark files on exit
-cleanup() {{ rm -f {self.scratch_dir}/ior_test_file* {self.scratch_dir}/mdtest_dir* 2>/dev/null || true; }}
+cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
@@ -98,8 +108,6 @@ echo "Command: {benchmark_command}"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
-
-mkdir -p {self.scratch_dir}
 
 # Run benchmark with Darshan instrumentation
 srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\

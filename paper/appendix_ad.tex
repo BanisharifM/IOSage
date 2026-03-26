@@ -81,8 +81,10 @@ recommendations, achieving 1.000 groundedness (Claude, Llama) on 12 workloads.
 
 \item[$C_4$] \textbf{Closed-loop validation.}
 End-to-end validation where LLM-generated code fixes are executed on HPC
-hardware, yielding measured speedups of 7.2$\times$ geometric mean
-(range 3.6--39.0$\times$) across 4 IOR workload pairs.
+hardware, yielding measured speedups across 7 closed-loop pairs
+(5 IOR + 2 mdtest, geomean 4.26$\times$, range 1.01--44.8$\times$).
+Track~C iterative optimization achieves 5.9$\times$ geomean (Claude)
+across 8 workloads with 3 LLM models.
 
 \item[$C_5$] \textbf{1.37M production dataset analysis.}
 Feature extraction and preprocessing pipeline for 1.37M Darshan logs from
@@ -359,8 +361,11 @@ DLIO: 60, custom: 89, h5bench: 123, HACC-IO: 84) with 100\%
 automated verification pass rate.
 \item All 8 bottleneck dimensions covered by at least 2 benchmark suites.
 \item Iterative-stratified split: 187 dev / 436 test.
-\item Closed-loop speedups: 3.6--39.0$\times$ on 4 IOR pairs
-(geometric mean 7.2$\times$).
+\item Closed-loop speedups: 1.01--44.8$\times$ on 7 pairs
+(5 IOR + 2 mdtest, geometric mean 4.26$\times$).
+\item Track~C iterative: 24 runs (8 workloads $\times$ 3 LLMs),
+Claude geomean 5.9$\times$, converges in 1.1 iterations avg.
+\item Cross-system validation: 9 TraceBench real-app traces, F1=0.649.
 \end{itemize}
 
 \arttime
