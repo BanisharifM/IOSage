@@ -1,0 +1,278 @@
+{
+  "description": "Atomic-level groundedness verification (W8 response). citation_groundedness checks if a valid KB ID is cited. claim_groundedness checks if each specific claim in cited recommendations matches the KB entry content.",
+  "controlled_evaluation": {
+    "description": "60-sample controlled evaluation set per model",
+    "per_model": {
+      "anthropic/claude-sonnet-4": {
+        "n_recs_total": 85,
+        "n_recs_cited": 85,
+        "n_recs_uncited": 0,
+        "citation_groundedness": 1.0,
+        "dimension_match_rate": 0.9412,
+        "fix_type_match_rate": 0.8824,
+        "code_pattern_match_rate": 0.7059,
+        "api_change_match_rate": 1.0,
+        "speedup_plausible_rate": 1.0,
+        "claim_groundedness": 0.9059,
+        "n_hallucinations_in_cited": 40,
+        "hallucination_breakdown": {
+          "fix_type_mismatch": 10,
+          "code_pattern_mismatch": 25,
+          "dimension_mismatch": 5
+        }
+      },
+      "openai/gpt-4o": {
+        "n_recs_total": 60,
+        "n_recs_cited": 60,
+        "n_recs_uncited": 0,
+        "citation_groundedness": 1.0,
+        "dimension_match_rate": 1.0,
+        "fix_type_match_rate": 1.0,
+        "code_pattern_match_rate": 0.9167,
+        "api_change_match_rate": 1.0,
+        "speedup_plausible_rate": 1.0,
+        "claim_groundedness": 0.9833,
+        "n_hallucinations_in_cited": 5,
+        "hallucination_breakdown": {
+          "code_pattern_mismatch": 5
+        }
+      },
+      "meta-llama/llama-3.1-70b-instruct": {
+        "n_recs_total": 70,
+        "n_recs_cited": 70,
+        "n_recs_uncited": 0,
+        "citation_groundedness": 1.0,
+        "dimension_match_rate": 0.8571,
+        "fix_type_match_rate": 0.8571,
+        "code_pattern_match_rate": 0.7857,
+        "api_change_match_rate": 0.9286,
+        "speedup_plausible_rate": 1.0,
+        "claim_groundedness": 0.8857,
+        "n_hallucinations_in_cited": 40,
+        "hallucination_breakdown": {
+          "code_pattern_mismatch": 15,
+          "dimension_mismatch": 10,
+          "fix_type_mismatch": 10,
+          "api_change_mismatch": 5
+        }
+      }
+    }
+  },
+  "all_cached": {
+    "description": "All cached LLM responses",
+    "n_responses": 121,
+    "n_parse_errors": 0,
+    "per_model": {
+      "meta-llama/llama-3.1-70b-instruct": {
+        "n_recs_total": 28,
+        "n_recs_cited": 28,
+        "n_recs_uncited": 0,
+        "citation_groundedness": 1.0,
+        "dimension_match_rate": 0.8571,
+        "fix_type_match_rate": 0.8571,
+        "code_pattern_match_rate": 0.7857,
+        "api_change_match_rate": 0.8929,
+        "speedup_plausible_rate": 1.0,
+        "claim_groundedness": 0.8786,
+        "n_hallucinations_in_cited": 17,
+        "hallucination_breakdown": {
+          "dimension_mismatch": 4,
+          "fix_type_mismatch": 4,
+          "code_pattern_mismatch": 6,
+          "api_change_mismatch": 3
+        }
+      },
+      "anthropic/claude-sonnet-4": {
+        "n_recs_total": 156,
+        "n_recs_cited": 91,
+        "n_recs_uncited": 65,
+        "citation_groundedness": 0.5769,
+        "dimension_match_rate": 0.9011,
+        "fix_type_match_rate": 0.8901,
+        "code_pattern_match_rate": 0.7363,
+        "api_change_match_rate": 0.967,
+        "speedup_plausible_rate": 0.967,
+        "claim_groundedness": 0.8923,
+        "n_hallucinations_in_cited": 44,
+        "hallucination_breakdown": {
+          "dimension_mismatch": 8,
+          "fix_type_mismatch": 9,
+          "code_pattern_mismatch": 23,
+          "speedup_implausible": 2,
+          "api_change_mismatch": 2
+        }
+      },
+      "openai/gpt-4o": {
+        "n_recs_total": 24,
+        "n_recs_cited": 24,
+        "n_recs_uncited": 0,
+        "citation_groundedness": 1.0,
+        "dimension_match_rate": 1.0,
+        "fix_type_match_rate": 1.0,
+        "code_pattern_match_rate": 0.9167,
+        "api_change_match_rate": 1.0,
+        "speedup_plausible_rate": 1.0,
+        "claim_groundedness": 0.9833,
+        "n_hallucinations_in_cited": 2,
+        "hallucination_breakdown": {
+          "code_pattern_mismatch": 2
+        }
+      }
+    }
+  },
+  "sample_hallucinations": {
+    "anthropic/claude-sonnet-4": [
+      {
+        "type": "fix_type_mismatch",
+        "detail": "Fix strategy similarity 0.200 < 0.3",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.352, after=0.246) avg < 0.4",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "fix_type_mismatch",
+        "detail": "Fix strategy similarity 0.200 < 0.3",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.352, after=0.246) avg < 0.4",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "fix_type_mismatch",
+        "detail": "Fix strategy similarity 0.200 < 0.3",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.352, after=0.246) avg < 0.4",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "fix_type_mismatch",
+        "detail": "Fix strategy similarity 0.200 < 0.3",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.352, after=0.246) avg < 0.4",
+        "model": "anthropic/claude-sonnet-4",
+        "kb_citation": "ior_ior_random_posix_t4096_n4_r1_127",
+        "bottleneck_dimension": "access_pattern"
+      }
+    ],
+    "openai/gpt-4o": [
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.274, after=0.237) avg < 0.4",
+        "model": "openai/gpt-4o",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.274, after=0.237) avg < 0.4",
+        "model": "openai/gpt-4o",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.274, after=0.237) avg < 0.4",
+        "model": "openai/gpt-4o",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.274, after=0.237) avg < 0.4",
+        "model": "openai/gpt-4o",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.274, after=0.237) avg < 0.4",
+        "model": "openai/gpt-4o",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      }
+    ],
+    "meta-llama/llama-3.1-70b-instruct": [
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.372, after=0.262) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.372, after=0.262) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.372, after=0.262) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.372, after=0.262) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.372, after=0.262) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+        "bottleneck_dimension": "file_strategy"
+      },
+      {
+        "type": "dimension_mismatch",
+        "detail": "Rec dimension 'metadata_time_ratio' not in KB labels ['healthy']",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+        "bottleneck_dimension": "metadata_time_ratio"
+      },
+      {
+        "type": "fix_type_mismatch",
+        "detail": "Fix strategy similarity 0.000 < 0.3",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+        "bottleneck_dimension": "metadata_time_ratio"
+      },
+      {
+        "type": "code_pattern_mismatch",
+        "detail": "Code similarity (before=0.563, after=0.098) avg < 0.4",
+        "model": "meta-llama/llama-3.1-70b-instruct",
+        "kb_citation": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+        "bottleneck_dimension": "metadata_time_ratio"
+      }
+    ]
+  }
+}

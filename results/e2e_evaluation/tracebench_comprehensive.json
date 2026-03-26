@@ -1,0 +1,1050 @@
+{
+  "metadata": {
+    "date": "2026-03-26",
+    "description": "Comprehensive TraceBench evaluation comparing IOPrescriber (Track B) vs IONavigator 1.0 vs Drishti on 9 real-application Darshan traces",
+    "n_traces": 9,
+    "n_dimensions": 7,
+    "note": "TraceBench does not label throughput_utilization or temporal_pattern. FPs in those dimensions may reflect valid detections not in GT."
+  },
+  "aggregate_comparison": {
+    "ioprescriber": {
+      "tp": 12,
+      "fp": 4,
+      "fn": 9,
+      "tn": 38,
+      "precision": 0.75,
+      "recall": 0.5714,
+      "f1": 0.6486
+    },
+    "ion": {
+      "tp": 15,
+      "fp": 31,
+      "fn": 6,
+      "tn": 11,
+      "precision": 0.3261,
+      "recall": 0.7143,
+      "f1": 0.4478
+    },
+    "drishti": {
+      "tp": 12,
+      "fp": 6,
+      "fn": 9,
+      "tn": 36,
+      "precision": 0.6667,
+      "recall": 0.5714,
+      "f1": 0.6154
+    }
+  },
+  "per_dimension_comparison": {
+    "ioprescriber": {
+      "access_granularity": {
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "metadata_intensity": {
+        "tp": 1,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5
+      },
+      "parallelism_efficiency": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "access_pattern": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "interface_choice": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 3,
+        "precision": 1.0,
+        "recall": 0.25,
+        "f1": 0.4
+      },
+      "file_strategy": {
+        "tp": 3,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.75,
+        "recall": 0.75,
+        "f1": 0.75
+      },
+      "throughput_utilization": {
+        "tp": 0,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    },
+    "ion": {
+      "access_granularity": {
+        "tp": 7,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.7778,
+        "recall": 1.0,
+        "f1": 0.875
+      },
+      "metadata_intensity": {
+        "tp": 0,
+        "fp": 7,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "parallelism_efficiency": {
+        "tp": 1,
+        "fp": 6,
+        "fn": 1,
+        "precision": 0.1429,
+        "recall": 0.5,
+        "f1": 0.2222
+      },
+      "access_pattern": {
+        "tp": 1,
+        "fp": 6,
+        "fn": 1,
+        "precision": 0.1429,
+        "recall": 0.5,
+        "f1": 0.2222
+      },
+      "interface_choice": {
+        "tp": 3,
+        "fp": 5,
+        "fn": 1,
+        "precision": 0.375,
+        "recall": 0.75,
+        "f1": 0.5
+      },
+      "file_strategy": {
+        "tp": 3,
+        "fp": 5,
+        "fn": 1,
+        "precision": 0.375,
+        "recall": 0.75,
+        "f1": 0.5
+      },
+      "throughput_utilization": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    },
+    "drishti": {
+      "access_granularity": {
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "metadata_intensity": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "parallelism_efficiency": {
+        "tp": 2,
+        "fp": 4,
+        "fn": 0,
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5
+      },
+      "access_pattern": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "interface_choice": {
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667
+      },
+      "file_strategy": {
+        "tp": 1,
+        "fp": 2,
+        "fn": 3,
+        "precision": 0.3333,
+        "recall": 0.25,
+        "f1": 0.2857
+      },
+      "throughput_utilization": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    }
+  },
+  "per_trace_comparison": [
+    {
+      "trace_name": "AMReX",
+      "trace_key": "(AMReX)_jeanbez_h5bench_amrex_sync_id15672431-1118360_9-15-38432-5714886783581687674_1",
+      "tracebench_labels": [
+        "NC-R",
+        "SML-R"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "interface_choice"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity"
+        ],
+        "tp": 1,
+        "fp": 0,
+        "fn": 1,
+        "tn": 5,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [],
+        "fn_dims": [
+          "interface_choice"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 4,
+        "fn": 1,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern",
+          "file_strategy"
+        ],
+        "fn_dims": [
+          "interface_choice"
+        ],
+        "precision": 0.2,
+        "recall": 0.5,
+        "f1": 0.2857,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "file_strategy",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 2,
+        "fn": 1,
+        "tn": 3,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "parallelism_efficiency",
+          "file_strategy"
+        ],
+        "fn_dims": [
+          "interface_choice"
+        ],
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "E2E Baseline",
+      "trace_key": "(E2E_Baseline)_original_jeanbez_write_3d_nc4_id45139176_8-5-1057-1043768654573709768_1628147943",
+      "tracebench_labels": [
+        "SML-W",
+        "MSL-W",
+        "SLIM",
+        "SHF",
+        "RLIM",
+        "HMD"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "file_strategy",
+        "metadata_intensity",
+        "parallelism_efficiency"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 3,
+        "tp_dims": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "fp_dims": [],
+        "fn_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "interface_choice"
+        ],
+        "tp": 2,
+        "fp": 2,
+        "fn": 2,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "fp_dims": [
+          "access_pattern",
+          "interface_choice"
+        ],
+        "fn_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "parallelism_efficiency"
+        ],
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 3,
+        "tp_dims": [
+          "access_granularity",
+          "parallelism_efficiency"
+        ],
+        "fp_dims": [],
+        "fn_dims": [
+          "metadata_intensity",
+          "file_strategy"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "E2E Optimized",
+      "trace_key": "(E2E_Optimized)_optimized_jeanbez_write_3d_nc4_id45138874_8-5-631-13015627732142842593_1628147442",
+      "tracebench_labels": [
+        "SML-W",
+        "MSL-W"
+      ],
+      "ground_truth_dims": [
+        "access_granularity"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "tp": 1,
+        "fp": 1,
+        "fn": 0,
+        "tn": 5,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "file_strategy"
+        ],
+        "fn_dims": [],
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 5,
+        "fn": 0,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern",
+          "interface_choice",
+          "file_strategy"
+        ],
+        "fn_dims": [],
+        "precision": 0.1667,
+        "recall": 1.0,
+        "f1": 0.2857,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 1,
+        "fn": 0,
+        "tn": 5,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "parallelism_efficiency"
+        ],
+        "fn_dims": [],
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "H5 Bench",
+      "trace_key": "(H5_Bench)_brtnfld_h5bench_write_id1363501_8-26-63389-8217696575051336807_84",
+      "tracebench_labels": [
+        "SHF",
+        "HMD"
+      ],
+      "ground_truth_dims": [
+        "file_strategy",
+        "metadata_intensity"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "metadata_intensity",
+          "throughput_utilization"
+        ],
+        "tp": 1,
+        "fp": 1,
+        "fn": 1,
+        "tn": 4,
+        "tp_dims": [
+          "metadata_intensity"
+        ],
+        "fp_dims": [
+          "throughput_utilization"
+        ],
+        "fn_dims": [
+          "file_strategy"
+        ],
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "file_strategy",
+          "interface_choice"
+        ],
+        "tp": 1,
+        "fp": 2,
+        "fn": 1,
+        "tn": 3,
+        "tp_dims": [
+          "file_strategy"
+        ],
+        "fp_dims": [
+          "access_granularity",
+          "interface_choice"
+        ],
+        "fn_dims": [
+          "metadata_intensity"
+        ],
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [],
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "tn": 5,
+        "tp_dims": [],
+        "fp_dims": [],
+        "fn_dims": [
+          "metadata_intensity",
+          "file_strategy"
+        ],
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "OpenPMD Baseline",
+      "trace_key": "(OpenPMD_Baseline)_baseline_jlbez_8a_benchmark_write_parallel_id1321662_8-21-5892-15802854900629188750_106",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "SHF"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "file_strategy"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "tn": 5,
+        "tp_dims": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "fp_dims": [],
+        "fn_dims": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 4,
+        "fn": 1,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern",
+          "interface_choice"
+        ],
+        "fn_dims": [
+          "file_strategy"
+        ],
+        "precision": 0.2,
+        "recall": 0.5,
+        "f1": 0.2857,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "parallelism_efficiency"
+        ],
+        "tp": 1,
+        "fp": 1,
+        "fn": 1,
+        "tn": 4,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "parallelism_efficiency"
+        ],
+        "fn_dims": [
+          "file_strategy"
+        ],
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "OpenPMD Optimized",
+      "trace_key": "(OpenPMD_Optimized)_optimized_jlbez_8a_benchmark_write_parallel_id1322696_8-21-14519-8141979180909667175_12",
+      "tracebench_labels": [
+        "RMA-R",
+        "RMA-W"
+      ],
+      "ground_truth_dims": [
+        "access_pattern"
+      ],
+      "ioprescriber": {
+        "detected": [],
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "tn": 6,
+        "tp_dims": [],
+        "fp_dims": [],
+        "fn_dims": [
+          "access_pattern"
+        ],
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "file_strategy",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 0,
+        "fp": 5,
+        "fn": 1,
+        "tn": 1,
+        "tp_dims": [],
+        "fp_dims": [
+          "access_granularity",
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "interface_choice",
+          "file_strategy"
+        ],
+        "fn_dims": [
+          "access_pattern"
+        ],
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "parallelism_efficiency"
+        ],
+        "tp": 0,
+        "fp": 1,
+        "fn": 1,
+        "tn": 5,
+        "tp_dims": [],
+        "fp_dims": [
+          "parallelism_efficiency"
+        ],
+        "fn_dims": [
+          "access_pattern"
+        ],
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "SW4/Optimize-MP",
+      "trace_key": "(Optimize-MP)_houhun_sw4_id56546140-264967_3-21-63846-13415404289583628136_1",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "SLIM",
+        "NC-R"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "interface_choice",
+        "parallelism_efficiency"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "throughput_utilization"
+        ],
+        "tp": 1,
+        "fp": 1,
+        "fn": 2,
+        "tn": 3,
+        "tp_dims": [
+          "access_granularity"
+        ],
+        "fp_dims": [
+          "throughput_utilization"
+        ],
+        "fn_dims": [
+          "parallelism_efficiency",
+          "interface_choice"
+        ],
+        "precision": 0.5,
+        "recall": 0.3333,
+        "f1": 0.4,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 3,
+        "fp": 3,
+        "fn": 0,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity",
+          "parallelism_efficiency",
+          "interface_choice"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "access_pattern",
+          "file_strategy"
+        ],
+        "fn_dims": [],
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "interface_choice",
+          "parallelism_efficiency"
+        ],
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "tn": 4,
+        "tp_dims": [
+          "access_granularity",
+          "parallelism_efficiency",
+          "interface_choice"
+        ],
+        "fp_dims": [],
+        "fn_dims": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "ROBL IOR",
+      "trace_key": "(ROBL_IOR)_robl_ior_id614345_8-8-66546-14494205032741333235_1",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "RMA-R",
+        "RMA-W",
+        "SHF",
+        "NC-R",
+        "NC-W"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "access_pattern",
+        "file_strategy",
+        "interface_choice"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "file_strategy",
+          "metadata_intensity"
+        ],
+        "tp": 2,
+        "fp": 1,
+        "fn": 2,
+        "tn": 2,
+        "tp_dims": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "fp_dims": [
+          "metadata_intensity"
+        ],
+        "fn_dims": [
+          "access_pattern",
+          "interface_choice"
+        ],
+        "precision": 0.6667,
+        "recall": 0.5,
+        "f1": 0.5714,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 4,
+        "fp": 2,
+        "fn": 0,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity",
+          "access_pattern",
+          "interface_choice",
+          "file_strategy"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "fn_dims": [],
+        "precision": 0.6667,
+        "recall": 1.0,
+        "f1": 0.8,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 3,
+        "tp_dims": [
+          "access_granularity",
+          "file_strategy"
+        ],
+        "fp_dims": [],
+        "fn_dims": [
+          "access_pattern",
+          "interface_choice"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "has_output": true
+      }
+    },
+    {
+      "trace_name": "Treb ViscousDriver3d",
+      "trace_key": "(Treb_ViscousDriver3d)_treb_viscousDriver3d",
+      "tracebench_labels": [
+        "MSL-R",
+        "MSL-W",
+        "SML-R",
+        "SML-W",
+        "NC-R",
+        "NC-W"
+      ],
+      "ground_truth_dims": [
+        "access_granularity",
+        "interface_choice"
+      ],
+      "ioprescriber": {
+        "detected": [
+          "access_granularity",
+          "interface_choice"
+        ],
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "tn": 5,
+        "tp_dims": [
+          "access_granularity",
+          "interface_choice"
+        ],
+        "fp_dims": [],
+        "fn_dims": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_recommendations": 0,
+        "n_grounded": 0
+      },
+      "ion_1_0": {
+        "detected": [
+          "access_granularity",
+          "access_pattern",
+          "file_strategy",
+          "interface_choice",
+          "metadata_intensity",
+          "parallelism_efficiency"
+        ],
+        "tp": 2,
+        "fp": 4,
+        "fn": 0,
+        "tn": 1,
+        "tp_dims": [
+          "access_granularity",
+          "interface_choice"
+        ],
+        "fp_dims": [
+          "metadata_intensity",
+          "parallelism_efficiency",
+          "access_pattern",
+          "file_strategy"
+        ],
+        "fn_dims": [],
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "has_diagnosis": true
+      },
+      "drishti": {
+        "detected": [
+          "access_granularity",
+          "file_strategy",
+          "interface_choice"
+        ],
+        "tp": 2,
+        "fp": 1,
+        "fn": 0,
+        "tn": 4,
+        "tp_dims": [
+          "access_granularity",
+          "interface_choice"
+        ],
+        "fp_dims": [
+          "file_strategy"
+        ],
+        "fn_dims": [],
+        "precision": 0.6667,
+        "recall": 1.0,
+        "f1": 0.8,
+        "has_output": true
+      }
+    }
+  ],
+  "ioprescriber_llm_quality": {
+    "total_recommendations": 17,
+    "grounded_recommendations": 16,
+    "groundedness_score": 0.9412,
+    "nc_nofill_gap": true
+  },
+  "track_c_context": {
+    "applicable": false,
+    "reason": "Track C requires SLURM job submission and new Darshan log collection. TraceBench traces are from external HPC systems (Summit, Theta, Cori) and cannot be re-executed on Delta. Track C is validated separately using our own benchmark workloads.",
+    "trackc_summary": {
+      "total_runs": 24,
+      "per_model_geomean_speedup": {
+        "claude-sonnet": 5.895056737278573,
+        "gpt-4o": 4.17917934756503,
+        "llama-70b": 3.5541322761633185
+      },
+      "best_model": "claude-sonnet",
+      "best_geomean": 5.895056737278573
+    },
+    "dimension_coverage": {
+      "ior_fsync_heavy": [
+        "throughput_utilization"
+      ],
+      "ior_small_posix": [
+        "access_granularity"
+      ],
+      "ior_small_direct": [
+        "access_granularity"
+      ],
+      "ior_random_access": [
+        "access_pattern"
+      ],
+      "ior_misaligned": [
+        "access_granularity"
+      ],
+      "ior_interface_shared": [
+        "interface_choice",
+        "file_strategy"
+      ],
+      "mdtest_metadata_storm": [
+        "metadata_intensity"
+      ],
+      "ior_healthy_baseline": [
+        "healthy"
+      ]
+    }
+  }
+}
