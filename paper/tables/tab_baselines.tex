@@ -10,7 +10,7 @@ benchmark traces from ALCF Polaris.}
 \textbf{System} & \textbf{Type} & \textbf{Micro-F1} & \textbf{Macro-F1} & \textbf{Hamming} & \textbf{Subset} & \textbf{Speed} \\
 \midrule
 \textbf{XGBoost (ours)}        & ML     & \textbf{0.923} & \textbf{0.900} & \textbf{0.022} & \textbf{0.869} & $<$1\,ms \\
-IONavigator~\cite{ionavigator} & LLM    & 0.500          & ---            & ---            & ---            & $\sim$267\,s \\
+IONavigator~\cite{ionavigator} & LLM    & 0.419          & 0.298          & ---            & ---            & $\sim$274\,s \\
 Drishti~\cite{drishti}         & Rules  & 0.384          & 0.283          & 0.221          & 0.305          & $<$1\,s \\
 WisIO~\cite{wisio}             & Rules  & 0.315          & 0.207          & 0.319          & 0.018          & $\sim$3.5\,s \\
 Threshold (P90)                & Stat.  & 0.298          & 0.202          & 0.255          & 0.064          & $<$1\,ms \\
@@ -20,6 +20,6 @@ Majority class                 & Trivial& 0.158          & 0.036          & 0.22
 \vspace{1mm}
 \raggedright
 \footnotesize
-\textit{Note:} IONavigator evaluated on 22 hand-verified traces from our test
-set; remaining baselines on the full 436 samples. Lower Hamming loss is better.
+\textit{Note:} IONavigator evaluated on 50 benchmark traces (10 per suite)
+using gpt-4.1-mini; remaining baselines on the full 436 samples. Lower Hamming loss is better.
 \end{table}
