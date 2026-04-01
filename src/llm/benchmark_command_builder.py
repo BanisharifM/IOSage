@@ -1,7 +1,7 @@
 """
 Validate and build benchmark commands from LLM-proposed parameter changes.
 
-Safety layer: ensures LLM output maps to valid, safe IOR/mdtest commands.
+Safety layer: ensures LLM output maps to valid, safe IOR/mdtest/h5bench/DLIO commands.
 Uses allowlists from configs/iterative.yaml to constrain parameter ranges.
 Prevents execution of harmful or nonsensical commands.
 
@@ -10,7 +10,9 @@ References:
   - PerfCodeGen (2025): Validation phase before execution
 """
 
+import json
 import logging
+import os
 import re
 from pathlib import Path
 
@@ -356,6 +358,342 @@ class BenchmarkCommandBuilder:
         )
         return cmd
 
+    # =========================================================================
+    # h5bench Validation and Command Building
+    # =========================================================================
+
+    H5BENCH_DIR = "/work/hdd/bdau/mbanisharifdehkordi/h5bench/build"
+
+    VALID_MEM_PATTERNS = {"CONTIG", "INTERLEAVED"}
+    VALID_FILE_PATTERNS = {"CONTIG", "INTERLEAVED"}
+
+    def validate_h5bench_params(self, params):
+        """Validate LLM-proposed h5bench parameters.
+
+        Args:
+            params: dict with keys like DIM_1, COLLECTIVE_DATA, TIMESTEPS,
+                    MEM_PATTERN, FILE_PATTERN.
+
+        Returns:
+            (valid, sanitized_params, errors) tuple
+        """
+        errors = []
+        sanitized = {}
+
+        # DIM_1 (elements per rank per timestep; each element is 8 bytes double)
+        try:
+            dim1 = int(params.get("DIM_1", 1024))
+            if dim1 < 64:
+                errors.append(f"DIM_1 {dim1} below minimum 64")
+                dim1 = 64
+            if dim1 > 16_777_216:
+                errors.append(f"DIM_1 {dim1} above maximum 16777216")
+                dim1 = 16_777_216
+            sanitized["DIM_1"] = dim1
+        except (ValueError, TypeError):
+            errors.append(f"Invalid DIM_1: {params.get('DIM_1')}")
+            sanitized["DIM_1"] = 1024
+
+        # COLLECTIVE_DATA
+        coll = str(params.get("COLLECTIVE_DATA", "NO")).upper()
+        if coll not in ("YES", "NO"):
+            errors.append(f"Invalid COLLECTIVE_DATA '{coll}', must be YES or NO")
+            coll = "NO"
+        sanitized["COLLECTIVE_DATA"] = coll
+
+        # COLLECTIVE_METADATA
+        coll_meta = str(params.get("COLLECTIVE_METADATA", coll)).upper()
+        if coll_meta not in ("YES", "NO"):
+            coll_meta = coll
+        sanitized["COLLECTIVE_METADATA"] = coll_meta
+
+        # TIMESTEPS
+        try:
+            ts = int(params.get("TIMESTEPS", 5))
+            if ts < 1:
+                errors.append(f"TIMESTEPS {ts} below minimum 1")
+                ts = 1
+            if ts > 100:
+                errors.append(f"TIMESTEPS {ts} above maximum 100")
+                ts = 100
+            sanitized["TIMESTEPS"] = ts
+        except (ValueError, TypeError):
+            errors.append(f"Invalid TIMESTEPS: {params.get('TIMESTEPS')}")
+            sanitized["TIMESTEPS"] = 5
+
+        # MEM_PATTERN
+        mem_pat = str(params.get("MEM_PATTERN", "CONTIG")).upper()
+        if mem_pat not in self.VALID_MEM_PATTERNS:
+            errors.append(f"Invalid MEM_PATTERN '{mem_pat}'")
+            mem_pat = "CONTIG"
+        sanitized["MEM_PATTERN"] = mem_pat
+
+        # FILE_PATTERN
+        file_pat = str(params.get("FILE_PATTERN", "CONTIG")).upper()
+        if file_pat not in self.VALID_FILE_PATTERNS:
+            errors.append(f"Invalid FILE_PATTERN '{file_pat}'")
+            file_pat = "CONTIG"
+        sanitized["FILE_PATTERN"] = file_pat
+
+        valid = len(errors) == 0
+        return valid, sanitized, errors
+
+    def build_h5bench_config(self, params, output_dir=None, config_path=None):
+        """Generate h5bench JSON config file and .write/.read sub-configs.
+
+        Args:
+            params: dict from validate_h5bench_params
+            output_dir: directory for HDF5 output files
+            config_path: where to write the JSON config (and sub-configs)
+
+        Returns:
+            (write_command, read_command, config_file_path) tuple
+        """
+        out = output_dir or self.scratch_dir
+        dim1 = str(params.get("DIM_1", 1024))
+        coll = params.get("COLLECTIVE_DATA", "NO")
+        coll_meta = params.get("COLLECTIVE_METADATA", coll)
+        timesteps = str(params.get("TIMESTEPS", 5))
+        mem_pat = params.get("MEM_PATTERN", "CONTIG")
+        file_pat = params.get("FILE_PATTERN", "CONTIG")
+
+        # Write configuration
+        write_cfg = {
+            "MEM_PATTERN": mem_pat,
+            "FILE_PATTERN": file_pat,
+            "TIMESTEPS": timesteps,
+            "DELAYED_CLOSE_TIMESTEPS": "0",
+            "COLLECTIVE_DATA": coll,
+            "COLLECTIVE_METADATA": coll_meta,
+            "EMULATED_COMPUTE_TIME_PER_TIMESTEP": "0 s",
+            "NUM_DIMS": "1",
+            "DIM_1": dim1,
+            "DIM_2": "1",
+            "DIM_3": "1",
+            "CSV_FILE": "output.csv",
+            "MODE": "SYNC",
+        }
+
+        # Read configuration
+        read_cfg = dict(write_cfg)
+        read_cfg["READ_OPTION"] = "FULL"
+
+        # Main JSON config
+        main_config = {
+            "mpi": {"command": "srun", "ranks": "WILL_BE_SET_BY_SLURM"},
+            "vol": {},
+            "file-system": {},
+            "directory": out,
+            "benchmarks": [
+                {
+                    "benchmark": "write",
+                    "file": "h5bench_output.h5",
+                    "configuration": write_cfg,
+                },
+                {
+                    "benchmark": "read",
+                    "file": "h5bench_output.h5",
+                    "configuration": read_cfg,
+                },
+            ],
+        }
+
+        # Write main JSON config
+        if config_path is None:
+            config_path = os.path.join(out, "h5bench_config.json")
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(main_config, f, indent=4)
+
+        # Write .write sub-config (flat key=value format)
+        write_sub_path = config_path + ".write"
+        with open(write_sub_path, "w") as f:
+            for k, v in write_cfg.items():
+                f.write(f"{k}={v}\n")
+
+        # Write .read sub-config (flat key=value format)
+        read_sub_path = config_path + ".read"
+        with open(read_sub_path, "w") as f:
+            for k, v in read_cfg.items():
+                f.write(f"{k}={v}\n")
+
+        h5_file = os.path.join(out, "h5bench_output.h5")
+        write_cmd = f"{self.H5BENCH_DIR}/h5bench_write {write_sub_path} {h5_file}"
+        read_cmd = f"{self.H5BENCH_DIR}/h5bench_read {read_sub_path} {h5_file}"
+
+        return write_cmd, read_cmd, config_path
+
+    # =========================================================================
+    # DLIO Validation and Command Building
+    # =========================================================================
+
+    DLIO_BIN = "/projects/bdau/envs/sc2026/bin/dlio_benchmark"
+
+    VALID_DLIO_FORMATS = {"npz", "hdf5", "csv", "tfrecord"}
+    VALID_DLIO_SHUFFLES = {"off", "random", "seed"}
+
+    def validate_dlio_params(self, params):
+        """Validate LLM-proposed DLIO benchmark parameters.
+
+        Args:
+            params: dict with keys like record_length, num_files_train,
+                    batch_size, read_threads, computation_time, epochs,
+                    format, sample_shuffle, file_shuffle.
+
+        Returns:
+            (valid, sanitized_params, errors) tuple
+        """
+        errors = []
+        sanitized = {}
+
+        # record_length (bytes per sample)
+        try:
+            rl = int(params.get("record_length", 1024))
+            if rl < 64:
+                errors.append(f"record_length {rl} below minimum 64")
+                rl = 64
+            if rl > 16_777_216:
+                errors.append(f"record_length {rl} above maximum 16777216")
+                rl = 16_777_216
+            sanitized["record_length"] = rl
+        except (ValueError, TypeError):
+            errors.append(f"Invalid record_length: {params.get('record_length')}")
+            sanitized["record_length"] = 1024
+
+        # num_files_train
+        try:
+            nf = int(params.get("num_files_train", 1000))
+            if nf < 10:
+                errors.append(f"num_files_train {nf} below minimum 10")
+                nf = 10
+            if nf > 10_000:
+                errors.append(f"num_files_train {nf} above maximum 10000")
+                nf = 10_000
+            sanitized["num_files_train"] = nf
+        except (ValueError, TypeError):
+            errors.append(f"Invalid num_files_train: {params.get('num_files_train')}")
+            sanitized["num_files_train"] = 1000
+
+        # num_samples_per_file
+        try:
+            ns = int(params.get("num_samples_per_file", 1))
+            ns = max(1, min(ns, 1000))
+            sanitized["num_samples_per_file"] = ns
+        except (ValueError, TypeError):
+            sanitized["num_samples_per_file"] = 1
+
+        # batch_size
+        try:
+            bs = int(params.get("batch_size", 1))
+            if bs < 1:
+                errors.append(f"batch_size {bs} below minimum 1")
+                bs = 1
+            if bs > 256:
+                errors.append(f"batch_size {bs} above maximum 256")
+                bs = 256
+            sanitized["batch_size"] = bs
+        except (ValueError, TypeError):
+            errors.append(f"Invalid batch_size: {params.get('batch_size')}")
+            sanitized["batch_size"] = 1
+
+        # read_threads
+        try:
+            rt = int(params.get("read_threads", 1))
+            rt = max(1, min(rt, 16))
+            sanitized["read_threads"] = rt
+        except (ValueError, TypeError):
+            sanitized["read_threads"] = 1
+
+        # computation_time (seconds of simulated compute per batch)
+        try:
+            ct = float(params.get("computation_time", 0.01))
+            ct = max(0.0, min(ct, 10.0))
+            sanitized["computation_time"] = ct
+        except (ValueError, TypeError):
+            sanitized["computation_time"] = 0.01
+
+        # epochs
+        try:
+            ep = int(params.get("epochs", 2))
+            ep = max(1, min(ep, 10))
+            sanitized["epochs"] = ep
+        except (ValueError, TypeError):
+            sanitized["epochs"] = 2
+
+        # format
+        fmt = str(params.get("format", "npz")).lower()
+        if fmt not in self.VALID_DLIO_FORMATS:
+            errors.append(f"Invalid format '{fmt}'")
+            fmt = "npz"
+        sanitized["format"] = fmt
+
+        # sample_shuffle
+        ss = str(params.get("sample_shuffle", "off")).lower()
+        if ss not in self.VALID_DLIO_SHUFFLES:
+            ss = "off"
+        sanitized["sample_shuffle"] = ss
+
+        # file_shuffle
+        fs = str(params.get("file_shuffle", "off")).lower()
+        if fs not in self.VALID_DLIO_SHUFFLES:
+            fs = "off"
+        sanitized["file_shuffle"] = fs
+
+        # seed
+        sanitized["seed"] = int(params.get("seed", 42))
+
+        valid = len(errors) == 0
+        return valid, sanitized, errors
+
+    def build_dlio_command(self, params, data_dir=None):
+        """Build DLIO benchmark Hydra override command string.
+
+        Args:
+            params: dict from validate_dlio_params
+            data_dir: directory for DLIO data files
+
+        Returns:
+            (datagen_command, training_command) tuple
+            Both use the same Hydra overrides but differ in workflow flags.
+        """
+        out = data_dir or self.scratch_dir
+
+        # Build common Hydra overrides
+        overrides = (
+            f"++workload.dataset.data_folder={out}"
+            f" ++workload.dataset.record_length={params['record_length']}"
+            f" ++workload.dataset.num_files_train={params['num_files_train']}"
+            f" ++workload.dataset.num_samples_per_file={params['num_samples_per_file']}"
+            f" ++workload.reader.batch_size={params['batch_size']}"
+            f" ++workload.reader.read_threads={params['read_threads']}"
+            f" ++workload.train.computation_time={params['computation_time']}"
+            f" ++workload.train.epochs={params['epochs']}"
+            f" ++workload.train.seed={params['seed']}"
+            f" ++workload.dataset.format={params['format']}"
+        )
+
+        # Shuffle overrides
+        if params.get("sample_shuffle", "off") != "off":
+            overrides += f" ++workload.reader.sample_shuffle={params['sample_shuffle']}"
+        if params.get("file_shuffle", "off") != "off":
+            overrides += f" ++workload.reader.file_shuffle={params['file_shuffle']}"
+
+        datagen_cmd = (
+            f"{self.DLIO_BIN} workload=unet3d"
+            f" ++workload.workflow.generate_data=True"
+            f" ++workload.workflow.train=False"
+            f" {overrides}"
+        )
+
+        training_cmd = (
+            f"{self.DLIO_BIN} workload=unet3d"
+            f" ++workload.workflow.generate_data=False"
+            f" ++workload.workflow.train=True"
+            f" {overrides}"
+        )
+
+        return datagen_cmd, training_cmd
+
     def parse_llm_config_changes(self, llm_response):
         """Extract IOR/mdtest parameter changes from LLM response.
 
@@ -436,6 +774,47 @@ class BenchmarkCommandBuilder:
             if base_match:
                 params["base_size_mb"] = int(base_match.group(1))
 
+            # h5bench inference
+            dim1_match = re.search(r"dim[_\s]?1\s+(?:to\s+)?(\d+)", change_lower)
+            if dim1_match:
+                params["DIM_1"] = int(dim1_match.group(1))
+
+            if "collective_data" in change_lower and ("yes" in change_lower or "enable" in change_lower):
+                params["COLLECTIVE_DATA"] = "YES"
+            elif "collective_data" in change_lower and ("no" in change_lower or "disable" in change_lower):
+                params["COLLECTIVE_DATA"] = "NO"
+
+            if "interleaved" in change_lower and "mem" in change_lower:
+                params["MEM_PATTERN"] = "INTERLEAVED"
+            elif "contig" in change_lower and "mem" in change_lower:
+                params["MEM_PATTERN"] = "CONTIG"
+
+            if "interleaved" in change_lower and "file" in change_lower:
+                params["FILE_PATTERN"] = "INTERLEAVED"
+            elif "contig" in change_lower and "file" in change_lower:
+                params["FILE_PATTERN"] = "CONTIG"
+
+            timesteps_match = re.search(r"timesteps?\s+(?:to\s+)?(\d+)", change_lower)
+            if timesteps_match:
+                params["TIMESTEPS"] = int(timesteps_match.group(1))
+
+            # DLIO inference
+            rl_match = re.search(r"record[_\s]?length\s+(?:to\s+)?(\d+)", change_lower)
+            if rl_match:
+                params["record_length"] = int(rl_match.group(1))
+
+            nf_match = re.search(r"num[_\s]?files[_\s]?train\s+(?:to\s+)?(\d+)", change_lower)
+            if nf_match:
+                params["num_files_train"] = int(nf_match.group(1))
+
+            bs_match = re.search(r"batch[_\s]?size\s+(?:to\s+)?(\d+)", change_lower)
+            if bs_match:
+                params["batch_size"] = int(bs_match.group(1))
+
+            rt_match = re.search(r"read[_\s]?threads?\s+(?:to\s+)?(\d+)", change_lower)
+            if rt_match:
+                params["read_threads"] = int(rt_match.group(1))
+
         return params
 
     def apply_changes_to_config(self, base_config, changes):
@@ -467,6 +846,19 @@ class BenchmarkCommandBuilder:
 
         # Direct parameter overrides (custom load_imbalance)
         for key in ["imbalance_factor", "base_size_mb"]:
+            if key in changes:
+                new_config[key] = changes[key]
+
+        # Direct parameter overrides (h5bench)
+        for key in ["DIM_1", "COLLECTIVE_DATA", "COLLECTIVE_METADATA",
+                     "TIMESTEPS", "MEM_PATTERN", "FILE_PATTERN"]:
+            if key in changes:
+                new_config[key] = changes[key]
+
+        # Direct parameter overrides (DLIO)
+        for key in ["record_length", "num_files_train", "num_samples_per_file",
+                     "batch_size", "read_threads", "computation_time", "epochs",
+                     "format", "sample_shuffle", "file_shuffle", "seed"]:
             if key in changes:
                 new_config[key] = changes[key]
 

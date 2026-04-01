@@ -214,6 +214,153 @@ workloads:
       imbalance_factor: 1
       base_size_mb: 10
 
+  # --- h5bench (HDF5) workloads ---
+  h5bench_small_access:
+    benchmark: h5bench
+    bottleneck: access_granularity
+    description: "Small DIM_1 with independent I/O (small HDF5 writes per rank)"
+    bad_config:
+      DIM_1: 1024
+      COLLECTIVE_DATA: "NO"
+      COLLECTIVE_METADATA: "NO"
+      TIMESTEPS: 10
+      MEM_PATTERN: CONTIG
+      FILE_PATTERN: CONTIG
+    known_good_config:
+      DIM_1: 4194304
+      COLLECTIVE_DATA: "YES"
+      COLLECTIVE_METADATA: "YES"
+      TIMESTEPS: 10
+      MEM_PATTERN: CONTIG
+      FILE_PATTERN: CONTIG
+
+  h5bench_indep_vs_coll:
+    benchmark: h5bench
+    bottleneck: interface_choice
+    description: "Independent HDF5 I/O vs collective (should use collective)"
+    bad_config:
+      DIM_1: 262144
+      COLLECTIVE_DATA: "NO"
+      COLLECTIVE_METADATA: "NO"
+      TIMESTEPS: 5
+      MEM_PATTERN: CONTIG
+      FILE_PATTERN: CONTIG
+    known_good_config:
+      DIM_1: 262144
+      COLLECTIVE_DATA: "YES"
+      COLLECTIVE_METADATA: "YES"
+      TIMESTEPS: 5
+      MEM_PATTERN: CONTIG
+      FILE_PATTERN: CONTIG
+
+  h5bench_interleaved_pattern:
+    benchmark: h5bench
+    bottleneck: access_pattern
+    description: "Interleaved memory+file pattern causing non-contiguous I/O"
+    bad_config:
+      DIM_1: 262144
+      COLLECTIVE_DATA: "NO"
+      COLLECTIVE_METADATA: "NO"
+      TIMESTEPS: 5
+      MEM_PATTERN: INTERLEAVED
+      FILE_PATTERN: INTERLEAVED
+    known_good_config:
+      DIM_1: 262144
+      COLLECTIVE_DATA: "YES"
+      COLLECTIVE_METADATA: "YES"
+      TIMESTEPS: 5
+      MEM_PATTERN: CONTIG
+      FILE_PATTERN: CONTIG
+
+  # --- DLIO (ML I/O) workloads ---
+  dlio_small_records:
+    benchmark: dlio
+    bottleneck: access_granularity
+    description: "Small record reads (DL data loading bottleneck, 64B per sample)"
+    bad_config:
+      record_length: 64
+      num_files_train: 1000
+      num_samples_per_file: 1
+      batch_size: 1
+      read_threads: 1
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      seed: 42
+    known_good_config:
+      record_length: 1048576
+      num_files_train: 100
+      num_samples_per_file: 10
+      batch_size: 32
+      read_threads: 8
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      seed: 42
+    slurm_override:
+      ntasks: 8
+      cpus_per_task: 4
+
+  dlio_shuffle_heavy:
+    benchmark: dlio
+    bottleneck: access_pattern
+    description: "Heavy random shuffle across many files (random access pattern)"
+    bad_config:
+      record_length: 65536
+      num_files_train: 5000
+      num_samples_per_file: 1
+      batch_size: 1
+      read_threads: 1
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      sample_shuffle: random
+      file_shuffle: random
+      seed: 42
+    known_good_config:
+      record_length: 65536
+      num_files_train: 100
+      num_samples_per_file: 50
+      batch_size: 32
+      read_threads: 8
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      sample_shuffle: "off"
+      file_shuffle: "off"
+      seed: 42
+    slurm_override:
+      ntasks: 8
+      cpus_per_task: 4
+
+  dlio_many_small_files:
+    benchmark: dlio
+    bottleneck: file_strategy
+    description: "Too many small training files (file explosion for ML workload)"
+    bad_config:
+      record_length: 4096
+      num_files_train: 10000
+      num_samples_per_file: 1
+      batch_size: 1
+      read_threads: 1
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      seed: 42
+    known_good_config:
+      record_length: 4096
+      num_files_train: 100
+      num_samples_per_file: 100
+      batch_size: 32
+      read_threads: 8
+      computation_time: 0.01
+      epochs: 2
+      format: npz
+      seed: 42
+    slurm_override:
+      ntasks: 8
+      cpus_per_task: 4
+
   # --- Extended closed-loop pairs (mdtest + multi-node IOR) ---
   mdtest_fpp_explosion:
     benchmark: mdtest

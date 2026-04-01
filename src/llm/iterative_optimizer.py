@@ -339,14 +339,38 @@ RULES:
 8. The transfer_size (-t) controls I/O granularity. The block_size (-b) and segments (-s)
    control total data volume. Only change -t to fix access_granularity. Only change -a/-c
    to fix interface_choice. Only remove -Y to fix throughput. Only remove -z to fix access_pattern.
-9. For HACC-IO benchmarks:
+9. For h5bench (HDF5) benchmarks:
+   - DIM_1: integer [64, 16777216] (elements per rank per timestep, 8 bytes each)
+   - COLLECTIVE_DATA: 'YES' or 'NO' (HDF5 collective I/O)
+   - COLLECTIVE_METADATA: 'YES' or 'NO' (HDF5 collective metadata)
+   - TIMESTEPS: integer [1, 100] (number of write/read timesteps)
+   - MEM_PATTERN: 'CONTIG' or 'INTERLEAVED' (memory layout)
+   - FILE_PATTERN: 'CONTIG' or 'INTERLEAVED' (file layout)
+   - To fix access_granularity: increase DIM_1 (bigger writes per rank)
+   - To fix interface_choice: enable COLLECTIVE_DATA=YES
+   - Keep TIMESTEPS constant to maintain fair data volume comparison
+11. For DLIO (ML I/O) benchmarks:
+   - record_length: integer [64, 16777216] (bytes per training sample)
+   - num_files_train: integer [10, 10000] (number of training data files)
+   - num_samples_per_file: integer [1, 1000] (samples per file)
+   - batch_size: integer [1, 256] (training batch size)
+   - read_threads: integer [1, 16] (data loading threads)
+   - computation_time: float [0.0, 10.0] (simulated compute time per batch)
+   - epochs: integer [1, 10] (training epochs)
+   - format: 'npz', 'hdf5', 'csv', or 'tfrecord' (data format)
+   - sample_shuffle: 'off', 'random', or 'seed' (sample ordering)
+   - file_shuffle: 'off', 'random', or 'seed' (file ordering)
+   - To fix access_granularity: increase record_length
+   - To fix access_pattern: set sample_shuffle=off, file_shuffle=off
+   - To fix throughput_utilization: increase batch_size and read_threads
+12. For HACC-IO benchmarks:
    - executable: 'posix_shared', 'mpiio_shared', or 'fpp' (I/O backend)
    - num_particles: integer [50, 10000000] (data volume = 38 bytes * num_particles per rank)
    - collective_buffering: 'enabled' or 'disabled' (ROMIO aggregation control)
    - To fix interface_choice: switch from posix_shared to mpiio_shared
    - To fix file_strategy: switch from fpp to mpiio_shared
    - Increase num_particles to increase data volume (amortize overhead)
-10. For custom (load_imbalance) benchmarks:
+13. For custom (load_imbalance) benchmarks:
    - imbalance_factor: float [1.0, 100.0] (rank 0 writes this many times more data)
    - base_size_mb: integer [1, 500] (base data size per non-zero rank in MB)
    - To fix parallelism_efficiency: reduce imbalance_factor toward 1.0
@@ -480,6 +504,49 @@ Respond in JSON:
     "executable": "posix_shared or mpiio_shared or fpp (optional)",
     "num_particles": "particle count per rank (optional)",
     "collective_buffering": "enabled or disabled (optional)"
+  },
+  "expected_improvement": "estimated speedup based on KB evidence",
+  "changes_made": ["list of specific changes and WHY they help"],
+  "kb_citations": ["list of KB entry IDs used"]
+}
+"""
+        elif benchmark_type == "h5bench":
+            user_prompt += """
+## Task:
+Propose h5bench (HDF5) parameter changes to fix the detected bottlenecks.
+Respond in JSON:
+{
+  "strategy": "brief description of optimization strategy",
+  "config_changes": {
+    "DIM_1": "elements per rank per timestep (optional)",
+    "COLLECTIVE_DATA": "YES or NO (optional)",
+    "COLLECTIVE_METADATA": "YES or NO (optional)",
+    "TIMESTEPS": "number of timesteps (optional)",
+    "MEM_PATTERN": "CONTIG or INTERLEAVED (optional)",
+    "FILE_PATTERN": "CONTIG or INTERLEAVED (optional)"
+  },
+  "expected_improvement": "estimated speedup based on KB evidence",
+  "changes_made": ["list of specific changes and WHY they help"],
+  "kb_citations": ["list of KB entry IDs used"]
+}
+"""
+        elif benchmark_type == "dlio":
+            user_prompt += """
+## Task:
+Propose DLIO (ML I/O) parameter changes to fix the detected bottlenecks.
+Respond in JSON:
+{
+  "strategy": "brief description of optimization strategy",
+  "config_changes": {
+    "record_length": "bytes per sample (optional)",
+    "num_files_train": "number of training files (optional)",
+    "num_samples_per_file": "samples per file (optional)",
+    "batch_size": "training batch size (optional)",
+    "read_threads": "data loading threads (optional)",
+    "computation_time": "simulated compute seconds per batch (optional)",
+    "format": "npz or hdf5 or csv or tfrecord (optional)",
+    "sample_shuffle": "off or random or seed (optional)",
+    "file_shuffle": "off or random or seed (optional)"
   },
   "expected_improvement": "estimated speedup based on KB evidence",
   "changes_made": ["list of specific changes and WHY they help"],
@@ -688,6 +755,22 @@ Respond in JSON:
             elif benchmark_type == "custom":
                 valid, sanitized, errs = self.builder.validate_custom_params(current_config)
                 baseline_cmd = self.builder.build_custom_command(sanitized, output_dir=job_scratch)
+            elif benchmark_type == "h5bench":
+                valid, sanitized, errs = self.builder.validate_h5bench_params(current_config)
+                config_path = os.path.join(
+                    self.executor.results_dir, f"{job_base}_config.json"
+                )
+                baseline_cmd = self.builder.build_h5bench_config(
+                    sanitized, output_dir=job_scratch, config_path=config_path
+                )
+                # baseline_cmd is (write_cmd, read_cmd, config_path) for h5bench
+                baseline_cmd = (baseline_cmd[0], baseline_cmd[1])
+            elif benchmark_type == "dlio":
+                valid, sanitized, errs = self.builder.validate_dlio_params(current_config)
+                baseline_cmd = self.builder.build_dlio_command(
+                    sanitized, data_dir=job_scratch
+                )
+                # baseline_cmd is (datagen_cmd, training_cmd) for DLIO
             else:
                 valid, sanitized, errs = self.builder.validate_ior_params(current_config)
                 baseline_cmd = self.builder.build_ior_command(sanitized, output_dir=job_scratch)
@@ -695,6 +778,10 @@ Respond in JSON:
             exec_kwargs = {"job_name": job_base, "benchmark_type": benchmark_type}
             if benchmark_type == "hacc_io":
                 exec_kwargs["hacc_config"] = sanitized
+            elif benchmark_type == "h5bench":
+                exec_kwargs["h5bench_config"] = sanitized
+            elif benchmark_type == "dlio":
+                exec_kwargs["dlio_config"] = sanitized
             baseline_result = self.executor.execute_benchmark(
                 baseline_cmd,
                 **exec_kwargs,
@@ -832,6 +919,18 @@ Respond in JSON:
                     logger.warning("  Config validation warnings: %s", errs[:3])
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
+            elif benchmark_type == "h5bench":
+                valid, sanitized, errs = self.builder.validate_h5bench_params(new_config)
+                if errs:
+                    logger.warning("  Config validation warnings: %s", errs[:3])
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
+            elif benchmark_type == "dlio":
+                valid, sanitized, errs = self.builder.validate_dlio_params(new_config)
+                if errs:
+                    logger.warning("  Config validation warnings: %s", errs[:3])
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
             else:
                 valid, sanitized, errs = self.builder.validate_ior_params(new_config)
                 if errs:
@@ -849,13 +948,33 @@ Respond in JSON:
                     cmd = self.builder.build_hacc_command(sanitized, output_dir=iter_scratch)
                 elif benchmark_type == "custom":
                     cmd = self.builder.build_custom_command(sanitized, output_dir=iter_scratch)
+                elif benchmark_type == "h5bench":
+                    config_path = os.path.join(
+                        self.executor.results_dir, f"{iter_job}_config.json"
+                    )
+                    write_cmd, read_cmd, _ = self.builder.build_h5bench_config(
+                        sanitized, output_dir=iter_scratch, config_path=config_path
+                    )
+                    cmd = (write_cmd, read_cmd)
+                elif benchmark_type == "dlio":
+                    cmd = self.builder.build_dlio_command(
+                        sanitized, data_dir=iter_scratch
+                    )
                 else:
                     cmd = self.builder.build_ior_command(sanitized, output_dir=iter_scratch)
-                logger.info("  Executing: %s", cmd[:120])
+
+                if isinstance(cmd, tuple):
+                    logger.info("  Executing: %s (phase 1)", cmd[0][:100])
+                else:
+                    logger.info("  Executing: %s", cmd[:120])
 
                 exec_kwargs = {"job_name": iter_job, "benchmark_type": benchmark_type}
                 if benchmark_type == "hacc_io":
                     exec_kwargs["hacc_config"] = sanitized
+                elif benchmark_type == "h5bench":
+                    exec_kwargs["h5bench_config"] = sanitized
+                elif benchmark_type == "dlio":
+                    exec_kwargs["dlio_config"] = sanitized
                 exec_result = self.executor.execute_benchmark(
                     cmd,
                     **exec_kwargs,
