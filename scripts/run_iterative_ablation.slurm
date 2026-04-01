@@ -11,11 +11,11 @@
 #SBATCH --error=results/iterative/ablation_%j.err
 
 # =============================================================================
-# Track C: Ablation study (6 conditions x 4 representative workloads x Claude)
+# Iterative: Ablation study (6 conditions x 4 representative workloads x Claude)
 # =============================================================================
 
 echo "============================================================"
-echo "Track C: ABLATION STUDY"
+echo "Iterative: ABLATION STUDY"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
@@ -70,7 +70,7 @@ for W in $WORKLOADS; do
         --output "results/iterative/ablation_no_shap_${W}_${TIMESTAMP}.json"
 done
 
-# A4: Single-shot (1 iteration = Track B equivalent)
+# A4: Single-shot (1 iteration = Single-shot equivalent)
 echo ""
 echo "========== ABLATION A4: Single-shot =========="
 for W in $WORKLOADS; do

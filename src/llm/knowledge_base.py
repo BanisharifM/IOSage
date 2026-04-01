@@ -8,9 +8,8 @@ This is a key novelty: no existing system has source-code-to-Darshan-signature m
 with verified fixes and measured improvements.
 
 Used by:
-  - Track A: Export for Tabassum's iterative LLM pipeline
-  - Track B: RAG retrieval for our recommendation pipeline
-  - Track C: Context for our iterative code optimization
+  - Single-shot mode: RAG retrieval for recommendation pipeline
+  - Iterative mode: Context for closed-loop code optimization
 
 Usage:
     python -m src.llm.knowledge_base

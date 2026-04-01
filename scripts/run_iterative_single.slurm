@@ -11,13 +11,13 @@
 #SBATCH --error=results/iterative/orchestrator_%j.err
 
 # =============================================================================
-# Track C: Single workload iterative optimization test
+# Iterative: Single workload iterative optimization test
 # Usage: sbatch scripts/run_iterative_single.slurm
 # Or with args: sbatch scripts/run_iterative_single.slurm --workload ior_small_posix --model claude-sonnet
 # =============================================================================
 
 echo "============================================================"
-echo "Track C: Iterative LLM Code Optimization"
+echo "Iterative: Iterative LLM Code Optimization"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"

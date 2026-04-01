@@ -1,5 +1,5 @@
 """
-Track C: ML-Guided Iterative LLM Code Optimization for HPC I/O.
+IOSage: ML-Guided Iterative LLM Code Optimization for HPC I/O.
 
 Architecture (research-backed -- STELLAR/PerfCoder/POLO/Self-Refine):
   1. ML Classifier detects bottleneck type + SHAP features
@@ -71,7 +71,7 @@ DIMENSIONS = [
     "throughput_utilization", "healthy",
 ]
 
-# OpenRouter model IDs (same as Track B recommender)
+# OpenRouter model IDs (same as single-shot recommender)
 MODELS = {
     "claude-sonnet": "anthropic/claude-sonnet-4",
     "gpt-4o": "openai/gpt-4o",
@@ -313,7 +313,7 @@ class IterativeOptimizer:
                      current_config=None, best_speedup=None, rollback=False):
         """Build structured prompt for current iteration.
 
-        Key differences from Track B:
+        Key differences from single-shot recommendation:
         - Asks LLM to output benchmark CONFIG CHANGES (not arbitrary code)
         - Includes iteration feedback (before/after Darshan)
         - Includes SHAP features for targeted guidance
@@ -1105,7 +1105,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Track C: ML-Guided Iterative LLM Code Optimization"
+        description="IOSage: ML-Guided Iterative LLM Code Optimization"
     )
     parser.add_argument("--workload", default=None, help="Workload name from iterative.yaml")
     parser.add_argument("--model", default="claude-sonnet",

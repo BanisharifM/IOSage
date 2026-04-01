@@ -1,5 +1,5 @@
 # =============================================================================
-# Track C: Iterative LLM Code Optimization Configuration
+# IOSage Iterative Closed-Loop Optimization Configuration
 # =============================================================================
 # ML-guided iterative refinement: detect -> recommend -> execute -> feedback -> iterate
 # References: STELLAR (SC'25), PerfCoder (2025), POLO (IJCAI'25), Self-Refine (NeurIPS'23)
@@ -276,70 +276,78 @@ workloads:
   dlio_small_records:
     benchmark: dlio
     bottleneck: access_granularity
-    description: "Small record reads (DL data loading bottleneck, 64B per sample)"
+    description: "Small record reads (DL data loading with 1KB samples, like BERT tokenized text)"
     bad_config:
-      record_length: 64
-      num_files_train: 1000
+      # 1KB records = 4.4KB NPZ files. 500 files × 3 epochs = 1500 small reads.
+      # Realistic: BERT-like text processing with small tokenized samples.
+      record_length: 1024
+      num_files_train: 500
       num_samples_per_file: 1
       batch_size: 1
       read_threads: 1
       computation_time: 0.01
-      epochs: 2
+      epochs: 3
       format: npz
       seed: 42
     known_good_config:
+      # 1MB records = 4.2MB NPZ files. 100 files with batched multi-threaded reads.
       record_length: 1048576
       num_files_train: 100
-      num_samples_per_file: 10
-      batch_size: 32
-      read_threads: 8
+      num_samples_per_file: 1
+      batch_size: 8
+      read_threads: 4
       computation_time: 0.01
-      epochs: 2
+      epochs: 3
       format: npz
       seed: 42
     slurm_override:
-      ntasks: 8
+      ntasks: 4
       cpus_per_task: 4
 
   dlio_shuffle_heavy:
     benchmark: dlio
     bottleneck: access_pattern
-    description: "Heavy random shuffle across many files (random access pattern)"
+    description: "Heavy random file shuffle across many files (random directory traversal)"
     bad_config:
+      # 64KB records with heavy file shuffle = random order file opens.
+      # Realistic: shuffled ImageNet-style training with per-file samples.
       record_length: 65536
-      num_files_train: 5000
+      num_files_train: 1000
       num_samples_per_file: 1
       batch_size: 1
       read_threads: 1
       computation_time: 0.01
-      epochs: 2
+      epochs: 3
       format: npz
       sample_shuffle: random
       file_shuffle: random
       seed: 42
     known_good_config:
+      # Same size but sequential access, batched, multi-threaded.
       record_length: 65536
-      num_files_train: 100
-      num_samples_per_file: 50
-      batch_size: 32
-      read_threads: 8
+      num_files_train: 1000
+      num_samples_per_file: 1
+      batch_size: 8
+      read_threads: 4
       computation_time: 0.01
-      epochs: 2
+      epochs: 3
       format: npz
       sample_shuffle: "off"
       file_shuffle: "off"
       seed: 42
     slurm_override:
-      ntasks: 8
+      ntasks: 4
       cpus_per_task: 4
 
   dlio_many_small_files:
     benchmark: dlio
-    bottleneck: file_strategy
-    description: "Too many small training files (file explosion for ML workload)"
+    bottleneck: access_granularity
+    description: "Many tiny training files (256B records, metadata-heavy file explosion)"
     bad_config:
-      record_length: 4096
-      num_files_train: 10000
+      # 256B records = 1.3KB NPZ files. 2000 files = heavy metadata + tiny reads.
+      # Realistic: per-sample image patches or text snippets stored individually.
+      record_length: 256
+      num_files_train: 2000
       num_samples_per_file: 1
       batch_size: 1
       read_threads: 1
@@ -348,17 +356,18 @@ workloads:
       format: npz
       seed: 42
     known_good_config:
-      record_length: 4096
-      num_files_train: 100
-      num_samples_per_file: 100
-      batch_size: 32
-      read_threads: 8
+      # 1MB records, fewer files, batched reads.
+      record_length: 1048576
+      num_files_train: 50
+      num_samples_per_file: 1
+      batch_size: 8
+      read_threads: 4
       computation_time: 0.01
       epochs: 2
       format: npz
       seed: 42
     slurm_override:
-      ntasks: 8
+      ntasks: 4
       cpus_per_task: 4
 
   # --- Extended closed-loop pairs (mdtest + multi-node IOR) ---
@@ -486,7 +495,7 @@ ablations:
     max_iterations: 5
 
   single_shot:
-    description: "Single-shot (1 iteration, like Track B)"
+    description: "Single-shot (1 iteration, single-shot recommendation mode)"
     ml: true
     shap: true
     kb: true

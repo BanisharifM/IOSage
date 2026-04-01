@@ -75,7 +75,7 @@ configurations, mapping \{Darshan signature $\leftrightarrow$ code cause
 $\leftrightarrow$ validated fix\}.
 
 \item[$C_3$] \textbf{SHAP-structured LLM recommendations.}
-An LLM pipeline (IOPrescriber) that uses ML predictions and per-label
+An LLM pipeline that uses ML predictions and per-label
 SHAP attributions as structured context for RAG-grounded code-level
 recommendations, achieving 1.000 groundedness (Claude, Llama) on 12 workloads.
 
@@ -83,7 +83,7 @@ recommendations, achieving 1.000 groundedness (Claude, Llama) on 12 workloads.
 End-to-end validation where LLM-generated code fixes are executed on HPC
 hardware, yielding measured speedups across 7 closed-loop pairs
 (5 IOR + 2 mdtest, geomean 4.26$\times$, range 1.01--44.8$\times$).
-Track~C iterative optimization achieves 5.9$\times$ geomean (Claude)
+Iterative closed-loop optimization achieves 5.9$\times$ geomean (Claude)
 across 8 workloads with 3 LLM models.
 
 \item[$C_5$] \textbf{1.37M production dataset analysis.}
@@ -228,7 +228,7 @@ Script: \texttt{scripts/reproduce\_all.sh --step 6}.
 Compute SHAP values for the best model (XGBoost) on the test set.
 Generate per-label feature importance plots.
 Script: \texttt{scripts/reproduce\_all.sh --step 7}.
-\item[$T_4$:] \textbf{LLM recommendation (IOPrescriber).}
+\item[$T_4$:] \textbf{LLM recommendation.}
 For each of 12 representative workloads: ML predicts bottleneck labels,
 SHAP identifies contributing features, RAG retrieves matching KB entries,
 LLM generates code-level fix recommendations.
@@ -363,9 +363,10 @@ automated verification pass rate.
 \item Iterative-stratified split: 187 dev / 436 test.
 \item Closed-loop speedups: 1.01--44.8$\times$ on 7 pairs
 (5 IOR + 2 mdtest, geometric mean 4.26$\times$).
-\item Track~C iterative: 24 runs (8 workloads $\times$ 3 LLMs),
+\item Iterative closed-loop: 24 runs (8 workloads $\times$ 3 LLMs),
 Claude geomean 5.9$\times$, converges in 1.1 iterations avg.
-\item Cross-system validation: 9 TraceBench real-app traces, F1=0.649.
+\item Cross-system validation: 35 TraceBench traces (28 parseable),
+real-app F1=0.686 (P=0.857), highest precision across all subsets (0.774).
 \end{itemize}
 
 \arttime

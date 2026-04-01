@@ -11,13 +11,13 @@
 #SBATCH --error=results/iterative/sweep_%j.err
 
 # =============================================================================
-# Track C: Full iterative optimization sweep
+# Iterative: Full iterative optimization sweep
 # Runs all workloads x all models x 5 repetitions
 # Estimated: ~8 workloads x 3 models x 5 runs x 3 avg iters = ~360 benchmark jobs
 # =============================================================================
 
 echo "============================================================"
-echo "Track C: FULL SWEEP"
+echo "Iterative: FULL SWEEP"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"

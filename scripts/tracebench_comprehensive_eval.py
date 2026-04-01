@@ -6,7 +6,7 @@ Parses ION diagnosis text and Drishti output for each TraceBench real-app trace,
 maps their detected issues to our 8-dimension taxonomy, and computes per-system
 precision/recall/F1 against TraceBench ground truth.
 
-Also includes Track C context: what our iterative optimizer would do on these traces.
+Also includes Iterative context: what our iterative optimizer would do on these traces.
 """
 
 import json
@@ -268,7 +268,7 @@ def main():
     with open(OUR_RESULTS) as f:
         our_results = json.load(f)
 
-    # Load Track C summary
+    # Load Iterative summary
     trackc = {}
     if TRACKC_SUMMARY.exists():
         with open(TRACKC_SUMMARY) as f:
@@ -419,12 +419,12 @@ def main():
                 "f1": round(f, 4),
             }
 
-    # Track C context
+    # Iterative context
     trackc_context = {
         "applicable": False,
-        "reason": "Track C requires SLURM job submission and new Darshan log collection. "
+        "reason": "Iterative requires SLURM job submission and new Darshan log collection. "
                   "TraceBench traces are from external HPC systems (Summit, Theta, Cori) "
-                  "and cannot be re-executed on Delta. Track C is validated separately "
+                  "and cannot be re-executed on Delta. Iterative is validated separately "
                   "using our own benchmark workloads.",
         "trackc_summary": {},
     }
@@ -444,7 +444,7 @@ def main():
                 default=0,
             ),
         }
-        # Map Track C workloads to TraceBench dimensions
+        # Map Iterative workloads to TraceBench dimensions
         trackc_context["dimension_coverage"] = {
             "ior_fsync_heavy": ["throughput_utilization"],
             "ior_small_posix": ["access_granularity"],
@@ -463,7 +463,7 @@ def main():
     output = {
         "metadata": {
             "date": "2026-03-26",
-            "description": "Comprehensive TraceBench evaluation comparing IOPrescriber (Track B) "
+            "description": "Comprehensive TraceBench evaluation comparing IOPrescriber (Single-shot) "
                           "vs IONavigator 1.0 vs Drishti on 9 real-application Darshan traces",
             "n_traces": 9,
             "n_dimensions": 7,
@@ -521,8 +521,8 @@ def main():
     if trackc:
         best = trackc_context["trackc_summary"]["best_model"]
         geomean = trackc_context["trackc_summary"]["best_geomean"]
-        print(f"\nTrack C (separate validation): Best model={best}, geomean speedup={geomean:.2f}x across {trackc.get('total_runs', 0)} runs")
-        print("Track C not applicable to TraceBench (requires SLURM re-execution)")
+        print(f"\nIterative (separate validation): Best model={best}, geomean speedup={geomean:.2f}x across {trackc.get('total_runs', 0)} runs")
+        print("Iterative not applicable to TraceBench (requires SLURM re-execution)")
 
     print(f"\nResults saved to: {OUTPUT}")
     return output

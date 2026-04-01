@@ -2,7 +2,7 @@
 """
 Run systematic LLM evaluation for SC 2026 paper.
 
-Evaluates IOPrescriber Track B (single-shot recommendation) across:
+Evaluates IOPrescriber Single-shot (single-shot recommendation) across:
   - 12 diverse workloads (covering all 8 bottleneck types)
   - 3 LLM models (Claude Sonnet, GPT-4o, Llama-70b)
   - 5 runs per combination (for variance at temperature=0)

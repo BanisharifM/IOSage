@@ -1,5 +1,5 @@
 """
-Aggregate Track C iterative optimization results into summary metrics.
+Aggregate Iterative iterative optimization results into summary metrics.
 
 Computes per-workload, per-model, and ablation statistics for SC paper.
 """

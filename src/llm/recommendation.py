@@ -1,5 +1,5 @@
 """
-Track B: RAG-Grounded LLM Recommendation Pipeline.
+IOSage Single-Shot RAG-Grounded LLM Recommendation Pipeline.
 
 Single-shot (non-iterative) pipeline that:
 1. Takes ML detection results + SHAP features for a Darshan log
@@ -376,7 +376,7 @@ def recommend_for_sample(features, labels, models, feature_cols, kb_all,
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="LLM Recommendation Pipeline (Track B)")
+    parser = argparse.ArgumentParser(description="IOSage Single-Shot LLM Recommendation Pipeline")
     parser.add_argument("--model", default="claude-sonnet", choices=["claude-sonnet", "gpt-4o"])
     parser.add_argument("--n-samples", type=int, default=5, help="Number of test samples")
     parser.add_argument("--cache-dir", default="data/llm_cache/")

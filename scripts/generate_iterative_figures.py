@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate paper figures and LaTeX tables for Track C iterative optimization results.
+"""Generate paper figures and LaTeX tables for Iterative iterative optimization results.
 
 Figures (saved to paper/figures/iterative/):
   1. fig_convergence.pdf          -- Speedup vs iteration, per workload, faceted by model
-  2. fig_single_vs_iterative.pdf  -- Track B vs Track C grouped bar chart (log-scale)
+  2. fig_single_vs_iterative.pdf  -- Single-shot vs Iterative grouped bar chart (log-scale)
   3. fig_iterative_ablation.pdf   -- Ablation conditions bar chart
   4. fig_cost_vs_speedup.pdf      -- Cost-effectiveness scatter plot
   5. fig_model_comparison_iterative.pdf -- Model comparison (speedup + iters + cost)
@@ -12,7 +12,7 @@ Tables (saved to paper/tables/iterative/):
   1. tab_iterative_results.tex    -- Per-workload detailed results
   2. tab_iterative_models.tex     -- Per-model summary
   3. tab_iterative_ablation.tex   -- Ablation summary
-  4. tab_trackb_vs_trackc.tex     -- Track B vs Track C comparison
+  4. tab_trackb_vs_trackc.tex     -- Single-shot vs Iterative comparison
 
 Usage:
     python scripts/generate_iterative_figures.py
@@ -181,7 +181,7 @@ ABLATION_DISPLAY = {
 }
 ABLATION_ORDER = ["full", "no_ml", "no_kb", "no_shap", "single_shot", "no_feedback"]
 
-# Track B workload name mapping to closed_loop_results.json keys
+# Single-shot workload name mapping to closed_loop_results.json keys
 TRACKB_MAP = {
     "ior_small_posix": "ior_small_posix",
     "ior_fsync_heavy": "ior_fsync_heavy",
@@ -256,15 +256,15 @@ def load_iterative_results(results_dir):
 
 
 def load_trackb_results(path):
-    """Load Track B closed-loop results."""
+    """Load Single-shot closed-loop results."""
     path = Path(path)
     if not path.exists():
-        logger.warning("Track B results not found: %s", path)
+        logger.warning("Single-shot results not found: %s", path)
         return {}
     try:
         data = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to load Track B results: %s", exc)
+        logger.warning("Failed to load Single-shot results: %s", exc)
         return {}
     return data
 
@@ -479,10 +479,10 @@ def fig_convergence(summaries):
 
 
 # ---------------------------------------------------------------------------
-# Figure 2: Track B vs Track C Comparison
+# Figure 2: Single-shot vs Iterative Comparison
 # ---------------------------------------------------------------------------
 def fig_single_vs_iterative(summaries, trackb_data):
-    """Grouped bar chart: Track B (single-shot) vs Track C (iterative) speedup."""
+    """Grouped bar chart: Single-shot (single-shot) vs Iterative (iterative) speedup."""
     logger.info("Generating fig_single_vs_iterative...")
 
     # Get full-ablation results for the best model (or all if only one)
@@ -499,7 +499,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
 
     best_sums = {s["workload"]: s for s in full_sums if s["model"] == best_model}
 
-    # Collect workloads present in both Track B and Track C
+    # Collect workloads present in both Single-shot and Iterative
     workloads = []
     trackb_speeds = []
     trackc_speeds = []
@@ -523,7 +523,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
         trackc_speeds.append(tc_sp if tc_sp else 1.0)
         trackc_stds.append(tc_std)
 
-    # Also add Track C-only workloads
+    # Also add Iterative-only workloads
     for wl, s in best_sums.items():
         if wl in TRACKB_MAP:
             continue
@@ -533,7 +533,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
         trackc_stds.append(s["std_speedup"])
 
     if not workloads:
-        logger.warning("No overlapping workloads for Track B vs C. Skipping.")
+        logger.warning("No overlapping workloads for Single-shot vs C. Skipping.")
         return
 
     x = np.arange(len(workloads))
@@ -542,21 +542,21 @@ def fig_single_vs_iterative(summaries, trackb_data):
     fig, ax = plt.subplots(figsize=STYLE_CONFIG["double_col"])
     cfg = STYLE_CONFIG
 
-    # Track B bars
+    # Single-shot bars
     tb_vals = [v if v is not None else 0 for v in trackb_speeds]
     tb_mask = [v is not None for v in trackb_speeds]
     bars_b = ax.bar(x - width / 2, tb_vals, width,
-                    label="Track B (single-shot)",
+                    label="Single-shot (single-shot)",
                     color=cfg["palette"]["secondary"], edgecolor="black",
                     linewidth=0.5, hatch="//")
 
-    # Track C bars
+    # Iterative bars
     bars_c = ax.bar(x + width / 2, trackc_speeds, width, yerr=trackc_stds,
-                    label="Track C (iterative)",
+                    label="Iterative (iterative)",
                     color=cfg["palette"]["primary"], edgecolor="black",
                     linewidth=0.5, capsize=3, hatch="")
 
-    # Gray out missing Track B bars
+    # Gray out missing Single-shot bars
     for i, present in enumerate(tb_mask):
         if not present:
             bars_b[i].set_color(cfg["palette"]["gray"])
@@ -569,7 +569,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.1f}x"))
     ax.axhline(y=1.0, color="gray", linestyle=":", linewidth=0.5)
     ax.legend(fontsize=cfg["legend_size"])
-    ax.set_title("Track B (Single-Shot) vs Track C (Iterative) Speedup")
+    ax.set_title("Single-shot (Single-Shot) vs Iterative (Iterative) Speedup")
 
     fig.tight_layout()
     save_figure(fig, "fig_single_vs_iterative")
@@ -798,7 +798,7 @@ def tab_iterative_results(summaries):
 
     lines = []
     lines.append(r"\begin{table}[t]")
-    lines.append(r"\caption{Track C iterative optimization results per workload")
+    lines.append(r"\caption{Iterative iterative optimization results per workload")
     lines.append(r"(" + MODEL_DISPLAY.get(best_model, best_model) + r").}")
     lines.append(r"\label{tab:iterative_results}")
     lines.append(r"\centering\small")
@@ -877,7 +877,7 @@ def tab_iterative_models(summaries):
 
     lines = []
     lines.append(r"\begin{table}[t]")
-    lines.append(r"\caption{Track C iterative optimization: per-model summary.}")
+    lines.append(r"\caption{Iterative iterative optimization: per-model summary.}")
     lines.append(r"\label{tab:iterative_models}")
     lines.append(r"\centering\small")
     lines.append(r"\begin{tabular}{lrrrrr}")
@@ -953,18 +953,18 @@ def tab_iterative_ablation(summaries):
 
 
 # ---------------------------------------------------------------------------
-# Table 4: Track B vs Track C
+# Table 4: Single-shot vs Iterative
 # ---------------------------------------------------------------------------
 def tab_trackb_vs_trackc(summaries, trackb_data):
-    """LaTeX table comparing Track B and Track C results."""
+    """LaTeX table comparing Single-shot and Iterative results."""
     logger.info("Generating tab_trackb_vs_trackc...")
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums and not trackb_data:
-        logger.warning("No data for Track B vs C. Skipping.")
+        logger.warning("No data for Single-shot vs C. Skipping.")
         return
 
-    # Best model from Track C
+    # Best model from Iterative
     from collections import defaultdict
     model_speeds = defaultdict(list)
     for s in full_sums:
@@ -977,12 +977,12 @@ def tab_trackb_vs_trackc(summaries, trackb_data):
 
     lines = []
     lines.append(r"\begin{table}[t]")
-    lines.append(r"\caption{Comparison: single-shot (Track B) vs iterative (Track C).}")
+    lines.append(r"\caption{Comparison: single-shot (Single-shot) vs iterative (Iterative).}")
     lines.append(r"\label{tab:trackb_vs_trackc}")
     lines.append(r"\centering\small")
     lines.append(r"\begin{tabular}{lrrr}")
     lines.append(r"\toprule")
-    lines.append(r"\textbf{Workload} & \textbf{Track B} & \textbf{Track C} "
+    lines.append(r"\textbf{Workload} & \textbf{Single-shot} & \textbf{Iterative} "
                  r"& \textbf{Impr.} \\")
     lines.append(r"\midrule")
 
@@ -1086,14 +1086,14 @@ def print_summary(summaries, trackb_data):
                 print(f"  {ABLATION_DISPLAY.get(abl, abl):20s}: {gm:.2f}x "
                       f"(n={len(abl_speeds[abl])})")
 
-    # Track B comparison
+    # Single-shot comparison
     if trackb_data:
         tb_summary = trackb_data.get("summary", {})
         if tb_summary:
-            print(f"\n--- Track B Reference ---")
-            print(f"Track B geometric mean: {tb_summary.get('geometric_mean_write', 'N/A')}x")
-            print(f"Track B harmonic mean:  {tb_summary.get('harmonic_mean_write', 'N/A')}x")
-            print(f"Track B range:          {tb_summary.get('range', 'N/A')}")
+            print(f"\n--- Single-shot Reference ---")
+            print(f"Single-shot geometric mean: {tb_summary.get('geometric_mean_write', 'N/A')}x")
+            print(f"Single-shot harmonic mean:  {tb_summary.get('harmonic_mean_write', 'N/A')}x")
+            print(f"Single-shot range:          {tb_summary.get('range', 'N/A')}")
 
     # Status distribution
     all_statuses = []
@@ -1113,14 +1113,14 @@ def print_summary(summaries, trackb_data):
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Track C iterative optimization figures and tables."
+        description="Generate Iterative iterative optimization figures and tables."
     )
     parser.add_argument("--results-dir", type=str,
                         default=str(PROJECT_DIR / "results" / "iterative"),
                         help="Directory containing iterative result JSON files")
     parser.add_argument("--trackb-results", type=str,
                         default=str(PROJECT_DIR / "results" / "closed_loop" / "closed_loop_results.json"),
-                        help="Path to Track B closed-loop results JSON")
+                        help="Path to Single-shot closed-loop results JSON")
     parser.add_argument("--figures", nargs="*", type=int, default=None,
                         help="Generate only specific figures (1-5). Default: all.")
     args = parser.parse_args()
@@ -1133,7 +1133,7 @@ def main():
 
     if not records:
         logger.warning("No iterative results found. Generating empty placeholder outputs.")
-        # Still generate Track B tables if available
+        # Still generate Single-shot tables if available
         if trackb_data:
             tab_trackb_vs_trackc([], trackb_data)
         print_summary([], trackb_data)

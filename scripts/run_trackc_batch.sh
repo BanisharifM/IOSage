@@ -1,5 +1,5 @@
 #!/bin/bash
-# Track C batch sweep + ablation runner
+# Iterative batch sweep + ablation runner
 # Run from project root: bash scripts/run_trackc_batch.sh
 set -e
 
@@ -71,4 +71,4 @@ done
 echo "=== Phase 4: Aggregate results ==="
 $PYTHON scripts/aggregate_trackc_results.py
 
-echo "=== Track C batch complete ==="
+echo "=== Iterative batch complete ==="

@@ -1,5 +1,5 @@
 """
-SLURM execution wrapper for Track C iterative optimization.
+SLURM execution wrapper for IOSage iterative closed-loop optimization.
 
 Handles: SLURM script generation, job submission, polling, Darshan log
 discovery, and feature extraction for the iterative feedback loop.
@@ -125,7 +125,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - Benchmark Execution"
+echo "IOSage Iterative Optimization - Benchmark Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Date: $(date)"
@@ -204,7 +204,7 @@ cleanup() {{ rm -f "$JOB_SCRATCH"/hacc_checkpoint* 2>/dev/null; rm -rf "$JOB_SCR
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - HACC-IO Execution"
+echo "IOSage Iterative Optimization - HACC-IO Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Collective buffering: {cb}"
@@ -267,7 +267,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - Custom Benchmark Execution"
+echo "IOSage Iterative Optimization - Custom Benchmark Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Date: $(date)"
@@ -352,7 +352,7 @@ cleanup() {{ rm -f "$JOB_SCRATCH"/h5bench_output.h5* "$JOB_SCRATCH"/output.csv 2
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - h5bench Execution"
+echo "IOSage Iterative Optimization - h5bench Execution"
 echo "Job: {job_name}"
 echo "Collective data: {coll}"
 echo "Date: $(date)"
@@ -425,22 +425,33 @@ exit $WRITE_RC
         gpu_partition = "gpuA100x4"
         gpu_account = "bdau-delta-gpu"
 
+        # Use 4 ranks for DLIO (not 16). The original benchmark sweep that
+        # successfully generated 60 GT logs used 4 ranks on CPU. With 16 ranks
+        # and tiny records (64 bytes), PyTorch distributed training hangs on
+        # inter-rank synchronization barriers because the I/O is negligible
+        # relative to synchronization overhead.
+        dlio_ntasks = 4
+
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={gpu_partition}
 #SBATCH --account={gpu_account}
 #SBATCH --nodes=1
-#SBATCH --ntasks={self.ntasks}
+#SBATCH --ntasks={dlio_ntasks}
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus-per-node=1
-#SBATCH --mem=64g
-#SBATCH --time=04:00:00
+#SBATCH --mem=128g
+#SBATCH --time=01:00:00
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
-export DARSHAN_MODMEM=4
+export DARSHAN_MODMEM=16
 export DARSHAN_ENABLE_NONMPI=1
+# Darshan config: exclude Python library paths, increase record limit to 8192
+# Without this, Python's 500+ .so/.pyc imports fill all 1024 POSIX record slots
+# before DLIO reads any actual data files, making the Darshan log useless.
+export DARSHAN_CONFIG_PATH="{PROJECT_DIR}/configs/darshan_dlio.conf"
 mkdir -p "${{DARSHAN_LOGPATH}}"
 
 # Fix PyTorch CUDA library conflict on Delta.
@@ -472,7 +483,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - DLIO Execution"
+echo "IOSage Iterative Optimization - DLIO Execution"
 echo "Job: {job_name}"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
@@ -554,17 +565,41 @@ exit $EXIT_CODE
         t0 = time.time()
         while time.time() - t0 < timeout_seconds:
             try:
+                # Query ONLY the batch step (JobID.batch) to get the overall job state.
+                # Without this filter, sacct returns states for ALL srun sub-steps
+                # (e.g., step .0 = COMPLETED for data gen, step .1 = RUNNING for training).
+                # Seeing COMPLETED from a sub-step would cause premature return.
                 check = subprocess.run(
-                    ["sacct", "-j", job_id, "--format=State", "--noheader", "--parsable2"],
+                    ["sacct", "-j", job_id, "--format=JobID,State",
+                     "--noheader", "--parsable2"],
                     capture_output=True, text=True, timeout=30,
                 )
-                states = [s.strip() for s in check.stdout.strip().split("\n") if s.strip()]
+                # Find the main job state (line where JobID is exactly the job_id,
+                # not a sub-step like job_id.0 or job_id.batch)
+                main_state = None
+                for line in check.stdout.strip().split("\n"):
+                    if not line.strip():
+                        continue
+                    parts = line.strip().split("|")
+                    if len(parts) >= 2 and parts[0].strip() == job_id:
+                        main_state = parts[1].strip()
+                        break
+                if main_state is None:
+                    # Fallback: look for .batch step
+                    for line in check.stdout.strip().split("\n"):
+                        parts = line.strip().split("|")
+                        if len(parts) >= 2 and parts[0].strip() == f"{job_id}.batch":
+                            main_state = parts[1].strip()
+                            break
+                if main_state is None:
+                    time.sleep(poll_interval)
+                    continue
+
                 terminal = {"COMPLETED", "FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"}
-                if any(s in terminal for s in states):
-                    final_state = states[0] if states else "UNKNOWN"
+                if main_state in terminal:
                     elapsed = time.time() - t0
-                    logger.info("  Job %s: %s (%.0fs)", job_id, final_state, elapsed)
-                    return job_id if final_state == "COMPLETED" else None
+                    logger.info("  Job %s: %s (%.0fs)", job_id, main_state, elapsed)
+                    return job_id if main_state == "COMPLETED" else None
             except subprocess.TimeoutExpired:
                 pass
             time.sleep(poll_interval)

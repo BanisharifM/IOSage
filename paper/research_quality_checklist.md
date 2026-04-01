@@ -83,7 +83,7 @@ Yes. Training: NCSA Delta, AMD EPYC 7763, 128 cores, 256GB RAM, CPU only. Produc
 **Contribution-to-artifact mapping:**
 - C1 (ML multi-label detection): trained models + training code + configs
 - C2 (benchmark Knowledge Base): 623 JSON entries + construction pipeline
-- C3 (SHAP-structured LLM recommendations): IOPrescriber pipeline + cached outputs
+- C3 (SHAP-structured LLM recommendations): IOSage pipeline + cached outputs
 - C4 (closed-loop validation): SLURM scripts + before/after Darshan logs
 - C5 (1.37M production dataset analysis): feature extraction + preprocessing pipeline
 

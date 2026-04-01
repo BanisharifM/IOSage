@@ -241,12 +241,12 @@ def fig_llm_groundedness():
 
 
 # ===========================================================================
-# Figure 20: Track B Ablation
+# Figure 20: Single-shot Ablation
 # ===========================================================================
 
 def fig_ablation_trackb():
-    """Bar chart: 5 ablation conditions for Track B pipeline."""
-    logger.info("Generating Figure 20: Track B Ablation...")
+    """Bar chart: 5 ablation conditions for Single-shot pipeline."""
+    logger.info("Generating Figure 20: Single-shot Ablation...")
 
     conditions = ["Full\nPipeline", "No ML\n(LLM only)", "No KB\n(No RAG)",
                   "No SHAP", "ML-Only\n(No LLM)"]
