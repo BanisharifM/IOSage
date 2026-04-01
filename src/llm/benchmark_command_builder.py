@@ -218,6 +218,144 @@ class BenchmarkCommandBuilder:
         cmd += f" -d {out}/mdtest_dir"
         return cmd
 
+    # =========================================================================
+    # HACC-IO Validation and Command Building
+    # =========================================================================
+
+    HACC_EXECUTABLES = {"posix_shared", "mpiio_shared", "fpp"}
+    HACC_IO_DIR = "/work/hdd/bdau/mbanisharifdehkordi/hacc-io"
+
+    def validate_hacc_params(self, params):
+        """Validate LLM-proposed HACC-IO parameters.
+
+        Args:
+            params: dict with keys like executable, num_particles,
+                    collective_buffering.
+
+        Returns:
+            (valid, sanitized_params, errors) tuple
+        """
+        errors = []
+        sanitized = {}
+
+        # Executable
+        exe = params.get("executable", "posix_shared")
+        if exe not in self.HACC_EXECUTABLES:
+            errors.append(
+                f"Invalid executable '{exe}', must be one of {self.HACC_EXECUTABLES}"
+            )
+            exe = "posix_shared"
+        sanitized["executable"] = exe
+
+        # Number of particles
+        try:
+            np = int(params.get("num_particles", 200))
+            if np < 50:
+                errors.append(f"num_particles {np} below minimum 50")
+                np = 50
+            if np > 10_000_000:
+                errors.append(f"num_particles {np} above maximum 10000000")
+                np = 10_000_000
+            sanitized["num_particles"] = np
+        except (ValueError, TypeError):
+            errors.append(f"Invalid num_particles: {params.get('num_particles')}")
+            sanitized["num_particles"] = 200
+
+        # Collective buffering (pass-through, handled at SLURM level)
+        sanitized["collective_buffering"] = params.get("collective_buffering", "disabled")
+
+        valid = len(errors) == 0
+        return valid, sanitized, errors
+
+    def build_hacc_command(self, params, output_dir=None):
+        """Build a safe HACC-IO command string from validated parameters.
+
+        Args:
+            params: dict from validate_hacc_params
+            output_dir: override output directory
+
+        Returns:
+            command string
+        """
+        out = output_dir or self.scratch_dir
+        exe = params.get("executable", "posix_shared")
+        np = params.get("num_particles", 200)
+        cmd = f"{self.HACC_IO_DIR}/hacc_io_{exe} {np} {out}/hacc_checkpoint"
+        return cmd
+
+    # =========================================================================
+    # Custom (load_imbalance) Validation and Command Building
+    # =========================================================================
+
+    CUSTOM_SCRIPT = (
+        "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/benchmarks/custom/load_imbalance.py"
+    )
+    CUSTOM_PYTHON = "/projects/bdau/envs/sc2026/bin/python"
+
+    def validate_custom_params(self, params):
+        """Validate LLM-proposed custom load_imbalance parameters.
+
+        Args:
+            params: dict with keys like imbalance_factor, base_size_mb.
+
+        Returns:
+            (valid, sanitized_params, errors) tuple
+        """
+        errors = []
+        sanitized = {}
+
+        # Imbalance factor
+        try:
+            factor = float(params.get("imbalance_factor", 10))
+            if factor < 1.0:
+                errors.append(f"imbalance_factor {factor} below minimum 1.0")
+                factor = 1.0
+            if factor > 100.0:
+                errors.append(f"imbalance_factor {factor} above maximum 100.0")
+                factor = 100.0
+            sanitized["imbalance_factor"] = factor
+        except (ValueError, TypeError):
+            errors.append(f"Invalid imbalance_factor: {params.get('imbalance_factor')}")
+            sanitized["imbalance_factor"] = 10.0
+
+        # Base size MB
+        try:
+            base = int(params.get("base_size_mb", 10))
+            if base < 1:
+                errors.append(f"base_size_mb {base} below minimum 1")
+                base = 1
+            if base > 500:
+                errors.append(f"base_size_mb {base} above maximum 500")
+                base = 500
+            sanitized["base_size_mb"] = base
+        except (ValueError, TypeError):
+            errors.append(f"Invalid base_size_mb: {params.get('base_size_mb')}")
+            sanitized["base_size_mb"] = 10
+
+        valid = len(errors) == 0
+        return valid, sanitized, errors
+
+    def build_custom_command(self, params, output_dir=None):
+        """Build a safe custom load_imbalance command string.
+
+        Args:
+            params: dict from validate_custom_params
+            output_dir: override output directory
+
+        Returns:
+            command string
+        """
+        out = output_dir or self.scratch_dir
+        factor = params.get("imbalance_factor", 10)
+        base = params.get("base_size_mb", 10)
+        cmd = (
+            f"{self.CUSTOM_PYTHON} {self.CUSTOM_SCRIPT}"
+            f" --imbalance-factor {factor}"
+            f" --base-size-mb {base}"
+            f" --output-dir {out}"
+        )
+        return cmd
+
     def parse_llm_config_changes(self, llm_response):
         """Extract IOR/mdtest parameter changes from LLM response.
 
@@ -271,6 +409,33 @@ class BenchmarkCommandBuilder:
             if "o_direct" in change_lower or "direct" in change_lower:
                 params["add_o_direct"] = True
 
+            # HACC-IO inference
+            if "mpiio" in change_lower and ("shared" in change_lower or "hacc" in change_lower):
+                params["executable"] = "mpiio_shared"
+            elif "posix" in change_lower and ("shared" in change_lower or "hacc" in change_lower):
+                params["executable"] = "posix_shared"
+            elif "file-per-process" in change_lower or "fpp" in change_lower:
+                if "hacc" in change_lower:
+                    params["executable"] = "fpp"
+
+            particle_match = re.search(r"particles?\s+(?:to\s+)?(\d+)", change_lower)
+            if particle_match:
+                params["num_particles"] = int(particle_match.group(1))
+
+            if "collective" in change_lower and "enable" in change_lower:
+                params["collective_buffering"] = "enabled"
+            elif "collective" in change_lower and "disable" in change_lower:
+                params["collective_buffering"] = "disabled"
+
+            # Custom inference
+            imb_match = re.search(r"imbalance\s+(?:factor\s+)?(?:to\s+)?(\d+\.?\d*)", change_lower)
+            if imb_match:
+                params["imbalance_factor"] = float(imb_match.group(1))
+
+            base_match = re.search(r"base[\s_-]size[\s_-]?(?:mb)?\s+(?:to\s+)?(\d+)", change_lower)
+            if base_match:
+                params["base_size_mb"] = int(base_match.group(1))
+
         return params
 
     def apply_changes_to_config(self, base_config, changes):
@@ -292,6 +457,16 @@ class BenchmarkCommandBuilder:
 
         # Direct parameter overrides (mdtest)
         for key in ["items_per_rank", "write_bytes", "read_bytes"]:
+            if key in changes:
+                new_config[key] = changes[key]
+
+        # Direct parameter overrides (HACC-IO)
+        for key in ["executable", "num_particles", "collective_buffering"]:
+            if key in changes:
+                new_config[key] = changes[key]
+
+        # Direct parameter overrides (custom load_imbalance)
+        for key in ["imbalance_factor", "base_size_mb"]:
             if key in changes:
                 new_config[key] = changes[key]
 

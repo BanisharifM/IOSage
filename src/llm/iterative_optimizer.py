@@ -339,6 +339,17 @@ RULES:
 8. The transfer_size (-t) controls I/O granularity. The block_size (-b) and segments (-s)
    control total data volume. Only change -t to fix access_granularity. Only change -a/-c
    to fix interface_choice. Only remove -Y to fix throughput. Only remove -z to fix access_pattern.
+9. For HACC-IO benchmarks:
+   - executable: 'posix_shared', 'mpiio_shared', or 'fpp' (I/O backend)
+   - num_particles: integer [50, 10000000] (data volume = 38 bytes * num_particles per rank)
+   - collective_buffering: 'enabled' or 'disabled' (ROMIO aggregation control)
+   - To fix interface_choice: switch from posix_shared to mpiio_shared
+   - To fix file_strategy: switch from fpp to mpiio_shared
+   - Increase num_particles to increase data volume (amortize overhead)
+10. For custom (load_imbalance) benchmarks:
+   - imbalance_factor: float [1.0, 100.0] (rank 0 writes this many times more data)
+   - base_size_mb: integer [1, 500] (base data size per non-zero rank in MB)
+   - To fix parallelism_efficiency: reduce imbalance_factor toward 1.0
 """
 
         # ML detection section
@@ -452,6 +463,39 @@ Respond in JSON:
     "write_bytes": "new write size per file (optional)",
     "unique_dir": true/false,
     "files_only": true/false
+  },
+  "expected_improvement": "estimated speedup based on KB evidence",
+  "changes_made": ["list of specific changes and WHY they help"],
+  "kb_citations": ["list of KB entry IDs used"]
+}
+"""
+        elif benchmark_type == "hacc_io":
+            user_prompt += """
+## Task:
+Propose HACC-IO parameter changes to fix the detected bottlenecks.
+Respond in JSON:
+{
+  "strategy": "brief description of optimization strategy",
+  "config_changes": {
+    "executable": "posix_shared or mpiio_shared or fpp (optional)",
+    "num_particles": "particle count per rank (optional)",
+    "collective_buffering": "enabled or disabled (optional)"
+  },
+  "expected_improvement": "estimated speedup based on KB evidence",
+  "changes_made": ["list of specific changes and WHY they help"],
+  "kb_citations": ["list of KB entry IDs used"]
+}
+"""
+        elif benchmark_type == "custom":
+            user_prompt += """
+## Task:
+Propose load_imbalance parameter changes to fix the detected bottlenecks.
+Respond in JSON:
+{
+  "strategy": "brief description of optimization strategy",
+  "config_changes": {
+    "imbalance_factor": "new imbalance factor (optional, 1.0 = balanced)",
+    "base_size_mb": "new base data size in MB (optional)"
   },
   "expected_improvement": "estimated speedup based on KB evidence",
   "changes_made": ["list of specific changes and WHY they help"],
@@ -638,13 +682,22 @@ Respond in JSON:
                 sanitized = dict(current_config)
                 baseline_cmd = self.builder.build_mdtest_command(sanitized, output_dir=job_scratch)
                 errs = []
+            elif benchmark_type == "hacc_io":
+                valid, sanitized, errs = self.builder.validate_hacc_params(current_config)
+                baseline_cmd = self.builder.build_hacc_command(sanitized, output_dir=job_scratch)
+            elif benchmark_type == "custom":
+                valid, sanitized, errs = self.builder.validate_custom_params(current_config)
+                baseline_cmd = self.builder.build_custom_command(sanitized, output_dir=job_scratch)
             else:
                 valid, sanitized, errs = self.builder.validate_ior_params(current_config)
                 baseline_cmd = self.builder.build_ior_command(sanitized, output_dir=job_scratch)
+
+            exec_kwargs = {"job_name": job_base, "benchmark_type": benchmark_type}
+            if benchmark_type == "hacc_io":
+                exec_kwargs["hacc_config"] = sanitized
             baseline_result = self.executor.execute_benchmark(
                 baseline_cmd,
-                job_name=job_base,
-                benchmark_type=benchmark_type,
+                **exec_kwargs,
             )
 
             if not baseline_result["success"]:
@@ -767,6 +820,18 @@ Respond in JSON:
                 errs = []
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
+            elif benchmark_type == "hacc_io":
+                valid, sanitized, errs = self.builder.validate_hacc_params(new_config)
+                if errs:
+                    logger.warning("  Config validation warnings: %s", errs[:3])
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
+            elif benchmark_type == "custom":
+                valid, sanitized, errs = self.builder.validate_custom_params(new_config)
+                if errs:
+                    logger.warning("  Config validation warnings: %s", errs[:3])
+                iteration_record["validated_config"] = sanitized
+                iteration_record["validation_errors"] = errs
             else:
                 valid, sanitized, errs = self.builder.validate_ior_params(new_config)
                 if errs:
@@ -780,13 +845,20 @@ Respond in JSON:
                 iter_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{iter_job}"
                 if benchmark_type == "mdtest":
                     cmd = self.builder.build_mdtest_command(sanitized, output_dir=iter_scratch)
+                elif benchmark_type == "hacc_io":
+                    cmd = self.builder.build_hacc_command(sanitized, output_dir=iter_scratch)
+                elif benchmark_type == "custom":
+                    cmd = self.builder.build_custom_command(sanitized, output_dir=iter_scratch)
                 else:
                     cmd = self.builder.build_ior_command(sanitized, output_dir=iter_scratch)
                 logger.info("  Executing: %s", cmd[:120])
+
+                exec_kwargs = {"job_name": iter_job, "benchmark_type": benchmark_type}
+                if benchmark_type == "hacc_io":
+                    exec_kwargs["hacc_config"] = sanitized
                 exec_result = self.executor.execute_benchmark(
                     cmd,
-                    job_name=iter_job,
-                    benchmark_type=benchmark_type,
+                    **exec_kwargs,
                 )
 
                 iteration_record["executed"] = exec_result["success"]

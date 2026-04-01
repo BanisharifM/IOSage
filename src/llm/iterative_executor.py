@@ -57,23 +57,34 @@ class IterativeExecutor:
             self.account, self.partition, self.ntasks,
         )
 
-    def generate_slurm_script(self, job_name, benchmark_command, benchmark_type="ior"):
+    def generate_slurm_script(self, job_name, benchmark_command, benchmark_type="ior",
+                             hacc_config=None):
         """Generate a SLURM batch script for a benchmark run.
 
         Args:
             job_name: unique job identifier
-            benchmark_command: the IOR/mdtest command to run
-            benchmark_type: 'ior' or 'mdtest'
+            benchmark_command: the IOR/mdtest/HACC-IO/custom command to run
+            benchmark_type: 'ior', 'mdtest', 'hacc_io', or 'custom'
+            hacc_config: dict with collective_buffering key (for HACC-IO)
 
         Returns:
             path to the generated .slurm script
         """
-        module_load = "module load ior/3.3.0-gcc13.3.1"
-
         # Use per-job scratch directory to prevent file conflicts between concurrent runs
         job_scratch = f"{self.scratch_dir}/{job_name}"
 
-        script = f"""#!/bin/bash
+        if benchmark_type == "hacc_io":
+            script = self._generate_hacc_slurm(
+                job_name, benchmark_command, job_scratch, hacc_config or {}
+            )
+        elif benchmark_type == "custom":
+            script = self._generate_custom_slurm(
+                job_name, benchmark_command, job_scratch
+            )
+        else:
+            # IOR / mdtest
+            module_load = "module load ior/3.3.0-gcc13.3.1"
+            script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={self.partition}
 #SBATCH --account={self.account}
@@ -128,11 +139,148 @@ fi
 
 exit $EXIT_CODE
 """
+
         script_path = Path(self.results_dir) / f"{job_name}.slurm"
         with open(script_path, "w") as f:
             f.write(script)
         os.chmod(script_path, 0o755)
         return str(script_path)
+
+    def _generate_hacc_slurm(self, job_name, benchmark_command, job_scratch,
+                             hacc_config):
+        """Generate SLURM script for HACC-IO benchmark."""
+        cb = hacc_config.get("collective_buffering", "disabled")
+        if cb == "enabled":
+            hints_line = 'export MPICH_MPIIO_HINTS="*:romio_cb_write=enable:romio_ds_write=disable"'
+        else:
+            hints_line = (
+                'export MPICH_MPIIO_HINTS='
+                '"*:romio_cb_write=disable:romio_cb_read=disable'
+                ':romio_ds_write=disable:romio_ds_read=disable"'
+            )
+
+        return f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --partition={self.partition}
+#SBATCH --account={self.account}
+#SBATCH --nodes={self.nodes}
+#SBATCH --ntasks={self.ntasks}
+#SBATCH --cpus-per-task=1
+#SBATCH --time=01:00:00
+#SBATCH --output={self.results_dir}/{job_name}_%j.out
+#SBATCH --error={self.results_dir}/{job_name}_%j.err
+
+module load PrgEnv-gnu/8.6.0 2>/dev/null || true
+
+export DARSHAN_LOGPATH="{self.darshan_log_dir}"
+mkdir -p "${{DARSHAN_LOGPATH}}"
+
+# ROMIO collective buffering control
+{hints_line}
+export MPICH_MPIIO_HINTS_DISPLAY=1
+
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="{job_scratch}"
+mkdir -p "$JOB_SCRATCH"
+
+# Cleanup HACC-IO checkpoint files on exit
+cleanup() {{ rm -f "$JOB_SCRATCH"/hacc_checkpoint* 2>/dev/null; rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
+trap cleanup EXIT
+
+echo "============================================================"
+echo "Track C Iterative Optimization - HACC-IO Execution"
+echo "Job: {job_name}"
+echo "Command: {benchmark_command}"
+echo "Collective buffering: {cb}"
+echo "Date: $(date)"
+echo "Host: $(hostname)"
+echo "============================================================"
+
+# Run HACC-IO with Darshan instrumentation
+srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+    {benchmark_command}
+
+EXIT_CODE=$?
+echo ""
+echo "Exit code: $EXIT_CODE"
+echo "Completed: $(date)"
+
+# Cleanup checkpoint data files
+rm -f "$JOB_SCRATCH"/hacc_checkpoint* 2>/dev/null || true
+
+# Report Darshan log location
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+if [ -n "$LOGS" ]; then
+    echo "Darshan log: $LOGS"
+else
+    echo "WARNING: No Darshan log found"
+fi
+
+exit $EXIT_CODE
+"""
+
+    def _generate_custom_slurm(self, job_name, benchmark_command, job_scratch):
+        """Generate SLURM script for custom (load_imbalance) benchmark."""
+        return f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --partition={self.partition}
+#SBATCH --account={self.account}
+#SBATCH --nodes={self.nodes}
+#SBATCH --ntasks={self.ntasks}
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=32g
+#SBATCH --time=01:00:00
+#SBATCH --output={self.results_dir}/{job_name}_%j.out
+#SBATCH --error={self.results_dir}/{job_name}_%j.err
+
+export DARSHAN_LOGPATH="{self.darshan_log_dir}"
+export DARSHAN_ENABLE_NONMPI=1
+export DARSHAN_MODMEM=4
+mkdir -p "${{DARSHAN_LOGPATH}}"
+
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="{job_scratch}"
+mkdir -p "$JOB_SCRATCH"
+
+# Cleanup on exit
+cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
+trap cleanup EXIT
+
+echo "============================================================"
+echo "Track C Iterative Optimization - Custom Benchmark Execution"
+echo "Job: {job_name}"
+echo "Command: {benchmark_command}"
+echo "Date: $(date)"
+echo "Host: $(hostname)"
+echo "============================================================"
+
+# Run custom benchmark with Darshan instrumentation
+srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+    {benchmark_command}
+
+EXIT_CODE=$?
+echo ""
+echo "Exit code: $EXIT_CODE"
+echo "Completed: $(date)"
+
+# Report Darshan log location
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+if [ -n "$LOGS" ]; then
+    echo "Darshan log: $LOGS"
+else
+    echo "WARNING: No Darshan log found"
+fi
+
+exit $EXIT_CODE
+"""
 
     def submit_and_wait(self, script_path, timeout_seconds=7200, poll_interval=30):
         """Submit SLURM job and wait for completion.
@@ -270,13 +418,60 @@ exit $EXIT_CODE
                         pass
         return result if result else None
 
-    def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior"):
+    def parse_hacc_output(self, job_id):
+        """Parse HACC-IO stdout to extract write timing and throughput.
+
+        Returns dict with hacc_write_time_s, hacc_total_bytes, or None.
+        """
+        out_pattern = os.path.join(self.results_dir, f"*_{job_id}.out")
+        out_files = glob.glob(out_pattern)
+        if not out_files:
+            return None
+
+        import re
+        result = {}
+        with open(out_files[0]) as f:
+            for line in f:
+                # HACC-IO prints lines like "Checkpoint write: X seconds"
+                if "write" in line.lower() and "second" in line.lower():
+                    match = re.search(r"(\d+\.?\d*)\s*second", line.lower())
+                    if match:
+                        result["hacc_write_time_s"] = float(match.group(1))
+                if "total" in line.lower() and "byte" in line.lower():
+                    match = re.search(r"(\d+)\s*byte", line.lower())
+                    if match:
+                        result["hacc_total_bytes"] = int(match.group(1))
+        return result if result else None
+
+    def parse_custom_output(self, job_id):
+        """Parse custom load_imbalance stdout.
+
+        Returns dict with custom_runtime_s, or None.
+        """
+        out_pattern = os.path.join(self.results_dir, f"*_{job_id}.out")
+        out_files = glob.glob(out_pattern)
+        if not out_files:
+            return None
+
+        import re
+        result = {}
+        with open(out_files[0]) as f:
+            for line in f:
+                if "runtime" in line.lower() or "elapsed" in line.lower():
+                    match = re.search(r"(\d+\.?\d*)\s*(?:s|sec)", line.lower())
+                    if match:
+                        result["custom_runtime_s"] = float(match.group(1))
+        return result if result else None
+
+    def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior",
+                          hacc_config=None):
         """Full execution cycle: generate script -> submit -> wait -> parse.
 
         Args:
-            benchmark_command: IOR/mdtest command string
+            benchmark_command: IOR/mdtest/HACC-IO/custom command string
             job_name: unique identifier
-            benchmark_type: 'ior' or 'mdtest'
+            benchmark_type: 'ior', 'mdtest', 'hacc_io', or 'custom'
+            hacc_config: dict with collective_buffering key (for HACC-IO)
 
         Returns:
             dict with:
@@ -300,7 +495,9 @@ exit $EXIT_CODE
         }
 
         # Generate and submit
-        script = self.generate_slurm_script(job_name, benchmark_command, benchmark_type)
+        script = self.generate_slurm_script(
+            job_name, benchmark_command, benchmark_type, hacc_config=hacc_config
+        )
         job_id = self.submit_and_wait(script)
 
         if not job_id:
@@ -319,11 +516,19 @@ exit $EXIT_CODE
                 result["features"] = features
                 result["success"] = True
 
-        # Also parse IOR stdout for write BW
+        # Also parse benchmark stdout for write BW
         if benchmark_type == "ior":
             ior_out = self.parse_ior_output(job_id)
             if ior_out:
                 result["ior_output"] = ior_out
+        elif benchmark_type == "hacc_io":
+            hacc_out = self.parse_hacc_output(job_id)
+            if hacc_out:
+                result["ior_output"] = hacc_out  # Reuse field for consistency
+        elif benchmark_type == "custom":
+            custom_out = self.parse_custom_output(job_id)
+            if custom_out:
+                result["ior_output"] = custom_out
 
         result["elapsed_s"] = time.time() - t0
         return result
