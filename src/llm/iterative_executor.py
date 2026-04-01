@@ -142,7 +142,7 @@ echo "Exit code: $EXIT_CODE"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*id${{SLURM_JOB_ID}}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else
@@ -225,7 +225,7 @@ echo "Completed: $(date)"
 rm -f "$JOB_SCRATCH"/hacc_checkpoint* 2>/dev/null || true
 
 # Report Darshan log location
-LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*id${{SLURM_JOB_ID}}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else
@@ -284,7 +284,7 @@ echo "Exit code: $EXIT_CODE"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*id${{SLURM_JOB_ID}}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else
@@ -399,7 +399,7 @@ echo "Exit code (write): $WRITE_RC"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*id${{SLURM_JOB_ID}}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else
@@ -476,7 +476,7 @@ echo ""
 echo "DLIO training complete at $(date), exit code: $EXIT_CODE"
 
 # Report Darshan log location
-LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*id${{SLURM_JOB_ID}}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else

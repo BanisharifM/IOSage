@@ -471,7 +471,6 @@ class BenchmarkCommandBuilder:
             "DIM_2": "1",
             "DIM_3": "1",
             "CSV_FILE": "output.csv",
-            "MODE": "SYNC",
         }
 
         # Read configuration
