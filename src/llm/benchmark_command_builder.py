@@ -658,9 +658,17 @@ class BenchmarkCommandBuilder:
         out = data_dir or self.scratch_dir
 
         # Build common Hydra overrides
+        # CRITICAL: Must override record_length_stdev when overriding record_length.
+        # The unet3d_v100 preset has record_length_stdev=68341808 (65MB). If we set
+        # record_length=64 without zeroing stdev, DLIO computes:
+        #   dimension_stdev = 68341808 / 2 / sqrt(64) = 4,271,363
+        # which produces random array shapes in the millions, causing 31+ TiB allocation.
+        # Setting stdev=0 makes dimensions deterministic = sqrt(record_length).
+        record_length_stdev = params.get('record_length_stdev', 0)
         overrides = (
             f"++workload.dataset.data_folder={out}"
             f" ++workload.dataset.record_length={params['record_length']}"
+            f" ++workload.dataset.record_length_stdev={record_length_stdev}"
             f" ++workload.dataset.num_files_train={params['num_files_train']}"
             f" ++workload.dataset.num_samples_per_file={params['num_samples_per_file']}"
             f" ++workload.reader.batch_size={params['batch_size']}"
