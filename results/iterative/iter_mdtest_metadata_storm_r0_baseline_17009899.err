@@ -1,0 +1,6 @@
+MPICH ERROR [Rank 0] [job id 17009899.0] [Thu Mar 26 14:57:46 2026] [cn004.delta.ncsa.illinois.edu] - Abort(1) (rank 0 in comm 480): application called MPI_Abort(comm=0xC4000000, 1) - process 0
+
+srun: error: cn004: task 0: Segmentation fault
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+[2026-03-26T15:19:33.955] error: *** STEP 17009899.0 ON cn004 CANCELLED AT 2026-03-26T15:19:33 DUE to SIGNAL Terminated ***
+[2026-03-26T15:19:33.956] error: *** JOB 17009899 ON cn004 CANCELLED AT 2026-03-26T15:19:33 DUE to SIGNAL Terminated ***

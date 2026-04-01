@@ -1,0 +1,59 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_random_access_r0_i3
+Command: ior -a MPIIO -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -c -F -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_random_access_r0_i3/ior_test_file
+Date: Thu Mar 26 14:20:37 CDT 2026
+Host: cn112.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Thu Mar 26 14:20:37 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a MPIIO -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -c -F -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_random_access_r0_i3/ior_test_file
+Machine             : Linux cn112.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Thu Mar 26 14:20:37 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_random_access_r0_i3
+FS                  : 1.5 TiB   Used FS: 23.1%   Inodes: 2.4 Mi   Used Inodes: 68.4%
+
+Options: 
+api                 : MPIIO
+apiVersion          : (3.1)
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_random_access_r0_i3/ior_test_file
+access              : file-per-process
+type                : collective
+segments            : 10
+ordering in a file  : sequential
+ordering inter file : constant task offset
+task offset         : 1
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 1 MiB
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+WARNING: Expected aggregate file size       = 16777216000.
+WARNING: Stat() of aggregate file size      = 1048576000.
+WARNING: Using actual aggregate bytes moved = 16777216000.
+write     1594.97    1596.12    0.084861    102400     1024.00    0.224606   10.02      2.40       10.03      0   
+WARNING: Expected aggregate file size       = 16777216000.
+WARNING: Stat() of aggregate file size      = 1048576000.
+WARNING: Using actual aggregate bytes moved = 16777216000.
+read      20001      20060      0.005696    102400     1024.00    0.003573   0.797619   0.550780   0.799973   0   
+remove    -          -          -           -          -          -          -          -          2.70       0   
+Max Write: 1594.97 MiB/sec (1672.44 MB/sec)
+Max Read:  20000.67 MiB/sec (20972.22 MB/sec)
+
+Summary of all tests:
+Operation   Max(MiB)   Min(MiB)  Mean(MiB)     StdDev   Max(OPs)   Min(OPs)  Mean(OPs)     StdDev    Mean(s) Stonewall(s) Stonewall(MiB) Test# #Tasks tPN reps fPP reord reordoff reordrand seed segcnt   blksiz    xsize aggs(MiB)   API RefNum
+write        1594.97    1594.97    1594.97       0.00    1594.97    1594.97    1594.97       0.00   10.03156         NA            NA     0     16  16    1   2     1        1         0    0     10 104857600  1048576   16000.0 MPIIO      0
+read        20000.67   20000.67   20000.67       0.00   20000.67   20000.67   20000.67       0.00    0.79997         NA            NA     0     16  16    1   2     1        1         0    0     10 104857600  1048576   16000.0 MPIIO      0
+Finished            : Thu Mar 26 14:20:51 2026
+
+Exit code: 0
+Completed: Thu Mar 26 14:20:52 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17009659-2802836_3-26-51637-2595598219469261026_1.darshan

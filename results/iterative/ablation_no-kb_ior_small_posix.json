@@ -1,0 +1,160 @@
+[
+  {
+    "workload": "ior_small_posix",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": false,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999
+        },
+        "strategy": "Increase transfer size from 64B to 1MB to reduce syscall overhead and improve I/O efficiency",
+        "config_changes": {
+          "transfer_size": "1048576",
+          "extra_flags": "-e -C -w -r"
+        },
+        "changes_made": [
+          "Increased transfer_size from 64B to 1MB to match block_size",
+          "This reduces POSIX_WRITES from 26,214,400 to ~1,600 operations",
+          "Eliminates the small_io_ratio=1.0 bottleneck",
+          "Maintains same total data volume (1GB per process)",
+          "Keeps file-per-process to avoid coordination overhead"
+        ],
+        "kb_citations": [],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 16758.5,
+          "tokens_input": 1112,
+          "tokens_output": 228,
+          "timestamp": "2026-03-26T13:40:47Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "POSIX",
+          "transfer_size": "1048576",
+          "block_size": "1048576",
+          "segments": "100",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.72110891342163,
+        "new_predictions": {
+          "access_granularity": 0.3199,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0013,
+          "throughput_utilization": 0.0032,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 5.45,
+        "new_bw": 138.46180762383491
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 0.3199
+        },
+        "strategy": "Switch to MPI-IO with collective buffering to optimize large transfer I/O patterns and reduce per-process overhead",
+        "config_changes": {
+          "api": "MPIIO",
+          "collective": true,
+          "extra_flags": "-e -C -w -r -c"
+        },
+        "changes_made": [
+          "Changed from POSIX to MPI-IO API to leverage collective I/O optimizations",
+          "Added collective buffering (-c flag) to coordinate writes across processes",
+          "Maintained 1MB transfer size to preserve current access_granularity benefits",
+          "Kept file-per-process pattern but with MPI-IO collective coordination"
+        ],
+        "kb_citations": [],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 4697.5,
+          "tokens_input": 1367,
+          "tokens_output": 208,
+          "timestamp": "2026-03-26T13:41:52Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "MPIIO",
+          "transfer_size": "1048576",
+          "block_size": "1048576",
+          "segments": "100",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r -c"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 30.48702573776245,
+        "new_predictions": {
+          "access_granularity": 0.3533,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0001,
+          "file_strategy": 0.0016,
+          "throughput_utilization": 0.004,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "access_granularity"
+        ],
+        "speedup": 5.64,
+        "new_bw": 143.31106268661165
+      }
+    ],
+    "best_iteration": 1,
+    "best_speedup": 5.64,
+    "best_config": {
+      "api": "MPIIO",
+      "transfer_size": "1048576",
+      "block_size": "1048576",
+      "segments": "100",
+      "file_per_proc": true,
+      "extra_flags": "-e -C -w -r -c"
+    },
+    "final_status": "plateau",
+    "total_cost_usd": 0.014,
+    "total_tokens": 2915,
+    "total_llm_latency_ms": 21456.0,
+    "total_execution_time_s": 91.20813465118408,
+    "baseline_bw": 25.390493482974975,
+    "baseline_metrics": {
+      "total_bw_mb_s": 27.919623843571614,
+      "write_bw_mb_s": 25.390493482974975,
+      "read_bw_mb_s": 31.00834466661363,
+      "avg_write_size": 64.0,
+      "seq_write_ratio": 0.9999993896484375,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.1972002334313616,
+      "POSIX_BYTES_WRITTEN": 1677721600.0,
+      "POSIX_WRITES": 26214400.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 12.393904447555542,
+      "nprocs": 16
+    },
+    "total_iterations": 2
+  }
+]

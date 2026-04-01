@@ -1,0 +1,17 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_mdtest_metadata_storm_r0_baseline
+Command: mdtest -n 10000 -w 100 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline/mdtest_dir
+Date: Thu Mar 26 14:23:52 CDT 2026
+Host: cn058.delta.ncsa.illinois.edu
+============================================================
+-- started at 03/26/2026 14:23:52 --
+
+mdtest-3.3.0 was launched with 16 total task(s) on 1 node(s)
+Command line used: /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/mdtest '-n' '10000' '-w' '100' '-F' '-d' '/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline/mdtest_dir'
+Path: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline
+FS: 1.5 TiB   Used FS: 22.8%   Inodes: 2.4 Mi   Used Inodes: 68.4%
+
+Nodemap: 1111111111111111
+16 tasks, 160000 files
+03/26/2026 14:30:03: Process 0: FAILED in create_remove_directory_tree, Unable to remove directory /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline/mdtest_dir/test-dir.0-0/mdtest_tree.0/: Directory not empty

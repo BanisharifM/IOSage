@@ -1,0 +1,27 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_misaligned_r0_baseline
+Command: ior -a POSIX -t 1000 -b 1048576 -s 50 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Date: Wed Mar 25 17:09:57 CDT 2026
+Host: cn114.delta.ncsa.illinois.edu
+============================================================
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+ior ERROR: block size must be a multiple of transfer size, errno 2, No such file or directory (ior.c:1598)
+
+Exit code: 255
+Completed: Wed Mar 25 17:09:58 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17000674-1469559_3-25-61715-10939325317125633079_1.darshan

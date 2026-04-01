@@ -1,0 +1,58 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_fsync_heavy_r0_baseline
+Command: ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Date: Thu Mar 26 13:43:26 CDT 2026
+Host: cn064.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Thu Mar 26 13:43:26 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Machine             : Linux cn064.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Thu Mar 26 13:43:26 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
+FS                  : 1.5 TiB   Used FS: 23.3%   Inodes: 2.4 Mi   Used Inodes: 74.2%
+
+Options: 
+api                 : POSIX
+apiVersion          : 
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+access              : file-per-process
+type                : independent
+segments            : 10
+ordering in a file  : sequential
+ordering inter file : constant task offset
+task offset         : 1
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 65536 bytes
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000004", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000007", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000012", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000010", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000013", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000000", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000001", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000002", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000009", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000014", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000015", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000003", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000005", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000008", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000011", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+ior ERROR: stat("/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file.00000006", ...) failed, errno 2, No such file or directory (aiori-POSIX.c:636)
+
+Exit code: 255
+Completed: Thu Mar 26 13:48:57 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17009235-70276_3-26-49673-1968703944481261409_1.darshan

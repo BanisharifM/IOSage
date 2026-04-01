@@ -1,0 +1,53 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_random_access_r0_baseline
+Command: ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -z -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Date: Thu Mar 26 13:45:20 CDT 2026
+Host: cn004.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Thu Mar 26 13:45:20 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -z -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Machine             : Linux cn004.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Thu Mar 26 13:45:20 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
+FS                  : 1.5 TiB   Used FS: 23.7%   Inodes: 2.4 Mi   Used Inodes: 74.8%
+
+Options: 
+api                 : POSIX
+apiVersion          : 
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+access              : file-per-process
+type                : independent
+segments            : 10
+ordering in a file  : random
+ordering inter file : constant task offset
+task offset         : 1
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 65536 bytes
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+write     1973.82    31615      0.004851    102400     64.00      0.020009   8.10       1.98       8.11       0   
+read      5584       89625      0.001778    102400     64.00      0.031322   2.86       2.69       2.87       0   
+remove    -          -          -           -          -          -          -          -          3.02       0   
+Max Write: 1973.82 MiB/sec (2069.70 MB/sec)
+Max Read:  5584.12 MiB/sec (5855.38 MB/sec)
+
+Summary of all tests:
+Operation   Max(MiB)   Min(MiB)  Mean(MiB)     StdDev   Max(OPs)   Min(OPs)  Mean(OPs)     StdDev    Mean(s) Stonewall(s) Stonewall(MiB) Test# #Tasks tPN reps fPP reord reordoff reordrand seed segcnt   blksiz    xsize aggs(MiB)   API RefNum
+write        1973.82    1973.82    1973.82       0.00   31581.06   31581.06   31581.06       0.00    8.10612         NA            NA     0     16  16    1   1     1        1         0    0     10 104857600    65536   16000.0 POSIX      0
+read         5584.12    5584.12    5584.12       0.00   89345.97   89345.97   89345.97       0.00    2.86527         NA            NA     0     16  16    1   1     1        1         0    0     10 104857600    65536   16000.0 POSIX      0
+Finished            : Thu Mar 26 13:45:35 2026
+
+Exit code: 0
+Completed: Thu Mar 26 13:45:35 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17009205-1859684_3-26-49520-8214753616080815485_1.darshan

@@ -1,0 +1,79 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_random_access_r0_i0
+Command: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Date: Thu Mar 26 13:24:20 CDT 2026
+Host: cn047.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Thu Mar 26 13:24:20 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+Machine             : Linux cn047.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Thu Mar 26 13:24:20 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
+FS                  : 1.5 TiB   Used FS: 22.8%   Inodes: 2.4 Mi   Used Inodes: 68.5%
+
+Options: 
+api                 : POSIX
+apiVersion          : 
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+access              : file-per-process
+type                : independent
+segments            : 10
+ordering in a file  : sequential
+ordering inter file : constant task offset
+task offset         : 1
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 1 MiB
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+WARNING: Expected aggregate file size       = 16777216000.
+WARNING: Stat() of aggregate file size      = 1409089536.
+WARNING: Using actual aggregate bytes moved = 16777216000.
+write     811.16     811.21     0.191912    102400     1024.00    0.005124   19.72      17.33      19.72      0   
+WARNING: Task 2, partial read(), 524288 of 1048576 bytes at offset 83886080
+ior ERROR: read(7, 0x7f3032694000, 524288) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 1, partial read(), 458752 of 1048576 bytes at offset 80740352
+ior ERROR: read(7, 0x7f6ff686a000, 589824) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 0, partial read(), 720896 of 1048576 bytes at offset 89128960
+ior ERROR: read(7, 0x7fc6dbce8000, 327680) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 12, partial read(), 851968 of 1048576 bytes at offset 70254592
+ior ERROR: read(7, 0x7f04f06ec000, 196608) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 15, partial read(), 851968 of 1048576 bytes at offset 84934656
+ior ERROR: read(7, 0x7f5766a31000, 196608) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 11, partial read(), 524288 of 1048576 bytes at offset 67108864
+ior ERROR: read(7, 0x7f2da29fb000, 524288) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 9, partial read(), 65536 of 1048576 bytes at offset 68157440
+ior ERROR: read(7, 0x7fe17db48000, 983040) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 5, partial read(), 262144 of 1048576 bytes at offset 99614720
+WARNING: Task 5, partial read(), 65536 of 786432 bytes at offset 99876864
+ior ERROR: read(7, 0x7f6414dbb000, 720896) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 13, partial read(), 131072 of 1048576 bytes at offset 125829120
+ior ERROR: read(7, 0x7feaf3416000, 917504) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 14, partial read(), 131072 of 1048576 bytes at offset 70254592
+ior ERROR: read(7, 0x7fef02ecc000, 917504) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 4, partial read(), 720896 of 1048576 bytes at offset 81788928
+ior ERROR: read(7, 0x7f26d38b4000, 327680) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 6, partial read(), 262144 of 1048576 bytes at offset 79691776
+ior ERROR: read(7, 0x7f2cb238c000, 786432) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 3, partial read(), 196608 of 1048576 bytes at offset 78643200
+ior ERROR: read(7, 0x7f58c5b6b000, 851968) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 10, partial read(), 524288 of 1048576 bytes at offset 110100480
+ior ERROR: read(7, 0x7f6eb7f1d000, 524288) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 7, partial read(), 524288 of 1048576 bytes at offset 124780544
+ior ERROR: read(7, 0x7f5eca3d8000, 524288) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+WARNING: Task 8, partial read(), 65536 of 1048576 bytes at offset 106954752
+ior ERROR: read(7, 0x7fddc36d4000, 983040) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+
+Exit code: 255
+Completed: Thu Mar 26 13:24:41 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17008978-1519120_3-26-48223-1333074194818327112_2.darshan

@@ -1,0 +1,62 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_ior_fsync_heavy_r0_baseline
+Command: ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_baseline/ior_test_file
+Date: Thu Mar 26 14:06:58 CDT 2026
+Host: cn038.delta.ncsa.illinois.edu
+============================================================
+IOR-3.3.0: MPI Coordinated Test of Parallel I/O
+Began               : Thu Mar 26 14:06:59 2026
+Command line        : /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_baseline/ior_test_file
+Machine             : Linux cn038.delta.ncsa.illinois.edu
+TestID              : 0
+StartTime           : Thu Mar 26 14:06:59 2026
+Path                : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_baseline
+FS                  : 1.5 TiB   Used FS: 23.8%   Inodes: 2.4 Mi   Used Inodes: 68.4%
+
+Options: 
+api                 : POSIX
+apiVersion          : 
+test filename       : /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_baseline/ior_test_file
+access              : file-per-process
+type                : independent
+segments            : 10
+ordering in a file  : sequential
+ordering inter file : constant task offset
+task offset         : 1
+nodes               : 1
+tasks               : 16
+clients per node    : 16
+repetitions         : 1
+xfersize            : 65536 bytes
+blocksize           : 100 MiB
+aggregate filesize  : 15.62 GiB
+
+Results: 
+
+access    bw(MiB/s)  IOPS       Latency(s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   total(s)   iter
+------    ---------  ----       ----------  ---------- ---------  --------   --------   --------   --------   ----
+WARNING: Expected aggregate file size       = 16777216000.
+WARNING: Stat() of aggregate file size      = 2400387072.
+WARNING: Using actual aggregate bytes moved = 16777216000.
+write     41.24      659.77     0.236788    102400     64.00      0.019523   388.01     276.43     388.02     0   
+ior ERROR: read(7, 0x723000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x18c6000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x1b93000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x1a0e000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x1cf0000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x8f1000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x192e000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x2430000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0xc64000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0xf99000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x224f000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x105e000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x18dc000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x1530000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x16d5000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+ior ERROR: read(7, 0x1706000, 65536) returned EOF prematurely, errno 2, No such file or directory (aiori-POSIX.c:547)
+
+Exit code: 255
+Completed: Thu Mar 26 14:13:29 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_ior_id17009597-129333_3-26-51126-14312171637104840834_1.darshan

@@ -1,0 +1,104 @@
+[
+  {
+    "workload": "mdtest_metadata_storm",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 1,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9995
+        },
+        "strategy": "Reduce metadata intensity by significantly decreasing file count while maintaining total data volume through larger per-file writes",
+        "config_changes": {
+          "items_per_rank": 1000,
+          "write_bytes": 1000
+        },
+        "changes_made": [
+          "Reduced items_per_rank from 10,000 to 1,000 (10x fewer files per rank)",
+          "Increased write_bytes from 100 to 1,000 (10x larger writes per file)",
+          "Maintains same total data volume: 16 ranks \u00d7 1,000 files \u00d7 1,000 bytes = 16MB total",
+          "Reduces total metadata operations from 160,000 to 16,000 file creates/opens/closes",
+          "Shifts workload from metadata-intensive to more balanced I/O pattern"
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n10000_r32_rep3_237",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep3_229",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep2_228"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 115663.8,
+          "tokens_input": 1534,
+          "tokens_output": 345,
+          "timestamp": "2026-03-26T15:30:21Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 1000,
+          "write_bytes": 1000,
+          "files_only": true,
+          "unique_dir": false
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 108.56477522850037,
+        "new_predictions": {
+          "access_granularity": 0.0145,
+          "metadata_intensity": 0.9889,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0007,
+          "interface_choice": 0.0,
+          "file_strategy": 0.006,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 7.03,
+        "new_bw": 0.027775494603958024
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 7.03,
+    "best_config": {
+      "items_per_rank": 1000,
+      "write_bytes": 1000,
+      "files_only": true,
+      "unique_dir": false
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0098,
+    "total_tokens": 1879,
+    "total_llm_latency_ms": 115663.8,
+    "total_execution_time_s": 108.56477522850037,
+    "baseline_bw": 0.003951351458422067,
+    "baseline_metrics": {
+      "total_bw_mb_s": 0.003951351458422067,
+      "write_bw_mb_s": 0.003951351458422067,
+      "read_bw_mb_s": 0.0,
+      "avg_write_size": 100.0,
+      "seq_write_ratio": 0.0,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.0916974323990067,
+      "POSIX_BYTES_WRITTEN": 1638400.0,
+      "POSIX_WRITES": 16384.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 376.08486557006836,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

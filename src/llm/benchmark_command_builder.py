@@ -119,17 +119,27 @@ class BenchmarkCommandBuilder:
 
         # Extra flags - only allow known safe flags
         extra = params.get("extra_flags", "-e -C -w -r")
+        # Pre-process: merge "-O useO_DIRECT=1" into single token "-O useO_DIRECT=1"
+        extra_str = str(extra)
+        extra_str = re.sub(r'-O\s+useO_DIRECT=1', '-O useO_DIRECT=1', extra_str)
+        tokens = []
+        for part in extra_str.split():
+            if part == "-O":
+                # Standalone -O; will be merged with next token if it's useO_DIRECT=1
+                tokens.append(part)
+            elif tokens and tokens[-1] == "-O" and "useO_DIRECT" in part:
+                tokens[-1] = f"-O {part}"
+            else:
+                tokens.append(part)
         safe_flags = []
-        for flag in str(extra).split():
+        for flag in tokens:
             # Always include -w -r (write and read)
             if flag in ("-w", "-r"):
                 safe_flags.append(flag)
             elif flag in self.allowed_flags:
                 safe_flags.append(flag)
-            elif flag.startswith("-O"):
-                # Allow IOR options like -O useO_DIRECT=1
-                if "useO_DIRECT" in flag or "=" in extra:
-                    safe_flags.append(flag)
+            elif flag.startswith("-O") and "useO_DIRECT" in flag:
+                safe_flags.append(flag)
             else:
                 errors.append(f"Filtered unsafe flag: {flag}")
         # Ensure we always have -w -r
@@ -151,6 +161,22 @@ class BenchmarkCommandBuilder:
             sanitized["extra_flags"] = sanitized["extra_flags"].replace(
                 "-O useO_DIRECT=1", ""
             ).strip()
+
+        # IOR constraint: block_size must be a multiple of transfer_size
+        ts_int = int(sanitized["transfer_size"])
+        bs_int = int(sanitized["block_size"])
+        if ts_int > 0 and bs_int % ts_int != 0:
+            # Round block_size up to next multiple of transfer_size
+            new_bs = ((bs_int + ts_int - 1) // ts_int) * ts_int
+            new_bs = min(new_bs, self.max_block_size)
+            if new_bs % ts_int != 0:
+                # If rounding up exceeds max, round down
+                new_bs = (self.max_block_size // ts_int) * ts_int
+            errors.append(
+                f"block_size {bs_int} not a multiple of transfer_size {ts_int}, "
+                f"adjusted to {new_bs}"
+            )
+            sanitized["block_size"] = str(new_bs)
 
         valid = len(errors) == 0
         return valid, sanitized, errors
@@ -259,8 +285,13 @@ class BenchmarkCommandBuilder:
         """
         new_config = dict(base_config)
 
-        # Direct parameter overrides
-        for key in ["api", "transfer_size", "block_size", "segments"]:
+        # Direct parameter overrides (IOR)
+        for key in ["api", "transfer_size", "block_size", "segments", "extra_flags"]:
+            if key in changes:
+                new_config[key] = changes[key]
+
+        # Direct parameter overrides (mdtest)
+        for key in ["items_per_rank", "write_bytes", "read_bytes"]:
             if key in changes:
                 new_config[key] = changes[key]
 
@@ -272,6 +303,10 @@ class BenchmarkCommandBuilder:
                 flags = new_config.get("extra_flags", "")
                 if "-c" not in flags:
                     new_config["extra_flags"] = flags + " -c"
+        if "unique_dir" in changes:
+            new_config["unique_dir"] = changes["unique_dir"]
+        if "files_only" in changes:
+            new_config["files_only"] = changes["files_only"]
 
         # Flag removal
         if changes.get("remove_Y"):
