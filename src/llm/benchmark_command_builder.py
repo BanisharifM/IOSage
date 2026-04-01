@@ -678,14 +678,14 @@ class BenchmarkCommandBuilder:
             overrides += f" ++workload.reader.file_shuffle={params['file_shuffle']}"
 
         datagen_cmd = (
-            f"{self.DLIO_BIN} workload=unet3d"
+            f"{self.DLIO_BIN} workload=unet3d_v100"
             f" ++workload.workflow.generate_data=True"
             f" ++workload.workflow.train=False"
             f" {overrides}"
         )
 
         training_cmd = (
-            f"{self.DLIO_BIN} workload=unet3d"
+            f"{self.DLIO_BIN} workload=unet3d_v100"
             f" ++workload.workflow.generate_data=False"
             f" ++workload.workflow.train=True"
             f" {overrides}"
