@@ -36,4 +36,4 @@ srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
 
 echo "Exit code: $?"
 echo "Completed: $(date)"
-ls -la ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | tail -1
+ls -la ${DARSHAN_LOGPATH}/*id${SLURM_JOB_ID}* 2>/dev/null || echo "WARNING: No Darshan log found for job $SLURM_JOB_ID"
