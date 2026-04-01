@@ -1,0 +1,32 @@
+============================================================
+Track C Iterative Optimization - Benchmark Execution
+Job: iter_mdtest_metadata_storm_r0_baseline
+Command: mdtest -n 10000 -w 100 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline/mdtest_dir
+Date: Wed Apr  1 03:08:33 CDT 2026
+Host: cn061.delta.ncsa.illinois.edu
+============================================================
+-- started at 04/01/2026 03:08:33 --
+
+mdtest-3.3.0 was launched with 16 total task(s) on 1 node(s)
+Command line used: /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/mdtest '-n' '10000' '-w' '100' '-F' '-d' '/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline/mdtest_dir'
+Path: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline
+FS: 1.5 TiB   Used FS: 23.0%   Inodes: 2.4 Mi   Used Inodes: 71.0%
+
+Nodemap: 1111111111111111
+16 tasks, 160000 files
+
+SUMMARY rate: (of 1 iterations)
+   Operation                      Max            Min           Mean        Std Dev
+   ---------                      ---            ---           ----        -------
+   File creation             :        952.113        952.113        952.113          0.000
+   File stat                 :      34782.550      34779.648      34781.774          0.866
+   File read                 :      12373.713      12373.044      12373.406          0.181
+   File removal              :       3297.905       3297.003       3297.830          0.214
+   Tree creation             :        139.005        139.005        139.005          0.000
+   Tree removal              :         90.948         90.948         90.948          0.000
+-- finished at 04/01/2026 03:12:27 --
+
+
+Exit code: 0
+Completed: Wed Apr  1 03:12:29 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_mdtest_id17180927-2303158_4-1-11313-3212632064145422084_2.darshan

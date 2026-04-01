@@ -1,0 +1,338 @@
+[
+  {
+    "workload": "h5bench_interleaved_pattern",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "interface_choice"
+        ],
+        "predictions": {
+          "interface_choice": 0.78
+        },
+        "strategy": "Enable HDF5 collective I/O to fix interface_choice bottleneck by using coordinated parallel writes instead of independent POSIX-style access",
+        "config_changes": {
+          "COLLECTIVE_DATA": "YES"
+        },
+        "changes_made": [
+          "Enable COLLECTIVE_DATA=YES to use HDF5 collective I/O instead of independent writes",
+          "This fixes the interface_choice bottleneck by coordinating parallel writes across ranks",
+          "Collective I/O automatically handles the interleaved access pattern more efficiently than independent POSIX-style writes"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_interleaved_n16_r3_523",
+          "h5bench_h5b_indep_interleaved_n16_r2_522",
+          "h5bench_h5b_indep_interleaved_n16_r1_521"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 28396.8,
+          "tokens_input": 2551,
+          "tokens_output": 258,
+          "timestamp": "2026-04-01T03:38:38Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "NO",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "INTERLEAVED",
+          "FILE_PATTERN": "INTERLEAVED"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 30.44393515586853,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9973,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0002,
+          "file_strategy": 0.001,
+          "throughput_utilization": 0.0375,
+          "healthy": 0.0002
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 2.52,
+        "new_bw": 123.39581694444892
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9973
+        },
+        "strategy": "Fix parallelism efficiency by switching to contiguous memory and file patterns to eliminate interleaved access causing load imbalance, and enable collective metadata operations for better coordination",
+        "config_changes": {
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG",
+          "COLLECTIVE_METADATA": "YES"
+        },
+        "changes_made": [
+          "Changed MEM_PATTERN from INTERLEAVED to CONTIG - eliminates non-contiguous memory access that causes uneven load distribution across ranks",
+          "Changed FILE_PATTERN from INTERLEAVED to CONTIG - eliminates interleaved file layout that forces ranks to compete for same file regions, reducing time_imbalance (0.1702)",
+          "Enabled COLLECTIVE_METADATA=YES - provides better coordination for metadata operations, reducing byte_imbalance (0.2437) through synchronized operations"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_interleaved_n16_r3_523",
+          "h5bench_h5b_indep_interleaved_n16_r2_522",
+          "h5bench_h5b_indep_interleaved_n16_r1_521"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6526.2,
+          "tokens_input": 2786,
+          "tokens_output": 340,
+          "timestamp": "2026-04-01T03:39:15Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.61492657661438,
+        "new_predictions": {
+          "access_granularity": 0.0002,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9989,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0001,
+          "file_strategy": 0.0074,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0294
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 35.83,
+        "new_bw": 1756.1676264507853
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9989
+        },
+        "strategy": "Switch to contiguous memory and file patterns to eliminate interleaved access that causes load imbalance, while maintaining collective I/O for coordination",
+        "config_changes": {
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "changes_made": [
+          "Keep MEM_PATTERN=CONTIG and FILE_PATTERN=CONTIG to ensure contiguous access patterns that distribute load evenly across ranks",
+          "Maintain COLLECTIVE_DATA=YES to use coordinated HDF5 collective I/O operations",
+          "Keep current DIM_1=262144 to maintain sufficient I/O granularity"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_interleaved_n16_r3_523",
+          "h5bench_h5b_indep_interleaved_n16_r2_522",
+          "h5bench_h5b_indep_interleaved_n16_r1_521"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 10347.0,
+          "tokens_input": 2778,
+          "tokens_output": 468,
+          "timestamp": "2026-04-01T03:40:26Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.516210079193115,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.999,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0005,
+          "file_strategy": 0.0079,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0327
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 33.73,
+        "new_bw": 1653.0903006648457
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.999
+        },
+        "strategy": "Increase data volume per rank to reduce parallelism imbalance and amortize coordination overhead",
+        "config_changes": {
+          "DIM_1": 1048576
+        },
+        "changes_made": [
+          "Increased DIM_1 from 262144 to 1048576 (4x larger) to give each rank more work per timestep",
+          "Larger per-rank data volumes help balance load distribution and reduce relative coordination overhead",
+          "With 4x more data per rank, the time_imbalance (0.3329) should decrease as ranks have more substantial work to do",
+          "Keeps collective I/O enabled to maintain coordination benefits while reducing imbalance"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_interleaved_n16_r3_523",
+          "h5bench_h5b_indep_interleaved_n16_r2_522",
+          "h5bench_h5b_indep_interleaved_n16_r1_521"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6470.4,
+          "tokens_input": 2778,
+          "tokens_output": 288,
+          "timestamp": "2026-04-01T03:41:33Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 1048576,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.54802656173706,
+        "new_predictions": {
+          "access_granularity": 0.0122,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.998,
+          "access_pattern": 0.0001,
+          "interface_choice": 0.0003,
+          "file_strategy": 0.0426,
+          "throughput_utilization": 0.0002,
+          "healthy": 0.0061
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 55.23,
+        "new_bw": 2707.1549213859776
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.998
+        },
+        "strategy": "Reduce parallelism imbalance by decreasing data volume per rank to minimize coordination overhead and load imbalance",
+        "config_changes": {
+          "DIM_1": 262144
+        },
+        "changes_made": [
+          "Reduced DIM_1 from 1048576 to 262144 (4x smaller) to decrease per-rank data volume from ~8MB to ~2MB per timestep",
+          "Smaller per-rank writes reduce coordination overhead in collective I/O operations",
+          "Lower data volume per rank should reduce time and byte imbalance across ranks",
+          "Maintains same collective I/O settings that were working well in previous iteration"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_interleaved_n16_r3_523",
+          "h5bench_h5b_indep_interleaved_n16_r2_522",
+          "h5bench_h5b_indep_interleaved_n16_r1_521"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6239.4,
+          "tokens_input": 2783,
+          "tokens_output": 276,
+          "timestamp": "2026-04-01T03:42:40Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.53125834465027,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9987,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0007,
+          "file_strategy": 0.0039,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0386
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 37.14,
+        "new_bw": 1820.5219888438467
+      }
+    ],
+    "best_iteration": 3,
+    "best_speedup": 55.23,
+    "best_config": {
+      "DIM_1": 1048576,
+      "COLLECTIVE_DATA": "YES",
+      "COLLECTIVE_METADATA": "YES",
+      "TIMESTEPS": 5,
+      "MEM_PATTERN": "CONTIG",
+      "FILE_PATTERN": "CONTIG"
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0655,
+    "total_tokens": 15306,
+    "total_llm_latency_ms": 57979.8,
+    "total_execution_time_s": 272.65435671806335,
+    "baseline_bw": 49.016386206174595,
+    "baseline_metrics": {
+      "total_bw_mb_s": 49.016386206174595,
+      "write_bw_mb_s": 49.016386206174595,
+      "read_bw_mb_s": 0.0,
+      "avg_write_size": 5991946.928571428,
+      "seq_write_ratio": 0.8035714285714286,
+      "small_io_ratio": 0.2857142857142857,
+      "metadata_time_ratio": 0.002667601126541235,
+      "POSIX_BYTES_WRITTEN": 671098056.0,
+      "POSIX_WRITES": 112.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 1.2137138843536377,
+      "nprocs": 16
+    },
+    "total_iterations": 5
+  }
+]

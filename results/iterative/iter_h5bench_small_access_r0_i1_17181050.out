@@ -1,0 +1,146 @@
+============================================================
+Track C Iterative Optimization - h5bench Execution
+Job: iter_h5bench_small_access_r0_i1
+Collective data: YES
+Date: Wed Apr  1 03:12:36 CDT 2026
+Host: cn004.delta.ncsa.illinois.edu
+============================================================
+  h5bench_write: OK
+
+=== h5bench WRITE phase ===
+Command: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.write /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_i1/h5bench_output.h5
+Configuration file: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.write
+Output data file: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_i1/h5bench_output.h5
+
+================ Benchmark Configuration ==================
+File: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.write
+Number of particles per rank: 16384
+Number of time steps: 10
+Emulated compute time per timestep: 0
+Mode: SYNC
+Collective metadata operations: YES
+Collective buffering for data operations: YES
+Number of dimensions: 1
+    Dim_1: 16384
+Standard deviation for varying particle size in normal distribution = 1
+===========================================================
+
+Start benchmark: h5bench_write
+Number of particles per rank: 0 M
+Total number of particles: 0M
+Collective Metadata operations: ON
+Opened HDF5 file... 
+Writing Timestep_0 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_1 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_2 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_3 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_4 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_5 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_6 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_7 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_8 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+Computing...
+Writing Timestep_9 ... 
+    data_write_contig_contig_MD_array: Finished writing time step 
+
+=================== Performance Results ==================
+Total number of ranks: 16
+Total emulated compute time: 0.000 s
+Total write size: 80.000 MB
+Raw write time: 0.400 s
+Metadata time: 0.002 s
+H5Fcreate() time: 0.117 s
+H5Fflush() time: 0.129 s
+H5Fclose() time: 0.001 s
+Observed completion time: 0.659 s
+SYNC Raw write rate: 200.037 MB/s 
+SYNC Observed write rate: 121.478 MB/s
+===========================================================
+
+Write completed at Wed Apr  1 03:12:37 CDT 2026, exit code: 0
+
+=== h5bench READ phase ===
+Command: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_read /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.read /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_i1/h5bench_output.h5
+Configuration file: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.read
+Read data file: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_i1/h5bench_output.h5
+dims[0] = 262144 (total number for the file)
+Total particles in the file: 262144
+Number of particles available per rank: 16384 
+Opened HDF5 file... [/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_i1/h5bench_output.h5]
+
+================ Benchmark Configuration ==================
+File: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_h5bench_small_access_r0_i1_config.json.read
+Number of particles per rank: 16384
+Number of time steps: 10
+Emulated compute time per timestep: 0
+Mode: SYNC
+Collective metadata operations: YES
+Collective buffering for data operations: YES
+Number of dimensions: 1
+    Dim_1: 16384
+Standard deviation for varying particle size in normal distribution = 1
+===========================================================
+
+Reading Timestep_0 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_1 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_2 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_3 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_4 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_5 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_6 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_7 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_8 ... 
+  Read 8 variable completed
+Computing... 
+Reading Timestep_9 ... 
+  Read 8 variable completed
+
+=================== Performance Results ==================
+Total number of ranks: 16
+Total emulated compute time: 0.000 s
+Total read size: 80.000 MB
+Raw read time: 0.211 s
+Metadata time: 0.004 s
+Observed read completion time: 0.218 s
+SYNC Raw read rate: 379.393 MB/s 
+SYNC Observed read rate: 367.586 MB/s
+===========================================================
+
+Read completed at Wed Apr  1 03:12:38 CDT 2026, exit code: 0
+
+Exit code (write): 0
+Completed: Wed Apr  1 03:12:38 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_h5bench_read_id17181050-2207795_4-1-11558-4508181144558519010_1.darshan

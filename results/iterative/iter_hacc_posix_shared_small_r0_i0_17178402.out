@@ -1,0 +1,17 @@
+============================================================
+Track C Iterative Optimization - HACC-IO Execution
+Job: iter_hacc_posix_shared_small_r0_i0
+Command: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_hacc_posix_shared_small_r0_i0/hacc_checkpoint
+Collective buffering: enabled
+Date: Wed Apr  1 01:32:31 CDT 2026
+Host: cn066.delta.ncsa.illinois.edu
+============================================================
+-------- Aggregate Performance --------
+ WRITE Checkpoint Perf: 26.6861 BW[MB/s] 25287424 Bytes 0.903689 MaxTime[sec] 
+-------- Aggregate Performance --------
+ READ Restart Perf: 2.07891 BW[MB/s] 121600 Bytes 0.0557825 MaxTime[sec] 
+ CONTENTS VERIFIED... Success 
+
+Exit code: 0
+Completed: Wed Apr  1 01:32:33 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_hacc_io_mpiio_shared_id17178402-1373899_4-1-5551-3726742172959622251_1.darshan

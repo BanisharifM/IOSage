@@ -29,14 +29,14 @@ trap cleanup EXIT
 echo "============================================================"
 echo "Track C Iterative Optimization - Benchmark Execution"
 echo "Job: iter_mdtest_metadata_storm_r0_i0"
-echo "Command: mdtest -n 1000 -w 1000 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_i0/mdtest_dir"
+echo "Command: mdtest -n 10000 -w 65536 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_i0/mdtest_dir"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
 
 # Run benchmark with Darshan instrumentation
 srun --cpu-bind=none --export=ALL,LD_PRELOAD=/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so \
-    mdtest -n 1000 -w 1000 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_i0/mdtest_dir
+    mdtest -n 10000 -w 65536 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_i0/mdtest_dir
 
 EXIT_CODE=$?
 echo ""
@@ -44,7 +44,7 @@ echo "Exit code: $EXIT_CODE"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${DARSHAN_LOGPATH}/*id${SLURM_JOB_ID}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else

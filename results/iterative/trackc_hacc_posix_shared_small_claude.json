@@ -1,0 +1,104 @@
+[
+  {
+    "workload": "hacc_posix_shared_small",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": true,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "access_granularity": 0.999,
+          "interface_choice": 0.9986,
+          "throughput_utilization": 0.9158
+        },
+        "strategy": "Switch from POSIX to MPI-IO with collective buffering to fix interface choice and access granularity bottlenecks",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Changed executable from posix_shared to mpiio_shared to fix interface_choice bottleneck - MPI-IO provides better coordination for shared file access",
+          "Enabled collective_buffering to fix access_granularity bottleneck - ROMIO aggregation will buffer small writes into larger transfers automatically",
+          "Kept num_particles=200 to maintain same data volume for fair comparison"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 15914.1,
+          "tokens_input": 2770,
+          "tokens_output": 317,
+          "timestamp": "2026-04-01T03:19:52Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.63109874725342,
+        "new_predictions": {
+          "access_granularity": 0.2072,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0213,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0405,
+          "file_strategy": 0.0009,
+          "throughput_utilization": 0.2765,
+          "healthy": 0.002
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 2.33,
+        "new_bw": 544.2708220416273
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 2.33,
+    "best_config": {
+      "executable": "mpiio_shared",
+      "num_particles": 200,
+      "collective_buffering": "enabled"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0131,
+    "total_tokens": 3087,
+    "total_llm_latency_ms": 15914.1,
+    "total_execution_time_s": 60.63109874725342,
+    "baseline_bw": 233.85775280273936,
+    "baseline_metrics": {
+      "total_bw_mb_s": 437.590327720505,
+      "write_bw_mb_s": 233.85775280273936,
+      "read_bw_mb_s": 3396.9555658615764,
+      "avg_write_size": 174396.0275862069,
+      "seq_write_ratio": 0.993103448275862,
+      "small_io_ratio": 0.8827586206896552,
+      "metadata_time_ratio": 0.3848363869860841,
+      "POSIX_BYTES_WRITTEN": 25287424.0,
+      "POSIX_WRITES": 145.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 0.17243552207946777,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

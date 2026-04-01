@@ -1,0 +1,845 @@
+PE 0: MPICH MPIIO environment settings ===============================
+PE 0:   MPICH_MPIIO_HINTS_DISPLAY                      = 1
+PE 0:   MPICH_MPIIO_HINTS                              = *:romio_cb_write=enable:romio_ds_write=disable
+PE 0:   MPICH_MPIIO_ABORT_ON_RW_ERROR                  = disable
+PE 0:   MPICH_MPIIO_CB_ALIGN                           = 2
+PE 0:   MPICH_MPIIO_DVS_MAXNODES                       = -1
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY       = 0
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_STRIDE        = -1
+PE 0:   MPICH_MPIIO_MAX_NUM_IRECV                      = 50
+PE 0:   MPICH_MPIIO_MAX_NUM_ISEND                      = 50
+PE 0:   MPICH_MPIIO_MAX_SIZE_ISEND                     = 10485760
+PE 0:   MPICH_MPIIO_OFI_STARTUP_CONNECT                = disable
+PE 0:   MPICH_MPIIO_OFI_STARTUP_NODES_AGGREGATOR        = 2
+PE 0: MPICH MPIIO statistics environment settings ====================
+PE 0:   MPICH_MPIIO_STATS                              = 0
+PE 0:   MPICH_MPIIO_TIMERS                             = 0
+PE 0:   MPICH_MPIIO_WRITE_EXIT_BARRIER                 = 1
+PE 0: MPIIO hints for /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_indep_vs_coll_r0_i2/h5bench_output.h5:
+          romio_cb_pfr             = disable
+          romio_cb_fr_types        = aar
+          cb_align                 = 2
+          cb_buffer_size           = 16777216
+          romio_cb_fr_alignment    = 1
+          romio_cb_ds_threshold    = 0
+          romio_cb_alltoall        = automatic
+          romio_cb_read            = automatic
+          romio_cb_write           = enable
+          romio_no_indep_rw        = false
+          romio_ds_write           = disable
+          ind_wr_buffer_size       = 524288
+          romio_ds_read            = disable
+          ind_rd_buffer_size       = 4194304
+          direct_io                = false
+          striping_factor          = 4
+          striping_unit            = 1048576
+          overstriping_factor      = 0
+          romio_lustre_start_iodevice = -1
+          aggregator_placement_stride = -1
+          abort_on_rw_error        = disable
+          cb_config_list           = *:*
+          cb_nodes                 = 4
+          romio_filesystem_type    = CRAY ADIO:
+PE 0: MPIIO hints for /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_h5bench_write_id17181237-2211289_4-1-11991-15364049647470001846.darshan_partial:
+          romio_cb_pfr             = disable
+          romio_cb_fr_types        = aar
+          cb_align                 = 2
+          cb_buffer_size           = 16777216
+          romio_cb_fr_alignment    = 1
+          romio_cb_ds_threshold    = 0
+          romio_cb_alltoall        = automatic
+          romio_cb_read            = enable
+          romio_cb_write           = enable
+          romio_no_indep_rw        = true
+          romio_ds_write           = disable
+          ind_wr_buffer_size       = 524288
+          romio_ds_read            = disable
+          ind_rd_buffer_size       = 4194304
+          direct_io                = false
+          striping_factor          = 4
+          striping_unit            = 1048576
+          overstriping_factor      = 0
+          romio_lustre_start_iodevice = -1
+          aggregator_placement_stride = -1
+          abort_on_rw_error        = disable
+          cb_config_list           = *:*
+          cb_nodes                 = 4
+          romio_filesystem_type    = CRAY ADIO:
+PE 0: MPICH MPIIO environment settings ===============================
+PE 0:   MPICH_MPIIO_HINTS_DISPLAY                      = 1
+PE 0:   MPICH_MPIIO_HINTS                              = *:romio_cb_write=enable:romio_ds_write=disable
+PE 0:   MPICH_MPIIO_ABORT_ON_RW_ERROR                  = disable
+PE 0:   MPICH_MPIIO_CB_ALIGN                           = 2
+PE 0:   MPICH_MPIIO_DVS_MAXNODES                       = -1
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY       = 0
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_STRIDE        = -1
+PE 0:   MPICH_MPIIO_MAX_NUM_IRECV                      = 50
+PE 0:   MPICH_MPIIO_MAX_NUM_ISEND                      = 50
+PE 0:   MPICH_MPIIO_MAX_SIZE_ISEND                     = 10485760
+PE 0:   MPICH_MPIIO_OFI_STARTUP_CONNECT                = disable
+PE 0:   MPICH_MPIIO_OFI_STARTUP_NODES_AGGREGATOR        = 2
+PE 0: MPICH MPIIO statistics environment settings ====================
+PE 0:   MPICH_MPIIO_STATS                              = 0
+PE 0:   MPICH_MPIIO_TIMERS                             = 0
+PE 0:   MPICH_MPIIO_WRITE_EXIT_BARRIER                 = 1
+PE 0: MPIIO hints for /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_indep_vs_coll_r0_i2/h5bench_output.h5:
+          romio_cb_pfr             = disable
+          romio_cb_fr_types        = aar
+          cb_align                 = 2
+          cb_buffer_size           = 16777216
+          romio_cb_fr_alignment    = 1
+          romio_cb_ds_threshold    = 0
+          romio_cb_alltoall        = automatic
+          romio_cb_read            = automatic
+          romio_cb_write           = enable
+          romio_no_indep_rw        = false
+          romio_ds_write           = disable
+          ind_wr_buffer_size       = 524288
+          romio_ds_read            = disable
+          ind_rd_buffer_size       = 4194304
+          direct_io                = false
+          striping_factor          = 4
+          striping_unit            = 1048576
+          overstriping_factor      = 0
+          romio_lustre_start_iodevice = -1
+          aggregator_placement_stride = -1
+          abort_on_rw_error        = disable
+          cb_config_list           = *:*
+          cb_nodes                 = 4
+          romio_filesystem_type    = CRAY ADIO:
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 1:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 8:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 9:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 10:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 4:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 5:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 6:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 7:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 7:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 7:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 8:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 8:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 9:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 9:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 9:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 10:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 10:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 10:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 11:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 11:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 11:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 11:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 12:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 12:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 12:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 12:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 13:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 13:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 13:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 13:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 14:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 14:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 14:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 1:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 1:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 1:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 2:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 2:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 2:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 2:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 4:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 4:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 4:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 5:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 5:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 5:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 6:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 6:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 6:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 7:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 8:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 14:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 15:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 15:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 15:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 15:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 0:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 3:
+  #000: ../../src/H5D.c line 403 in H5Dopen2(): unable to synchronously open dataset
+    major: Dataset
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 3:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 3:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 3:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+    minor: Can't open object
+  #001: ../../src/H5D.c line 364 in H5D__open_api_common(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #002: ../../src/H5VLcallback.c line 1980 in H5VL_dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #003: ../../src/H5VLcallback.c line 1947 in H5VL__dataset_open(): dataset open failed
+    major: Virtual Object Layer
+    minor: Can't open object
+  #004: ../../src/H5VLnative_dataset.c line 331 in H5VL__native_dataset_open(): unable to open dataset
+    major: Dataset
+    minor: Can't open object
+  #005: ../../src/H5Dint.c line 1418 in H5D__open_name(): not found
+    major: Dataset
+    minor: Object not found
+  #006: ../../src/H5Gloc.c line 421 in H5G_loc_find(): can't find object
+    major: Symbol table
+    minor: Object not found
+  #007: ../../src/H5Gtraverse.c line 816 in H5G_traverse(): internal path traversal failed
+    major: Symbol table
+    minor: Object not found
+  #008: ../../src/H5Gtraverse.c line 596 in H5G__traverse_real(): traversal operator failed
+    major: Symbol table
+    minor: Callback failed
+  #009: ../../src/H5Gloc.c line 381 in H5G__loc_find_cb(): object 'px' doesn't exist
+    major: Symbol table
+    minor: Object not found
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 0:
+  #000: ../../src/H5D.c line 611 in H5Dget_space(): unable to synchronously get dataspace
+    major: Dataset
+    minor: Can't get value
+  #001: ../../src/H5D.c line 571 in H5D__get_space_api_common(): invalid dataset identifier
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 0:
+  #000: ../../src/H5D.c line 475 in H5Dclose(): not a dataset ID
+    major: Invalid arguments to routine
+    minor: Inappropriate type
+HDF5-DIAG: Error detected in HDF5 (1.14.3) MPI-process 0:
+  #000: ../../src/H5S.c line 883 in H5Sget_simple_extent_dims(): not a dataspace
+    major: Invalid arguments to routine
+    minor: Inappropriate type

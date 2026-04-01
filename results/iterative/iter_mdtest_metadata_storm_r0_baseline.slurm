@@ -44,7 +44,7 @@ echo "Exit code: $EXIT_CODE"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${DARSHAN_LOGPATH}/*id${SLURM_JOB_ID}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else

@@ -1,0 +1,6 @@
+srun: error: cn066: task 0: Segmentation fault
+MPICH ERROR [Rank 0] [job id 17178689.0] [Wed Apr  1 01:45:29 2026] [cn066.delta.ncsa.illinois.edu] - Abort(1) (rank 0 in comm 480): application called MPI_Abort(comm=0xC4000000, 1) - process 0
+
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+[2026-04-01T02:39:18.118] error: *** STEP 17178689.0 ON cn066 CANCELLED AT 2026-04-01T02:39:18 DUE TO TIME LIMIT ***
+[2026-04-01T02:39:18.118] error: *** JOB 17178689 ON cn066 CANCELLED AT 2026-04-01T02:39:18 DUE TO TIME LIMIT ***

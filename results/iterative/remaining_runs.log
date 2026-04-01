@@ -1,0 +1,15 @@
+Wed Apr  1 02:59:43 CDT 2026 === ABLATION RERUNS (4 remaining) ===
+Wed Apr  1 02:59:43 CDT 2026 === no-ml / mdtest_metadata_storm ===
+2026-04-01 03:05:22 [ERROR]   Baseline execution failed!
+Wed Apr  1 03:05:22 CDT 2026 === no-shap / ior_fsync_heavy ===
+2026-04-01 03:07:46 [INFO] RESULT: ior_fsync_heavy -- 2 iterations, best=8.81x, status=converged, cost=$0.0255
+Wed Apr  1 03:07:46 CDT 2026 === no-shap / mdtest_metadata_storm ===
+2026-04-01 03:14:09 [INFO] RESULT: mdtest_metadata_storm -- 1 iterations, best=7.15x, status=converged, cost=$0.0110
+Wed Apr  1 03:14:09 CDT 2026 === single-shot / ior_fsync_heavy ===
+2026-04-01 03:18:23 [INFO] RESULT: ior_fsync_heavy -- 1 iterations, best=5.32x, status=max_iterations_reached, cost=$0.0123
+Wed Apr  1 03:18:24 CDT 2026 === NEW BENCHMARK RUNS ===
+Wed Apr  1 03:18:24 CDT 2026 === hacc_posix_shared_small ===
+2026-04-01 03:20:53 [INFO] RESULT: hacc_posix_shared_small -- 1 iterations, best=2.33x, status=converged, cost=$0.0131
+Wed Apr  1 03:20:54 CDT 2026 === hacc_fpp_small ===
+Wed Apr  1 03:21:41 CDT 2026 === custom_load_imbalance ===
+Wed Apr  1 03:22:19 CDT 2026 === ALL DONE ===

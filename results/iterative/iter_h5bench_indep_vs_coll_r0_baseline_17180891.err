@@ -1,0 +1,17 @@
+PE 0: MPICH MPIIO environment settings ===============================
+PE 0:   MPICH_MPIIO_HINTS_DISPLAY                      = 1
+PE 0:   MPICH_MPIIO_HINTS                              = *:romio_cb_write=disable:romio_cb_read=disable:romio_ds_write=disable:romio_ds_read=disable
+PE 0:   MPICH_MPIIO_ABORT_ON_RW_ERROR                  = disable
+PE 0:   MPICH_MPIIO_CB_ALIGN                           = 2
+PE 0:   MPICH_MPIIO_DVS_MAXNODES                       = -1
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY       = 0
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_STRIDE        = -1
+PE 0:   MPICH_MPIIO_MAX_NUM_IRECV                      = 50
+PE 0:   MPICH_MPIIO_MAX_NUM_ISEND                      = 50
+PE 0:   MPICH_MPIIO_MAX_SIZE_ISEND                     = 10485760
+PE 0:   MPICH_MPIIO_OFI_STARTUP_CONNECT                = disable
+PE 0:   MPICH_MPIIO_OFI_STARTUP_NODES_AGGREGATOR        = 2
+PE 0: MPICH MPIIO statistics environment settings ====================
+PE 0:   MPICH_MPIIO_STATS                              = 0
+PE 0:   MPICH_MPIIO_TIMERS                             = 0
+PE 0:   MPICH_MPIIO_WRITE_EXIT_BARRIER                 = 1
