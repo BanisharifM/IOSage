@@ -421,15 +421,20 @@ exit $WRITE_RC
         """
         datagen_cmd, training_cmd = benchmark_commands
 
+        # DLIO requires PyTorch which needs CUDA — must use GPU partition
+        gpu_partition = "gpuA100x4"
+        gpu_account = "bdau-delta-gpu"
+
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --partition={self.partition}
-#SBATCH --account={self.account}
-#SBATCH --nodes={self.nodes}
+#SBATCH --partition={gpu_partition}
+#SBATCH --account={gpu_account}
+#SBATCH --nodes=1
 #SBATCH --ntasks={self.ntasks}
 #SBATCH --cpus-per-task=4
+#SBATCH --gpus-per-node=1
 #SBATCH --mem=64g
-#SBATCH --time=08:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
