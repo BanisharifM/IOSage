@@ -443,6 +443,22 @@ export DARSHAN_MODMEM=4
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "${{DARSHAN_LOGPATH}}"
 
+# Fix PyTorch CUDA library conflict on Delta.
+# The system anaconda3 ships libnvJitLink.so.12.1.105 (CUDA 12.1) which only
+# provides symbols up to __nvJitLinkCreate_12_1.  PyTorch 2.8+cu128 installs
+# nvidia-cusparse-cu12 12.5 which requires __nvJitLinkCreate_12_8 from the
+# pip-installed nvidia-nvjitlink-cu12 12.8.  Because /sw/external/python/
+# anaconda3/lib appears early in LD_LIBRARY_PATH, the old library is loaded
+# first and the import fails with "undefined symbol __nvJitLinkCreate_12_8".
+# Prepending the pip-installed NVIDIA lib paths ensures the correct versions
+# are found before the stale system copies.
+NVIDIA_LIB_BASE="/projects/bdau/envs/sc2026/lib/python3.9/site-packages/nvidia"
+NVIDIA_LIBS=""
+for subdir in "$NVIDIA_LIB_BASE"/*/lib; do
+    [ -d "$subdir" ] && NVIDIA_LIBS="${{NVIDIA_LIBS:+$NVIDIA_LIBS:}}$subdir"
+done
+export LD_LIBRARY_PATH="${{NVIDIA_LIBS:+$NVIDIA_LIBS:}}${{LD_LIBRARY_PATH:-}}"
+
 # Fix SLURM env var conflicts on Delta
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
 export SLURM_CPUS_PER_TASK=4
@@ -465,7 +481,7 @@ echo "============================================================"
 # Step 1: Generate data (no Darshan needed for data gen)
 echo ""
 echo "=== DLIO Data Generation Phase ==="
-srun --export=ALL \\
+srun --cpu-bind=none --export=ALL \\
     {datagen_cmd}
 
 echo "Data generation complete at $(date)"
@@ -473,7 +489,7 @@ echo "Data generation complete at $(date)"
 # Step 2: Run training (this generates the Darshan log we want)
 echo ""
 echo "=== DLIO Training Phase (with Darshan) ==="
-srun --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
     {training_cmd}
 
 EXIT_CODE=$?

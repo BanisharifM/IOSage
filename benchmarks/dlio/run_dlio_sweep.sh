@@ -72,6 +72,17 @@ export DARSHAN_MODMEM=4
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${data_dir}"
 
+# Fix PyTorch CUDA library conflict on Delta.
+# System anaconda3 has libnvJitLink.so.12.1 which shadows the pip-installed
+# nvidia-nvjitlink-cu12 12.8.  Prepend pip NVIDIA libs so the correct
+# versions are found first (see iterative_executor.py for full explanation).
+NVIDIA_LIB_BASE="/projects/bdau/envs/sc2026/lib/python3.9/site-packages/nvidia"
+NVIDIA_LIBS=""
+for subdir in "\$NVIDIA_LIB_BASE"/*/lib; do
+    [ -d "\$subdir" ] && NVIDIA_LIBS="\${NVIDIA_LIBS:+\$NVIDIA_LIBS:}\$subdir"
+done
+export LD_LIBRARY_PATH="\${NVIDIA_LIBS:+\$NVIDIA_LIBS:}\${LD_LIBRARY_PATH:-}"
+
 echo "============================================================"
 echo "Scenario: ${scenario_name}"
 echo "Label:    ${label_dims}"
@@ -81,7 +92,7 @@ echo "Date:     \$(date)"
 echo "============================================================"
 
 # Step 1: Generate data (no Darshan needed for data gen)
-srun --export=ALL \\
+srun --cpu-bind=none --export=ALL \\
     ${DLIO_BIN} \\
     workload=unet3d_v100 \\
     ++workload.workflow.generate_data=True \\
@@ -92,7 +103,7 @@ srun --export=ALL \\
 echo "Data generation complete at \$(date)"
 
 # Step 2: Run training (this is what generates the Darshan log we want)
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${DLIO_BIN} \\
     workload=unet3d_v100 \\
     ++workload.workflow.generate_data=False \\
