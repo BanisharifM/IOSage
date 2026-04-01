@@ -5,7 +5,7 @@
 #SBATCH --nodes=4
 #SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1
-#SBATCH --time=06:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=results/closed_loop/e2e_%j.out
 #SBATCH --error=results/closed_loop/e2e_%j.err
 
@@ -90,7 +90,8 @@ echo "============================================================"
 rm -f "${SCRATCH}/e2e_pathological.nc4"
 
 # Fix SLURM env var conflicts (Delta inherits conflicting vars from parent sessions)
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
 export SLURM_CPUS_PER_TASK=1
 
 srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \

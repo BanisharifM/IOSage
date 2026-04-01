@@ -80,8 +80,7 @@ class IterativeExecutor:
 #SBATCH --nodes={self.nodes}
 #SBATCH --ntasks={self.ntasks}
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=0
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
@@ -91,7 +90,8 @@ export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK 2>/dev/null
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
 JOB_SCRATCH="{job_scratch}"
@@ -134,7 +134,7 @@ exit $EXIT_CODE
         os.chmod(script_path, 0o755)
         return str(script_path)
 
-    def submit_and_wait(self, script_path, timeout_seconds=1800, poll_interval=15):
+    def submit_and_wait(self, script_path, timeout_seconds=7200, poll_interval=30):
         """Submit SLURM job and wait for completion.
 
         Args:
