@@ -5,8 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=0
-#SBATCH --time=00:10:00
+#SBATCH --time=01:00:00
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_ior_fsync_heavy_r0_i1_%j.out
 #SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_ior_fsync_heavy_r0_i1_%j.err
 
@@ -15,23 +14,29 @@ module load ior/3.3.0-gcc13.3.1
 export DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative"
 mkdir -p "${DARSHAN_LOGPATH}"
 
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_i1"
+mkdir -p "$JOB_SCRATCH"
+
 # Cleanup benchmark files on exit
-cleanup() { rm -f /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file* /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/mdtest_dir* 2>/dev/null || true; }
+cleanup() { rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }
 trap cleanup EXIT
 
 echo "============================================================"
 echo "Track C Iterative Optimization - Benchmark Execution"
 echo "Job: iter_ior_fsync_heavy_r0_i1"
-echo "Command: ior -a POSIX -t 16777216 -b 117440512 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file"
+echo "Command: ior -a POSIX -t 4194304 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_i1/ior_test_file"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
 
-mkdir -p /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
-
 # Run benchmark with Darshan instrumentation
 srun --cpu-bind=none --export=ALL,LD_PRELOAD=/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so \
-    ior -a POSIX -t 16777216 -b 117440512 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/ior_test_file
+    ior -a POSIX -t 4194304 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_i1/ior_test_file
 
 EXIT_CODE=$?
 echo ""

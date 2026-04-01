@@ -5,8 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=0
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_mdtest_metadata_storm_r0_baseline_%j.out
 #SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_mdtest_metadata_storm_r0_baseline_%j.err
 
@@ -16,7 +15,8 @@ export DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmar
 mkdir -p "${DARSHAN_LOGPATH}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK 2>/dev/null
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
 JOB_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_baseline"

@@ -83,7 +83,7 @@ echo "============================================================"
 # Step 1: Generate data (no Darshan needed for data gen)
 srun --export=ALL \\
     ${DLIO_BIN} \\
-    workload=unet3d \\
+    workload=unet3d_v100 \\
     ++workload.workflow.generate_data=True \\
     ++workload.workflow.train=False \\
     ++workload.dataset.data_folder=${data_dir} \\
@@ -94,7 +94,7 @@ echo "Data generation complete at \$(date)"
 # Step 2: Run training (this is what generates the Darshan log we want)
 srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${DLIO_BIN} \\
-    workload=unet3d \\
+    workload=unet3d_v100 \\
     ++workload.workflow.generate_data=False \\
     ++workload.workflow.train=True \\
     ++workload.dataset.data_folder=${data_dir} \\

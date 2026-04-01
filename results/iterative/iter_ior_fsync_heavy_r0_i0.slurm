@@ -5,8 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=0
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_ior_fsync_heavy_r0_i0_%j.out
 #SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_ior_fsync_heavy_r0_i0_%j.err
 
@@ -16,7 +15,8 @@ export DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmar
 mkdir -p "${DARSHAN_LOGPATH}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK 2>/dev/null
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
 JOB_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_ior_fsync_heavy_r0_i0"
@@ -44,7 +44,7 @@ echo "Exit code: $EXIT_CODE"
 echo "Completed: $(date)"
 
 # Report Darshan log location
-LOGS=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
+LOGS=$(ls -t ${DARSHAN_LOGPATH}/*id${SLURM_JOB_ID}* 2>/dev/null | head -1)
 if [ -n "$LOGS" ]; then
     echo "Darshan log: $LOGS"
 else
