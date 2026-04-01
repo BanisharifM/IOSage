@@ -1,0 +1,66 @@
+============================================================
+Extended Closed-Loop Validation
+Date: Wed Mar 25 15:42:14 CDT 2026
+Host: cn009.delta.ncsa.illinois.edu
+Job ID: 16999677
+============================================================
+Pairs to validate: mdtest_metadata_storm mdtest_fpp_explosion ior_collective_vs_independent ior_small_to_large_direct
+
+------------------------------------------------------------
+PAIR: mdtest_metadata_storm (mdtest, 1N x 16T)
+  Bad:  mdtest -n 10000 -w 100 -e 100 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out
+  Good: mdtest -n 10000 -w 100 -e 100 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out
+------------------------------------------------------------
+  Submitting bad config...
+  Bad job ID: 16999680
+  Bad job state: COMPLETED
+  Submitting good config...
+  Good job ID: 16999719
+  Good job state: COMPLETED
+  Done: bad=COMPLETED, good=COMPLETED
+
+------------------------------------------------------------
+PAIR: mdtest_fpp_explosion (mdtest, 1N x 128T)
+  Bad:  mdtest -n 5000 -w 4096 -e 4096 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out
+  Good: mdtest -n 50 -w 4096 -e 4096 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out
+------------------------------------------------------------
+  Submitting bad config...
+  Bad job ID: 16999880
+  Bad job state: COMPLETED
+  Submitting good config...
+  Good job ID: 16999902
+  Good job state: COMPLETED
+  Done: bad=COMPLETED, good=COMPLETED
+
+------------------------------------------------------------
+PAIR: ior_collective_vs_independent (ior, 4N x 64T)
+  Bad:  ior -a MPIIO -t 1048576 -b 100M -s 10 -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+  Good: ior -a MPIIO -t 1048576 -b 100M -s 10 -c -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+------------------------------------------------------------
+  Submitting bad config...
+  Bad job ID: 16999909
+  Bad job state: COMPLETED
+  Submitting good config...
+  Good job ID: 16999932
+  Good job state: COMPLETED
+  Done: bad=COMPLETED, good=COMPLETED
+
+------------------------------------------------------------
+PAIR: ior_small_to_large_direct (ior, 1N x 16T)
+  Bad:  ior -a POSIX -t 4096 -b 1M -s 100 -F -e -C -w -r -O useO_DIRECT=1 -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+  Good: ior -a POSIX -t 1048576 -b 100M -s 10 -F -e -C -w -r -O useO_DIRECT=1 -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/ior_test_file
+------------------------------------------------------------
+  Submitting bad config...
+  Bad job ID: 16999950
+  Bad job state: COMPLETED
+  Submitting good config...
+  Good job ID: 16999952
+  Good job state: COMPLETED
+  Done: bad=COMPLETED, good=COMPLETED
+
+============================================================
+All extended pairs submitted.
+Check results in: results/closed_loop/
+Parse Darshan logs from: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/
+Completed: Wed Mar 25 16:07:19 CDT 2026
+============================================================

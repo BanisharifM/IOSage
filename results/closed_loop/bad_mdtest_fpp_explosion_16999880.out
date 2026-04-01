@@ -1,0 +1,28 @@
+Pair: mdtest_fpp_explosion (BAD)
+Command: mdtest -n 5000 -w 4096 -e 4096 -F -u -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out
+Date: Wed Mar 25 15:53:33 CDT 2026
+Nodes: 1, Tasks: 128
+-- started at 03/25/2026 15:53:34 --
+
+mdtest-3.3.0 was launched with 128 total task(s) on 1 node(s)
+Command line used: /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/mdtest '-n' '5000' '-w' '4096' '-e' '4096' '-F' '-u' '-d' '/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber/mdtest_out'
+Path: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber
+FS: 1.5 TiB   Used FS: 22.8%   Inodes: 2.4 Mi   Used Inodes: 67.6%
+
+Nodemap: 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+128 tasks, 640000 files
+
+SUMMARY rate: (of 1 iterations)
+   Operation                      Max            Min           Mean        Std Dev
+   ---------                      ---            ---           ----        -------
+   File creation             :       4909.067       4909.013       4909.046          0.009
+   File stat                 :     146595.551     146520.047     146575.935         10.994
+   File read                 :      83136.815      83097.257      83115.259          4.736
+   File removal              :     199573.608     198631.458     199463.557        112.477
+   Tree creation             :          2.565          2.565          2.565          0.000
+   Tree removal              :          1.376          1.376          1.376          0.000
+-- finished at 03/25/2026 15:56:01 --
+
+Exit code: 0
+Completed: Wed Mar 25 15:56:05 CDT 2026
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber/mbanisha_mdtest_id16999880-4166037_3-25-57213-2723677757776933280_3.darshan
