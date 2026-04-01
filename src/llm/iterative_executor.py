@@ -58,14 +58,18 @@ class IterativeExecutor:
         )
 
     def generate_slurm_script(self, job_name, benchmark_command, benchmark_type="ior",
-                             hacc_config=None):
+                             hacc_config=None, h5bench_config=None, dlio_config=None):
         """Generate a SLURM batch script for a benchmark run.
 
         Args:
             job_name: unique job identifier
             benchmark_command: the IOR/mdtest/HACC-IO/custom command to run
-            benchmark_type: 'ior', 'mdtest', 'hacc_io', or 'custom'
+                For h5bench: (write_cmd, read_cmd) tuple
+                For DLIO: (datagen_cmd, training_cmd) tuple
+            benchmark_type: 'ior', 'mdtest', 'hacc_io', 'custom', 'h5bench', or 'dlio'
             hacc_config: dict with collective_buffering key (for HACC-IO)
+            h5bench_config: dict with COLLECTIVE_DATA key (for h5bench)
+            dlio_config: dict with DLIO params (for DLIO)
 
         Returns:
             path to the generated .slurm script
@@ -73,7 +77,15 @@ class IterativeExecutor:
         # Use per-job scratch directory to prevent file conflicts between concurrent runs
         job_scratch = f"{self.scratch_dir}/{job_name}"
 
-        if benchmark_type == "hacc_io":
+        if benchmark_type == "h5bench":
+            script = self._generate_h5bench_slurm(
+                job_name, benchmark_command, job_scratch, h5bench_config or {}
+            )
+        elif benchmark_type == "dlio":
+            script = self._generate_dlio_slurm(
+                job_name, benchmark_command, job_scratch, dlio_config or {}
+            )
+        elif benchmark_type == "hacc_io":
             script = self._generate_hacc_slurm(
                 job_name, benchmark_command, job_scratch, hacc_config or {}
             )
@@ -282,20 +294,234 @@ fi
 exit $EXIT_CODE
 """
 
+    def _generate_h5bench_slurm(self, job_name, benchmark_commands, job_scratch,
+                                h5bench_config):
+        """Generate SLURM script for h5bench benchmark (write + read phases).
+
+        Args:
+            job_name: unique job identifier
+            benchmark_commands: (write_cmd, read_cmd) tuple
+            job_scratch: per-job scratch directory
+            h5bench_config: dict with COLLECTIVE_DATA key
+        """
+        write_cmd, read_cmd = benchmark_commands
+        coll = h5bench_config.get("COLLECTIVE_DATA", "NO")
+        if coll == "YES":
+            hints_line = 'export MPICH_MPIIO_HINTS="*:romio_cb_write=enable:romio_ds_write=disable"'
+        else:
+            hints_line = (
+                'export MPICH_MPIIO_HINTS='
+                '"*:romio_cb_write=disable:romio_cb_read=disable'
+                ':romio_ds_write=disable:romio_ds_read=disable"'
+            )
+
+        return f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --partition={self.partition}
+#SBATCH --account={self.account}
+#SBATCH --nodes={self.nodes}
+#SBATCH --ntasks={self.ntasks}
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=0
+#SBATCH --time=02:00:00
+#SBATCH --output={self.results_dir}/{job_name}_%j.out
+#SBATCH --error={self.results_dir}/{job_name}_%j.err
+
+module load PrgEnv-gnu/8.6.0 cray-hdf5-parallel/1.14.3.5 2>/dev/null || true
+
+export DARSHAN_LOGPATH="{self.darshan_log_dir}"
+mkdir -p "${{DARSHAN_LOGPATH}}"
+
+# HDF5 parallel library path
+export LD_LIBRARY_PATH="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2/lib:${{LD_LIBRARY_PATH:-}}"
+
+# ROMIO collective buffering control
+{hints_line}
+export MPICH_MPIIO_HINTS_DISPLAY=1
+
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=1
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="{job_scratch}"
+mkdir -p "$JOB_SCRATCH"
+
+# Cleanup h5bench data files on exit
+cleanup() {{ rm -f "$JOB_SCRATCH"/h5bench_output.h5* "$JOB_SCRATCH"/output.csv 2>/dev/null; rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
+trap cleanup EXIT
+
+echo "============================================================"
+echo "Track C Iterative Optimization - h5bench Execution"
+echo "Job: {job_name}"
+echo "Collective data: {coll}"
+echo "Date: $(date)"
+echo "Host: $(hostname)"
+echo "============================================================"
+
+# Pre-flight checks
+if [ -x "{write_cmd.split()[0]}" ]; then
+    echo "  h5bench_write: OK"
+else
+    echo "  ERROR: h5bench_write not found"
+    exit 1
+fi
+
+# === h5bench WRITE phase ===
+echo ""
+echo "=== h5bench WRITE phase ==="
+echo "Command: {write_cmd}"
+srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+    {write_cmd}
+
+WRITE_RC=$?
+echo ""
+echo "Write completed at $(date), exit code: ${{WRITE_RC}}"
+
+# === h5bench READ phase ===
+H5_FILE=$(echo "{read_cmd}" | awk '{{print $NF}}')
+if [ -f "$H5_FILE" ]; then
+    echo ""
+    echo "=== h5bench READ phase ==="
+    echo "Command: {read_cmd}"
+    srun --cpu-bind=none --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+        {read_cmd}
+
+    READ_RC=$?
+    echo ""
+    echo "Read completed at $(date), exit code: ${{READ_RC}}"
+else
+    echo "WARNING: HDF5 output file not found, skipping read phase"
+fi
+
+echo ""
+echo "Exit code (write): $WRITE_RC"
+echo "Completed: $(date)"
+
+# Report Darshan log location
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+if [ -n "$LOGS" ]; then
+    echo "Darshan log: $LOGS"
+else
+    echo "WARNING: No Darshan log found"
+fi
+
+exit $WRITE_RC
+"""
+
+    def _generate_dlio_slurm(self, job_name, benchmark_commands, job_scratch,
+                             dlio_config):
+        """Generate SLURM script for DLIO benchmark (datagen + training phases).
+
+        Args:
+            job_name: unique job identifier
+            benchmark_commands: (datagen_cmd, training_cmd) tuple
+            job_scratch: per-job scratch directory
+            dlio_config: dict with DLIO params
+        """
+        datagen_cmd, training_cmd = benchmark_commands
+
+        return f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --partition={self.partition}
+#SBATCH --account={self.account}
+#SBATCH --nodes={self.nodes}
+#SBATCH --ntasks={self.ntasks}
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64g
+#SBATCH --time=08:00:00
+#SBATCH --output={self.results_dir}/{job_name}_%j.out
+#SBATCH --error={self.results_dir}/{job_name}_%j.err
+
+export DARSHAN_LOGPATH="{self.darshan_log_dir}"
+export DARSHAN_MODMEM=4
+export DARSHAN_ENABLE_NONMPI=1
+mkdir -p "${{DARSHAN_LOGPATH}}"
+
+# Fix SLURM env var conflicts on Delta
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+export SLURM_CPUS_PER_TASK=4
+
+# Per-job scratch to avoid file conflicts between concurrent runs
+JOB_SCRATCH="{job_scratch}"
+mkdir -p "$JOB_SCRATCH"
+
+# Cleanup DLIO data on exit
+cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
+trap cleanup EXIT
+
+echo "============================================================"
+echo "Track C Iterative Optimization - DLIO Execution"
+echo "Job: {job_name}"
+echo "Date: $(date)"
+echo "Host: $(hostname)"
+echo "============================================================"
+
+# Step 1: Generate data (no Darshan needed for data gen)
+echo ""
+echo "=== DLIO Data Generation Phase ==="
+srun --export=ALL \\
+    {datagen_cmd}
+
+echo "Data generation complete at $(date)"
+
+# Step 2: Run training (this generates the Darshan log we want)
+echo ""
+echo "=== DLIO Training Phase (with Darshan) ==="
+srun --export=ALL,LD_PRELOAD={self.darshan_lib} \\
+    {training_cmd}
+
+EXIT_CODE=$?
+echo ""
+echo "DLIO training complete at $(date), exit code: $EXIT_CODE"
+
+# Report Darshan log location
+LOGS=$(ls -t ${{DARSHAN_LOGPATH}}/*.darshan 2>/dev/null | head -1)
+if [ -n "$LOGS" ]; then
+    echo "Darshan log: $LOGS"
+else
+    echo "WARNING: No Darshan log found"
+fi
+
+exit $EXIT_CODE
+"""
+
     def submit_and_wait(self, script_path, timeout_seconds=7200, poll_interval=30):
         """Submit SLURM job and wait for completion.
 
+        IMPORTANT: Unsets conflicting SLURM env vars BEFORE sbatch to prevent
+        'step creation disabled' errors on Delta. The parent session (Claude Code)
+        sets SLURM_CPUS_PER_TASK=8 and SLURM_TRES_PER_TASK=cpu=8 which conflict
+        with the child job's --cpus-per-task=1.
+
         Args:
             script_path: path to .slurm script
-            timeout_seconds: max wait time (default 10 min for benchmarks)
+            timeout_seconds: max wait time (default 2h)
             poll_interval: seconds between sacct polls
 
         Returns:
             job_id string if successful, None if failed
         """
+        # Clean SLURM env vars that the parent session sets (e.g., Claude Code job
+        # sets SLURM_CPUS_PER_TASK=8, SLURM_TRES_PER_TASK=cpu=8). These get inherited
+        # by sbatch and cause "step creation disabled" errors when the child job's
+        # --cpus-per-task=1 conflicts with the inherited value.
+        clean_env = os.environ.copy()
+        for var in ["SLURM_CPUS_PER_TASK", "SLURM_TRES_PER_TASK",
+                     "SLURM_MEM_PER_CPU", "SLURM_MEM_PER_GPU", "SLURM_MEM_PER_NODE",
+                     "SLURM_CPU_BIND", "SLURM_CPU_BIND_LIST", "SLURM_CPU_BIND_TYPE",
+                     "SLURM_CPU_BIND_VERBOSE", "SLURM_DISTRIBUTION",
+                     "SLURM_JOB_CPUS_PER_NODE", "SLURM_NTASKS", "SLURM_NPROCS",
+                     "SLURM_NNODES", "SLURM_NODELIST", "SLURM_JOB_NODELIST",
+                     "SLURM_STEP_NODELIST", "SLURM_TASKS_PER_NODE",
+                     "SLURM_JOB_NUM_NODES", "SLURM_STEP_NUM_TASKS",
+                     "SLURM_STEP_NUM_NODES", "SLURM_STEP_TASKS_PER_NODE"]:
+            clean_env.pop(var, None)
+
         result = subprocess.run(
             ["sbatch", script_path],
             capture_output=True, text=True,
+            env=clean_env,
         )
         if result.returncode != 0:
             logger.error("sbatch failed: %s", result.stderr.strip())
@@ -463,15 +689,77 @@ exit $EXIT_CODE
                         result["custom_runtime_s"] = float(match.group(1))
         return result if result else None
 
+    def parse_h5bench_output(self, job_id):
+        """Parse h5bench stdout to extract write/read rates.
+
+        Returns dict with h5bench_write_rate, h5bench_read_rate, or None.
+        """
+        out_pattern = os.path.join(self.results_dir, f"*_{job_id}.out")
+        out_files = glob.glob(out_pattern)
+        if not out_files:
+            return None
+
+        import re
+        result = {}
+        with open(out_files[0]) as f:
+            for line in f:
+                # h5bench writes lines like "Write rate: X MB/s"
+                if "write" in line.lower() and ("rate" in line.lower() or "mb/s" in line.lower()):
+                    match = re.search(r"(\d+\.?\d*)\s*(?:mb/s|mib/s)", line.lower())
+                    if match:
+                        result["h5bench_write_rate"] = float(match.group(1))
+                if "read" in line.lower() and ("rate" in line.lower() or "mb/s" in line.lower()):
+                    match = re.search(r"(\d+\.?\d*)\s*(?:mb/s|mib/s)", line.lower())
+                    if match:
+                        result["h5bench_read_rate"] = float(match.group(1))
+                # Also check for "completed" lines with timing
+                if "write completed" in line.lower():
+                    match = re.search(r"exit code:\s*(\d+)", line.lower())
+                    if match:
+                        result["h5bench_write_rc"] = int(match.group(1))
+        return result if result else None
+
+    def parse_dlio_output(self, job_id):
+        """Parse DLIO stdout to extract training throughput.
+
+        Returns dict with dlio_throughput_samples_s, or None.
+        """
+        out_pattern = os.path.join(self.results_dir, f"*_{job_id}.out")
+        out_files = glob.glob(out_pattern)
+        if not out_files:
+            return None
+
+        import re
+        result = {}
+        with open(out_files[0]) as f:
+            for line in f:
+                # DLIO prints throughput as "Throughput: X samples/s"
+                if "throughput" in line.lower():
+                    match = re.search(r"(\d+\.?\d*)\s*(?:samples?/s|it/s)", line.lower())
+                    if match:
+                        result["dlio_throughput_samples_s"] = float(match.group(1))
+                # Also capture training time
+                if "training" in line.lower() and "complete" in line.lower():
+                    pass  # timing from exit code line
+                if "epoch" in line.lower() and "time" in line.lower():
+                    match = re.search(r"(\d+\.?\d*)\s*(?:s|sec)", line.lower())
+                    if match:
+                        result["dlio_epoch_time_s"] = float(match.group(1))
+        return result if result else None
+
     def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior",
-                          hacc_config=None):
+                          hacc_config=None, h5bench_config=None, dlio_config=None):
         """Full execution cycle: generate script -> submit -> wait -> parse.
 
         Args:
-            benchmark_command: IOR/mdtest/HACC-IO/custom command string
+            benchmark_command: IOR/mdtest/HACC-IO/custom command string,
+                or (write_cmd, read_cmd) tuple for h5bench,
+                or (datagen_cmd, training_cmd) tuple for DLIO
             job_name: unique identifier
-            benchmark_type: 'ior', 'mdtest', 'hacc_io', or 'custom'
+            benchmark_type: 'ior', 'mdtest', 'hacc_io', 'custom', 'h5bench', or 'dlio'
             hacc_config: dict with collective_buffering key (for HACC-IO)
+            h5bench_config: dict with COLLECTIVE_DATA key (for h5bench)
+            dlio_config: dict with DLIO params (for DLIO)
 
         Returns:
             dict with:
@@ -494,11 +782,21 @@ exit $EXIT_CODE
             "elapsed_s": 0,
         }
 
+        # Set appropriate timeout per benchmark type
+        if benchmark_type == "dlio":
+            timeout = 36000  # 10 hours
+        elif benchmark_type == "h5bench":
+            timeout = 7200   # 2 hours
+        else:
+            timeout = 7200   # default 2 hours
+
         # Generate and submit
         script = self.generate_slurm_script(
-            job_name, benchmark_command, benchmark_type, hacc_config=hacc_config
+            job_name, benchmark_command, benchmark_type,
+            hacc_config=hacc_config, h5bench_config=h5bench_config,
+            dlio_config=dlio_config,
         )
-        job_id = self.submit_and_wait(script)
+        job_id = self.submit_and_wait(script, timeout_seconds=timeout)
 
         if not job_id:
             result["elapsed_s"] = time.time() - t0
@@ -529,6 +827,14 @@ exit $EXIT_CODE
             custom_out = self.parse_custom_output(job_id)
             if custom_out:
                 result["ior_output"] = custom_out
+        elif benchmark_type == "h5bench":
+            h5_out = self.parse_h5bench_output(job_id)
+            if h5_out:
+                result["ior_output"] = h5_out
+        elif benchmark_type == "dlio":
+            dlio_out = self.parse_dlio_output(job_id)
+            if dlio_out:
+                result["ior_output"] = dlio_out
 
         result["elapsed_s"] = time.time() - t0
         return result
