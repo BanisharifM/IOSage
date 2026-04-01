@@ -13,6 +13,8 @@ module load gcc-native/13.2 cray-mpich/8.1.32 cray-hdf5-parallel/1.14.3.5 cray-n
 
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
+export PMI_NO_PREINITIALIZE=1
+export PMI_NO_FORK=1
 
 PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
 E2E_DIR="${PROJECT_DIR}/benchmarks/e2e"
