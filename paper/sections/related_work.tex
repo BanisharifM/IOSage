@@ -2,7 +2,7 @@
 % Related Work content (section header defined in main.tex)
 % ===========================================================================
 
-\textbf{Rule-Based I/O Analysis.}
+\noindent\textbf{Rule-Based I/O Analysis.}
 HPC I/O diagnosis has traditionally relied on expert-crafted heuristics.
 Drishti~\cite{bez2022drishti} applies 30 threshold rules to Darshan logs~\cite{snyder2016darshan},
 flagging issues such as small I/O operations or access misalignment when
@@ -20,7 +20,7 @@ Micro-F1\,=\,0.384 and WisIO achieves 0.318, compared to 0.923 for IOSage's
 learned classifier, which captures nonlinear feature interactions
 without manual rule authoring.
 
-\textbf{ML for I/O Performance Analysis.}
+\smallskip\noindent\textbf{ML for I/O Performance Analysis.}
 Several works apply machine learning to Darshan-derived features.
 AIIO~\cite{dong2023aiio} trains an ensemble of five models (XGBoost,
 LightGBM, CatBoost, MLP, TabNet) to predict aggregate I/O throughput from
@@ -39,7 +39,7 @@ IOSage reformulates the problem as 8-dimensional multi-label classification
 with per-label SHAP attributions and pairs detection with
 LLM-generated code-level fix recommendations.
 
-\textbf{LLM-Based I/O Diagnosis.}
+\smallskip\noindent\textbf{LLM-Based I/O Diagnosis.}
 Recent work applies large language models directly to I/O analysis.
 ION~\cite{egersdoerfer2024ion} demonstrated a proof-of-concept using LLM
 in-context learning for Darshan log interpretation, though it reported
@@ -63,7 +63,7 @@ precision gate: the LLM receives only dimensions where the classifier
 exceeds a confidence threshold, reducing false positives from 31 to 4
 (87\% reduction) on the same TraceBench traces.
 
-\textbf{ML+LLM Hybrid Systems.}
+\smallskip\noindent\textbf{ML+LLM Hybrid Systems.}
 The pattern of combining ML detection with LLM reasoning has been validated
 outside the I/O domain.
 RCACopilot~\cite{chen2024rcacopilot} uses ML-based incident matching to
