@@ -3,17 +3,21 @@
 #SBATCH --partition=gpuA100x4
 #SBATCH --account=bdau-delta-gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks=16
+#SBATCH --ntasks=4
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus-per-node=1
-#SBATCH --mem=64g
-#SBATCH --time=04:00:00
+#SBATCH --mem=128g
+#SBATCH --time=01:00:00
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_many_small_files_r0_baseline_%j.out
 #SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_many_small_files_r0_baseline_%j.err
 
 export DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative"
-export DARSHAN_MODMEM=4
+export DARSHAN_MODMEM=16
 export DARSHAN_ENABLE_NONMPI=1
+# Darshan config: exclude Python library paths, increase record limit to 8192
+# Without this, Python's 500+ .so/.pyc imports fill all 1024 POSIX record slots
+# before DLIO reads any actual data files, making the Darshan log useless.
+export DARSHAN_CONFIG_PATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/configs/darshan_dlio.conf"
 mkdir -p "${DARSHAN_LOGPATH}"
 
 # Fix PyTorch CUDA library conflict on Delta.
@@ -45,7 +49,7 @@ cleanup() { rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }
 trap cleanup EXIT
 
 echo "============================================================"
-echo "Track C Iterative Optimization - DLIO Execution"
+echo "IOSage Iterative Optimization - DLIO Execution"
 echo "Job: iter_dlio_many_small_files_r0_baseline"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
@@ -55,7 +59,7 @@ echo "============================================================"
 echo ""
 echo "=== DLIO Data Generation Phase ==="
 srun --cpu-bind=none --export=ALL \
-    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=True ++workload.workflow.train=False ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_many_small_files_r0_baseline ++workload.dataset.record_length=4096 ++workload.dataset.num_files_train=10000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=2 ++workload.train.seed=42 ++workload.dataset.format=npz
+    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=True ++workload.workflow.train=False ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_many_small_files_r0_baseline ++workload.dataset.record_length=256 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=2000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=2 ++workload.train.seed=42 ++workload.dataset.format=npz
 
 echo "Data generation complete at $(date)"
 
@@ -63,7 +67,7 @@ echo "Data generation complete at $(date)"
 echo ""
 echo "=== DLIO Training Phase (with Darshan) ==="
 srun --cpu-bind=none --export=ALL,LD_PRELOAD=/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so \
-    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=False ++workload.workflow.train=True ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_many_small_files_r0_baseline ++workload.dataset.record_length=4096 ++workload.dataset.num_files_train=10000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=2 ++workload.train.seed=42 ++workload.dataset.format=npz
+    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=False ++workload.workflow.train=True ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_many_small_files_r0_baseline ++workload.dataset.record_length=256 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=2000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=2 ++workload.train.seed=42 ++workload.dataset.format=npz
 
 EXIT_CODE=$?
 echo ""

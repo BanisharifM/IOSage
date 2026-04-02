@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=iter_dlio_shuffle_heavy_r0_baseline
+#SBATCH --job-name=iter_dlio_small_records_r0_i4
 #SBATCH --partition=gpuA100x4
 #SBATCH --account=bdau-delta-gpu
 #SBATCH --nodes=1
@@ -8,8 +8,8 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=128g
 #SBATCH --time=01:00:00
-#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_shuffle_heavy_r0_baseline_%j.out
-#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_shuffle_heavy_r0_baseline_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_small_records_r0_i4_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/iterative/iter_dlio_small_records_r0_i4_%j.err
 
 export DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative"
 export DARSHAN_MODMEM=16
@@ -41,7 +41,7 @@ unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TAS
 export SLURM_CPUS_PER_TASK=4
 
 # Per-job scratch to avoid file conflicts between concurrent runs
-JOB_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_shuffle_heavy_r0_baseline"
+JOB_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_small_records_r0_i4"
 mkdir -p "$JOB_SCRATCH"
 
 # Cleanup DLIO data on exit
@@ -50,7 +50,7 @@ trap cleanup EXIT
 
 echo "============================================================"
 echo "IOSage Iterative Optimization - DLIO Execution"
-echo "Job: iter_dlio_shuffle_heavy_r0_baseline"
+echo "Job: iter_dlio_small_records_r0_i4"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "============================================================"
@@ -59,7 +59,7 @@ echo "============================================================"
 echo ""
 echo "=== DLIO Data Generation Phase ==="
 srun --cpu-bind=none --export=ALL \
-    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=True ++workload.workflow.train=False ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_shuffle_heavy_r0_baseline ++workload.dataset.record_length=65536 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=1000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=3 ++workload.train.seed=42 ++workload.dataset.format=npz ++workload.reader.sample_shuffle=random ++workload.reader.file_shuffle=random
+    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=True ++workload.workflow.train=False ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_small_records_r0_i4 ++workload.dataset.record_length=1048576 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=500 ++workload.dataset.num_samples_per_file=4 ++workload.reader.batch_size=64 ++workload.reader.read_threads=8 ++workload.train.computation_time=0.01 ++workload.train.epochs=3 ++workload.train.seed=42 ++workload.dataset.format=npz
 
 echo "Data generation complete at $(date)"
 
@@ -67,7 +67,7 @@ echo "Data generation complete at $(date)"
 echo ""
 echo "=== DLIO Training Phase (with Darshan) ==="
 srun --cpu-bind=none --export=ALL,LD_PRELOAD=/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so \
-    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=False ++workload.workflow.train=True ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_shuffle_heavy_r0_baseline ++workload.dataset.record_length=65536 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=1000 ++workload.dataset.num_samples_per_file=1 ++workload.reader.batch_size=1 ++workload.reader.read_threads=1 ++workload.train.computation_time=0.01 ++workload.train.epochs=3 ++workload.train.seed=42 ++workload.dataset.format=npz ++workload.reader.sample_shuffle=random ++workload.reader.file_shuffle=random
+    /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data=False ++workload.workflow.train=True ++workload.dataset.data_folder=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_dlio_small_records_r0_i4 ++workload.dataset.record_length=1048576 ++workload.dataset.record_length_stdev=0 ++workload.dataset.num_files_train=500 ++workload.dataset.num_samples_per_file=4 ++workload.reader.batch_size=64 ++workload.reader.read_threads=8 ++workload.train.computation_time=0.01 ++workload.train.epochs=3 ++workload.train.seed=42 ++workload.dataset.format=npz
 
 EXIT_CODE=$?
 echo ""
