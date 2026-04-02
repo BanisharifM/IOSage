@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the IOSage system architecture figure (Figure 1).
+"""Generate publication-quality system architecture figure.
 
-Double-column width, shows complete pipeline with both operating modes.
-Follows figure_style_guide.md conventions.
+Clean design with precise positioning — no overlaps.
+Three rows: Offline → Online → Iterative.
 
 Usage:
     python scripts/generate_architecture_figure.py
@@ -11,14 +11,13 @@ Usage:
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+from matplotlib.patches import FancyBboxPatch
+import matplotlib.patheffects as pe
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 FIG_DIR = PROJECT_DIR / "paper" / "figures"
 
-# Style
 plt.rcParams.update({
     "font.family": "serif",
     "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
@@ -28,194 +27,248 @@ plt.rcParams.update({
     "ps.fonttype": 42,
 })
 
-# Colors (Okabe-Ito subset, slightly muted for boxes)
-C_INPUT = "#56B4E9"      # cyan - input/data
-C_ML = "#0072B2"         # blue - ML components
-C_LLM = "#D55E00"        # vermilion - LLM components
-C_KB = "#009E73"          # green - knowledge base
-C_OUTPUT = "#E69F00"      # orange - outputs
-C_LOOP = "#CC79A7"        # purple - feedback loop
-C_OFFLINE = "#F0F0F0"     # light gray - offline phase bg
-C_ONLINE = "#FAFAFA"      # white-ish - online phase bg
-C_TEXT = "#000000"
+C = {
+    "bg_data": "#FFF3E0", "bd_data": "#FF8A65",
+    "bg_ml":   "#E3F2FD", "bd_ml":   "#64B5F6",
+    "bg_kb":   "#E8F5E9", "bd_kb":   "#81C784",
+    "bg_llm":  "#FFF8E1", "bd_llm":  "#FFB74D",
+    "bg_out":  "#E0F2F1", "bd_out":  "#4DB6AC",
+    "bg_loop": "#F3E5F5", "bd_loop": "#BA68C8",
+    "arrow":   "#546E7A",
+    "loop":    "#7B1FA2",
+    "text":    "#212121",
+    "sub":     "#757575",
+}
 
 
-def draw_box(ax, x, y, w, h, label, sublabel="", color="#0072B2", alpha=0.15,
-             fontsize=8, fontweight="bold", sublabel_size=6.5):
-    """Draw a rounded box with label and optional sublabel."""
-    box = FancyBboxPatch((x, y), w, h,
-                          boxstyle="round,pad=0.02",
-                          facecolor=color, alpha=alpha,
-                          edgecolor=color, linewidth=1.0)
-    ax.add_patch(box)
-    if sublabel:
-        ax.text(x + w/2, y + h/2 + 0.015, label,
-                ha="center", va="center", fontsize=fontsize,
-                fontweight=fontweight, color=C_TEXT)
-        ax.text(x + w/2, y + h/2 - 0.02, sublabel,
-                ha="center", va="center", fontsize=sublabel_size,
-                color="#444444", style="italic")
-    else:
-        ax.text(x + w/2, y + h/2, label,
-                ha="center", va="center", fontsize=fontsize,
-                fontweight=fontweight, color=C_TEXT)
+class Box:
+    """A positioned box for easy arrow connections."""
+    def __init__(self, ax, x, y, w, h, title, lines, bg, bd, title_sz=8, line_sz=6):
+        self.x, self.y, self.w, self.h = x, y, w, h
+        patch = FancyBboxPatch(
+            (x, y), w, h,
+            boxstyle="round,pad=0.008,rounding_size=0.012",
+            facecolor=bg, edgecolor=bd, linewidth=0.9, zorder=2)
+        ax.add_patch(patch)
+        ax.text(x + w/2, y + h - 0.02, title,
+                fontsize=title_sz, fontweight="bold", ha="center", va="top",
+                color=C["text"], zorder=6)
+        if lines:
+            ax.text(x + w/2, y + h * 0.38, "\n".join(lines),
+                    fontsize=line_sz, ha="center", va="center",
+                    color=C["sub"], linespacing=1.4, zorder=6)
+
+    @property
+    def right(self):
+        return self.x + self.w, self.y + self.h / 2
+
+    @property
+    def left(self):
+        return self.x, self.y + self.h / 2
+
+    @property
+    def top(self):
+        return self.x + self.w / 2, self.y + self.h
+
+    @property
+    def bottom(self):
+        return self.x + self.w / 2, self.y
 
 
-def draw_arrow(ax, x1, y1, x2, y2, color="#333333", style="-|>", lw=0.8):
-    """Draw an arrow between two points."""
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                arrowprops=dict(arrowstyle=style, color=color, lw=lw))
+def arr(ax, p1, p2, color=None, lw=1.0):
+    color = color or C["arrow"]
+    ax.annotate("", xy=p2, xytext=p1,
+                arrowprops=dict(arrowstyle="-|>", color=color, lw=lw), zorder=5)
+
+
+def carr(ax, p1, p2, color=None, lw=0.8, rad=0.2):
+    color = color or C["arrow"]
+    ax.annotate("", xy=p2, xytext=p1,
+                arrowprops=dict(arrowstyle="-|>", color=color, lw=lw,
+                                connectionstyle=f"arc3,rad={rad}"), zorder=5)
+
+
+def section_bg(ax, x, y, w, h, label):
+    patch = FancyBboxPatch(
+        (x, y), w, h,
+        boxstyle="round,pad=0.005,rounding_size=0.008",
+        facecolor="#FAFAFA", edgecolor="#E0E0E0",
+        linewidth=0.5, linestyle=(0, (4, 3)), zorder=0)
+    ax.add_patch(patch)
+    ax.text(x + 0.008, y + h - 0.008, label,
+            fontsize=6.5, color="#9E9E9E", fontweight="bold",
+            fontstyle="italic", va="top", zorder=1)
 
 
 def main():
-    fig, ax = plt.subplots(figsize=(7.16, 3.2), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(7.16, 3.6))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
+    fig.patch.set_facecolor("white")
 
-    # === Phase backgrounds ===
-    # Offline (top strip)
-    offline_bg = FancyBboxPatch((0.01, 0.72), 0.98, 0.26,
-                                 boxstyle="round,pad=0.01",
-                                 facecolor=C_OFFLINE, edgecolor="#CCCCCC",
-                                 linewidth=0.5, linestyle="--")
-    ax.add_patch(offline_bg)
-    ax.text(0.03, 0.95, "OFFLINE (Training)", fontsize=7, color="#666666",
-            fontweight="bold", style="italic")
+    bh = 0.19  # standard box height
+    gap = 0.018  # gap between boxes
 
-    # Online (bottom area)
-    online_bg = FancyBboxPatch((0.01, 0.02), 0.98, 0.68,
-                                boxstyle="round,pad=0.01",
-                                facecolor=C_ONLINE, edgecolor="#CCCCCC",
-                                linewidth=0.5, linestyle="--")
-    ax.add_patch(online_bg)
-    ax.text(0.03, 0.67, "ONLINE (Inference)", fontsize=7, color="#666666",
-            fontweight="bold", style="italic")
+    # =================================================================
+    # ROW 1: OFFLINE (y = 0.77)
+    # =================================================================
+    r1y = 0.77
+    section_bg(ax, 0.01, 0.73, 0.98, 0.26,
+               "OFFLINE  (Training & Knowledge Base Construction)")
 
-    # === OFFLINE PHASE (top) ===
-    bw = 0.18  # box width
-    bh = 0.12  # box height
+    r1 = []  # store boxes for arrow connections
+    x = 0.03
+    r1.append(Box(ax, x, r1y, 0.13, bh, "Darshan Logs",
+                  ["1.37M jobs", "ALCF Polaris"],
+                  C["bg_data"], C["bd_data"]))
 
-    # Training data
-    draw_box(ax, 0.03, 0.78, 0.20, 0.12, "Training Data",
-             "91K heuristic + 187 GT\n(biquality, w=100)", C_INPUT, alpha=0.2)
+    x = 0.03 + 0.13 + gap
+    r1.append(Box(ax, x, r1y, 0.145, bh, "Feature Extraction",
+                  [r"$\mathbf{x} \in \mathbb{R}^{157}$", "POSIX+MPI-IO+STDIO"],
+                  C["bg_ml"], C["bd_ml"]))
 
-    # Benchmark sweep
-    draw_box(ax, 0.28, 0.78, 0.20, 0.12, "Benchmark Sweep",
-             "6 suites, 623 configs\nIOR/mdtest/DLIO/h5bench/\nHACC-IO/custom", C_KB, alpha=0.2)
+    x += 0.145 + gap
+    r1.append(Box(ax, x, r1y, 0.155, bh, "Biquality Training",
+                  ["91K heuristic + 187 GT", "XGBoost, w=100"],
+                  C["bg_ml"], C["bd_ml"]))
 
-    # KB construction
-    draw_box(ax, 0.53, 0.78, 0.20, 0.12, "Knowledge Base",
-             "623 entries: signature\n+ fix + source code", C_KB, alpha=0.25)
+    x += 0.155 + gap
+    r1.append(Box(ax, x, r1y, 0.155, bh, "Benchmark Sweep",
+                  ["6 suites, 623 configs", "IOR/mdtest/DLIO/..."],
+                  C["bg_kb"], C["bd_kb"]))
 
-    # ML Training
-    draw_box(ax, 0.78, 0.78, 0.18, 0.12, "ML Training",
-             "XGBoost, 8 dims\n5-seed, F1=0.923", C_ML, alpha=0.2)
+    x += 0.155 + gap
+    r1.append(Box(ax, x, r1y, 0.13, bh, "Knowledge Base",
+                  ["623 entries", "signature+fix+code"],
+                  C["bg_kb"], C["bd_kb"]))
 
-    # Arrows: offline
-    draw_arrow(ax, 0.23, 0.84, 0.28, 0.84)
-    draw_arrow(ax, 0.48, 0.84, 0.53, 0.84)
-    draw_arrow(ax, 0.23, 0.82, 0.78, 0.82, color="#999999", lw=0.5)
+    x += 0.13 + gap
+    r1.append(Box(ax, x, r1y, 0.10, bh, "ML Model",
+                  ["F1 = 0.923", "8-label, 5-seed"],
+                  C["bg_out"], C["bd_out"]))
 
-    # === ONLINE PHASE (bottom) ===
+    # Row 1 arrows: each box.right → next box.left
+    for i in range(len(r1) - 1):
+        arr(ax, r1[i].right, r1[i+1].left)
 
-    # Input
-    draw_box(ax, 0.03, 0.48, 0.12, 0.13, "Darshan\nLog", "", C_INPUT, alpha=0.25,
-             fontsize=8)
+    # =================================================================
+    # ROW 2: ONLINE PIPELINE (y = 0.42)
+    # =================================================================
+    r2y = 0.42
+    section_bg(ax, 0.01, 0.38, 0.98, 0.32,
+               "ONLINE  (Inference Pipeline)")
 
-    # Step 1: ML Detection
-    draw_box(ax, 0.19, 0.48, 0.14, 0.13, "ML Detect",
-             "8-dim classifier\nthreshold=0.3", C_ML, alpha=0.2)
+    r2 = []
+    x = 0.03
+    r2.append(Box(ax, x, r2y, 0.09, bh, "Darshan\nLog",
+                  ["new trace"],
+                  C["bg_data"], C["bd_data"], title_sz=7.5))
 
-    # Step 2: SHAP
-    draw_box(ax, 0.37, 0.48, 0.12, 0.13, "SHAP",
-             "per-label top-K\nfeature attribution", C_ML, alpha=0.15)
+    x += 0.09 + gap
+    r2.append(Box(ax, x, r2y, 0.135, bh, "1. ML Detect",
+                  ["8-dim classifier", "threshold = 0.3", "3.9 ms"],
+                  C["bg_ml"], C["bd_ml"], title_sz=7.5))
 
-    # Step 3: KB Retrieval
-    draw_box(ax, 0.53, 0.48, 0.14, 0.13, "KB Retrieve",
-             "similarity search\n623 entries", C_KB, alpha=0.2)
+    x += 0.135 + gap
+    r2.append(Box(ax, x, r2y, 0.12, bh, "2. SHAP",
+                  ["per-label top-K", "feature attribution", "2.7 ms"],
+                  C["bg_llm"], C["bd_llm"], title_sz=7.5))
 
-    # Step 4: LLM
-    draw_box(ax, 0.71, 0.48, 0.14, 0.13, "LLM Generate",
-             "Claude/GPT-4o/Llama\ncode-level fix", C_LLM, alpha=0.2)
+    x += 0.12 + gap
+    r2.append(Box(ax, x, r2y, 0.13, bh, "3. KB Retrieve",
+                  ["similarity search", "623 entries", "2.8 ms"],
+                  C["bg_kb"], C["bd_kb"], title_sz=7.5))
 
-    # Arrows: online pipeline
-    draw_arrow(ax, 0.15, 0.545, 0.19, 0.545)
-    draw_arrow(ax, 0.33, 0.545, 0.37, 0.545)
-    draw_arrow(ax, 0.49, 0.545, 0.53, 0.545)
-    draw_arrow(ax, 0.67, 0.545, 0.71, 0.545)
+    x += 0.13 + gap
+    r2.append(Box(ax, x, r2y, 0.145, bh, "4. LLM Generate",
+                  ["Claude/GPT-4o/Llama", "code-level fix", "~14 s"],
+                  C["bg_llm"], C["bd_llm"], title_sz=7.5))
 
-    # KB arrow from offline
-    draw_arrow(ax, 0.63, 0.78, 0.63, 0.61, color=C_KB, lw=0.7)
-    # ML model arrow from offline
-    draw_arrow(ax, 0.87, 0.78, 0.26, 0.61, color=C_ML, lw=0.5, style="-|>")
+    x += 0.145 + gap
+    r2.append(Box(ax, x, r2y, 0.155, bh, "Code Fix",
+                  ["grounded recommendation", "+ KB citations", "groundedness = 1.0"],
+                  C["bg_out"], C["bd_out"], title_sz=7.5))
 
-    # === OUTPUT: Two modes ===
+    # Row 2 arrows
+    for i in range(len(r2) - 1):
+        arr(ax, r2[i].right, r2[i+1].left)
 
-    # Single-shot output (right)
-    draw_box(ax, 0.88, 0.48, 0.10, 0.13, "Code Fix",
-             "grounded rec.\n+ KB citations", C_OUTPUT, alpha=0.25)
-    draw_arrow(ax, 0.85, 0.545, 0.88, 0.545)
+    # Mode label
+    ax.text(r2[5].x + r2[5].w / 2, r2y - 0.025, "single-shot mode",
+            fontsize=6, ha="center", color=C["bd_out"],
+            fontweight="bold", fontstyle="italic", zorder=6)
 
-    # Label: "Single-shot mode"
-    ax.text(0.93, 0.44, "Single-shot", fontsize=6, ha="center",
-            color=C_OUTPUT, fontweight="bold")
+    # Vertical arrows: offline model → online ML Detect, offline KB → online KB Retrieve
+    carr(ax, r1[2].bottom, r2[1].top, color="#90CAF9", lw=0.6, rad=-0.15)
+    ax.text((r1[2].bottom[0] + r2[1].top[0])/2 - 0.04, 0.68,
+            "trained\nmodel", fontsize=5, color="#64B5F6", ha="center", zorder=6)
 
-    # === ITERATIVE LOOP (bottom) ===
-    loop_y = 0.15
+    carr(ax, r1[4].bottom, r2[3].top, color="#81C784", lw=0.6, rad=-0.1)
+    ax.text((r1[4].bottom[0] + r2[3].top[0])/2 + 0.02, 0.68,
+            "KB", fontsize=5, color="#81C784", ha="center", zorder=6)
 
-    # Execute on HPC
-    draw_box(ax, 0.30, loop_y, 0.16, 0.12, "Execute Fix",
-             "SLURM submit\nbenchmark rerun", C_LOOP, alpha=0.15)
+    # =================================================================
+    # ROW 3: ITERATIVE (y = 0.07)
+    # =================================================================
+    r3y = 0.07
+    section_bg(ax, 0.12, 0.03, 0.87, 0.32,
+               "ITERATIVE  (Closed-Loop Validation)")
 
-    # New Darshan
-    draw_box(ax, 0.52, loop_y, 0.14, 0.12, "New Darshan",
-             "collect I/O profile\nmeasure speedup", C_LOOP, alpha=0.15)
+    r3 = []
+    x = 0.15
+    r3.append(Box(ax, x, r3y, 0.155, bh, "Execute Fix",
+                  ["SLURM submit", "benchmark rerun", "on HPC cluster"],
+                  C["bg_loop"], C["bd_loop"]))
 
-    # ML Re-detect
-    draw_box(ax, 0.72, loop_y, 0.14, 0.12, "ML Re-detect",
-             "converged?\nbottleneck < 0.3", C_LOOP, alpha=0.15)
+    x += 0.155 + gap
+    r3.append(Box(ax, x, r3y, 0.155, bh, "New Darshan",
+                  ["collect I/O profile", "measure throughput"],
+                  C["bg_loop"], C["bd_loop"]))
 
-    # Arrows: iterative loop
-    # LLM → Execute
-    draw_arrow(ax, 0.78, 0.48, 0.38, 0.27, color=C_LOOP, lw=0.9)
-    # Execute → New Darshan
-    draw_arrow(ax, 0.46, 0.21, 0.52, 0.21, color=C_LOOP)
-    # New Darshan → ML Re-detect
-    draw_arrow(ax, 0.66, 0.21, 0.72, 0.21, color=C_LOOP)
-    # ML Re-detect → back to SHAP (iterate)
-    draw_arrow(ax, 0.79, 0.27, 0.43, 0.48, color=C_LOOP, lw=0.9,
-               style="-|>")
+    x += 0.155 + gap
+    r3.append(Box(ax, x, r3y, 0.155, bh, "ML Re-detect",
+                  ["converged?", "all dims < 0.3", "or max 5 iters"],
+                  C["bg_loop"], C["bd_loop"]))
 
-    # Iterate label on loop arrow
-    ax.text(0.60, 0.38, "iterate", fontsize=6, color=C_LOOP,
-            fontweight="bold", rotation=40, ha="center")
+    x += 0.155 + gap
+    r3.append(Box(ax, x, r3y, 0.17, bh, "Validated Speedup",
+                  ["measured improvement", "33/33 runs, 6 benchmarks", "geomean 4.52x"],
+                  C["bg_out"], C["bd_out"]))
 
-    # Converge output
-    draw_box(ax, 0.88, loop_y, 0.10, 0.12, "Validated\nSpeedup",
-             "measured BW\nimprovement", C_OUTPUT, alpha=0.25)
-    draw_arrow(ax, 0.86, 0.21, 0.88, 0.21, color=C_LOOP)
+    # Row 3 arrows
+    for i in range(len(r3) - 1):
+        arr(ax, r3[i].right, r3[i+1].left, color=C["loop"])
 
-    # Label: "Iterative mode"
-    ax.text(0.93, 0.11, "Iterative", fontsize=6, ha="center",
-            color=C_LOOP, fontweight="bold")
+    # Mode label
+    ax.text(r3[3].x + r3[3].w / 2, r3y - 0.025, "iterative mode",
+            fontsize=6, ha="center", color=C["bd_loop"],
+            fontweight="bold", fontstyle="italic", zorder=6)
 
-    # === Step numbers ===
-    for i, (x, y) in enumerate([(0.19, 0.62), (0.37, 0.62), (0.53, 0.62), (0.71, 0.62)], 1):
-        ax.text(x + 0.01, y, f"Step {i}", fontsize=5.5, color="#888888")
+    # LLM Generate → Execute Fix (curved down)
+    carr(ax, (r2[4].x + r2[4].w * 0.3, r2[4].y),
+         (r3[0].x + r3[0].w * 0.5, r3[0].y + r3[0].h),
+         color=C["loop"], lw=1.0, rad=0.2)
 
-    # === Title (no system name — caption handles it) ===
-    ax.text(0.50, 0.995, "System Architecture: ML-Guided I/O Bottleneck Detection and Code-Level Recommendation",
-            ha="center", va="top", fontsize=9, fontweight="bold")
+    # ML Re-detect → back to SHAP (curved up, the iterate loop)
+    carr(ax, (r3[2].x + r3[2].w * 0.5, r3[2].y + r3[2].h),
+         (r2[2].x + r2[2].w * 0.5, r2[2].y),
+         color=C["loop"], lw=1.0, rad=0.3)
+
+    # "iterate" label on the loop arrow
+    ax.text(0.44, 0.345, "iterate", fontsize=7, color=C["loop"],
+            fontweight="bold", ha="center", rotation=55, zorder=6,
+            path_effects=[pe.withStroke(linewidth=2.5, foreground="white")])
+
+    # No in-figure title — LaTeX \caption{} handles this per IEEE convention
 
     # Save
-    pdf_path = FIG_DIR / "fig_architecture.pdf"
-    png_path = FIG_DIR / "fig_architecture.png"
-    fig.savefig(pdf_path, format="pdf", dpi=300)
-    fig.savefig(png_path, format="png", dpi=300)
+    fig.subplots_adjust(left=0.005, right=0.995, top=0.97, bottom=0.005)
+    for fmt in ["pdf", "png"]:
+        path = FIG_DIR / f"fig_architecture.{fmt}"
+        fig.savefig(path, format=fmt, dpi=300, bbox_inches="tight", pad_inches=0.02)
+        print(f"Saved: {path} ({path.stat().st_size:,} bytes)")
     plt.close(fig)
-    print(f"Saved: {pdf_path} ({pdf_path.stat().st_size} bytes)")
-    print(f"Saved: {png_path} ({png_path.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":
