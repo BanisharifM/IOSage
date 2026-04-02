@@ -204,8 +204,8 @@ def main():
     for i, (x, y) in enumerate([(0.19, 0.62), (0.37, 0.62), (0.53, 0.62), (0.71, 0.62)], 1):
         ax.text(x + 0.01, y, f"Step {i}", fontsize=5.5, color="#888888")
 
-    # === Title ===
-    ax.text(0.50, 0.995, "IOSage: ML-Guided I/O Bottleneck Detection and Code-Level Recommendation",
+    # === Title (no system name — caption handles it) ===
+    ax.text(0.50, 0.995, "System Architecture: ML-Guided I/O Bottleneck Detection and Code-Level Recommendation",
             ha="center", va="top", fontsize=9, fontweight="bold")
 
     # Save
