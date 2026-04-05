@@ -248,8 +248,8 @@ def fig_ablation_trackb():
     """Bar chart: 5 ablation conditions for Single-shot pipeline."""
     logger.info("Generating Figure 20: Single-shot Ablation...")
 
-    conditions = ["Full\nPipeline", "No ML\n(LLM only)", "No KB\n(No RAG)",
-                  "No SHAP", "ML-Only\n(No LLM)"]
+    conditions = ["Full\nPipeline", "w/o ML\nClassifier", "w/o Knowledge\nGrounding",
+                  "w/o Feature\nAttribution", "Detection\nOnly"]
     groundedness = [1.0, 0.0, 0.0, 1.0, None]  # None = N/A
     n_recs = [1.4, 2.1, 1.8, 1.3, 0.0]  # avg recommendations per query
 
