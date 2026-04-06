@@ -277,12 +277,12 @@ def fig_gt_vs_heuristic():
         h = bar.get_height()
         # Show all values including 0.00
         y_pos = max(h, 0.01) + 0.015
-        ax.text(bar.get_x() + bar.get_width()/2 - 0.11, y_pos,
+        ax.text(bar.get_x() + bar.get_width()/2 - 0.13, y_pos,
                 f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
                 color=COLORS["orange"], fontweight="bold")
     for bar in bars2:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2 + 0.11, h + 0.015,
+        ax.text(bar.get_x() + bar.get_width()/2 + 0.13, h + 0.015,
                 f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
                 color=COLORS["blue"], fontweight="bold")
 
