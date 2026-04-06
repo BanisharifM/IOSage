@@ -256,13 +256,13 @@ def fig_ablation_trackb():
     x = np.arange(len(conditions))
     width = 0.32
 
-    # Groundedness bars (blue)
+    # Groundedness bars (teal/green)
     bars_g = ax1.bar(x - width/2, groundedness, width,
-                     color=OI["blue"], edgecolor="black", linewidth=0.4,
+                     color=OI["green"], edgecolor="black", linewidth=0.4,
                      label="Groundedness", zorder=3)
-    # Rec. Precision bars (orange)
+    # Rec. Precision bars (vermilion/red)
     bars_r = ax1.bar(x + width/2, rec_precision, width,
-                     color=OI["orange"], edgecolor="black", linewidth=0.4,
+                     color=OI["vermilion"], edgecolor="black", linewidth=0.4,
                      hatch="//", label="Rec. Precision", zorder=3)
 
     # Value labels on bars
@@ -270,12 +270,12 @@ def fig_ablation_trackb():
         h = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2, h + 0.02,
                  f"{h:.2f}", ha="center", va="bottom", fontsize=6,
-                 color=OI["blue"], fontweight="bold")
+                 color="#006644", fontweight="bold")
     for bar in bars_r:
         h = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2, h + 0.02,
                  f"{h:.2f}", ha="center", va="bottom", fontsize=6,
-                 color=OI["orange"], fontweight="bold")
+                 color=OI["vermilion"], fontweight="bold")
 
     ax1.set_xticks(x)
     ax1.set_xticklabels(conditions, fontsize=6.5)
@@ -285,22 +285,22 @@ def fig_ablation_trackb():
 
     # Secondary axis for number of recommendations
     ax2 = ax1.twinx()
-    ax2.plot(x, n_recs, "D-", color=OI["green"], markersize=5,
+    ax2.plot(x, n_recs, "D-", color=OI["purple"], markersize=5,
              linewidth=1.2, zorder=4, label="# Recs")
     for i, nr in enumerate(n_recs):
         ax2.text(x[i], nr + 0.15, f"{nr:.1f}", ha="center", va="bottom",
-                 fontsize=6, color=OI["green"], fontweight="bold")
-    ax2.set_ylabel("# Recommendations", color=OI["green"], fontsize=7)
-    ax2.tick_params(axis="y", labelcolor=OI["green"], labelsize=6.5)
+                 fontsize=6, color=OI["purple"], fontweight="bold")
+    ax2.set_ylabel("# Recommendations", color=OI["purple"], fontsize=7)
+    ax2.tick_params(axis="y", labelcolor=OI["purple"], labelsize=6.5)
     ax2.set_ylim(0, 5.5)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(0.5)
 
     # Legend inside chart
-    bar_gnd = mpatches.Patch(facecolor=OI["blue"], label="Groundedness")
-    bar_rp = mpatches.Patch(facecolor=OI["orange"], hatch="//",
+    bar_gnd = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
+    bar_rp = mpatches.Patch(facecolor=OI["vermilion"], hatch="//",
                             label="Rec. Precision")
-    line_patch = plt.Line2D([0], [0], color=OI["green"], marker="D",
+    line_patch = plt.Line2D([0], [0], color=OI["purple"], marker="D",
                             markersize=4, label="# Recs")
     ax1.legend(handles=[bar_gnd, bar_rp, line_patch], loc="upper right",
                bbox_to_anchor=(0.99, 0.99),
