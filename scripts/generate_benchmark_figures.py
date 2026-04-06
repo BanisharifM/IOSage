@@ -275,13 +275,14 @@ def fig_gt_vs_heuristic():
     # Value labels — nudge apart to prevent overlap
     for bar in bars1:
         h = bar.get_height()
-        if h > 0.01:
-            ax.text(bar.get_x() + bar.get_width()/2 - 0.07, h + 0.015,
-                    f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
-                    color=COLORS["orange"], fontweight="bold")
+        # Show all values including 0.00
+        y_pos = max(h, 0.01) + 0.015
+        ax.text(bar.get_x() + bar.get_width()/2 - 0.09, y_pos,
+                f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
+                color=COLORS["orange"], fontweight="bold")
     for bar in bars2:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2 + 0.07, h + 0.015,
+        ax.text(bar.get_x() + bar.get_width()/2 + 0.09, h + 0.015,
                 f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
                 color=COLORS["blue"], fontweight="bold")
 
