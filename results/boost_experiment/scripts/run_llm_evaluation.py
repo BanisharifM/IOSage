@@ -29,10 +29,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-LOCAL_PKGS = PROJECT_DIR / ".local_pkgs"
-if LOCAL_PKGS.exists():
-    sys.path.insert(0, str(LOCAL_PKGS))
+PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
 sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -92,9 +89,9 @@ def run_evaluation(models_to_test, n_workloads, n_runs):
     """Run full evaluation across models, workloads, and runs."""
     from src.ioprescriber.pipeline import IOPrescriber
 
-    # Load test data
-    test_feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_features.parquet")
-    test_labels = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_labels.parquet")
+    # Load test data — BOOST EXPERIMENT new splits
+    test_feat = pd.read_parquet(PROJECT_DIR / "results" / "boost_experiment" / "new_splits" / "test_features.parquet")
+    test_labels = pd.read_parquet(PROJECT_DIR / "results" / "boost_experiment" / "new_splits" / "test_labels.parquet")
 
     # Select diverse workloads
     workload_indices = select_diverse_workloads(test_feat, test_labels, n_workloads)
@@ -116,7 +113,10 @@ def run_evaluation(models_to_test, n_workloads, n_runs):
 
         # Initialize pipeline for this model
         try:
+            from src.ioprescriber.detector import Detector
             pipeline = IOPrescriber(llm_model=model)
+            BOOST_MODEL = PROJECT_DIR / "results" / "boost_experiment" / "new_models" / "xgboost_biquality_w100_seed42.pkl"
+            pipeline.detector = Detector(model_path=BOOST_MODEL)
         except Exception as e:
             logger.error("Failed to initialize %s: %s", model, e)
             continue
@@ -255,7 +255,7 @@ def main():
     print_table3(summary)
 
     # Save everything
-    results_dir = PROJECT_DIR / "results" / "llm_evaluation"
+    results_dir = PROJECT_DIR / "results" / "boost_experiment" / "full_evaluation" / "llm_evaluation"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     # Full results

@@ -149,7 +149,10 @@ def fig_gt_label_distribution():
     """Stacked bar chart: GT label counts per dimension, colored by benchmark."""
     logger.info("Generating B1: GT label distribution by benchmark...")
 
-    labels_path = PROJECT_DIR / "data" / "processed" / "benchmark" / "labels.parquet"
+    # Use boost experiment data (689 samples) if available, else original (623)
+    labels_path = PROJECT_DIR / "results" / "boost_experiment" / "new_splits" / "labels.parquet"
+    if not labels_path.exists():
+        labels_path = PROJECT_DIR / "data" / "processed" / "benchmark" / "labels.parquet"
     if not labels_path.exists():
         logger.warning("Benchmark labels not found: %s", labels_path)
         return
@@ -241,8 +244,11 @@ def fig_gt_vs_heuristic():
 
     import json
 
-    # Load actual F1 scores from evaluation results
-    metrics_path = PROJECT_DIR / "results" / "final_metrics.json"
+    # Load actual F1 scores from boost experiment results
+    metrics_path = PROJECT_DIR / "results" / "boost_experiment" / "full_evaluation" / "final_metrics.json"
+    if not metrics_path.exists():
+        # Fallback to original results
+        metrics_path = PROJECT_DIR / "results" / "final_metrics.json"
     if not metrics_path.exists():
         logger.warning("final_metrics.json not found. Skipping.")
         return

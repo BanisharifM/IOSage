@@ -26,7 +26,7 @@ from pathlib import Path
 
 import numpy as np
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
 sys.path.insert(0, str(PROJECT_DIR))
 
 # Load .env
@@ -57,7 +57,7 @@ LLMEVAL_DIR = TRACEBENCH_ROOT / "LLMEval"
 LABEL_MAPPING_FILE = (
     PROJECT_DIR / "data" / "external" / "tracebench" / "label_mapping.json"
 )
-OUTPUT_DIR = PROJECT_DIR / "results" / "e2e_evaluation"
+OUTPUT_DIR = PROJECT_DIR / "results" / "boost_experiment" / "full_evaluation" / "tracebench_full"
 
 SUBSETS = ["real_app_bench", "single_issue_bench", "IO500"]
 
@@ -451,7 +451,7 @@ def main():
     # Load ML models
     logger.info("Loading ML models...")
     import pickle
-    model_path = PROJECT_DIR / "models" / "phase2" / "xgboost_biquality_w100.pkl"
+    model_path = PROJECT_DIR / "results" / "boost_experiment" / "new_models" / "xgboost_biquality_w100_seed42.pkl"
     with open(model_path, "rb") as f:
         model_bundle = pickle.load(f)
 
