@@ -222,8 +222,8 @@ def fig_gt_label_distribution():
     ax.legend(loc="upper right", bbox_to_anchor=(0.99, 0.99),
               ncol=2, fontsize=6.5, frameon=True, framealpha=0.95,
               edgecolor="#cccccc",
-              columnspacing=0.8, handletextpad=0.4, labelspacing=0.4,
-              borderpad=0.15, borderaxespad=0)
+              columnspacing=1.0, handletextpad=0.5, labelspacing=0.5,
+              borderpad=0.5, borderaxespad=0)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.pdf"),
                 format="pdf", bbox_inches="tight", pad_inches=0.01)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.png"),
