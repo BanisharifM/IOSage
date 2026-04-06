@@ -291,17 +291,17 @@ def fig_gt_vs_heuristic():
     ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
     ax.set_ylabel("Positive rate (%)", fontsize=8)
 
-    # Value labels on both bars — place inside bar if tall enough, above if short
+    # Value labels — shift blue slightly left, orange slightly right to avoid overlap
     for i, (bar1, bar2) in enumerate(zip(bars1, bars2)):
         h1 = bar1.get_height()
         h2 = bar2.get_height()
         if h1 > 0.5:
-            ax.text(bar1.get_x() + bar1.get_width()/2, h1 + 0.5,
-                    f"{h1:.1f}", ha="center", va="bottom", fontsize=5.5,
+            ax.text(bar1.get_x() + bar1.get_width()/2 - 0.03, h1 + 0.5,
+                    f"{h1:.1f}", ha="right", va="bottom", fontsize=5.5,
                     color=COLORS["blue"], fontweight="bold")
         if h2 > 0.5:
-            ax.text(bar2.get_x() + bar2.get_width()/2, h2 + 0.5,
-                    f"{h2:.1f}", ha="center", va="bottom", fontsize=5.5,
+            ax.text(bar2.get_x() + bar2.get_width()/2 + 0.03, h2 + 0.5,
+                    f"{h2:.1f}", ha="left", va="bottom", fontsize=5.5,
                     color=COLORS["orange"], fontweight="bold")
 
     ax.set_ylim(0, max(max(h_vals), max(g_vals)) * 1.15)
