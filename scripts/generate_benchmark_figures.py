@@ -207,18 +207,19 @@ def fig_gt_label_distribution():
     ax.set_xticks(x)
     ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
     ax.set_ylabel("Samples", fontsize=8)
-    # Legend in 2 rows of 3
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.2),
-              ncol=3, fontsize=6.5, frameon=True, framealpha=0.9,
-              columnspacing=0.6, handletextpad=0.3)
-
     # Annotate totals above bars
     for i, total in enumerate(bottom):
         if total > 0:
             ax.text(i, total + 3, str(int(total)), ha="center",
                     va="bottom", fontsize=6.5, fontweight="bold")
 
-    ax.set_ylim(0, max(bottom) * 1.12)
+    ax.set_ylim(0, max(bottom) * 1.15)
+
+    # Legend inside chart — place in the empty area (right side has short bars)
+    ax.legend(loc="upper right", bbox_to_anchor=(0.98, 0.98),
+              ncol=2, fontsize=6.5, frameon=True, framealpha=0.95,
+              edgecolor="#cccccc",
+              columnspacing=0.5, handletextpad=0.3)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.pdf"),
                 format="pdf", bbox_inches="tight", pad_inches=0.01)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.png"),
