@@ -236,80 +236,59 @@ def fig_gt_label_distribution():
 # B3: Ground-truth vs heuristic label distribution comparison
 # ===========================================================================
 def fig_gt_vs_heuristic():
-    """Side-by-side bar chart: GT vs heuristic label rates."""
-    logger.info("Generating B3: GT vs heuristic label comparison...")
+    """Per-dimension F1 comparison: IOSage vs Drishti on GT test set."""
+    logger.info("Generating Fig 3: IOSage vs Drishti F1 comparison...")
 
-    # Heuristic label rates (from paper_materials.md, 131K production logs)
-    heuristic_rates = {
-        "access_granularity": 30.7,
-        "metadata_intensity": 0.8,
-        "parallelism_efficiency": 1.6,
-        "access_pattern": 5.2,
-        "interface_choice": 1.2,
-        "file_strategy": 1.4,
-        "throughput_utilization": 20.5,
-        "healthy": 54.2,
-    }
+    import json
 
-    # GT label rates (from benchmark labels)
-    labels_path = PROJECT_DIR / "data" / "processed" / "benchmark" / "labels.parquet"
-    if labels_path.exists():
-        df = pd.read_parquet(labels_path)
-        gt_rates = {}
-        gt_counts = {}
-        for dim in DIMENSION_ORDER:
-            if dim in df.columns:
-                gt_rates[dim] = float(df[dim].mean() * 100)
-                gt_counts[dim] = int(df[dim].sum())
-            else:
-                gt_rates[dim] = 0.0
-                gt_counts[dim] = 0
-        logger.info("  GT rates: %s", {d: f"{r:.1f}%" for d, r in gt_rates.items()})
-    else:
-        logger.warning("Benchmark labels not found, using estimated rates")
-        gt_rates = {d: 10.0 for d in DIMENSION_ORDER}
+    # Load actual F1 scores from evaluation results
+    metrics_path = PROJECT_DIR / "results" / "final_metrics.json"
+    if not metrics_path.exists():
+        logger.warning("final_metrics.json not found. Skipping.")
+        return
+
+    with open(metrics_path) as f:
+        metrics = json.load(f)
 
     dims = DIMENSION_ORDER
-    # Single-column figure — native size matches paper column width
+    iosage_f1 = [metrics["xgboost"]["metrics"]["per_label"][d]["f1"] for d in dims]
+    drishti_f1 = [metrics["drishti"]["metrics"]["per_label"][d]["f1"] for d in dims]
+
+    # Single-column figure
     fig, ax = plt.subplots(figsize=(3.5, 2.6))
     x = np.arange(len(dims))
     width = 0.35
 
-    h_vals = [heuristic_rates.get(d, 0) for d in dims]
-    g_vals = [gt_rates.get(d, 0) for d in dims]
+    bars1 = ax.bar(x - width / 2, drishti_f1, width, label="Drishti",
+                   color=COLORS["orange"], hatch="//", edgecolor="black", linewidth=0.3)
+    bars2 = ax.bar(x + width / 2, iosage_f1, width, label="IOSage",
+                   color=COLORS["blue"], hatch="", edgecolor="black", linewidth=0.3)
 
-    bars1 = ax.bar(x - width / 2, h_vals, width, label="Heuristic (131K)",
-                   color=COLORS["blue"], hatch="", edgecolor="white", linewidth=0.3)
-    bars2 = ax.bar(x + width / 2, g_vals, width, label="Ground-truth (623)",
-                   color=COLORS["orange"], hatch="//", edgecolor="white", linewidth=0.3)
-
-    # Rotated labels for readability
     short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
                     "Access Pattern", "Interface Ch.", "File Strategy",
                     "Throughput Util.", "Healthy"]
     ax.set_xticks(x)
     ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
-    ax.set_ylabel("Positive rate (%)", fontsize=8)
+    ax.set_ylabel("F1 Score", fontsize=8)
+    ax.set_ylim(0, 1.15)
 
-    # Value labels — nudge blue slightly left, orange slightly right
-    for i, (bar1, bar2) in enumerate(zip(bars1, bars2)):
-        h1 = bar1.get_height()
-        h2 = bar2.get_height()
-        if h1 > 0.5:
-            ax.text(bar1.get_x() + bar1.get_width()/2 - 0.07, h1 + 0.5,
-                    f"{h1:.1f}", ha="center", va="bottom", fontsize=5.5,
-                    color=COLORS["blue"], fontweight="bold")
-        if h2 > 0.5:
-            ax.text(bar2.get_x() + bar2.get_width()/2 + 0.07, h2 + 0.5,
-                    f"{h2:.1f}", ha="center", va="bottom", fontsize=5.5,
+    # Value labels — nudge apart to prevent overlap
+    for bar in bars1:
+        h = bar.get_height()
+        if h > 0.01:
+            ax.text(bar.get_x() + bar.get_width()/2 - 0.07, h + 0.015,
+                    f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
                     color=COLORS["orange"], fontweight="bold")
+    for bar in bars2:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2 + 0.07, h + 0.015,
+                f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
+                color=COLORS["blue"], fontweight="bold")
 
-    ax.set_ylim(0, max(max(h_vals), max(g_vals)) * 1.15)
-
-    # Legend inside chart — upper-left has space (Access Gran. is ~30%, not at top)
-    ax.legend(loc="upper left", fontsize=7,
-              frameon=True, framealpha=0.95, edgecolor="#cccccc",
-              borderpad=0.4, borderaxespad=0.2)
+    # Legend inside chart — upper-right where Drishti bars are short
+    ax.legend(loc="upper right", bbox_to_anchor=(0.99, 0.99),
+              fontsize=7, frameon=True, framealpha=0.95, edgecolor="#cccccc",
+              borderpad=0.4, borderaxespad=0)
     ax.grid(axis="y", alpha=0.3)
 
     fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.pdf"),
@@ -317,7 +296,7 @@ def fig_gt_vs_heuristic():
     fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.png"),
                 format="png", dpi=300, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
-    logger.info("Saved fig_gt_vs_heuristic")
+    logger.info("Saved fig_gt_vs_heuristic (IOSage vs Drishti F1)")
 
 
 # ===========================================================================
