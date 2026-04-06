@@ -296,11 +296,11 @@ def fig_gt_vs_heuristic():
         h1 = bar1.get_height()
         h2 = bar2.get_height()
         if h1 > 0.5:
-            ax.text(bar1.get_x() + bar1.get_width()/2 - 0.05, h1 + 0.5,
+            ax.text(bar1.get_x() + bar1.get_width()/2 - 0.06, h1 + 0.5,
                     f"{h1:.1f}", ha="center", va="bottom", fontsize=5.5,
                     color=COLORS["blue"], fontweight="bold")
         if h2 > 0.5:
-            ax.text(bar2.get_x() + bar2.get_width()/2 + 0.05, h2 + 0.5,
+            ax.text(bar2.get_x() + bar2.get_width()/2 + 0.06, h2 + 0.5,
                     f"{h2:.1f}", ha="center", va="bottom", fontsize=5.5,
                     color=COLORS["orange"], fontweight="bold")
 
