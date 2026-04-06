@@ -285,13 +285,13 @@ def fig_ablation_trackb():
 
     # Secondary axis for number of recommendations
     ax2 = ax1.twinx()
-    ax2.plot(x, n_recs, "D-", color=OI["purple"], markersize=5,
+    ax2.plot(x, n_recs, "D-", color="#333333", markersize=5,
              linewidth=1.2, zorder=4, label="# Recs")
     for i, nr in enumerate(n_recs):
         ax2.text(x[i], nr + 0.15, f"{nr:.1f}", ha="center", va="bottom",
-                 fontsize=6, color=OI["purple"], fontweight="bold")
-    ax2.set_ylabel("# Recommendations", color=OI["purple"], fontsize=7)
-    ax2.tick_params(axis="y", labelcolor=OI["purple"], labelsize=6.5)
+                 fontsize=6, color="#333333", fontweight="bold")
+    ax2.set_ylabel("# Recommendations", color="#333333", fontsize=7)
+    ax2.tick_params(axis="y", labelcolor="#333333", labelsize=6.5)
     ax2.set_ylim(0, 5.5)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(0.5)
@@ -300,7 +300,7 @@ def fig_ablation_trackb():
     bar_gnd = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
     bar_rp = mpatches.Patch(facecolor=OI["vermilion"], hatch="//",
                             label="Rec. Precision")
-    line_patch = plt.Line2D([0], [0], color=OI["purple"], marker="D",
+    line_patch = plt.Line2D([0], [0], color="#333333", marker="D",
                             markersize=4, label="# Recs")
     ax1.legend(handles=[bar_gnd, bar_rp, line_patch], loc="upper right",
                bbox_to_anchor=(0.99, 0.99),

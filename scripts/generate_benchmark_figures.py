@@ -349,20 +349,27 @@ def fig_domain_shift_tsne():
     prod_emb = embedding[:n_prod]
     bench_emb = embedding[n_prod:]
 
-    fig, ax = plt.subplots(figsize=(3.5, 3.0), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(3.5, 2.8))
     ax.scatter(prod_emb[:, 0], prod_emb[:, 1], s=3, alpha=0.3,
                color=COLORS["blue"], label=f"Production ({n_prod})", rasterized=True)
     ax.scatter(bench_emb[:, 0], bench_emb[:, 1], s=8, alpha=0.7,
                color=COLORS["vermilion"], label=f"Benchmark ({len(bench_sample)})",
                marker="^", edgecolors="none")
 
-    ax.set_xlabel("t-SNE 1")
-    ax.set_ylabel("t-SNE 2")
-    ax.set_title("Feature distribution: production vs benchmark")
-    ax.legend(loc="best", markerscale=2)
+    ax.set_xlabel("t-SNE 1", fontsize=8)
+    ax.set_ylabel("t-SNE 2", fontsize=8)
+    # Legend in upper-right shifted right, no overlap with data cluster
+    ax.legend(loc="upper right", bbox_to_anchor=(0.99, 0.99),
+              fontsize=7, markerscale=2.5, frameon=True, framealpha=0.95,
+              edgecolor="#cccccc", borderpad=0.4)
     ax.grid(False)
 
-    save_fig(fig, "fig_domain_shift_tsne")
+    fig.savefig(str(FIG_DIR / "fig_domain_shift_tsne.pdf"),
+                format="pdf", bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(str(FIG_DIR / "fig_domain_shift_tsne.png"),
+                format="png", dpi=300, bbox_inches="tight", pad_inches=0.01)
+    plt.close(fig)
+    logger.info("Saved fig_domain_shift_tsne")
 
 
 # ===========================================================================
