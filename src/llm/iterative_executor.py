@@ -74,8 +74,12 @@ class IterativeExecutor:
         Returns:
             path to the generated .slurm script
         """
-        # Use per-job scratch directory to prevent file conflicts between concurrent runs
-        job_scratch = f"{self.scratch_dir}/{job_name}"
+        # Use per-job scratch directory to prevent file conflicts between concurrent runs.
+        # Include $SLURM_JOB_ID to ensure uniqueness when the same workload runs
+        # concurrently with different LLM models (e.g., 3 LLMs × same baseline).
+        # Without this, the EXIT cleanup trap from the first job to finish
+        # deletes the scratch dir while other jobs are still using it.
+        job_scratch = f"{self.scratch_dir}/{job_name}_${{SLURM_JOB_ID}}"
 
         if benchmark_type == "h5bench":
             script = self._generate_h5bench_slurm(
