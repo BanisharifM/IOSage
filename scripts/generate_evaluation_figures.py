@@ -174,14 +174,15 @@ def fig_closed_loop_speedup():
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=8)
     ax.set_ylabel("Write Bandwidth (MiB/s)", labelpad=8)
-    ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
+    # Legend between title and bars
+    ax.legend(loc="upper center", fontsize=7, framealpha=0.95,
+              edgecolor="#cccccc", ncol=2, borderpad=0.3,
+              bbox_to_anchor=(0.5, 1.08))
     ax.grid(axis="y", alpha=0.25, which="both")
 
-    # Geometric mean — place above the figure as subtitle, not inside bars
+    # Geometric mean as title
     ax.set_title(f"Geometric mean: {geo_mean}\u00d7", fontsize=9,
                  style="italic", pad=8)
-
-    fig.tight_layout(pad=1.2)
     save_fig(fig, "fig_closed_loop_speedup")
 
 
