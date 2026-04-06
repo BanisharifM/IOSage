@@ -1,0 +1,86 @@
+{
+  "old": {
+    "n_gt_samples": 623,
+    "n_test_samples": 436
+  },
+  "new": {
+    "n_gt_samples": 689,
+    "n_test_samples": 488,
+    "n_train_bench_dev": 201,
+    "n_train_prod": 91807
+  },
+  "metrics": {
+    "old_micro_f1": null,
+    "new_micro_f1_mean": 0.929148014207489,
+    "new_micro_f1_std": 0.0032061054344707804,
+    "old_macro_f1": null,
+    "new_macro_f1_mean": 0.9285899597638245,
+    "new_macro_f1_std": 0.004350676784256324
+  },
+  "per_dimension": {
+    "access_granularity": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.9238826574633304,
+      "new_f1_std": 0.0014150129421915735,
+      "new_support": 156,
+      "delta_f1": null
+    },
+    "metadata_intensity": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.9768375660598944,
+      "new_f1_std": 0.009523311075929906,
+      "new_support": 65,
+      "delta_f1": null
+    },
+    "parallelism_efficiency": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.9591836734693878,
+      "new_f1_std": 1.1102230246251565e-16,
+      "new_support": 50,
+      "delta_f1": null
+    },
+    "access_pattern": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.8915248944812714,
+      "new_f1_std": 0.03159865025867792,
+      "new_support": 29,
+      "delta_f1": null
+    },
+    "interface_choice": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.9188129537530975,
+      "new_f1_std": 0.007205092694836607,
+      "new_support": 65,
+      "delta_f1": null
+    },
+    "file_strategy": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 1.0,
+      "new_f1_std": 0.0,
+      "new_support": 46,
+      "delta_f1": null
+    },
+    "throughput_utilization": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.8122850122850123,
+      "new_f1_std": 0.0029484029484029505,
+      "new_support": 57,
+      "delta_f1": null
+    },
+    "healthy": {
+      "old_f1": null,
+      "old_support": null,
+      "new_f1_mean": 0.9461929205986019,
+      "new_f1_std": 0.008821585510848266,
+      "new_support": 78,
+      "delta_f1": null
+    }
+  }
+}

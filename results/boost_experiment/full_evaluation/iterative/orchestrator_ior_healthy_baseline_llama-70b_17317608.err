@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/scripts/iterative_optimizer_boost.py", line 1174, in <module>
+    main()
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/scripts/iterative_optimizer_boost.py", line 1125, in main
+    optimizer = IterativeOptimizer(
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/scripts/iterative_optimizer_boost.py", line 140, in __init__
+    with open(iter_config_path) as f:
+FileNotFoundError: [Errno 2] No such file or directory: '/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/configs/iterative.yaml'

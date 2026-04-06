@@ -1,0 +1,357 @@
+{
+  "xgboost": {
+    "metrics": {
+      "micro_f1": 0.9307116104868914,
+      "macro_f1": 0.9292463294101403,
+      "micro_precision": 0.9521072796934866,
+      "micro_recall": 0.9102564102564102,
+      "hamming_loss": 0.018954918032786885,
+      "subset_accuracy": 0.8831967213114754,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9245901639344263,
+          "precision": 0.9463087248322147,
+          "recall": 0.9038461538461539,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.984375,
+          "precision": 1.0,
+          "recall": 0.9692307692307692,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.9591836734693877,
+          "precision": 0.9791666666666666,
+          "recall": 0.94,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.8813559322033898,
+          "precision": 0.8666666666666667,
+          "recall": 0.896551724137931,
+          "support": 29
+        },
+        "interface_choice": {
+          "f1": 0.9206349206349206,
+          "precision": 0.9508196721311475,
+          "recall": 0.8923076923076924,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 46
+        },
+        "throughput_utilization": {
+          "f1": 0.8108108108108109,
+          "precision": 0.8333333333333334,
+          "recall": 0.7894736842105263,
+          "support": 57
+        },
+        "healthy": {
+          "f1": 0.9530201342281879,
+          "precision": 1.0,
+          "recall": 0.9102564102564102,
+          "support": 78
+        }
+      }
+    },
+    "bootstrap_ci": {
+      "micro_f1_mean": 0.9307518436371989,
+      "micro_f1_ci_lo": 0.9115519994445986,
+      "micro_f1_ci_hi": 0.948474685675797,
+      "micro_f1_std": 0.009450906621391579,
+      "macro_f1_mean": 0.9286891312962795,
+      "macro_f1_ci_lo": 0.907446229218449,
+      "macro_f1_ci_hi": 0.9480906351336438,
+      "macro_f1_std": 0.01036188457424534
+    }
+  },
+  "drishti": {
+    "metrics": {
+      "micro_f1": 0.3635057471264368,
+      "macro_f1": 0.28481937793320966,
+      "micro_precision": 0.2990543735224586,
+      "micro_recall": 0.4633699633699634,
+      "hamming_loss": 0.22694672131147542,
+      "subset_accuracy": 0.2827868852459016,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.545816733067729,
+          "precision": 0.3959537572254335,
+          "recall": 0.8782051282051282,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.44155844155844154,
+          "precision": 0.38202247191011235,
+          "recall": 0.5230769230769231,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.33136094674556216,
+          "precision": 0.2,
+          "recall": 0.9655172413793104,
+          "support": 29
+        },
+        "interface_choice": {
+          "f1": 0.5684210526315789,
+          "precision": 0.9,
+          "recall": 0.4153846153846154,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 46
+        },
+        "throughput_utilization": {
+          "f1": 0.13333333333333333,
+          "precision": 0.14583333333333334,
+          "recall": 0.12280701754385964,
+          "support": 57
+        },
+        "healthy": {
+          "f1": 0.25806451612903225,
+          "precision": 0.2597402597402597,
+          "recall": 0.2564102564102564,
+          "support": 78
+        }
+      }
+    },
+    "bootstrap_ci": {
+      "micro_f1_mean": 0.36341804404204103,
+      "micro_f1_ci_lo": 0.3278217109992811,
+      "micro_f1_ci_hi": 0.40028296125844587,
+      "micro_f1_std": 0.01851837782259635,
+      "macro_f1_mean": 0.28366113001947285,
+      "macro_f1_ci_lo": 0.25004737102687974,
+      "macro_f1_ci_hi": 0.3167487886723926,
+      "macro_f1_std": 0.01685900230009853
+    }
+  },
+  "wisio": {
+    "metrics": {
+      "micro_f1": 0.3202492211838006,
+      "macro_f1": 0.21266921188710664,
+      "micro_precision": 0.23174030658250677,
+      "micro_recall": 0.5181451612903226,
+      "hamming_loss": 0.3113584474885845,
+      "subset_accuracy": 0.02054794520547945,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.5660377358490566,
+          "precision": 0.44776119402985076,
+          "recall": 0.7692307692307693,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.4304635761589404,
+          "precision": 0.2742616033755274,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.423728813559322,
+          "precision": 0.26881720430107525,
+          "recall": 1.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.061611374407582936,
+          "precision": 0.03178484107579462,
+          "recall": 1.0,
+          "support": 13
+        },
+        "interface_choice": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 32
+        },
+        "throughput_utilization": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 42
+        },
+        "healthy": {
+          "f1": 0.21951219512195122,
+          "precision": 1.0,
+          "recall": 0.1232876712328767,
+          "support": 73
+        }
+      }
+    },
+    "bootstrap_ci": {
+      "micro_f1_mean": 0.32004596514355077,
+      "micro_f1_ci_lo": 0.2941903584672435,
+      "micro_f1_ci_hi": 0.34608150470219434,
+      "micro_f1_std": 0.013161479688151692,
+      "macro_f1_mean": 0.2119306801823046,
+      "macro_f1_ci_lo": 0.19082892740460158,
+      "macro_f1_ci_hi": 0.23445500674446634,
+      "macro_f1_std": 0.011117388047825735
+    },
+    "n_samples_evaluated": 438
+  },
+  "majority_class": {
+    "metrics": {
+      "micro_f1": 0.15087040618955513,
+      "macro_f1": 0.03445229681978799,
+      "micro_precision": 0.1598360655737705,
+      "micro_recall": 0.14285714285714285,
+      "hamming_loss": 0.22489754098360656,
+      "subset_accuracy": 0.1598360655737705,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 29
+        },
+        "interface_choice": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 46
+        },
+        "throughput_utilization": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 57
+        },
+        "healthy": {
+          "f1": 0.2756183745583039,
+          "precision": 0.1598360655737705,
+          "recall": 1.0,
+          "support": 78
+        }
+      }
+    }
+  },
+  "threshold_90pct": {
+    "metrics": {
+      "micro_f1": 0.28467683369644153,
+      "macro_f1": 0.20135745120876936,
+      "micro_precision": 0.2358604091456077,
+      "micro_recall": 0.358974358974359,
+      "hamming_loss": 0.25230532786885246,
+      "subset_accuracy": 0.055327868852459015,
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.6502057613168725,
+          "precision": 0.9080459770114943,
+          "recall": 0.5064102564102564,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 0.5213675213675214,
+          "precision": 0.3609467455621302,
+          "recall": 0.9384615384615385,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 29
+        },
+        "interface_choice": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.21839080459770116,
+          "precision": 0.1484375,
+          "recall": 0.41304347826086957,
+          "support": 46
+        },
+        "throughput_utilization": {
+          "f1": 0.2208955223880597,
+          "precision": 0.13309352517985612,
+          "recall": 0.6491228070175439,
+          "support": 57
+        },
+        "healthy": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 78
+        }
+      }
+    }
+  },
+  "paired_bootstrap_tests": {
+    "xgboost_vs_drishti": {
+      "comparison": "xgboost vs drishti",
+      "mean_diff": 0.567333799595158,
+      "std_diff": 0.019775439366868736,
+      "ci_lo": 0.5285405061969021,
+      "ci_hi": 0.6056136355860631,
+      "p_value": 0.0,
+      "cohens_d": 28.688808833529862,
+      "significant_at_005": true,
+      "significant_at_001": true
+    },
+    "xgboost_vs_wisio": {
+      "comparison": "xgboost vs wisio",
+      "mean_diff": 0.6035610344260853,
+      "std_diff": 0.014844320953594078,
+      "ci_lo": 0.5746104997322254,
+      "ci_hi": 0.632848246220317,
+      "p_value": 0.0,
+      "cohens_d": 40.65938996555799,
+      "significant_at_005": true,
+      "significant_at_001": true
+    }
+  }
+}

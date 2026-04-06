@@ -1,0 +1,4615 @@
+{
+  "metadata": {
+    "date": "2026-04-05 23:38:15",
+    "description": "IOPrescriber on 50 randomly sampled production Polaris logs",
+    "seed": 42,
+    "n_total_production": 131151,
+    "llm_model": "anthropic/claude-sonnet-4 (via OpenRouter)"
+  },
+  "summary_statistics": {
+    "n_samples": 50,
+    "n_bottleneck_sample": 25,
+    "n_healthy_sample": 25,
+    "seed": 42,
+    "detection_distribution": {
+      "access_granularity": 17,
+      "metadata_intensity": 1,
+      "parallelism_efficiency": 0,
+      "access_pattern": 3,
+      "interface_choice": 0,
+      "file_strategy": 1,
+      "throughput_utilization": 8,
+      "healthy": 24
+    },
+    "detection_pct": {
+      "access_granularity": 34.0,
+      "metadata_intensity": 2.0,
+      "parallelism_efficiency": 0.0,
+      "access_pattern": 6.0,
+      "interface_choice": 0.0,
+      "file_strategy": 2.0,
+      "throughput_utilization": 16.0,
+      "healthy": 48.0
+    },
+    "n_healthy_detected": 24,
+    "n_single_bottleneck": 22,
+    "n_multi_label": 4,
+    "avg_dims_per_bottleneck": 1.15,
+    "llm_calls_made": 26,
+    "llm_calls_skipped_healthy": 24,
+    "mean_groundedness": 1.0,
+    "median_groundedness": 1.0,
+    "fully_grounded_count": 26,
+    "total_recommendations": 53,
+    "avg_recs_per_job": 2.04,
+    "agreement_both_healthy": 24,
+    "agreement_both_bottleneck": 25,
+    "disagree_heuristic_h_ml_b": 1,
+    "disagree_heuristic_b_ml_h": 0,
+    "agreement_rate_pct": 98.0
+  },
+  "per_sample_results": [
+    {
+      "sample_index": 0,
+      "dataframe_index": 99339,
+      "job_id": "3091462",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 20072.6569,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3301514.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7898.3589,
+        "small_io_ratio": 0.0096,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9354,
+        "metadata_time_ratio": 0.2031,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 52.433,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 29.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2436,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2392,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2348,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 1,
+      "dataframe_index": 128955,
+      "job_id": "6882440",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 32.0,
+        "runtime_seconds": 210.926,
+        "POSIX_BYTES_WRITTEN": 1081763876.0,
+        "POSIX_BYTES_READ": 13598484595.0,
+        "avg_write_size": 265854.9708,
+        "avg_read_size": 146291.0505,
+        "small_io_ratio": 0.7393,
+        "seq_write_ratio": 0.9956,
+        "seq_read_ratio": 0.9783,
+        "metadata_time_ratio": 0.0322,
+        "collective_ratio": 0.3897,
+        "total_bw_mb_s": 399.5144,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 135.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0001,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0016,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+            "similarity": 0.3449,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r1_557",
+            "similarity": 0.343,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r2_558",
+            "similarity": 0.3291,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe small I/O access patterns that are causing significant performance degradation. With a small_io_ratio of 0.7393, approximately 74% of I/O operations are using very small transfer sizes. The average write size is 265KB and read size is 146KB, both well below the 1MB threshold for efficient I/O. Despite having MPI-IO available (has_mpiio=1.0), the job is likely using inefficient POSIX calls or non-collective MPI-IO operations. The total bandwidth of 399MB/s across 32 processes indicates substantial room for improvement through I/O aggregation and buffering.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "74% of I/O operations use small transfer sizes (<1MB), causing excessive syscall overhead. Current average write size of 265KB and read size of 146KB are far below optimal thresholds, leading to poor bandwidth utilization.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-4x based on benchmark evidence showing dramatic improvement when moving from small to large transfer sizes",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+              "confidence": "high",
+              "api_change": "POSIX write buffering optimization"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations, switch from individual small writes to collective I/O with larger datatypes to reduce per-operation overhead and improve coordination across processes.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Use collective MPI-IO with larger transfers */\nMPI_File_write_at_all(fh, offset, big_buf, count, MPI_FLOAT, &status);  /* >=1MB transfers */",
+              "expected_speedup": "2-4x based on collective I/O with larger transfer sizes reducing syscall overhead",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n32_r1_557",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_at_all with buffering"
+            }
+          ],
+          "overall_expected_improvement": "2-5x total speedup by eliminating small I/O overhead and leveraging collective operations"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 70093.3,
+          "tokens_input": 1845,
+          "tokens_output": 750,
+          "timestamp": "2026-04-05T23:32:09Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 2,
+      "dataframe_index": 45323,
+      "job_id": "4707897",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 13.9745,
+        "POSIX_BYTES_WRITTEN": 267.0,
+        "POSIX_BYTES_READ": 1850661906.0,
+        "avg_write_size": 267.0,
+        "avg_read_size": 462665476.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0006,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1483.113,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_single_ost_p500000_n128_r3_595",
+            "similarity": 0.2132,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.1899,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_many_single_ost_p500000_n128_r1_620",
+            "similarity": 0.1882,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This single-process job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 267 bytes written but 1.85GB read, the job is doing excessive synchronization on tiny writes while reading large amounts of data. The small I/O ratio of 0.2 indicates mixed access patterns, but the dominant issue is the pathological fsync-per-write behavior that serializes all I/O operations.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates fsync is being called after every write operation (or even multiple times per write), causing excessive synchronization overhead. With only 267 bytes total written, each write is tiny but followed by expensive disk synchronization.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "Significant improvement in write latency by eliminating redundant synchronization overhead",
+              "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n128_r3_595",
+              "confidence": "high",
+              "api_change": "Remove per-operation fsync, keep only final fsync"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 1.85GB of reads and sequential read ratio of only 0.5, there may be redundant I/O traffic where data is being re-read unnecessarily instead of cached or computed once.",
+              "code_before": "/* Potentially re-reading same data multiple times */\nfor (i=0; i<iterations; i++) {\n  read(fd, buf, large_size);\n  process_data(buf);\n}",
+              "code_after": "/* Cache data, avoid redundant reads */\nread(fd, buf, large_size);  /* read once */\nfor (i=0; i<iterations; i++) {\n  process_data(buf);  /* reuse cached data */\n}",
+              "expected_speedup": "Reduction in total I/O volume and improved cache utilization",
+              "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n128_r3_595",
+              "confidence": "medium",
+              "api_change": "Eliminate redundant read operations through caching"
+            }
+          ],
+          "overall_expected_improvement": "Primary improvement from eliminating excessive fsync calls should significantly reduce I/O latency. Secondary gains from reducing redundant reads could improve overall runtime, though exact speedup depends on application logic."
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 14081.9,
+          "tokens_input": 1795,
+          "tokens_output": 782,
+          "timestamp": "2026-04-05T23:32:25Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 3,
+      "dataframe_index": 96270,
+      "job_id": "3061297",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 64.0,
+        "runtime_seconds": 73.4997,
+        "POSIX_BYTES_WRITTEN": 1258328170.0,
+        "POSIX_BYTES_READ": 32932060.0,
+        "avg_write_size": 820827.2472,
+        "avg_read_size": 411650.75,
+        "small_io_ratio": 0.6491,
+        "seq_write_ratio": 0.6843,
+        "seq_read_ratio": 0.75,
+        "metadata_time_ratio": 0.026,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 669.1261,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 514.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.9651,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0005,
+        "healthy": 0.0634
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562",
+            "similarity": 0.4877,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r1_560",
+            "similarity": 0.4874,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+            "similarity": 0.4799,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O inefficiency due to small access granularity. With 64 processes writing 1.26GB total data, the average write size is 821KB, but the small_io_ratio of 0.65 indicates that 65% of I/O operations are small transfers (<1MB). This creates excessive system call overhead, as evidenced by the relatively low bandwidth of 669 MB/s despite reasonable sequential access patterns (68% sequential writes). The job is performing many small writes across 514 files, fragmenting I/O operations and preventing efficient bulk transfers.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "65% of I/O operations use small transfer sizes (<1MB), causing excessive system call overhead. Each small write/read incurs full syscall latency, dramatically reducing effective bandwidth.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-4x based on KB evidence showing dramatic improvement when moving from small to large transfers",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562, hacc_io_hacc_fpp_small_many_p50_n64_r1_560, hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy - aggregate small writes into >=1MB buffers before flushing"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations, switch from individual small writes to collective I/O with larger datatypes to leverage parallel file system optimizations.",
+              "code_before": "MPI_File_write_at(fh, offset, buf, count, MPI_FLOAT, &status)  /* small individual writes */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* collective I/O with larger datatypes */",
+              "expected_speedup": "1.5-3x for collective operations based on KB evidence",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562, hacc_io_hacc_fpp_small_many_p50_n64_r1_560, hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+              "confidence": "high",
+              "api_change": "MPI_File_write_at -> MPI_File_write_at_all with collective I/O"
+            }
+          ],
+          "overall_expected_improvement": "2-5x total speedup by eliminating small I/O overhead and leveraging collective operations"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12996.5,
+          "tokens_input": 1819,
+          "tokens_output": 827,
+          "timestamp": "2026-04-05T23:32:38Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 4,
+      "dataframe_index": 111130,
+      "job_id": "2092934",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 24.0,
+        "runtime_seconds": 2.0445,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 8398928.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 349955.3333,
+        "small_io_ratio": 0.0,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9583,
+        "metadata_time_ratio": 0.2852,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1959.814,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 9.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.9998
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n32_r2_438",
+            "similarity": 0.264,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n32_r1_437",
+            "similarity": 0.2352,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n16_r3_436",
+            "similarity": 0.2211,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 5,
+      "dataframe_index": 89182,
+      "job_id": "1972734",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 20455.8342,
+        "POSIX_BYTES_WRITTEN": 54656.0,
+        "POSIX_BYTES_READ": 72095.0,
+        "avg_write_size": 3643.7333,
+        "avg_read_size": 7209.5,
+        "small_io_ratio": 0.32,
+        "seq_write_ratio": 0.8,
+        "seq_read_ratio": 0.9,
+        "metadata_time_ratio": 0.6301,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 67.698,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 159.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.9999
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n8_rep2_319",
+            "similarity": 0.443,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n8_rep1_318",
+            "similarity": 0.4427,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.4421,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 6,
+      "dataframe_index": 81913,
+      "job_id": "3070308",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 3830.6257,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3107129.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7886.1142,
+        "small_io_ratio": 0.0102,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9416,
+        "metadata_time_ratio": 0.5,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 302.3582,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 26.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.3064,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.3041,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.3023,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 7,
+      "dataframe_index": 5483,
+      "job_id": "6201684",
+      "heuristic_labels": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 32.0,
+        "runtime_seconds": 13.0436,
+        "POSIX_BYTES_WRITTEN": 563766131.0,
+        "POSIX_BYTES_READ": 2528824469.0,
+        "avg_write_size": 103671.5945,
+        "avg_read_size": 665480.1234,
+        "small_io_ratio": 0.5392,
+        "seq_write_ratio": 0.7111,
+        "seq_read_ratio": 0.7782,
+        "metadata_time_ratio": 0.6187,
+        "collective_ratio": 0.2772,
+        "total_bw_mb_s": 3783.5377,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 109.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.9993,
+        "interface_choice": 0.0009,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0003,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+            "similarity": 0.3093,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r3_559",
+            "similarity": 0.3073,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r1_599",
+            "similarity": 0.3025,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits two critical I/O performance problems: (1) Small transfer granularity - with avg_write_size=103KB and avg_read_size=665KB, many operations are below the 1MB threshold for efficient I/O, and small_io_ratio=0.54 indicates over half of operations use small transfers causing excessive syscall overhead. (2) Random access patterns - seq_write_ratio=0.71 and seq_read_ratio=0.78 show significant non-sequential access that defeats OS read-ahead and storage prefetching mechanisms. The job processes 3.1GB total I/O across 109 files with 32 processes, but achieves only 3.8GB/s bandwidth due to these inefficiencies.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "Small I/O operations (avg 103KB writes, 665KB reads) cause excessive system call overhead. The small_io_ratio of 0.54 indicates over half of operations use inefficient small transfers. Buffering small operations into >=1MB chunks will dramatically reduce syscall overhead.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "5-10x based on transfer size increase from <1MB to >=1MB",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+              "confidence": "high",
+              "api_change": "POSIX write with buffering strategy"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "With has_mpiio=1.0 but collective_ratio=0.28, the job uses MPI-IO but primarily independent operations. Converting to collective MPI-IO operations will improve coordination and reduce contention, especially beneficial given the 32 processes accessing 109 files.",
+              "code_before": "write(fd, buf, nbytes)  /* GenericIO.cxx, POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* GenericIO.cxx */",
+              "expected_speedup": "2-3x from collective I/O coordination",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "Non-sequential access patterns (seq_write_ratio=0.71, seq_read_ratio=0.78) defeat storage prefetching. While not directly addressed in the KB entries, the buffering strategy will help by reducing the frequency of random access operations through larger, more sequential transfers.",
+              "code_before": "/* Random small accesses scattered across file */\nfor (i=0; i<n; i++) { lseek(fd, random_offset[i], SEEK_SET); write(fd, buf[i], small_size); }",
+              "code_after": "/* Sort accesses by offset, then buffer into sequential chunks */\nsort_by_offset(access_list, n);\nfor (i=0; i<n; i++) { memcpy(big_buf + buffer_offset, buf[i], size); buffer_offset += size; if (buffer_offset >= 1048576) flush_buffer(); }",
+              "expected_speedup": "1.5-2x from improved sequential access within buffered operations",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+              "confidence": "medium",
+              "api_change": "Access pattern reorganization with buffering"
+            }
+          ],
+          "overall_expected_improvement": "8-20x total speedup from combining transfer size optimization (5-10x) with collective I/O (2-3x) and improved access patterns (1.5-2x)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 18388.2,
+          "tokens_input": 1880,
+          "tokens_output": 1134,
+          "timestamp": "2026-04-05T23:32:57Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 8,
+      "dataframe_index": 49298,
+      "job_id": "6818219",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 64.0,
+        "runtime_seconds": 31.2298,
+        "POSIX_BYTES_WRITTEN": 573926230.0,
+        "POSIX_BYTES_READ": 11314402736.0,
+        "avg_write_size": 197837.3768,
+        "avg_read_size": 1278463.586,
+        "small_io_ratio": 0.6927,
+        "seq_write_ratio": 0.9838,
+        "seq_read_ratio": 0.853,
+        "metadata_time_ratio": 0.0238,
+        "collective_ratio": 0.5046,
+        "total_bw_mb_s": 1124.0923,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 102.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0002,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0001,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r1_560",
+            "similarity": 0.338,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562",
+            "similarity": 0.338,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+            "similarity": 0.3344,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O inefficiency due to small access granularity. With 69.3% of I/O operations being small transfers (<1MB), the job suffers from excessive system call overhead. Despite having an average write size of ~198KB and read size of ~1.3MB, the high small_io_ratio indicates many operations are well below the optimal 1MB threshold. The job uses both POSIX and MPI-IO (collective_ratio=0.5046) across 102 files with 64 processes, but the small transfer sizes are limiting performance to 1.1 GB/s total bandwidth.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "69.3% of I/O operations use small transfer sizes (<1MB), causing excessive system call overhead. Each small write/read incurs full syscall latency, dramatically reducing effective bandwidth.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "5-10x based on reducing syscall overhead",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n64_r1_560",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations, small transfer sizes prevent effective collective I/O optimization. Larger datatypes enable better coordination between processes.",
+              "code_before": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* small count */",
+              "code_after": "/* Aggregate into larger transfers before collective I/O */\n/* Buffer data locally, then use larger count values */\nMPI_File_write_at_all(fh, offset, big_buf, large_count, MPI_FLOAT, &status)",
+              "expected_speedup": "3-5x for collective operations",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n64_r2_561",
+              "confidence": "high",
+              "api_change": "MPI-IO collective with larger datatypes"
+            }
+          ],
+          "overall_expected_improvement": "5-15x total speedup by eliminating small I/O overhead"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11293.2,
+          "tokens_input": 1845,
+          "tokens_output": 705,
+          "timestamp": "2026-04-05T23:33:08Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 9,
+      "dataframe_index": 102379,
+      "job_id": "2057144",
+      "heuristic_labels": [
+        "access_granularity",
+        "file_strategy"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 256.0,
+        "runtime_seconds": 12.6013,
+        "POSIX_BYTES_WRITTEN": 16911433728.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 1048576.0,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.0,
+        "seq_write_ratio": 0.9999,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.0008,
+        "collective_ratio": 1.0,
+        "total_bw_mb_s": 23.4911,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 9.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.9997,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0001,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0002,
+        "file_strategy": 0.9999,
+        "throughput_utilization": 0.0029,
+        "healthy": 0.0005
+      },
+      "ml_detected": [
+        "access_granularity",
+        "file_strategy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+            "similarity": 0.1671,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+            "similarity": 0.167,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+            "similarity": 0.167,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits two critical I/O performance issues: (1) Small access granularity - despite having an average write size of 1MB, the job is performing many small I/O operations that create excessive syscall overhead, and (2) Suboptimal file strategy - with 256 processes writing to only 9 files, there's likely contention on shared files or inefficient file-per-process patterns. The low bandwidth of 23.49 MB/s for 256 processes indicates severe I/O inefficiency. The high collective ratio (1.0) suggests MPI-IO is being used, but not optimally.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job is performing many small I/O operations despite showing 1MB average write size, indicating internal buffering issues or many small writes being aggregated. This creates excessive syscall overhead that severely limits bandwidth performance.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "Significant improvement in bandwidth efficiency by reducing syscall overhead",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+              "confidence": "high",
+              "api_change": "Aggregate small POSIX writes into 1MB+ buffers before flushing"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "file_strategy",
+              "explanation": "With 256 processes writing to only 9 files, there's likely shared file contention. The benchmark evidence shows this pattern causes performance degradation due to lock contention and non-optimal access patterns.",
+              "code_before": "write(fd, buf, nbytes)  /* POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* MPI-IO collective */",
+              "expected_speedup": "Improved coordination and reduced contention through collective I/O operations",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_at_all for better shared file coordination"
+            }
+          ],
+          "overall_expected_improvement": "Combined optimizations should significantly improve the current 23.49 MB/s bandwidth by reducing syscall overhead and file contention, based on benchmark evidence from similar HACC-IO scenarios"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12789.1,
+          "tokens_input": 1822,
+          "tokens_output": 733,
+          "timestamp": "2026-04-05T23:33:22Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 10,
+      "dataframe_index": 130216,
+      "job_id": "6919426",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 18669.0934,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 5736972546.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 8190.9711,
+        "small_io_ratio": 0.0,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 1.0,
+        "metadata_time_ratio": 0.0098,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 2763.2439,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 16.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0004,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0011
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r1_124",
+            "similarity": 0.2655,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r3_126",
+            "similarity": 0.265,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r2_125",
+            "similarity": 0.2642,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe access granularity problems with an average read size of only 8,191 bytes per operation. With 5.7GB total data read over 18,669 seconds, the job is performing approximately 700,000 individual read operations, each transferring less than 8KB. This creates massive syscall overhead as each small I/O operation requires a separate kernel transition. The sequential access pattern (seq_read_ratio=1.0) indicates the data could be efficiently aggregated into much larger transfers.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs ~700,000 read operations averaging 8KB each, causing excessive syscall overhead. Each small read requires a separate kernel transition, dramatically reducing throughput compared to larger aggregated reads.",
+              "code_before": "for (i=0; i<n; i++) {\n    bytes_read = read(fd, buf, 8192);  /* 8KB per call */\n    process_data(buf, bytes_read);\n}",
+              "code_after": "/* Buffer reads into 1MB chunks */\nchar big_buf[1048576];  /* 1MB buffer */\nsize_t buf_offset = 0, data_offset = 0;\nwhile (data_offset < total_data_size) {\n    size_t chunk_size = min(1048576, total_data_size - data_offset);\n    bytes_read = read(fd, big_buf, chunk_size);\n    /* Process data in 8KB logical units from buffer */\n    for (int i = 0; i < bytes_read; i += 8192) {\n        process_data(big_buf + i, min(8192, bytes_read - i));\n    }\n    data_offset += bytes_read;\n}",
+              "expected_speedup": "16-128x based on transfer size increase from 8KB to 1MB",
+              "kb_citation": "ior_ior_misaligned_t7000_n16_r1_124",
+              "confidence": "high",
+              "api_change": "POSIX read with buffering aggregation"
+            }
+          ],
+          "overall_expected_improvement": "16-128x speedup range based on eliminating small transfer overhead through 1MB buffering"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 10697.4,
+          "tokens_input": 1708,
+          "tokens_output": 592,
+          "timestamp": "2026-04-05T23:33:33Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 11,
+      "dataframe_index": 80315,
+      "job_id": "3080991",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 3007.3787,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 2922444.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7898.4973,
+        "small_io_ratio": 0.0135,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.927,
+        "metadata_time_ratio": 0.6698,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 766.3406,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 27.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.2809,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.2788,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.2778,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 12,
+      "dataframe_index": 17242,
+      "job_id": "6354736",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 30.7169,
+        "POSIX_BYTES_WRITTEN": 5388687.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 27.5089,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.9984,
+        "seq_write_ratio": 0.9997,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.0164,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 15.6691,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 69.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0002,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r1_55",
+            "similarity": 0.3505,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t128_n4_r2_62",
+            "similarity": 0.3483,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r3_57",
+            "similarity": 0.3443,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe I/O inefficiency due to extremely small access granularity. With an average write size of only 27.5 bytes and 99.84% of operations being small I/O (<1MB), the application is making approximately 195,862 individual write() system calls to write 5.39MB total. This creates massive syscall overhead, limiting bandwidth to just 15.67 MB/s. The high sequential access ratio (99.97%) indicates the data could be efficiently buffered and written in large chunks.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The application is making ~195,862 tiny write() calls averaging 27.5 bytes each, causing excessive system call overhead. Each syscall has ~1-10\u03bcs overhead, dominating I/O time for such small transfers.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 27);  /* 27B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 27); offset += 27;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }\n/* Don't forget final flush: if (offset > 0) write(fd, big_buf, offset); */",
+              "expected_speedup": "10-50x based on KB evidence from similar small transfer scenarios",
+              "kb_citation": "ior_ior_small_posix_t64_n4_r1_55, ior_ior_small_posix_t128_n4_r2_62, ior_ior_small_posix_t64_n4_r3_57",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy - same API, different usage pattern"
+            }
+          ],
+          "overall_expected_improvement": "10-50x bandwidth improvement (from 15.67 MB/s to potentially 150-780 MB/s) by reducing syscall count from ~195,862 to ~6 calls"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 10491.9,
+          "tokens_input": 1719,
+          "tokens_output": 549,
+          "timestamp": "2026-04-05T23:33:44Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 13,
+      "dataframe_index": 16125,
+      "job_id": "6250238",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 3.6139,
+        "POSIX_BYTES_WRITTEN": 306.0,
+        "POSIX_BYTES_READ": 3661202.0,
+        "avg_write_size": 306.0,
+        "avg_read_size": 915300.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0098,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 314.4833,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.2436,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+            "similarity": 0.228,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+            "similarity": 0.2262,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 306 bytes written across 12 files but 4 fsync operations, the job is performing excessive synchronization that forces data to disk after nearly every small write. The small average write size (306 bytes) combined with frequent synchronization creates a pathological I/O pattern that prevents achieving good throughput despite reasonable total bandwidth (314 MB/s).",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates excessive synchronization - roughly 4 fsync calls per write operation. This forces immediate disk commits for tiny 306-byte writes, creating severe performance bottlenecks. The benchmark evidence shows this exact pattern in DLIO checkpointing workloads.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "2-5x based on eliminating 75% of fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and small write sizes, the job may be using single-OST striping on Lustre, serializing I/O across files. Increasing stripe count can parallelize writes across multiple Object Storage Targets.",
+              "code_before": "/* Default single OST striping */\nopen(filename, O_WRONLY|O_CREAT, 0644);",
+              "code_after": "/* Set full Lustre stripe count before writing */\nsystem(\"lfs setstripe -c -1 /path/to/output/dir\");\nopen(filename, O_WRONLY|O_CREAT, 0644);",
+              "expected_speedup": "1.5-2x for multi-file workloads",
+              "kb_citation": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+              "confidence": "medium",
+              "api_change": "Lustre striping configuration before POSIX writes"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The sequential read ratio of 0.5 suggests some random access patterns. With 3.6MB of reads across 12 files, there may be redundant re-reading of data that could be cached in memory to avoid repeated I/O.",
+              "code_before": "/* Re-reading data from disk repeatedly */\nfor (int iter=0; iter<iterations; iter++) {\n  data = np.fromfile(path, dtype=np.float32, count=record_length);\n  process(data);\n}",
+              "code_after": "/* Cache data in memory, avoid redundant reads */\ndata = np.fromfile(path, dtype=np.float32, count=record_length);\nfor (int iter=0; iter<iterations; iter++) {\n  process(data);  /* use cached data */\n}",
+              "expected_speedup": "1.2-1.5x by eliminating redundant I/O",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+              "confidence": "medium",
+              "api_change": "Memory caching to reduce POSIX read calls"
+            }
+          ],
+          "overall_expected_improvement": "3-8x total speedup (primarily from eliminating excessive fsync calls)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 18293.2,
+          "tokens_input": 1669,
+          "tokens_output": 1063,
+          "timestamp": "2026-04-05T23:34:02Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 14,
+      "dataframe_index": 61211,
+      "job_id": "3883151",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 5.1118,
+        "POSIX_BYTES_WRITTEN": 1830810.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 915405.0,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.5,
+        "seq_write_ratio": 0.5,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.0141,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1216.3747,
+        "fsync_ratio": 0.5,
+        "has_mpiio": 0.0,
+        "num_files": 10.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.9999
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "custom_custom_balanced_mb100_n4_r3_409",
+            "similarity": 0.2444,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb100_n4_r1_407",
+            "similarity": 0.2434,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb100_n4_r2_408",
+            "similarity": 0.243,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 15,
+      "dataframe_index": 10498,
+      "job_id": "6245836",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 1.4504,
+        "POSIX_BYTES_WRITTEN": 253.0,
+        "POSIX_BYTES_READ": 3661202.0,
+        "avg_write_size": 253.0,
+        "avg_read_size": 915300.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.013,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1394.5927,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.2054,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+            "similarity": 0.2019,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+            "similarity": 0.2014,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 253 bytes written across 12 files and a small I/O ratio of 0.2, the job is performing excessive synchronization on very small writes. The sequential write ratio of 1.0 indicates the writes are sequential, but the frequent fsync calls are destroying performance by forcing immediate disk commits after each tiny write.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates excessive synchronization - 4 fsync calls per write operation. This is destroying I/O performance by forcing disk commits after every small write instead of batching writes and syncing once at the end.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "4x reduction in sync overhead based on eliminating 3 out of 4 fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and very small writes (avg 253 bytes), the job may be hitting single-OST serialization on Lustre. The small I/O operations across multiple files could benefit from proper striping configuration.",
+              "code_before": "/* Default single-OST striping */\nopen(filename, O_WRONLY|O_CREAT, 0644);\nwrite(fd, small_buffer, 253);",
+              "code_after": "/* Configure full Lustre stripe count before writing */\n/* Use lfs setstripe or equivalent to stripe across multiple OSTs */\nopen(filename, O_WRONLY|O_CREAT, 0644);\nwrite(fd, small_buffer, 253);",
+              "expected_speedup": "Additional throughput improvement from parallel OST access",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+              "confidence": "medium",
+              "api_change": "Lustre striping configuration optimization"
+            }
+          ],
+          "overall_expected_improvement": "4-6x speedup primarily from eliminating excessive fsync calls, with additional gains from proper file striping"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13240.6,
+          "tokens_input": 1669,
+          "tokens_output": 748,
+          "timestamp": "2026-04-05T23:34:16Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 16,
+      "dataframe_index": 112953,
+      "job_id": "3108832",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 17538.5188,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3288925.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7944.2633,
+        "small_io_ratio": 0.0097,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9348,
+        "metadata_time_ratio": 0.3419,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 114.5677,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 28.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2942,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2845,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.275,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 17,
+      "dataframe_index": 60733,
+      "job_id": "3740445",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 130391.383,
+        "POSIX_BYTES_WRITTEN": 77231595072.0,
+        "POSIX_BYTES_READ": 13542504.0,
+        "avg_write_size": 77932992.0,
+        "avg_read_size": 202126.9254,
+        "small_io_ratio": 0.0416,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.6567,
+        "metadata_time_ratio": 0.2214,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 733.6292,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 1135.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.7031,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0009,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.4069
+      },
+      "ml_detected": [
+        "metadata_intensity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "mdtest_mdtest_meta_cross_n5000_r128_rep3_235",
+            "similarity": 0.0916,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_cross_n5000_r128_rep2_234",
+            "similarity": 0.0912,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_cross_n5000_r128_rep1_233",
+            "similarity": 0.0909,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits excessive metadata operations relative to data I/O, creating a metadata_intensity bottleneck. With 1,135 files and a metadata_time_ratio of 0.2214 (22.14% of runtime spent on metadata), the job is spending significant time on file open/stat/close operations. The large number of files (1,135) combined with relatively small average write sizes suggests a file-per-process or many-small-files pattern that creates metadata server contention.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "The job creates 1,135 separate files with metadata operations consuming 22.14% of total runtime. This pattern creates excessive metadata server load and serialization bottlenecks. The benchmark evidence shows that consolidating to shared files eliminates per-file metadata overhead.",
+              "code_before": "for (i=0; i<1135; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY);\n  write(fd, data, size);\n  close(fd);\n}",
+              "code_after": "/* Use single shared file with MPI-IO */\nMPI_File_open(MPI_COMM_WORLD, shared_path, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);\nMPI_File_write_at(fh, offset, data, count, MPI_BYTE, &status);\nMPI_File_close(&fh);",
+              "expected_speedup": "1.28x based on eliminating 22.14% metadata overhead",
+              "kb_citation": "mdtest_mdtest_meta_cross_n5000_r128_rep3_235",
+              "confidence": "high",
+              "api_change": "POSIX open/write/close -> MPI_File_write_at"
+            }
+          ],
+          "overall_expected_improvement": "1.25x - 1.30x speedup by eliminating metadata bottleneck"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 9426.9,
+          "tokens_input": 1673,
+          "tokens_output": 523,
+          "timestamp": "2026-04-05T23:34:26Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 18,
+      "dataframe_index": 118357,
+      "job_id": "3108072",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 40.0,
+        "runtime_seconds": 47.7102,
+        "POSIX_BYTES_WRITTEN": 10251200925.0,
+        "POSIX_BYTES_READ": 10065973768.0,
+        "avg_write_size": 8122980.1307,
+        "avg_read_size": 17119003.0068,
+        "small_io_ratio": 0.3616,
+        "seq_write_ratio": 0.9826,
+        "seq_read_ratio": 0.9235,
+        "metadata_time_ratio": 0.0008,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 849.3401,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 63.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0043,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0001,
+        "throughput_utilization": 0.0002,
+        "healthy": 0.9954
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n128_r3_577",
+            "similarity": 0.4165,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n128_r2_576",
+            "similarity": 0.4139,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_mpiio_collective_healthy_p1000000_n128_r1_575",
+            "similarity": 0.4112,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 19,
+      "dataframe_index": 43777,
+      "job_id": "4389041",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 10.799,
+        "POSIX_BYTES_WRITTEN": 234429922.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 117214961.0,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.5,
+        "seq_write_ratio": 0.5,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.0007,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1086.3245,
+        "fsync_ratio": 0.5,
+        "has_mpiio": 0.0,
+        "num_files": 10.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.9999
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "custom_custom_balanced_mb50_n4_r1_398",
+            "similarity": 0.314,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb50_n4_r2_399",
+            "similarity": 0.3052,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb50_n4_r3_400",
+            "similarity": 0.304,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 20,
+      "dataframe_index": 31408,
+      "job_id": "6645331",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 15.1469,
+        "POSIX_BYTES_WRITTEN": 1158909.0,
+        "POSIX_BYTES_READ": 129357767.0,
+        "avg_write_size": 11251.5437,
+        "avg_read_size": 8183.0571,
+        "small_io_ratio": 0.007,
+        "seq_write_ratio": 0.9709,
+        "seq_read_ratio": 0.9994,
+        "metadata_time_ratio": 0.2297,
+        "collective_ratio": 1.0,
+        "total_bw_mb_s": 985.2802,
+        "fsync_ratio": 0.1553,
+        "has_mpiio": 1.0,
+        "num_files": 972.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0008,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "h5bench_h5b_collective_small_n16_r3_484",
+            "similarity": 0.2982,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "h5bench_h5b_collective_small_n16_r2_483",
+            "similarity": 0.2962,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n4_r3_123",
+            "similarity": 0.2934,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe access granularity problems with very small I/O transfer sizes. The average write size is only 11.25KB and average read size is 8.18KB, both well below the 1MB threshold for efficient I/O. With 972 files being accessed by 4 processes, the job is performing many small I/O operations that create excessive system call overhead. Despite having MPI-IO available (has_mpiio=1.0) and collective operations (collective_ratio=1.0), the small transfer sizes are negating the benefits of collective I/O.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job's average write size of 11.25KB and read size of 8.18KB are causing excessive system call overhead. Each small I/O operation requires a separate system call, dramatically reducing throughput compared to larger transfers.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 11251);  /* 11.25KB per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 11251); offset += 11251;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "5-10x based on h5bench evidence showing dramatic improvements when moving from small to large transfers",
+              "kb_citation": "h5bench_h5b_collective_small_n16_r3_484",
+              "confidence": "high",
+              "api_change": "POSIX write with buffering aggregation"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations, the small transfer sizes prevent effective collective I/O optimization. Larger datatypes and transfer sizes would better utilize the collective I/O infrastructure already in place.",
+              "code_before": "MPI_File_write(fh, buf, 11251, MPI_BYTE, &status)  /* 11.25KB per call */",
+              "code_after": "/* Aggregate into larger transfers before collective write */\nMPI_File_write_all(fh, aggregated_buf, 1048576, MPI_BYTE, &status)  /* 1MB collective writes */",
+              "expected_speedup": "3-5x based on IOR benchmark evidence for collective I/O with larger transfers",
+              "kb_citation": "ior_ior_misaligned_t7000_n4_r3_123",
+              "confidence": "high",
+              "api_change": "MPI_File_write -> MPI_File_write_all with larger buffers"
+            }
+          ],
+          "overall_expected_improvement": "5-15x speedup range based on benchmark evidence from similar small transfer size scenarios"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12588.5,
+          "tokens_input": 1817,
+          "tokens_output": 739,
+          "timestamp": "2026-04-05T23:34:39Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 21,
+      "dataframe_index": 88194,
+      "job_id": "3086080",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 6447.0096,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 2429354.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7836.6258,
+        "small_io_ratio": 0.0129,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9258,
+        "metadata_time_ratio": 0.3899,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 104.9463,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 28.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2888,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2799,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2712,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 22,
+      "dataframe_index": 64061,
+      "job_id": "1877879",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 10.202,
+        "POSIX_BYTES_WRITTEN": 5990.0,
+        "POSIX_BYTES_READ": 74361.0,
+        "avg_write_size": 998.3333,
+        "avg_read_size": 1690.0227,
+        "small_io_ratio": 0.84,
+        "seq_write_ratio": 0.3333,
+        "seq_read_ratio": 0.5455,
+        "metadata_time_ratio": 0.8723,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 5.9787,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 76.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0002,
+        "healthy": 0.9994
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n8_rep3_314",
+            "similarity": 0.4682,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.4446,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.4433,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 23,
+      "dataframe_index": 80762,
+      "job_id": "3086331",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 11598.9367,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3378638.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7857.2977,
+        "small_io_ratio": 0.0116,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9372,
+        "metadata_time_ratio": 0.3485,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 120.8432,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 28.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.3006,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2903,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2803,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 24,
+      "dataframe_index": 98440,
+      "job_id": "3061753",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 1882.7818,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 2673238.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7908.9882,
+        "small_io_ratio": 0.0148,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.932,
+        "metadata_time_ratio": 0.3841,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 120.6955,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 26.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2991,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2889,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2789,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 25,
+      "dataframe_index": 54050,
+      "job_id": "3738016",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 4.5229,
+        "POSIX_BYTES_WRITTEN": 14644752.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 7322376.0,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.5,
+        "seq_write_ratio": 0.5,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.0019,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1288.9152,
+        "fsync_ratio": 0.5,
+        "has_mpiio": 0.0,
+        "num_files": 10.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "custom_custom_balanced_mb50_n4_r1_398",
+            "similarity": 0.2614,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb100_n4_r3_409",
+            "similarity": 0.2596,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_balanced_mb100_n4_r1_407",
+            "similarity": 0.2587,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 26,
+      "dataframe_index": 85779,
+      "job_id": "3075779",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 4595.2716,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3179737.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7909.7935,
+        "small_io_ratio": 0.0124,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9428,
+        "metadata_time_ratio": 0.3244,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 122.7308,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 26.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2978,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2873,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2772,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 27,
+      "dataframe_index": 128279,
+      "job_id": "2082647",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 5.8714,
+        "POSIX_BYTES_WRITTEN": 87921157.0,
+        "POSIX_BYTES_READ": 211030.0,
+        "avg_write_size": 32720.9367,
+        "avg_read_size": 6206.7647,
+        "small_io_ratio": 0.0033,
+        "seq_write_ratio": 0.9981,
+        "seq_read_ratio": 0.8529,
+        "metadata_time_ratio": 0.0004,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 329.5211,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 17.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0001,
+        "throughput_utilization": 0.0017,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n4_r3_123",
+            "similarity": 0.2805,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n4_r2_122",
+            "similarity": 0.2802,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+            "similarity": 0.2794,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits small I/O transfer size problems despite reasonable overall performance. With an average write size of 32,721 bytes (32KB), the job is performing many small I/O operations that are well below the optimal 1MB threshold. While the small_io_ratio is low at 0.33%, the average transfer sizes are still causing syscall overhead. The job writes 87.9MB across 17 files with good sequential access patterns (99.8% sequential writes), but the sub-optimal transfer granularity is limiting performance potential.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The average write size of 32KB is significantly below the optimal 1MB threshold, causing excessive system call overhead. Each small write incurs syscall costs that could be amortized over larger transfers.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 32768);  /* 32KB per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 32768); offset += 32768;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }\n/* Don't forget to flush remaining data at end */\nif (offset > 0) write(fd, big_buf, offset);",
+              "expected_speedup": "1.5-2x based on KB evidence from similar small transfer scenarios",
+              "kb_citation": "ior_ior_misaligned_t7000_n4_r3_123, ior_ior_misaligned_t7000_n4_r2_122",
+              "confidence": "high",
+              "api_change": "POSIX write with buffering strategy"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "Alternative approach using MPI-IO collective operations which can provide better performance for small transfers through internal buffering and coordination.",
+              "code_before": "write(fd, buf, 32768);  /* POSIX individual writes */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, 32768/sizeof(float), MPI_FLOAT, &status);  /* Collective MPI-IO */",
+              "expected_speedup": "1.3-1.8x based on collective I/O benefits for small transfers",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            }
+          ],
+          "overall_expected_improvement": "1.5-2x speedup range based on addressing small transfer granularity issues"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12689.9,
+          "tokens_input": 1782,
+          "tokens_output": 728,
+          "timestamp": "2026-04-05T23:34:52Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 28,
+      "dataframe_index": 60382,
+      "job_id": "3887091",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 9.2697,
+        "POSIX_BYTES_WRITTEN": 488.0,
+        "POSIX_BYTES_READ": 14648512.0,
+        "avg_write_size": 488.0,
+        "avg_read_size": 7324256.0,
+        "small_io_ratio": 0.3333,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.019,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 154.1238,
+        "fsync_ratio": 6.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0001
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n4_rep1_303",
+            "similarity": 0.2893,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n4_rep2_304",
+            "similarity": 0.2873,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms500000000_n4_rep3_299",
+            "similarity": 0.2851,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 6.0, meaning there are 6 fsync calls per write operation. With only 488 bytes written across 12 files but 14.6MB read, the job is performing excessive synchronization on small writes while doing large reads. The small I/O ratio of 0.33 indicates mixed access patterns, but the dominant issue is the excessive fsync calls that are serializing I/O operations and preventing efficient batching.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 6.0 indicates excessive synchronization - 6 fsync calls per write operation. This is causing severe performance degradation by forcing immediate disk commits after every small write instead of batching operations.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "6x based on eliminating 5 out of 6 unnecessary fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms1000000000_n4_rep1_303",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and small average write size (488 bytes total), the job may be hitting single-OST serialization on Lustre filesystem. Proper striping can parallelize access across multiple Object Storage Targets.",
+              "code_before": "/* Default single-OST file creation */\nfd = open(filename, O_CREAT|O_WRONLY, 0644);",
+              "code_after": "/* Set Lustre striping for parallel access */\nsystem(\"lfs setstripe -c -1 filename\");  /* use all available OSTs */\nfd = open(filename, O_CREAT|O_WRONLY, 0644);",
+              "expected_speedup": "2-4x based on parallelizing across multiple OSTs",
+              "kb_citation": "dlio_dlio_ckpt_ms1000000000_n4_rep2_304",
+              "confidence": "medium",
+              "api_change": "Lustre filesystem optimization - enable full striping"
+            }
+          ],
+          "overall_expected_improvement": "6-24x speedup (6x from fsync elimination \u00d7 2-4x from proper striping)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13493.7,
+          "tokens_input": 1662,
+          "tokens_output": 737,
+          "timestamp": "2026-04-05T23:35:06Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 29,
+      "dataframe_index": 13677,
+      "job_id": "6347734",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 64.0,
+        "runtime_seconds": 14.7277,
+        "POSIX_BYTES_WRITTEN": 73809237.0,
+        "POSIX_BYTES_READ": 1642943550.0,
+        "avg_write_size": 66315.5768,
+        "avg_read_size": 246170.7447,
+        "small_io_ratio": 0.7468,
+        "seq_write_ratio": 0.9802,
+        "seq_read_ratio": 0.82,
+        "metadata_time_ratio": 0.8251,
+        "collective_ratio": 0.3948,
+        "total_bw_mb_s": 6200.5198,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 142.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0011,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0014,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r2_609",
+            "similarity": 0.3858,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+            "similarity": 0.3826,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r1_608",
+            "similarity": 0.3816,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe small I/O access patterns with 74.68% of operations being small transfers. The average write size is only 66KB and read size is 246KB, both well below the 1MB threshold for efficient I/O. With 64 processes writing 73.8MB total data across 142 files, this creates excessive syscall overhead. The high metadata time ratio of 82.51% indicates significant time spent on file operations rather than actual data transfer, typical of small I/O patterns.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "Small I/O transfers (avg 66KB writes, 246KB reads) cause excessive syscall overhead. The 74.68% small I/O ratio and 82.51% metadata time indicate most time is spent on system calls rather than data transfer.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "Significant reduction in syscall overhead based on buffering small operations into 1MB+ transfers",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r2_609",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "With MPI-IO available (has_mpiio=1.0) but low collective ratio (39.48%), switching to collective MPI-IO operations can improve coordination and reduce contention across 64 processes accessing 142 files.",
+              "code_before": "write(fd, buf, nbytes)  /* GenericIO.cxx, POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* GenericIO.cxx */",
+              "expected_speedup": "Improved coordination and reduced contention with collective operations",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            }
+          ],
+          "overall_expected_improvement": "Substantial improvement expected from eliminating small I/O overhead, particularly reducing the 82.51% metadata time ratio through buffering and collective operations"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12791.8,
+          "tokens_input": 1877,
+          "tokens_output": 723,
+          "timestamp": "2026-04-05T23:35:20Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 30,
+      "dataframe_index": 5985,
+      "job_id": "3134191",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 32.0,
+        "runtime_seconds": 12.5275,
+        "POSIX_BYTES_WRITTEN": 14956.0,
+        "POSIX_BYTES_READ": 6922.0,
+        "avg_write_size": 157.4316,
+        "avg_read_size": 73.6383,
+        "small_io_ratio": 0.9947,
+        "seq_write_ratio": 0.3158,
+        "seq_read_ratio": 0.3298,
+        "metadata_time_ratio": 0.8959,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 0.7867,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 43.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.9993
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n8_rep3_314",
+            "similarity": 0.3281,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n8_rep1_318",
+            "similarity": 0.3161,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n8_rep2_319",
+            "similarity": 0.3161,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 31,
+      "dataframe_index": 22976,
+      "job_id": "4293464",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 6.4465,
+        "POSIX_BYTES_WRITTEN": 262.0,
+        "POSIX_BYTES_READ": 234375570.0,
+        "avg_write_size": 262.0,
+        "avg_read_size": 58593892.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0015,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1698.2082,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.197,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+            "similarity": 0.1941,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+            "similarity": 0.1938,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 262 bytes written across 12 files but 234MB read, the job is performing excessive synchronization on small writes while doing large reads. The small I/O ratio of 0.2 and sequential write ratio of 1.0 suggest the writes are small but sequential, making the excessive fsync calls particularly harmful to performance.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates fsync is being called after every write operation, causing excessive synchronization overhead. With 262 bytes written across multiple files, each small write is being immediately flushed to storage, preventing any batching or buffering optimizations.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "4x reduction in sync overhead based on eliminating 3 out of 4 fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and small write sizes (avg 262 bytes), the job may be hitting single-OST serialization on Lustre. The sequential write pattern across multiple small files suggests potential for better striping configuration.",
+              "code_before": "/* Default single-stripe file creation */\nopen(filename, O_CREAT|O_WRONLY, 0644);",
+              "code_after": "/* Use full Lustre stripe count for better parallelism */\nlfs setstripe -c -1 filename;  /* stripe across all OSTs */\nopen(filename, O_CREAT|O_WRONLY, 0644);",
+              "expected_speedup": "2-3x improvement for multi-file workloads based on eliminating single-OST bottlenecks",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+              "confidence": "medium",
+              "api_change": "Lustre striping configuration before file creation"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The large read size (58MB average) combined with 50% sequential read ratio suggests potential for redundant I/O traffic. Data that's already been read might be re-read unnecessarily instead of being cached or reused.",
+              "code_before": "/* Re-reading data multiple times */\nfor (int iter=0; iter<iterations; iter++) {\n  read(fd, large_buffer, 58MB);\n  process_data(large_buffer);\n}",
+              "code_after": "/* Cache large reads, avoid redundant I/O */\nread(fd, large_buffer, 58MB);  /* read once */\nfor (int iter=0; iter<iterations; iter++) {\n  process_data(large_buffer);  /* reuse cached data */\n}",
+              "expected_speedup": "1.5-2x reduction in redundant read traffic",
+              "kb_citation": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+              "confidence": "medium",
+              "api_change": "POSIX read pattern optimization - eliminate redundant reads"
+            }
+          ],
+          "overall_expected_improvement": "6-12x total speedup (4x from fsync reduction + 2-3x from striping + 1.5-2x from read optimization)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 18390.4,
+          "tokens_input": 1671,
+          "tokens_output": 1067,
+          "timestamp": "2026-04-05T23:35:41Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 32,
+      "dataframe_index": 55445,
+      "job_id": "5130814",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 72.0,
+        "runtime_seconds": 6505.6338,
+        "POSIX_BYTES_WRITTEN": 1267081.0,
+        "POSIX_BYTES_READ": 67603388.0,
+        "avg_write_size": 136.4654,
+        "avg_read_size": 4872.3163,
+        "small_io_ratio": 0.6269,
+        "seq_write_ratio": 0.9957,
+        "seq_read_ratio": 0.83,
+        "metadata_time_ratio": 0.0011,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 6.1984,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 62.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_small_rl4096_n8_rep2_289",
+            "similarity": 0.4647,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_small_rl64_n8_rep2_271",
+            "similarity": 0.3828,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_small_rl64_n8_rep3_272",
+            "similarity": 0.3814,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job suffers from severe I/O inefficiency due to extremely small transfer sizes. With an average write size of only 136 bytes and average read size of 4,872 bytes, the application is making frequent system calls with tiny data transfers. The small_io_ratio of 0.63 confirms that 63% of I/O operations are small transfers (<1MB), causing excessive syscall overhead. Despite good sequential access patterns (99.6% sequential writes, 83% sequential reads), the tiny transfer sizes result in very poor bandwidth utilization at only 6.2 MB/s across 72 processes.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The application is performing I/O with extremely small transfer sizes (136B average writes, 4.8KB average reads) instead of aggregating into larger buffers. This causes excessive system call overhead and poor bandwidth utilization.",
+              "code_before": "/* Current pattern: many small I/O calls */\nfor (i=0; i<n; i++) {\n    write(fd, small_buf, 136);  /* 136B per call */\n}\nfor (j=0; j<m; j++) {\n    read(fd, read_buf, 4872);   /* 4.8KB per call */\n}",
+              "code_after": "/* Optimized: buffer small operations into large chunks */\nchar write_buffer[1048576];  /* 1MB buffer */\nint offset = 0;\n\nfor (i=0; i<n; i++) {\n    memcpy(write_buffer + offset, small_buf, 136);\n    offset += 136;\n    if (offset >= 1048576) {\n        write(fd, write_buffer, offset);\n        offset = 0;\n    }\n}\nif (offset > 0) write(fd, write_buffer, offset);  /* flush remaining */\n\n/* For reads: read large chunks, then extract needed data */\nchar read_buffer[1048576];\nssize_t bytes_read = read(fd, read_buffer, 1048576);\n/* Process data from read_buffer in 4.8KB chunks */",
+              "expected_speedup": "10-100x based on transfer size increase from <1KB to 1MB",
+              "kb_citation": "dlio_dlio_small_rl4096_n8_rep2_289, dlio_dlio_small_rl64_n8_rep2_271, dlio_dlio_small_rl64_n8_rep3_272",
+              "confidence": "high",
+              "api_change": "POSIX write/read with buffering strategy"
+            }
+          ],
+          "overall_expected_improvement": "10-100x bandwidth improvement (from 6.2 MB/s to 62-620 MB/s) based on eliminating small I/O overhead through 1MB buffering strategy"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12543.7,
+          "tokens_input": 1681,
+          "tokens_output": 743,
+          "timestamp": "2026-04-05T23:35:55Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 33,
+      "dataframe_index": 97174,
+      "job_id": "3061751",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 3060.5814,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 2835241.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7919.6676,
+        "small_io_ratio": 0.0112,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9246,
+        "metadata_time_ratio": 0.3784,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 115.1163,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 27.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2955,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2857,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2762,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 34,
+      "dataframe_index": 14721,
+      "job_id": "3122715",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 533.3604,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 4206699.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7937.1679,
+        "small_io_ratio": 0.0075,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9415,
+        "metadata_time_ratio": 0.6993,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1031.8231,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 30.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.2838,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.2817,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.2809,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 35,
+      "dataframe_index": 9456,
+      "job_id": "3122830",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 666.9576,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 5097305.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7939.7274,
+        "small_io_ratio": 0.0062,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9455,
+        "metadata_time_ratio": 0.6982,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1084.4906,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 30.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.2883,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.2861,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.2854,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 36,
+      "dataframe_index": 87194,
+      "job_id": "3085159",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 6151.9628,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 2859390.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7898.8674,
+        "small_io_ratio": 0.011,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9254,
+        "metadata_time_ratio": 0.5824,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 83.4045,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 27.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep3_317",
+            "similarity": 0.2951,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep3_311",
+            "similarity": 0.2879,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.2811,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 37,
+      "dataframe_index": 57050,
+      "job_id": "3883094",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 2.4199,
+        "POSIX_BYTES_WRITTEN": 357.0,
+        "POSIX_BYTES_READ": 58577938.0,
+        "avg_write_size": 357.0,
+        "avg_read_size": 14644484.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0029,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 3231.0457,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n8_rep1_306",
+            "similarity": 0.2143,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n8_rep2_307",
+            "similarity": 0.2133,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n8_rep3_308",
+            "similarity": 0.2133,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits poor I/O throughput utilization with excessive synchronization overhead. The Darshan data shows a fsync_ratio of 4.0, indicating 4 fsync calls per write operation, which is extremely inefficient. With only 357 bytes written across 12 files but high synchronization frequency, the job is spending disproportionate time on metadata operations rather than actual data transfer. The small average write size (357 bytes) combined with frequent synchronization creates a pathological I/O pattern that severely limits throughput.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates excessive synchronization - the job is calling fsync 4 times for every write operation. This creates massive overhead as each fsync forces a round-trip to storage, blocking the application until data is committed to disk.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "4x reduction in sync overhead based on eliminating 3 out of 4 fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms1000000000_n8_rep1_306",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and small write sizes (357 bytes total), the job may be creating single-OST serialization on Lustre filesystems. Each file defaults to stripe_count=1, forcing all I/O through a single Object Storage Target.",
+              "code_before": "/* Default file creation - single OST */\nfd = open(filename, O_CREAT|O_WRONLY, 0644);",
+              "code_after": "/* Set Lustre striping for parallel access */\n/* Use lfs setstripe or ioctl to set stripe_count=-1 */\nsystem(\"lfs setstripe -c -1 filename\");  /* stripe across all OSTs */\nfd = open(filename, O_CREAT|O_WRONLY, 0644);",
+              "expected_speedup": "Potential parallelization across multiple OSTs, though limited by small data size",
+              "kb_citation": "dlio_dlio_ckpt_ms1000000000_n8_rep2_307",
+              "confidence": "medium",
+              "api_change": "Lustre striping configuration before file creation"
+            }
+          ],
+          "overall_expected_improvement": "3-4x speedup primarily from eliminating excessive fsync overhead, with additional gains possible from improved striping if data sizes increase"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 14795.8,
+          "tokens_input": 1677,
+          "tokens_output": 784,
+          "timestamp": "2026-04-05T23:36:10Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 38,
+      "dataframe_index": 108288,
+      "job_id": "3119885",
+      "heuristic_labels": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 8.0,
+        "runtime_seconds": 201.617,
+        "POSIX_BYTES_WRITTEN": 182477409.0,
+        "POSIX_BYTES_READ": 81691967.0,
+        "avg_write_size": 91513.2442,
+        "avg_read_size": 99867.9303,
+        "small_io_ratio": 0.1895,
+        "seq_write_ratio": 0.2217,
+        "seq_read_ratio": 0.2323,
+        "metadata_time_ratio": 0.2743,
+        "collective_ratio": 1.0,
+        "total_bw_mb_s": 479.684,
+        "fsync_ratio": 1.9985,
+        "has_mpiio": 1.0,
+        "num_files": 3029.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.9997,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0001,
+        "access_pattern": 0.9999,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0003,
+        "healthy": 0.0015
+      },
+      "ml_detected": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+            "similarity": 0.3212,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r3_601",
+            "similarity": 0.3104,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r1_599",
+            "similarity": 0.3102,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits two critical I/O performance problems: (1) Small transfer granularity - with average write size of 91KB and read size of 100KB, both well below the 1MB threshold for efficient I/O, causing excessive syscall overhead. The small_io_ratio of 0.1895 indicates ~19% of operations are very small transfers. (2) Poor spatial locality - sequential access ratios of only 22.17% (writes) and 23.23% (reads) indicate predominantly random access patterns that defeat OS read-ahead and storage prefetching mechanisms. With 3029 files accessed and high metadata_time_ratio of 27.43%, the job suffers from both transfer inefficiency and access pattern inefficiency.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs many small I/O operations (avg 91KB writes, 100KB reads) causing excessive syscall overhead. Small transfers prevent efficient utilization of storage bandwidth and increase CPU overhead per byte transferred.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-5x based on transfer size increase to >=1MB",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r2_600",
+              "confidence": "high",
+              "api_change": "POSIX write buffering -> large chunk writes"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "With collective_ratio of 1.0 indicating MPI-IO usage, but still suffering from small transfer sizes, switching to collective I/O with larger datatypes can improve both transfer efficiency and coordination overhead.",
+              "code_before": "write(fd, buf, nbytes)  /* POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* MPI-IO collective */",
+              "expected_speedup": "1.5-3x from collective I/O coordination",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r1_599",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            }
+          ],
+          "overall_expected_improvement": "3-8x total speedup from combining transfer size optimization with collective I/O"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 12788.6,
+          "tokens_input": 1888,
+          "tokens_output": 728,
+          "timestamp": "2026-04-05T23:36:23Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 39,
+      "dataframe_index": 107949,
+      "job_id": "2064900",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 40.0,
+        "runtime_seconds": 2.8267,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 1183136.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 29578.4,
+        "small_io_ratio": 0.0,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.975,
+        "metadata_time_ratio": 0.8925,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 3341.7051,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 9.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0001,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.9994
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n32_r2_438",
+            "similarity": 0.2459,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n32_r1_437",
+            "similarity": 0.2362,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "h5bench_h5b_collective_large_healthy_n32_r3_439",
+            "similarity": 0.2309,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 40,
+      "dataframe_index": 77753,
+      "job_id": "3084348",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 6034.7673,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 3322706.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7873.7109,
+        "small_io_ratio": 0.0095,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.936,
+        "metadata_time_ratio": 0.6907,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 826.9902,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 28.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.2832,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.281,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.2801,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 41,
+      "dataframe_index": 10354,
+      "job_id": "6019190",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 26.65,
+        "POSIX_BYTES_WRITTEN": 321.0,
+        "POSIX_BYTES_READ": 117155794.0,
+        "avg_write_size": 321.0,
+        "avg_read_size": 29288948.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0008,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 515.3376,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.2217,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms1000000000_n8_rep1_306",
+            "similarity": 0.2155,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+            "similarity": 0.2121,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 321 bytes written across 12 files but 117MB read, the job is performing excessive synchronization on small writes while doing large reads. The sequential write ratio of 1.0 suggests writes are properly ordered, but the high fsync frequency is killing performance by forcing disk flushes after every small write operation.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates excessive synchronization - 4 fsync calls per write operation. This forces immediate disk commits for tiny 321-byte writes across 12 files, creating severe performance bottlenecks.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "4x reduction in sync overhead based on eliminating 3 out of 4 fsync calls",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+              "confidence": "high",
+              "api_change": "POSIX write pattern optimization - reduce fsync frequency"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files and small average write size (321 bytes total / 12 files = ~27 bytes per file), the job may be hitting single-OST serialization on Lustre filesystem, limiting parallelism.",
+              "code_before": "/* Default single-stripe files */\nfd = open(filename, O_WRONLY|O_CREAT, 0644);\nwrite(fd, small_buf, 27);",
+              "code_after": "/* Use full Lustre stripe count for better parallelism */\n/* Set stripe count before writing */\nsetxattr(filename, \"lustre.lov\", stripe_info, sizeof(stripe_info), 0);\nfd = open(filename, O_WRONLY|O_CREAT, 0644);\nwrite(fd, small_buf, 27);",
+              "expected_speedup": "2-3x improvement from parallel OST utilization",
+              "kb_citation": "dlio_dlio_ckpt_ms1000000000_n8_rep1_306",
+              "confidence": "medium",
+              "api_change": "POSIX with Lustre striping optimization"
+            }
+          ],
+          "overall_expected_improvement": "4-8x speedup range (4x from fsync reduction + 2x from striping optimization)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13590.2,
+          "tokens_input": 1671,
+          "tokens_output": 775,
+          "timestamp": "2026-04-05T23:36:37Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 42,
+      "dataframe_index": 52681,
+      "job_id": "5264061",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 64.0,
+        "runtime_seconds": 2001.7598,
+        "POSIX_BYTES_WRITTEN": 2818629729.0,
+        "POSIX_BYTES_READ": 14109154837.0,
+        "avg_write_size": 295237.2189,
+        "avg_read_size": 137241.9127,
+        "small_io_ratio": 0.6439,
+        "seq_write_ratio": 0.9933,
+        "seq_read_ratio": 0.9805,
+        "metadata_time_ratio": 0.304,
+        "collective_ratio": 0.4133,
+        "total_bw_mb_s": 3671.0148,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 216.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0002,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+            "similarity": 0.3105,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n16_r1_596",
+            "similarity": 0.3101,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n64_r3_562",
+            "similarity": 0.3098,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O inefficiency due to small access granularity. With 64.39% of I/O operations being small transfers and average write sizes of only 295KB (well below the 1MB threshold), the application is suffering from excessive system call overhead. The job processes 2.8GB of writes and 14.1GB of reads across 216 files with 64 processes, but the small transfer sizes are creating a bottleneck that limits overall bandwidth to 3.67 GB/s despite having both POSIX and MPI-IO capabilities.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job's average write size of 295KB is below the 1MB threshold, and 64.39% of operations are small I/O. This creates excessive system call overhead as each small write triggers a separate kernel transition. The benchmark evidence shows this pattern severely impacts performance.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-4x based on similar small transfer patterns in benchmark scenarios",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564, hacc_io_hacc_posix_shared_small_p100_n16_r1_596, hacc_io_hacc_fpp_small_many_p50_n64_r3_562",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy - aggregate small writes into >=1MB buffers"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations (collective_ratio=0.4133 indicates some MPI-IO usage), switching from individual small writes to collective I/O with larger transfer sizes will reduce overhead and improve bandwidth utilization.",
+              "code_before": "MPI_File_write_at(fh, offset, buf, count, MPI_FLOAT, &status)  /* small individual writes */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* collective I/O with larger datatypes */",
+              "expected_speedup": "1.5-3x for MPI-IO portions based on collective vs independent access patterns",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+              "confidence": "medium",
+              "api_change": "MPI_File_write_at -> MPI_File_write_at_all with larger transfer sizes"
+            }
+          ],
+          "overall_expected_improvement": "2-5x total I/O performance improvement by eliminating small transfer overhead and leveraging collective I/O where applicable"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13897.2,
+          "tokens_input": 1847,
+          "tokens_output": 810,
+          "timestamp": "2026-04-05T23:36:51Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 43,
+      "dataframe_index": 23736,
+      "job_id": "4287228",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 2.6408,
+        "POSIX_BYTES_WRITTEN": 4097285.0,
+        "POSIX_BYTES_READ": 1990147.0,
+        "avg_write_size": 19986.7561,
+        "avg_read_size": 317.5091,
+        "small_io_ratio": 0.9881,
+        "seq_write_ratio": 0.6732,
+        "seq_read_ratio": 0.9984,
+        "metadata_time_ratio": 0.0844,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 208.8996,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0019,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0001,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.0003
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n32_r3_601",
+            "similarity": 0.3557,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+            "similarity": 0.3548,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n128_r1_611",
+            "similarity": 0.3532,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe small I/O access patterns that are causing significant performance degradation. The Darshan data shows an average read size of only 317.5 bytes and a small_io_ratio of 0.9881, meaning 98.81% of I/O operations are small transfers. With 12 files being accessed and a total of 4MB written + 2MB read, the job is making thousands of tiny system calls instead of efficient large transfers. This creates excessive syscall overhead and prevents the storage system from achieving optimal throughput.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs I/O with very small transfer sizes (avg read: 317B, avg write: 19KB, 98.81% small I/O). This causes excessive system call overhead as each tiny transfer requires a separate kernel transition. The storage system cannot achieve optimal throughput with such small requests.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-4x based on HACC-IO benchmarks showing dramatic improvement when moving from small to large transfers",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n32_r3_601",
+              "confidence": "high",
+              "api_change": "POSIX write buffering strategy - same API but aggregated transfers"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For read operations, the extremely small average read size of 317 bytes suggests the application is reading data in tiny chunks. This should be replaced with larger read operations followed by in-memory data extraction.",
+              "code_before": "for (i=0; i<n; i++) read(fd, small_buf, 317);  /* tiny reads */",
+              "code_after": "/* Read large chunks, extract needed data in memory */\nread(fd, big_buf, 1048576);  /* 1MB read */\nfor (i=0; i<n; i++) memcpy(small_buf, big_buf + i*317, 317);",
+              "expected_speedup": "2-4x based on similar access pattern improvements in HACC-IO benchmarks",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+              "confidence": "high",
+              "api_change": "POSIX read buffering strategy - same API but larger transfers"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "Consider switching to MPI-IO collective operations if this is part of a parallel application, as the benchmark evidence shows MPI-IO can provide better performance for small access patterns through collective buffering.",
+              "code_before": "write(fd, buf, nbytes)  /* POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* MPI-IO collective */",
+              "expected_speedup": "Additional 1.5-2x improvement when combined with larger transfer sizes",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n128_r1_611",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            }
+          ],
+          "overall_expected_improvement": "4-8x total speedup by eliminating small I/O overhead and implementing proper buffering strategies"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 17789.6,
+          "tokens_input": 1836,
+          "tokens_output": 1006,
+          "timestamp": "2026-04-05T23:37:10Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 44,
+      "dataframe_index": 27601,
+      "job_id": "5590359",
+      "heuristic_labels": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 23.8208,
+        "POSIX_BYTES_WRITTEN": 529816.0,
+        "POSIX_BYTES_READ": 55122967.0,
+        "avg_write_size": 66227.0,
+        "avg_read_size": 14794.1404,
+        "small_io_ratio": 0.5686,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.5019,
+        "metadata_time_ratio": 0.6606,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 41.1819,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 1435.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.9972,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.998,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0001,
+        "healthy": 0.0071
+      },
+      "ml_detected": [
+        "access_granularity",
+        "access_pattern"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_small_rl4096_n4_rep3_287",
+            "similarity": 0.5353,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_small_rl256_n4_rep2_274",
+            "similarity": 0.5325,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_small_rl4096_n4_rep2_286",
+            "similarity": 0.5299,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe I/O inefficiency with two critical problems: (1) Small transfer sizes - average read size of 14.8KB and write size of 66.2KB are far below the 1MB threshold for efficient I/O, with 56.86% of operations being small I/O. (2) Poor access patterns - only 50.19% sequential reads indicate significant random access that defeats storage prefetching. The job processes 1,435 files with high metadata overhead (66.06% of time), resulting in poor bandwidth utilization at only 41.18 MB/s.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job's average read size of 14.8KB and write size of 66.2KB are causing excessive syscall overhead. With 56.86% small I/O operations, the application is making too many small system calls instead of batching them into larger transfers.",
+              "code_before": "# Current pattern: many small reads/writes\nfor record in records:\n    data = np.fromfile(file_path, dtype=np.float32, count=record_length)\n    process_record(data)\n    \n# Small writes\nfor chunk in small_chunks:\n    chunk.tofile(output_path)",
+              "code_after": "# Buffer small operations into large transfers\nbuffer_size = 1048576  # 1MB buffer\nread_buffer = np.empty(buffer_size // 4, dtype=np.float32)  # Pre-allocate\nwrite_buffer = []\nwrite_buffer_size = 0\n\n# Batch reads\nwith open(file_path, 'rb') as f:\n    while True:\n        chunk = np.frombuffer(f.read(buffer_size), dtype=np.float32)\n        if len(chunk) == 0: break\n        process_records_batch(chunk)\n\n# Batch writes\nfor chunk in small_chunks:\n    write_buffer.append(chunk)\n    write_buffer_size += chunk.nbytes\n    if write_buffer_size >= 1048576:\n        combined = np.concatenate(write_buffer)\n        combined.tofile(output_path)\n        write_buffer = []\n        write_buffer_size = 0",
+              "expected_speedup": "2-4x based on reducing syscall overhead",
+              "kb_citation": "dlio_dlio_small_rl4096_n4_rep3_287, dlio_dlio_small_rl256_n4_rep2_274, dlio_dlio_small_rl4096_n4_rep2_286",
+              "confidence": "high",
+              "api_change": "POSIX read/write -> buffered batch operations"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "With only 50.19% sequential reads, the job has significant random access patterns that prevent OS read-ahead and storage prefetching from working effectively. This is particularly problematic when combined with small transfer sizes.",
+              "code_before": "# Random access pattern\nfor file_id in random_file_order:\n    data = np.fromfile(f'data_{file_id}.bin', dtype=np.float32)\n    process_data(data)",
+              "code_after": "# Sequential access with sorting\n# Sort files to enable sequential access\nfile_list = sorted(glob.glob('data_*.bin'))\nfor file_path in file_list:\n    # Use larger buffer for sequential reads\n    with open(file_path, 'rb') as f:\n        while True:\n            chunk = f.read(1048576)  # 1MB chunks\n            if not chunk: break\n            data = np.frombuffer(chunk, dtype=np.float32)\n            process_data(data)",
+              "expected_speedup": "1.5-2x from improved cache utilization and prefetching",
+              "kb_citation": "Pattern optimization inferred from access_granularity fixes in dlio_dlio_small_rl4096_n4_rep3_287",
+              "confidence": "medium",
+              "api_change": "Random file access -> sorted sequential access"
+            }
+          ],
+          "overall_expected_improvement": "3-8x total speedup from combining transfer size optimization (2-4x) with access pattern improvements (1.5-2x)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 20001.0,
+          "tokens_input": 1704,
+          "tokens_output": 1108,
+          "timestamp": "2026-04-05T23:37:31Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 45,
+      "dataframe_index": 31199,
+      "job_id": "6358249",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 130.3126,
+        "POSIX_BYTES_WRITTEN": 2985.0,
+        "POSIX_BYTES_READ": 0.0,
+        "avg_write_size": 2985.0,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.0,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.0,
+        "metadata_time_ratio": 0.582,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 0.0083,
+        "fsync_ratio": 728.0,
+        "has_mpiio": 0.0,
+        "num_files": 726.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0002,
+        "parallelism_efficiency": 0.0017,
+        "access_pattern": 0.0001,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0004,
+        "healthy": 0.8888
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.1907,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.1893,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep2_310",
+            "similarity": 0.1892,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 46,
+      "dataframe_index": 99926,
+      "job_id": "3119717",
+      "heuristic_labels": [
+        "healthy"
+      ],
+      "is_heuristic_healthy": true,
+      "darshan_summary": {
+        "nprocs": 4.0,
+        "runtime_seconds": 759.7006,
+        "POSIX_BYTES_WRITTEN": 0.0,
+        "POSIX_BYTES_READ": 5937266.0,
+        "avg_write_size": 0.0,
+        "avg_read_size": 7958.8016,
+        "small_io_ratio": 0.0054,
+        "seq_write_ratio": 0.0,
+        "seq_read_ratio": 0.9477,
+        "metadata_time_ratio": 0.7215,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 1215.774,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 0.0,
+        "num_files": 31.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0001,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 1.0
+      },
+      "ml_detected": [
+        "healthy"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep1_315",
+            "similarity": 0.2935,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl1048576_n4_rep1_309",
+            "similarity": 0.2914,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_healthy_rl4194304_n4_rep2_316",
+            "similarity": 0.2907,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "skipped": "healthy_detection"
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 47,
+      "dataframe_index": 58613,
+      "job_id": "3999261",
+      "heuristic_labels": [
+        "throughput_utilization"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 4.7458,
+        "POSIX_BYTES_WRITTEN": 239.0,
+        "POSIX_BYTES_READ": 468622930.0,
+        "avg_write_size": 239.0,
+        "avg_read_size": 117155732.5,
+        "small_io_ratio": 0.2,
+        "seq_write_ratio": 1.0,
+        "seq_read_ratio": 0.5,
+        "metadata_time_ratio": 0.0004,
+        "collective_ratio": 0.0,
+        "total_bw_mb_s": 3291.7136,
+        "fsync_ratio": 4.0,
+        "has_mpiio": 0.0,
+        "num_files": 12.0
+      },
+      "ml_predictions": {
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 1.0,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+            "similarity": 0.1879,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+            "similarity": 0.1864,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+            "similarity": 0.1862,
+            "matched_dims": [
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe throughput underutilization with an extremely high fsync ratio of 4.0, meaning there are 4 fsync calls per write operation. With only 239 bytes written across 12 files but 468MB read, the job is performing excessive synchronization on small writes while doing large reads. The small I/O ratio of 0.2 and sequential write ratio of 1.0 suggests the writes are small but sequential, making the excessive fsync calls particularly harmful to performance.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The fsync_ratio of 4.0 indicates fsync is being called after every write operation, causing excessive synchronization overhead. With 239 bytes written and an fsync_ratio of 4.0, there are approximately 4 fsync calls happening, which is forcing immediate disk commits and destroying write performance.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "Significant improvement in write throughput by eliminating per-write synchronization overhead",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep2_292",
+              "confidence": "high",
+              "api_change": "Remove per-operation fsync calls, retain single fsync at completion"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 12 files being accessed and potential single-OST serialization, the job may benefit from proper Lustre striping to distribute I/O across multiple Object Storage Targets (OSTs), especially given the large read volume of 468MB.",
+              "code_before": "/* Default single OST striping */\nopen(filename, O_CREAT|O_WRONLY, 0644);",
+              "code_after": "/* Set Lustre stripe count before file creation */\nsetxattr(dirname, \"lustre.lov.stripe_count\", \"-1\", 2, 0);\nopen(filename, O_CREAT|O_WRONLY, 0644);",
+              "expected_speedup": "Improved throughput by utilizing multiple OSTs for parallel I/O",
+              "kb_citation": "dlio_dlio_ckpt_ms100000000_n4_rep1_291",
+              "confidence": "medium",
+              "api_change": "Add Lustre striping configuration before file operations"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The large read volume (468MB) with seq_read_ratio of 0.5 suggests some redundant I/O traffic. Implementing caching or avoiding re-reading data that's already in memory could reduce unnecessary I/O operations.",
+              "code_before": "/* Potentially re-reading same data */\nfor (int i = 0; i < iterations; i++) {\n  read(fd, buffer, size);\n  process_data(buffer);\n}",
+              "code_after": "/* Cache data to avoid redundant reads */\nread(fd, buffer, size);  /* read once */\nfor (int i = 0; i < iterations; i++) {\n  process_data(buffer);  /* reuse cached data */\n}",
+              "expected_speedup": "Reduced I/O volume by eliminating redundant read operations",
+              "kb_citation": "dlio_dlio_ckpt_ms500000000_n4_rep2_298",
+              "confidence": "medium",
+              "api_change": "Implement data caching to avoid redundant reads"
+            }
+          ],
+          "overall_expected_improvement": "2-5x speedup primarily from eliminating excessive fsync overhead, with additional gains from improved striping and reduced redundant I/O"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 17695.5,
+          "tokens_input": 1671,
+          "tokens_output": 1062,
+          "timestamp": "2026-04-05T23:37:49Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 48,
+      "dataframe_index": 122681,
+      "job_id": "6923683",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 1.0,
+        "runtime_seconds": 8.4956,
+        "POSIX_BYTES_WRITTEN": 10761562.0,
+        "POSIX_BYTES_READ": 795188077.0,
+        "avg_write_size": 4977.5957,
+        "avg_read_size": 281084.5094,
+        "small_io_ratio": 0.8864,
+        "seq_write_ratio": 0.981,
+        "seq_read_ratio": 0.7717,
+        "metadata_time_ratio": 0.0899,
+        "collective_ratio": 0.3571,
+        "total_bw_mb_s": 751.9056,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 79.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0027,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.001,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r2_558",
+            "similarity": 0.3637,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r1_557",
+            "similarity": 0.3599,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n32_r3_559",
+            "similarity": 0.3477,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe small I/O access granularity problems. With an average write size of only 4,978 bytes and 88.64% of operations being small I/O (<1MB), the application is making excessive system calls that create significant overhead. The job writes 10.8MB across 79 files using both POSIX and MPI-IO, but the small transfer sizes prevent efficient utilization of the storage system bandwidth.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The average write size of 4,978 bytes is far below the 1MB threshold for efficient I/O. With 88.64% small I/O operations, the job is making too many small system calls instead of batching writes into larger transfers.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 4978);  /* ~5KB per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 4978); offset += 4978;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-3x based on reducing syscall overhead",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n32_r2_558",
+              "confidence": "high",
+              "api_change": "POSIX write with buffering strategy"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "For MPI-IO operations (35.71% collective ratio indicates MPI-IO usage), small transfer sizes should be aggregated using collective I/O with larger datatypes to reduce per-operation overhead.",
+              "code_before": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* small count */",
+              "code_after": "/* Aggregate into larger transfers before collective write */\nMPI_File_write_at_all(fh, offset, big_buf, large_count, MPI_FLOAT, &status)  /* >=1MB transfers */",
+              "expected_speedup": "2-3x for MPI-IO portions based on collective efficiency gains",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n32_r1_557",
+              "confidence": "high",
+              "api_change": "MPI-IO collective with larger transfer sizes"
+            }
+          ],
+          "overall_expected_improvement": "2-3x total speedup by eliminating small I/O overhead across both POSIX and MPI-IO operations"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11689.8,
+          "tokens_input": 1843,
+          "tokens_output": 712,
+          "timestamp": "2026-04-05T23:38:01Z"
+        }
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "sample_index": 49,
+      "dataframe_index": 127454,
+      "job_id": "6831028",
+      "heuristic_labels": [
+        "access_granularity"
+      ],
+      "is_heuristic_healthy": false,
+      "darshan_summary": {
+        "nprocs": 64.0,
+        "runtime_seconds": 8.6752,
+        "POSIX_BYTES_WRITTEN": 73758150.0,
+        "POSIX_BYTES_READ": 1642421582.0,
+        "avg_write_size": 66991.9619,
+        "avg_read_size": 246129.4144,
+        "small_io_ratio": 0.7485,
+        "seq_write_ratio": 0.98,
+        "seq_read_ratio": 0.8199,
+        "metadata_time_ratio": 0.7113,
+        "collective_ratio": 0.3948,
+        "total_bw_mb_s": 3767.4653,
+        "fsync_ratio": 0.0,
+        "has_mpiio": 1.0,
+        "num_files": 75.0
+      },
+      "ml_predictions": {
+        "access_granularity": 1.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0009,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0008,
+        "healthy": 0.0
+      },
+      "ml_detected": [
+        "access_granularity"
+      ],
+      "shap_top_features": {},
+      "kb_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r2_609",
+            "similarity": 0.3948,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+            "similarity": 0.3931,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r1_608",
+            "similarity": 0.3898,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "llm_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job exhibits severe I/O performance problems due to small access granularity. With an average write size of only 67KB and small I/O ratio of 74.85%, the application is making frequent small I/O operations that cause excessive system call overhead. The job processes 1.7GB of data across 64 processes but achieves only 3.8GB/s bandwidth, indicating significant inefficiency. The high metadata time ratio of 71.13% suggests substantial time spent in I/O setup rather than actual data transfer.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job's average write size of 67KB is far below the optimal 1MB threshold, causing excessive system call overhead. With 74.85% of operations being small I/O, the application is spending most time in syscall overhead rather than data transfer.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "5-15x based on benchmark evidence showing dramatic improvement when moving from small to large transfer sizes",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r2_609",
+              "confidence": "high",
+              "api_change": "POSIX write with buffering aggregation"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "The job uses both POSIX and MPI-IO (collective_ratio=39.48%) but could benefit from switching entirely to collective MPI-IO operations for better coordination and reduced contention across 64 processes.",
+              "code_before": "write(fd, buf, nbytes)  /* GenericIO.cxx, POSIX shared file */",
+              "code_after": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status)  /* GenericIO.cxx */",
+              "expected_speedup": "2-3x additional improvement when combined with larger transfer sizes",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_p100_n64_r2_603",
+              "confidence": "medium",
+              "api_change": "POSIX write -> MPI_File_write_at_all"
+            }
+          ],
+          "overall_expected_improvement": "10-20x total speedup by addressing access granularity and interface choice bottlenecks"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11814.2,
+          "tokens_input": 1877,
+          "tokens_output": 718,
+          "timestamp": "2026-04-05T23:38:13Z"
+        }
+      },
+      "status": "SUCCESS"
+    }
+  ]
+}
