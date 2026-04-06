@@ -270,24 +270,54 @@ def fig_gt_vs_heuristic():
         gt_rates = {d: 10.0 for d in DIMENSION_ORDER}
 
     dims = DIMENSION_ORDER
-    fig, ax = plt.subplots(figsize=(7.16, 3.2), constrained_layout=True)
+    # Single-column figure — native size matches paper column width
+    fig, ax = plt.subplots(figsize=(3.5, 2.6))
     x = np.arange(len(dims))
-    width = 0.28
+    width = 0.35
 
     h_vals = [heuristic_rates.get(d, 0) for d in dims]
     g_vals = [gt_rates.get(d, 0) for d in dims]
 
-    bars1 = ax.bar(x - width / 2, h_vals, width, label="Heuristic (131K production)",
+    bars1 = ax.bar(x - width / 2, h_vals, width, label="Heuristic (131K)",
                    color=COLORS["blue"], hatch="", edgecolor="white", linewidth=0.3)
-    bars2 = ax.bar(x + width / 2, g_vals, width, label="Ground-truth (623 benchmark)",
+    bars2 = ax.bar(x + width / 2, g_vals, width, label="Ground-truth (623)",
                    color=COLORS["orange"], hatch="//", edgecolor="white", linewidth=0.3)
 
+    # Rotated labels for readability
+    short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
+                    "Access Pattern", "Interface Ch.", "File Strategy",
+                    "Throughput Util.", "Healthy"]
     ax.set_xticks(x)
-    ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center")
-    ax.set_ylabel("Positive rate (%)", labelpad=8)
-    ax.legend(loc="upper right")
+    ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
+    ax.set_ylabel("Positive rate (%)", fontsize=8)
 
-    save_fig(fig, "fig_gt_vs_heuristic")
+    # Value labels on both bars — place inside bar if tall enough, above if short
+    for i, (bar1, bar2) in enumerate(zip(bars1, bars2)):
+        h1 = bar1.get_height()
+        h2 = bar2.get_height()
+        if h1 > 0.5:
+            ax.text(bar1.get_x() + bar1.get_width()/2, h1 + 0.5,
+                    f"{h1:.1f}", ha="center", va="bottom", fontsize=5.5,
+                    color=COLORS["blue"], fontweight="bold")
+        if h2 > 0.5:
+            ax.text(bar2.get_x() + bar2.get_width()/2, h2 + 0.5,
+                    f"{h2:.1f}", ha="center", va="bottom", fontsize=5.5,
+                    color=COLORS["orange"], fontweight="bold")
+
+    ax.set_ylim(0, max(max(h_vals), max(g_vals)) * 1.15)
+
+    # Legend inside chart — upper-left has space (Access Gran. is ~30%, not at top)
+    ax.legend(loc="upper left", fontsize=7,
+              frameon=True, framealpha=0.95, edgecolor="#cccccc",
+              borderpad=0.4, borderaxespad=0.2)
+    ax.grid(axis="y", alpha=0.3)
+
+    fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.pdf"),
+                format="pdf", bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.png"),
+                format="png", dpi=300, bbox_inches="tight", pad_inches=0.01)
+    plt.close(fig)
+    logger.info("Saved fig_gt_vs_heuristic")
 
 
 # ===========================================================================
