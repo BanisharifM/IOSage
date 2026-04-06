@@ -135,3 +135,554 @@
 2026-04-06 07:18:04,848 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
 2026-04-06 07:18:16,072 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
 2026-04-06 07:18:29,418 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:18:48,819 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:19:25,989 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:19:35,906 [WARNING] LLM extraction failed, falling back to keywords: Expecting value: line 1 column 1 (char 0)
+2026-04-06 07:19:35,907 [INFO]   Completed in 449.2s, API calls so far: 120, Cost so far: $0.3625
+2026-04-06 07:19:35,910 [INFO] Processing trace 4/50: 17310653 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:19:36,142 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:19:36,793 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:19:42,003 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:19:51,677 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:04,331 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:08,298 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:17,699 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:29,561 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:33,710 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:43,777 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:54,990 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:20:59,529 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:10,390 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:23,341 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:27,109 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:37,890 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:49,591 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:21:53,649 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:03,610 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:19,001 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:22,627 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:33,116 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:45,214 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:22:59,586 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:23:13,350 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:23:25,837 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:23:55,002 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:24:15,951 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:24:49,382 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:24:52,146 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:24:57,894 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:08,003 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:12,924 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:19,299 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:30,203 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:34,632 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:43,932 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:25:55,758 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:26:08,481 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:26:23,571 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:03,914 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:05,433 [WARNING] LLM extraction failed, falling back to keywords: Expecting value: line 1 column 1 (char 0)
+2026-04-06 07:27:05,433 [INFO]   Completed in 447.3s, API calls so far: 160, Cost so far: $0.4715
+2026-04-06 07:27:05,475 [INFO] Processing trace 5/50: 16653175 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:27:05,744 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:27:06,875 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:11,828 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:22,914 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:36,773 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:40,905 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:27:51,606 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:05,891 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:10,242 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:18,367 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:30,470 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:35,585 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:46,869 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:28:59,690 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:03,290 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:13,829 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:25,577 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:29,583 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:40,010 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:55,205 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:29:59,781 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:30:07,548 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:30:18,641 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:30:34,913 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:30:47,977 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:31:03,075 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:31:26,196 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:31:45,033 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:17,358 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:20,097 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:26,179 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:36,271 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:41,151 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:32:48,050 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:00,211 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:05,600 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:14,579 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:25,544 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:35,164 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:33:47,810 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:34:21,430 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:34:29,466 [WARNING] LLM extraction failed, falling back to keywords: Expecting value: line 1 column 1 (char 0)
+2026-04-06 07:34:29,467 [INFO]   Completed in 435.3s, API calls so far: 200, Cost so far: $0.5879
+2026-04-06 07:34:29,480 [INFO] Processing trace 6/50: 16653163 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:34:29,865 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:34:30,446 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:34:34,596 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:34:44,908 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:00,105 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:03,890 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:13,358 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:26,344 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:31,081 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:40,130 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:52,299 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:35:56,801 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:08,562 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:22,786 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:26,202 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:36,185 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:48,013 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:36:51,869 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:05,118 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:18,374 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:22,151 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:31,063 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:41,804 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:37:59,103 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:38:13,402 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:38:24,965 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:38:50,525 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:39:06,287 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:39:41,833 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:39:45,663 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:39:52,867 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:03,523 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:07,020 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:14,298 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:28,363 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:33,073 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:44,098 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:40:55,277 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:41:07,506 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:41:28,730 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:16,536 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:17,937 [WARNING] LLM extraction failed, falling back to keywords: Expecting value: line 1 column 1 (char 0)
+2026-04-06 07:42:17,937 [INFO]   Completed in 466.5s, API calls so far: 240, Cost so far: $0.7079
+2026-04-06 07:42:17,976 [INFO] Processing trace 7/50: 16651194 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:42:18,344 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:42:19,090 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:23,423 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:32,949 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:44,986 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:49,304 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:42:59,308 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:12,581 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:16,748 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:25,232 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:37,371 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:41,732 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:43:52,781 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:44:04,842 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:44:08,408 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:44:18,032 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 07:44:29,740 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:44:29,774 [ERROR] ION pipeline failed for 16651194: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 63122. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:44:29,774 [WARNING] Skipping trace 16651194 due to error
+2026-04-06 07:44:29,774 [INFO] Processing trace 8/50: 16653138 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:44:30,101 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:44:30,270 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:44:30,271 [ERROR] ION pipeline failed for 16653138: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 63122. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:44:30,271 [WARNING] Skipping trace 16653138 due to error
+2026-04-06 07:44:30,271 [INFO] Processing trace 9/50: 16653127 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:44:30,690 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:44:30,965 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:44:30,965 [ERROR] ION pipeline failed for 16653127: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 63122. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:44:30,965 [WARNING] Skipping trace 16653127 due to error
+2026-04-06 07:44:30,966 [INFO] Processing trace 10/50: 16843330 (ior)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:44:31,764 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:44:32,069 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:44:32,070 [ERROR] ION pipeline failed for 16843330: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 63122. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:44:32,070 [WARNING] Skipping trace 16843330 due to error
+2026-04-06 07:44:32,071 [INFO] Processing trace 11/50: 16651440 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:10,387 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:10,719 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:10,720 [ERROR] ION pipeline failed for 16651440: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 57516. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:10,721 [WARNING] Skipping trace 16651440 due to error
+2026-04-06 07:45:10,721 [INFO] Processing trace 12/50: 16651419 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:20,284 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:20,706 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:20,707 [ERROR] ION pipeline failed for 16651419: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 56368. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:20,707 [WARNING] Skipping trace 16651419 due to error
+2026-04-06 07:45:20,708 [INFO] Processing trace 13/50: 16653339 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:23,229 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:23,538 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:23,539 [ERROR] ION pipeline failed for 16653339: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 56368. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:23,539 [WARNING] Skipping trace 16653339 due to error
+2026-04-06 07:45:23,539 [INFO] Processing trace 14/50: 16651438 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:32,748 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:33,125 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:33,126 [ERROR] ION pipeline failed for 16651438: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 56368. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:33,126 [WARNING] Skipping trace 16651438 due to error
+2026-04-06 07:45:33,126 [INFO] Processing trace 15/50: 16653397 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:52,478 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:52,890 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:52,891 [ERROR] ION pipeline failed for 16653397: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 53908. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:52,891 [WARNING] Skipping trace 16653397 due to error
+2026-04-06 07:45:52,891 [INFO] Processing trace 16/50: 16651424 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:45:55,665 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:45:55,975 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:45:55,975 [ERROR] ION pipeline failed for 16651424: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 53908. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:45:55,976 [WARNING] Skipping trace 16651424 due to error
+2026-04-06 07:45:55,976 [INFO] Processing trace 17/50: 16804888 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:47:23,853 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:47:24,196 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:47:24,197 [ERROR] ION pipeline failed for 16804888: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 50613. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:47:24,198 [WARNING] Skipping trace 16804888 due to error
+2026-04-06 07:47:24,198 [INFO] Processing trace 18/50: 16653413 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:47:32,038 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:47:32,377 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:47:32,378 [ERROR] ION pipeline failed for 16653413: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 50591. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:47:32,379 [WARNING] Skipping trace 16653413 due to error
+2026-04-06 07:47:32,379 [INFO] Processing trace 19/50: 16653350 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:47:34,823 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:47:35,083 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:47:35,084 [ERROR] ION pipeline failed for 16653350: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 50138. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:47:35,084 [WARNING] Skipping trace 16653350 due to error
+2026-04-06 07:47:35,084 [INFO] Processing trace 20/50: 16653348 (mdtest)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:47:45,025 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:45,143 [INFO] Retrying request to /chat/completions in 0.386481 seconds
+2026-04-06 07:57:45,837 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:45,838 [ERROR] ION pipeline failed for 16653348: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:45,838 [WARNING] Skipping trace 16653348 due to error
+2026-04-06 07:57:45,838 [INFO] Processing trace 21/50: 16648440 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:46,495 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:46,825 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:46,826 [ERROR] ION pipeline failed for 16648440: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:46,826 [WARNING] Skipping trace 16648440 due to error
+2026-04-06 07:57:46,826 [INFO] Processing trace 22/50: 16648447 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:47,471 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:47,745 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:47,746 [ERROR] ION pipeline failed for 16648447: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:47,746 [WARNING] Skipping trace 16648447 due to error
+2026-04-06 07:57:47,746 [INFO] Processing trace 23/50: 16648482 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:48,392 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:48,747 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:48,748 [ERROR] ION pipeline failed for 16648482: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:48,748 [WARNING] Skipping trace 16648482 due to error
+2026-04-06 07:57:48,749 [INFO] Processing trace 24/50: 16648491 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:49,504 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:49,811 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:49,811 [ERROR] ION pipeline failed for 16648491: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:49,811 [WARNING] Skipping trace 16648491 due to error
+2026-04-06 07:57:49,812 [INFO] Processing trace 25/50: 16648493 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:50,535 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:50,808 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:50,809 [ERROR] ION pipeline failed for 16648493: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:50,809 [WARNING] Skipping trace 16648493 due to error
+2026-04-06 07:57:50,809 [INFO] Processing trace 26/50: 16648475 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:51,507 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:51,758 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:51,759 [ERROR] ION pipeline failed for 16648475: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:51,759 [WARNING] Skipping trace 16648475 due to error
+2026-04-06 07:57:51,759 [INFO] Processing trace 27/50: 16648449 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:52,513 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:53,212 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:53,213 [ERROR] ION pipeline failed for 16648449: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:53,214 [WARNING] Skipping trace 16648449 due to error
+2026-04-06 07:57:53,214 [INFO] Processing trace 28/50: 16648487 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:54,187 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:54,840 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:54,841 [ERROR] ION pipeline failed for 16648487: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:54,841 [WARNING] Skipping trace 16648487 due to error
+2026-04-06 07:57:54,841 [INFO] Processing trace 29/50: 16648494 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:55,547 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:55,706 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:55,706 [ERROR] ION pipeline failed for 16648494: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:55,707 [WARNING] Skipping trace 16648494 due to error
+2026-04-06 07:57:55,707 [INFO] Processing trace 30/50: 16648455 (dlio)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:56,460 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:57:56,705 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:56,705 [ERROR] ION pipeline failed for 16648455: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:56,706 [WARNING] Skipping trace 16648455 due to error
+2026-04-06 07:57:56,706 [INFO] Processing trace 31/50: 16805349 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:56,932 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:57:57,236 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:57,237 [ERROR] ION pipeline failed for 16805349: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:57,237 [WARNING] Skipping trace 16805349 due to error
+2026-04-06 07:57:57,237 [INFO] Processing trace 32/50: 16805367 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:57,499 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:57:57,804 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:57,805 [ERROR] ION pipeline failed for 16805367: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:57,805 [WARNING] Skipping trace 16805367 due to error
+2026-04-06 07:57:57,805 [INFO] Processing trace 33/50: 16805297 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:58,139 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:57:58,386 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:58,387 [ERROR] ION pipeline failed for 16805297: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:58,387 [WARNING] Skipping trace 16805297 due to error
+2026-04-06 07:57:58,387 [INFO] Processing trace 34/50: 16805326 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:58,907 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:57:59,260 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:59,261 [ERROR] ION pipeline failed for 16805326: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:59,261 [WARNING] Skipping trace 16805326 due to error
+2026-04-06 07:57:59,261 [INFO] Processing trace 35/50: 16805322 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:57:59,647 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:631: RuntimeWarning: invalid value encountered in scalar divide
+  "0-100": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_0_100"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:632: RuntimeWarning: invalid value encountered in scalar divide
+  "100-1k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100_1K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:633: RuntimeWarning: invalid value encountered in scalar divide
+  "1k-10k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1K_10K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:634: RuntimeWarning: invalid value encountered in scalar divide
+  "10k-100k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10K_100K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:635: RuntimeWarning: invalid value encountered in scalar divide
+  "100k-1M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100K_1M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:636: RuntimeWarning: invalid value encountered in scalar divide
+  "1M-4M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1M_4M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:637: RuntimeWarning: invalid value encountered in scalar divide
+  "4M-10M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_4M_10M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:638: RuntimeWarning: invalid value encountered in scalar divide
+  "10M-100M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10M_100M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:639: RuntimeWarning: invalid value encountered in scalar divide
+  "100M-1G": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100M_1G"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:640: RuntimeWarning: invalid value encountered in scalar divide
+  "1G+": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1G_PLUS"].sum() / total_writes).astype(float)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:57:59,869 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:57:59,870 [ERROR] ION pipeline failed for 16805322: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:57:59,870 [WARNING] Skipping trace 16805322 due to error
+2026-04-06 07:57:59,870 [INFO] Processing trace 36/50: 16805324 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:00,272 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:631: RuntimeWarning: invalid value encountered in scalar divide
+  "0-100": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_0_100"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:632: RuntimeWarning: invalid value encountered in scalar divide
+  "100-1k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100_1K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:633: RuntimeWarning: invalid value encountered in scalar divide
+  "1k-10k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1K_10K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:634: RuntimeWarning: invalid value encountered in scalar divide
+  "10k-100k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10K_100K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:635: RuntimeWarning: invalid value encountered in scalar divide
+  "100k-1M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100K_1M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:636: RuntimeWarning: invalid value encountered in scalar divide
+  "1M-4M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1M_4M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:637: RuntimeWarning: invalid value encountered in scalar divide
+  "4M-10M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_4M_10M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:638: RuntimeWarning: invalid value encountered in scalar divide
+  "10M-100M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10M_100M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:639: RuntimeWarning: invalid value encountered in scalar divide
+  "100M-1G": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100M_1G"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:640: RuntimeWarning: invalid value encountered in scalar divide
+  "1G+": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1G_PLUS"].sum() / total_writes).astype(float)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:00,473 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:00,474 [ERROR] ION pipeline failed for 16805324: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:00,474 [WARNING] Skipping trace 16805324 due to error
+2026-04-06 07:58:00,474 [INFO] Processing trace 37/50: 16805354 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:00,828 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:01,055 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:01,056 [ERROR] ION pipeline failed for 16805354: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:01,056 [WARNING] Skipping trace 16805354 due to error
+2026-04-06 07:58:01,056 [INFO] Processing trace 38/50: 16805301 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:01,332 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:01,711 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:01,712 [ERROR] ION pipeline failed for 16805301: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:01,712 [WARNING] Skipping trace 16805301 due to error
+2026-04-06 07:58:01,712 [INFO] Processing trace 39/50: 16805377 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:02,118 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:631: RuntimeWarning: invalid value encountered in scalar divide
+  "0-100": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_0_100"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:632: RuntimeWarning: invalid value encountered in scalar divide
+  "100-1k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100_1K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:633: RuntimeWarning: invalid value encountered in scalar divide
+  "1k-10k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1K_10K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:634: RuntimeWarning: invalid value encountered in scalar divide
+  "10k-100k": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10K_100K"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:635: RuntimeWarning: invalid value encountered in scalar divide
+  "100k-1M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100K_1M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:636: RuntimeWarning: invalid value encountered in scalar divide
+  "1M-4M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1M_4M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:637: RuntimeWarning: invalid value encountered in scalar divide
+  "4M-10M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_4M_10M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:638: RuntimeWarning: invalid value encountered in scalar divide
+  "10M-100M": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_10M_100M"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:639: RuntimeWarning: invalid value encountered in scalar divide
+  "100M-1G": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_100M_1G"].sum() / total_writes).astype(float),
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:640: RuntimeWarning: invalid value encountered in scalar divide
+  "1G+": (self.mpiio_df["MPIIO_SIZE_WRITE_AGG_1G_PLUS"].sum() / total_writes).astype(float)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:02,346 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:02,347 [ERROR] ION pipeline failed for 16805377: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:02,347 [WARNING] Skipping trace 16805377 due to error
+2026-04-06 07:58:02,347 [INFO] Processing trace 40/50: 16805356 (h5bench)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:02,658 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:02,867 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:02,867 [ERROR] ION pipeline failed for 16805356: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:02,868 [WARNING] Skipping trace 16805356 due to error
+2026-04-06 07:58:02,868 [INFO] Processing trace 41/50: 16788784 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:03,209 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:03,371 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:03,371 [ERROR] ION pipeline failed for 16788784: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:03,372 [WARNING] Skipping trace 16788784 due to error
+2026-04-06 07:58:03,372 [INFO] Processing trace 42/50: 16788745 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:03,698 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:03,871 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:03,872 [ERROR] ION pipeline failed for 16788745: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:03,872 [WARNING] Skipping trace 16788745 due to error
+2026-04-06 07:58:03,872 [INFO] Processing trace 43/50: 16788719 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:04,144 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:04,339 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:04,340 [ERROR] ION pipeline failed for 16788719: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:04,340 [WARNING] Skipping trace 16788719 due to error
+2026-04-06 07:58:04,340 [INFO] Processing trace 44/50: 16788782 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:04,646 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:04,825 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:04,826 [ERROR] ION pipeline failed for 16788782: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:04,826 [WARNING] Skipping trace 16788782 due to error
+2026-04-06 07:58:04,826 [INFO] Processing trace 45/50: 16788742 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:05,274 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:822: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.mpiio_df["rank"].unique():
+2026-04-06 07:58:05,511 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:05,511 [ERROR] ION pipeline failed for 16788742: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:05,512 [WARNING] Skipping trace 16788742 due to error
+2026-04-06 07:58:05,512 [INFO] Processing trace 46/50: 16788714 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:05,812 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:06,290 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:06,291 [ERROR] ION pipeline failed for 16788714: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:06,291 [WARNING] Skipping trace 16788714 due to error
+2026-04-06 07:58:06,292 [INFO] Processing trace 47/50: 16788710 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:06,588 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:06,848 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:06,848 [ERROR] ION pipeline failed for 16788710: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:06,849 [WARNING] Skipping trace 16788710 due to error
+2026-04-06 07:58:06,849 [INFO] Processing trace 48/50: 16788762 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:07,123 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:07,286 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:07,287 [ERROR] ION pipeline failed for 16788762: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:07,287 [WARNING] Skipping trace 16788762 due to error
+2026-04-06 07:58:07,287 [INFO] Processing trace 49/50: 16788786 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:07,575 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:07,868 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:07,869 [ERROR] ION pipeline failed for 16788786: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:07,869 [WARNING] Skipping trace 16788786 due to error
+2026-04-06 07:58:07,869 [INFO] Processing trace 50/50: 16788781 (hacc_io)
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-06 07:58:08,150 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+2026-04-06 07:58:08,677 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-06 07:58:08,678 [ERROR] ION pipeline failed for 16788781: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 2332. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-06 07:58:08,678 [WARNING] Skipping trace 16788781 due to error
+2026-04-06 07:58:08,777 [INFO] Results saved to results/boost_experiment/fair_ioagent_comparison/ioagent_claude
