@@ -743,7 +743,10 @@ Respond in JSON:
         current_config = dict(bad_config)
 
         if not self.dry_run:
-            job_base = f"iter_{workload_name}_r{run_id}_baseline"
+            # Include model key in job name to avoid scratch dir collisions
+            # when the same workload runs concurrently with different LLMs
+            model_short = self.model_key.replace("claude-sonnet", "claude").replace("llama-70b", "llama")
+            job_base = f"iter_{workload_name}_r{run_id}_{model_short}_baseline"
             job_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{job_base}"
             if benchmark_type == "mdtest":
                 sanitized = dict(current_config)
@@ -940,7 +943,7 @@ Respond in JSON:
 
             # Execute
             if not self.dry_run:
-                iter_job = f"iter_{workload_name}_r{run_id}_i{iteration}"
+                iter_job = f"iter_{workload_name}_r{run_id}_{model_short}_i{iteration}"
                 iter_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{iter_job}"
                 if benchmark_type == "mdtest":
                     cmd = self.builder.build_mdtest_command(sanitized, output_dir=iter_scratch)
