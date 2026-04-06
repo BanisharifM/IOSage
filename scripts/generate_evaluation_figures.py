@@ -342,7 +342,7 @@ def fig_pipeline_walkthrough():
         panel_positions.append((px, y_base, panel_w, panel_h))
 
     # Panel titles
-    titles = ["(a) Input", "(b) ML Detection", "(c) SHAP Explanation",
+    titles = ["(a) Input", "(b) ML Detection", "(c) KB Evidence",
               "(d) LLM Recommendation", "(e) Validation"]
 
     # --- Panel 1: Input summary table ---
@@ -388,21 +388,29 @@ def fig_pipeline_walkthrough():
     ax2.invert_yaxis()
     ax2.grid(axis="x", alpha=0.2)
 
-    # --- Panel 3: SHAP top-3 features ---
+    # --- Panel 3: KB Evidence (top-3 matching entries) ---
     ax3 = fig.add_axes(panel_positions[2])
+    ax3.axis("off")
     ax3.set_title(titles[2], fontsize=7, fontweight="bold", pad=4)
 
-    shap_feats = ["FILE_NOT_\nALIGNED", "ACCESS1_\nCOUNT", "WRITES"]
-    shap_vals = [3.40, 1.77, 1.42]
-    ax3.barh(np.arange(3), shap_vals, height=0.55,
-             color=[OI["vermilion"], OI["orange"], OI["orange"]],
-             edgecolor="white", linewidth=0.3)
-    ax3.set_yticks(np.arange(3))
-    ax3.set_yticklabels(shap_feats, fontsize=5)
-    ax3.set_xlabel("SHAP value", fontsize=5.5)
-    ax3.tick_params(axis="x", labelsize=5)
-    ax3.invert_yaxis()
-    ax3.grid(axis="x", alpha=0.2)
+    kb_data = [
+        ["IOR-AG-001", "64B→1MB", "44.8x"],
+        ["IOR-AG-003", "align xfer", "12.1x"],
+        ["DLIO-AG-01", "batch sz", "3.2x"],
+    ]
+    kb_table = ax3.table(cellText=kb_data,
+                         colLabels=["KB Entry", "Fix", "Speedup"],
+                         loc="center", cellLoc="center")
+    kb_table.auto_set_font_size(False)
+    kb_table.set_fontsize(5.5)
+    kb_table.scale(1.0, 1.15)
+    for (r, c), cell in kb_table.get_celld().items():
+        cell.set_linewidth(0.3)
+        if r == 0:
+            cell.set_facecolor(OI["green"])
+            cell.set_text_props(color="white", fontweight="bold")
+        else:
+            cell.set_facecolor("#F5F5F5")
 
     # --- Panel 4: LLM recommendation text box ---
     ax4 = fig.add_axes(panel_positions[3])
