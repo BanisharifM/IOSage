@@ -113,8 +113,11 @@ def main():
 
     comm.Barrier()
 
-    # Cleanup
-    os.remove(output_file)
+    # Cleanup — ignore FileNotFoundError from race conditions on shared filesystems
+    try:
+        os.remove(output_file)
+    except FileNotFoundError:
+        pass
 
     if rank == 0:
         logger.info("Benchmark complete. Imbalance factor: %.1f", args.imbalance_factor)

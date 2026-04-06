@@ -539,6 +539,9 @@ exit $EXIT_CODE
         # by sbatch and cause "step creation disabled" errors when the child job's
         # --cpus-per-task=1 conflicts with the inherited value.
         clean_env = os.environ.copy()
+        # Strip PYTHONPATH: .local_pkgs has numpy 1.24.3 which shadows conda's
+        # numpy 1.26.4 and breaks TensorFlow/DLIO (missing np.dtypes)
+        clean_env.pop("PYTHONPATH", None)
         for var in ["SLURM_CPUS_PER_TASK", "SLURM_TRES_PER_TASK",
                      "SLURM_MEM_PER_CPU", "SLURM_MEM_PER_GPU", "SLURM_MEM_PER_NODE",
                      "SLURM_CPU_BIND", "SLURM_CPU_BIND_LIST", "SLURM_CPU_BIND_TYPE",

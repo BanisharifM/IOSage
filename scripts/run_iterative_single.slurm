@@ -26,7 +26,8 @@ echo "============================================================"
 # Environment
 source /projects/bdau/envs/sc2026/bin/activate 2>/dev/null || true
 export PATH=/projects/bdau/envs/sc2026/bin:$PATH
-export PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/.local_pkgs:$PYTHONPATH
+# Do NOT add .local_pkgs — numpy 1.24.3 breaks TensorFlow/DLIO imports
+unset PYTHONPATH
 
 cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
 
