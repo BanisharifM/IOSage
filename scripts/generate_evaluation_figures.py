@@ -236,77 +236,78 @@ def fig_llm_groundedness():
 # ===========================================================================
 
 def fig_ablation_trackb():
-    """Bar chart: recommendation ablation (fair ablation results)."""
-    logger.info("Generating Figure 20: Recommendation Ablation...")
+    """Bar chart: recommendation ablation — matches TABLE V (4 conditions).
 
+    Updated to match paper after SHAP removal (Entry 77) and
+    'Detection only' row removal.
+    """
+    logger.info("Generating Fig 6: Recommendation Ablation...")
+
+    # Must match TABLE V exactly
     conditions = ["Full\nPipeline", "w/o ML\nClassifier", "w/o Knowledge\nGrounding",
-                  "Detection\nOnly", "LLM Only\n(no ML, no KB)"]
-    groundedness = [1.0, 1.0, 0.0, None, 0.0]  # None = N/A
-    rec_precision = [0.73, 0.16, 0.67, None, 0.0]
-    n_recs = [1.4, 4.0, 2.6, 0.0, 4.1]
+                  "w/o ML\nClassifier\nand KB"]
+    groundedness = [1.00, 1.00, 0.00, 0.00]
+    rec_precision = [0.73, 0.16, 0.67, 0.00]
+    n_recs = [1.4, 4.0, 2.6, 4.1]
 
-    # Colors: green for full, orange for partial, red for broken, gray for N/A
-    colors = [OI["green"], OI["orange"], OI["vermilion"],
-              OI["gray"], OI["vermilion"]]
-
-    fig, ax1 = plt.subplots(figsize=(3.5, 2.8))
+    fig, ax1 = plt.subplots(figsize=(3.5, 2.6))
 
     x = np.arange(len(conditions))
-    width = 0.35
+    width = 0.32
 
-    # Hatching patterns per condition for B&W readability
-    condition_hatches = ["", "//", "\\\\", "..", "xx"]
+    # Groundedness bars (blue)
+    bars_g = ax1.bar(x - width/2, groundedness, width,
+                     color=OI["blue"], edgecolor="black", linewidth=0.4,
+                     label="Groundedness", zorder=3)
+    # Rec. Precision bars (orange)
+    bars_r = ax1.bar(x + width/2, rec_precision, width,
+                     color=OI["orange"], edgecolor="black", linewidth=0.4,
+                     hatch="//", label="Rec. Precision", zorder=3)
 
-    # Plot groundedness bars (left group)
-    for i, (g, c) in enumerate(zip(groundedness, colors)):
-        if g is not None:
-            ax1.bar(x[i] - width/2, g, width, color=c, edgecolor="black",
-                    linewidth=0.4, hatch=condition_hatches[i], zorder=3,
-                    label="Groundedness" if i == 0 else "")
-        else:
-            ax1.bar(x[i] - width/2, 0.05, width, color=c, edgecolor="black",
-                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.4)
-            ax1.text(x[i] - width/2, 0.10, "N/A", ha="center", va="bottom",
-                     fontsize=5.5, color=OI["gray"])
-
-    # Plot rec precision bars (right group)
-    for i, (rp, c) in enumerate(zip(rec_precision, colors)):
-        if rp is not None:
-            ax1.bar(x[i] + width/2, rp, width, color=OI["cyan"], edgecolor="black",
-                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.7,
-                    label="Rec. Precision" if i == 0 else "")
-        else:
-            ax1.bar(x[i] + width/2, 0.05, width, color=OI["gray"], edgecolor="black",
-                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.4)
-            ax1.text(x[i] + width/2, 0.10, "N/A", ha="center", va="bottom",
-                     fontsize=5.5, color=OI["gray"])
+    # Value labels on bars
+    for bar in bars_g:
+        h = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2, h + 0.02,
+                 f"{h:.2f}", ha="center", va="bottom", fontsize=6,
+                 color=OI["blue"], fontweight="bold")
+    for bar in bars_r:
+        h = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2, h + 0.02,
+                 f"{h:.2f}", ha="center", va="bottom", fontsize=6,
+                 color=OI["orange"], fontweight="bold")
 
     ax1.set_xticks(x)
-    ax1.set_xticklabels(conditions, fontsize=6)
-    ax1.set_ylabel("Score")
-    ax1.set_ylim(0, 1.25)
+    ax1.set_xticklabels(conditions, fontsize=6.5)
+    ax1.set_ylabel("Score", fontsize=8)
+    ax1.set_ylim(0, 1.2)
     ax1.grid(axis="y", alpha=0.25)
 
     # Secondary axis for number of recommendations
     ax2 = ax1.twinx()
-    ax2.plot(x, n_recs, "D-", color=OI["purple"], markersize=4,
-             linewidth=1.0, zorder=4)
-    ax2.set_ylabel("Avg. Recommendations", color=OI["purple"], fontsize=7)
-    ax2.tick_params(axis="y", labelcolor=OI["purple"], labelsize=6.5)
+    ax2.plot(x, n_recs, "D-", color=OI["green"], markersize=5,
+             linewidth=1.2, zorder=4, label="# Recs")
+    for i, nr in enumerate(n_recs):
+        ax2.text(x[i], nr + 0.15, f"{nr:.1f}", ha="center", va="bottom",
+                 fontsize=6, color=OI["green"], fontweight="bold")
+    ax2.set_ylabel("# Recommendations", color=OI["green"], fontsize=7)
+    ax2.tick_params(axis="y", labelcolor=OI["green"], labelsize=6.5)
     ax2.set_ylim(0, 5.5)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(0.5)
 
-    # Legend
-    bar_gnd = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
-    bar_rp = mpatches.Patch(facecolor=OI["cyan"], alpha=0.7, label="Rec. Precision")
-    line_patch = plt.Line2D([0], [0], color=OI["purple"], marker="D",
-                            markersize=3, label="Avg. recs")
-    ax1.legend(handles=[bar_gnd, bar_rp, line_patch], loc="upper center",
-               fontsize=5.5, framealpha=0.8, ncol=3)
+    # Legend inside chart
+    bar_gnd = mpatches.Patch(facecolor=OI["blue"], label="Groundedness")
+    bar_rp = mpatches.Patch(facecolor=OI["orange"], hatch="//",
+                            label="Rec. Precision")
+    line_patch = plt.Line2D([0], [0], color=OI["green"], marker="D",
+                            markersize=4, label="# Recs")
+    ax1.legend(handles=[bar_gnd, bar_rp, line_patch], loc="upper right",
+               bbox_to_anchor=(0.99, 0.99),
+               fontsize=6.5, framealpha=0.95, edgecolor="#cccccc",
+               borderpad=0.4)
 
-    fig.tight_layout()
-    save_fig(fig, "fig_ablation_trackb")
+    # Save as fig_ablation_pipeline (what paper references)
+    save_fig(fig, "fig_ablation_pipeline")
 
 
 # ===========================================================================
