@@ -1,0 +1,386 @@
+[
+  {
+    "workload": "dlio_shuffle_heavy",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9966,
+          "access_pattern": 0.9911
+        },
+        "strategy": "Increase transfer size and sequentialize file access",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 65536 to 1048576 to reduce syscall overhead and improve access granularity (Evidence 1 and 3)",
+          "Set sample_shuffle and file_shuffle to 'off' to enable sequential file access and improve access pattern (Evidence 2)"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 7160.2,
+          "tokens_input": 2027,
+          "tokens_output": 185,
+          "timestamp": "2026-04-06T01:26:55Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 1000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 3,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 181.92907667160034,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9984,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0131,
+          "healthy": 0.0013
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.71,
+        "new_bw": 43.9397800144443,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9966,
+          "access_pattern": 0.9911
+        },
+        "strategy": "Increase transfer size and sequentialize access pattern",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length to 1048576 bytes to reduce the number of I/O operations and increase transfer size, addressing the access_granularity bottleneck.",
+          "Set sample_shuffle and file_shuffle to 'off' to sequentialize the access pattern, addressing the access_pattern bottleneck."
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 7573.7,
+          "tokens_input": 2224,
+          "tokens_output": 180,
+          "timestamp": "2026-04-06T01:30:05Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 1000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 3,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 122.01838564872742,
+        "new_predictions": {
+          "access_granularity": 0.9998,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9984,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0374,
+          "healthy": 0.0008
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.03,
+        "new_bw": 1.7402005046368318,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9966,
+          "access_pattern": 0.9911
+        },
+        "strategy": "Increase transfer size and sequentialize access pattern",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length to 1048576 bytes to reduce the number of I/O operations and alleviate excessive syscall overhead (Evidence 1 and 3).",
+          "Set sample_shuffle and file_shuffle to 'off' to enable sequential access pattern and improve read-ahead and prefetching (Evidence 2)."
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 18932.0,
+          "tokens_input": 2224,
+          "tokens_output": 186,
+          "timestamp": "2026-04-06T01:32:26Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 1000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 3,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 121.84579825401306,
+        "new_predictions": {
+          "access_granularity": 0.9996,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9996,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0386,
+          "healthy": 0.0013
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.05,
+        "new_bw": 2.8013403347344545,
+        "rollback": true
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9966,
+          "access_pattern": 0.9911
+        },
+        "strategy": "Increase transfer size and sequentialize access pattern",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length to 1048576 bytes to reduce the number of I/O operations and increase transfer size, addressing the access_granularity bottleneck.",
+          "Set sample_shuffle and file_shuffle to 'off' to sequentialize the access pattern, addressing the access_pattern bottleneck."
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 4906.1,
+          "tokens_input": 2224,
+          "tokens_output": 164,
+          "timestamp": "2026-04-06T01:34:33Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 1000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 3,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 121.74474883079529,
+        "new_predictions": {
+          "access_granularity": 0.9997,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9977,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0272,
+          "healthy": 0.0009
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 1.02,
+        "new_bw": 63.09806602511461
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9997,
+          "access_pattern": 0.9977
+        },
+        "strategy": "Increase transfer size and sequentialize file access",
+        "config_changes": {
+          "record_length": 4194304,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 1048576 to 4194304 to reduce the number of I/O operations and increase transfer size, addressing the access_granularity bottleneck.",
+          "Set sample_shuffle and file_shuffle to 'off' to enable sequential file access and reduce the impact of random file access on performance, addressing the access_pattern bottleneck."
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 7017.1,
+          "tokens_input": 2209,
+          "tokens_output": 193,
+          "timestamp": "2026-04-06T01:36:41Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 4194304,
+          "num_files_train": 1000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 3,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 122.29752087593079,
+        "new_predictions": {
+          "access_granularity": 0.9997,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9996,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0219,
+          "healthy": 0.0008
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.66,
+        "new_bw": 40.71919555675606,
+        "rollback": true
+      }
+    ],
+    "best_iteration": 3,
+    "best_speedup": 1.02,
+    "best_config": {
+      "record_length": 1048576,
+      "num_files_train": 1000,
+      "num_samples_per_file": 1,
+      "batch_size": 1,
+      "read_threads": 1,
+      "computation_time": 0.01,
+      "epochs": 3,
+      "format": "npz",
+      "sample_shuffle": "off",
+      "file_shuffle": "off",
+      "seed": 42
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0072,
+    "total_tokens": 11816,
+    "total_llm_latency_ms": 45589.1,
+    "total_execution_time_s": 669.8355302810669,
+    "baseline_bw": 61.73350865952891,
+    "baseline_metrics": {
+      "total_bw_mb_s": 387.2018565899763,
+      "write_bw_mb_s": 61.73350865952891,
+      "read_bw_mb_s": 392.25158092258533,
+      "avg_write_size": 200.553050397878,
+      "seq_write_ratio": 0.993368700265252,
+      "small_io_ratio": 0.634689601940677,
+      "metadata_time_ratio": 0.9945607294031126,
+      "POSIX_BYTES_WRITTEN": 151217.0,
+      "POSIX_WRITES": 754.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 57.052223443984985,
+      "nprocs": 1
+    },
+    "total_iterations": 5
+  }
+]

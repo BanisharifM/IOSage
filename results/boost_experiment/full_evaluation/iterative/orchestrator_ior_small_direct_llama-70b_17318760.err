@@ -1,0 +1,42 @@
+2026-04-06 01:22:45 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:45 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:45 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:47 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:47 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:47 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:47 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:47 [INFO] Workloads: ['ior_small_direct']
+2026-04-06 01:22:47 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:47 [INFO] ======================================================================
+2026-04-06 01:22:47 [INFO] ITERATIVE OPTIMIZATION: ior_small_direct (run 0)
+2026-04-06 01:22:47 [INFO]   Bottleneck: access_granularity
+2026-04-06 01:22:47 [INFO]   Description: Small I/O with O_DIRECT (4KB transfers)
+2026-04-06 01:22:47 [INFO] ======================================================================
+2026-04-06 01:22:47 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:47 [INFO]   Submitted SLURM job 17318815
+2026-04-06 01:25:49 [INFO]   Job 17318815: COMPLETED (183s)
+2026-04-06 01:25:50 [INFO]   Darshan log: mbanisha_ior_id17318815-2971730_4-6-5002-5927647621821120788_2.darshan
+2026-04-06 01:25:50 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:25:50 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:25:50 [INFO]   Baseline BW: 1.61 MB/s
+2026-04-06 01:25:50 [INFO]   Initial detection: ['access_granularity']
+2026-04-06 01:25:50 [INFO]   KB matches: 3
+2026-04-06 01:25:50 [INFO] 
+2026-04-06 01:25:50 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:25:54 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:25:58 [INFO]   Strategy: Increase transfer size to reduce syscall overhead
+2026-04-06 01:25:58 [INFO]   Changes: ['Increased transfer size from 4096 to 1048576 to reduce syscall overhead, as suggested by KB evidence']
+2026-04-06 01:25:58 [INFO]   Executing: ior -a POSIX -t 1048576 -b 1048576 -s 100 -F -e -C -w -r -O useO_DIRECT=1 -o /work/hdd/bdau/mbanisharifdehkordi/bench_sc
+2026-04-06 01:25:58 [INFO]   Submitted SLURM job 17318886
+2026-04-06 01:27:29 [INFO]   Job 17318886: COMPLETED (90s)
+2026-04-06 01:27:29 [INFO]   Darshan log: mbanisha_ior_id17318886-3584239_4-6-5231-9373971001017848513_1.darshan
+2026-04-06 01:27:29 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:27:29 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:27:29 [INFO]   Result: BW=19.56 MB/s, speedup=12.19x
+2026-04-06 01:27:29 [INFO]   NEW BEST: 12.19x at iteration 0
+2026-04-06 01:27:29 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:27:29 [INFO] 
+2026-04-06 01:27:29 [INFO] ======================================================================
+2026-04-06 01:27:29 [INFO] RESULT: ior_small_direct -- 1 iterations, best=12.19x, status=converged, cost=$0.0013
+2026-04-06 01:27:29 [INFO] ======================================================================
+2026-04-06 01:27:29 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_small_direct_llama-70b.json

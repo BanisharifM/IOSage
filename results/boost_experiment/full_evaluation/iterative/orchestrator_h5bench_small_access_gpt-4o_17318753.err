@@ -1,0 +1,89 @@
+2026-04-06 01:22:43 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:43 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:43 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:45 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:45 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:45 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:45 [INFO] IterativeOptimizer: model=gpt-4o, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:45 [INFO] Workloads: ['h5bench_small_access']
+2026-04-06 01:22:45 [INFO] Model: gpt-4o, Runs: 1, Max iterations: 5
+2026-04-06 01:22:45 [INFO] ======================================================================
+2026-04-06 01:22:45 [INFO] ITERATIVE OPTIMIZATION: h5bench_small_access (run 0)
+2026-04-06 01:22:45 [INFO]   Bottleneck: access_granularity
+2026-04-06 01:22:45 [INFO]   Description: Small DIM_1 with independent I/O (small HDF5 writes per rank)
+2026-04-06 01:22:45 [INFO] ======================================================================
+2026-04-06 01:22:45 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:45 [INFO]   Submitted SLURM job 17318785
+2026-04-06 01:23:45 [INFO]   Job 17318785: COMPLETED (60s)
+2026-04-06 01:23:45 [INFO]   Darshan log: mbanisha_h5bench_read_id17318785-954893_4-6-5004-6033090028596223934_1.darshan
+2026-04-06 01:23:46 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:46 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:46 [INFO]   Baseline BW: 20.44 MB/s
+2026-04-06 01:23:46 [INFO]   Initial detection: ['interface_choice']
+2026-04-06 01:23:46 [INFO]   KB matches: 3
+2026-04-06 01:23:46 [INFO] 
+2026-04-06 01:23:46 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:23:48 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:23:49 [INFO]   Strategy: Enable collective I/O to optimize interface choice for shared-file parallel I/O.
+2026-04-06 01:23:49 [INFO]   Changes: ['Enabled COLLECTIVE_DATA to switch from independent to collective I/O, which coordinates access among ranks and reduces contention.']
+2026-04-06 01:23:49 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:23:50 [INFO]   Submitted SLURM job 17318839
+2026-04-06 01:24:50 [INFO]   Job 17318839: COMPLETED (60s)
+2026-04-06 01:24:50 [INFO]   Darshan log: mbanisha_h5bench_read_id17318839-955400_4-6-5080-6107853200103633742_1.darshan
+2026-04-06 01:24:50 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:24:50 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:24:50 [INFO]   Result: BW=877.65 MB/s, speedup=42.95x
+2026-04-06 01:24:50 [INFO]   NEW BEST: 42.95x at iteration 0
+2026-04-06 01:24:50 [INFO] 
+2026-04-06 01:24:50 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:24:51 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:24:52 [INFO]   Strategy: Enable collective metadata operations to improve parallelism efficiency by reduc
+2026-04-06 01:24:52 [INFO]   Changes: ['Enabled COLLECTIVE_METADATA to reduce metadata contention and improve parallelism efficiency.']
+2026-04-06 01:24:52 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:24:52 [INFO]   Submitted SLURM job 17318862
+2026-04-06 01:30:53 [INFO]   Job 17318862: COMPLETED (361s)
+2026-04-06 01:30:53 [INFO]   Darshan log: mbanisha_h5bench_read_id17318862-957540_4-6-5450-17020743484292605528_1.darshan
+2026-04-06 01:30:53 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:30:53 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:30:53 [INFO]   Result: BW=767.97 MB/s, speedup=37.58x
+2026-04-06 01:30:53 [INFO] 
+2026-04-06 01:30:53 [INFO] --- Iteration 3/5 ---
+2026-04-06 01:30:54 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:30:57 [INFO]   Strategy: Increase DIM_1 to improve parallelism efficiency by reducing the number of small
+2026-04-06 01:30:57 [INFO]   Changes: ['Increased DIM_1 from 1024 to 4096 to reduce the number of small I/O operations, which helps in balancing the I/O load across ranks and improving parallelism efficiency.']
+2026-04-06 01:30:57 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:30:57 [INFO]   Submitted SLURM job 17318964
+2026-04-06 01:31:57 [INFO]   Job 17318964: COMPLETED (60s)
+2026-04-06 01:31:57 [INFO]   Darshan log: mbanisha_h5bench_read_id17318964-958045_4-6-5488-4082408429425389729_1.darshan
+2026-04-06 01:31:57 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:31:57 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:31:57 [INFO]   Result: BW=281.32 MB/s, speedup=13.77x
+2026-04-06 01:31:57 [INFO] 
+2026-04-06 01:31:57 [INFO] --- Iteration 4/5 ---
+2026-04-06 01:31:58 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:31:59 [INFO]   Strategy: Increase DIM_1 to improve parallelism efficiency by reducing the number of small
+2026-04-06 01:31:59 [INFO]   Changes: ['Increased DIM_1 from 4096 to 16384 to reduce the number of small I/O operations, which helps in distributing the I/O load more evenly across MPI ranks.']
+2026-04-06 01:31:59 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:32:00 [INFO]   Submitted SLURM job 17318984
+2026-04-06 01:33:00 [INFO]   Job 17318984: COMPLETED (60s)
+2026-04-06 01:33:00 [INFO]   Darshan log: mbanisha_h5bench_read_id17318984-958731_4-6-5560-16272842104390897215_1.darshan
+2026-04-06 01:33:00 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:33:00 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:33:00 [INFO]   Result: BW=549.95 MB/s, speedup=26.91x
+2026-04-06 01:33:00 [INFO] 
+2026-04-06 01:33:00 [INFO] --- Iteration 5/5 ---
+2026-04-06 01:33:00 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:33:02 [INFO]   Strategy: Increase DIM_1 to improve parallelism efficiency by reducing the number of small
+2026-04-06 01:33:02 [INFO]   Changes: ['Increased DIM_1 from 16384 to 65536 to reduce the number of small I/O operations and improve load distribution across ranks.']
+2026-04-06 01:33:02 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:33:03 [INFO]   Submitted SLURM job 17318995
+2026-04-06 01:34:03 [INFO]   Job 17318995: COMPLETED (60s)
+2026-04-06 01:34:03 [INFO]   Darshan log: mbanisha_h5bench_read_id17318995-959416_4-6-5632-1404142967813989215_1.darshan
+2026-04-06 01:34:03 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:34:03 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:34:03 [INFO]   Result: BW=852.30 MB/s, speedup=41.71x
+2026-04-06 01:34:03 [INFO] 
+2026-04-06 01:34:03 [INFO] ======================================================================
+2026-04-06 01:34:03 [INFO] RESULT: h5bench_small_access -- 5 iterations, best=42.95x, status=max_iterations_reached, cost=$0.0333
+2026-04-06 01:34:03 [INFO] ======================================================================
+2026-04-06 01:34:03 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_h5bench_small_access_gpt-4o.json

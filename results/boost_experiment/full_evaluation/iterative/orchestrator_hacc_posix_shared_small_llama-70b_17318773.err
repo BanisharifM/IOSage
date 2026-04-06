@@ -1,0 +1,68 @@
+2026-04-06 01:22:52 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:52 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:52 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:23:02 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:23:02 [INFO]   KB loaded: 623 entries
+2026-04-06 01:23:03 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:23:03 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:23:03 [INFO] Workloads: ['hacc_posix_shared_small']
+2026-04-06 01:23:03 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:23:03 [INFO] ======================================================================
+2026-04-06 01:23:03 [INFO] ITERATIVE OPTIMIZATION: hacc_posix_shared_small (run 0)
+2026-04-06 01:23:03 [INFO]   Bottleneck: interface_choice
+2026-04-06 01:23:03 [INFO]   Description: POSIX shared file with small particles (should use MPI-IO)
+2026-04-06 01:23:03 [INFO] ======================================================================
+2026-04-06 01:23:03 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:23:03 [INFO]   Submitted SLURM job 17318832
+2026-04-06 01:23:33 [INFO]   Job 17318832: COMPLETED (30s)
+2026-04-06 01:23:33 [INFO]   Darshan log: mbanisha_hacc_io_posix_shared_id17318832-2190601_4-6-5002-1569725339206146701_1.darshan
+2026-04-06 01:23:34 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:34 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:34 [INFO]   Baseline BW: 293.59 MB/s
+2026-04-06 01:23:34 [INFO]   Initial detection: ['parallelism_efficiency', 'interface_choice', 'throughput_utilization']
+2026-04-06 01:23:35 [INFO]   KB matches: 3
+2026-04-06 01:23:35 [INFO] 
+2026-04-06 01:23:35 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:25:25 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:25:30 [INFO]   Strategy: Switch to MPI-IO with collective buffering to improve parallelism efficiency and
+2026-04-06 01:25:30 [INFO]   Changes: ['Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice', 'Enabled collective buffering to reduce small I/O operations and improve throughput utilization']
+2026-04-06 01:25:30 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ite
+2026-04-06 01:25:31 [INFO]   Submitted SLURM job 17318875
+2026-04-06 01:26:01 [INFO]   Job 17318875: COMPLETED (30s)
+2026-04-06 01:26:01 [INFO]   Darshan log: mbanisha_hacc_io_mpiio_shared_id17318875-942500_4-6-5156-17299258238203333392_1.darshan
+2026-04-06 01:26:02 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:26:02 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:26:02 [INFO]   Result: BW=136.91 MB/s, speedup=0.47x
+2026-04-06 01:26:02 [WARNING]   REGRESSION: 0.47x -- rolling back
+2026-04-06 01:26:02 [INFO] 
+2026-04-06 01:26:02 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:26:02 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:26:07 [INFO]   Strategy: Switch to MPI-IO with collective buffering to improve parallelism efficiency and
+2026-04-06 01:26:07 [INFO]   Changes: ['Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice', 'Enabled collective buffering to reduce overhead and improve throughput']
+2026-04-06 01:26:07 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ite
+2026-04-06 01:26:08 [INFO]   Submitted SLURM job 17318888
+2026-04-06 01:27:38 [INFO]   Job 17318888: COMPLETED (91s)
+2026-04-06 01:27:38 [INFO]   Darshan log: mbanisha_hacc_io_mpiio_shared_id17318888-3648206_4-6-5231-2343949849593660323_1.darshan
+2026-04-06 01:27:38 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:27:38 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:27:38 [INFO]   Result: BW=218.52 MB/s, speedup=0.74x
+2026-04-06 01:27:38 [WARNING]   REGRESSION: 0.74x -- rolling back
+2026-04-06 01:27:38 [INFO] 
+2026-04-06 01:27:38 [INFO] --- Iteration 3/5 ---
+2026-04-06 01:27:39 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:27:43 [INFO]   Strategy: Switch to MPI-IO with collective buffering to improve parallelism efficiency and
+2026-04-06 01:27:43 [INFO]   Changes: ['Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice', 'Enabled collective buffering to reduce overhead of small I/O operations']
+2026-04-06 01:27:43 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ite
+2026-04-06 01:27:43 [INFO]   Submitted SLURM job 17318912
+2026-04-06 01:28:43 [INFO]   Job 17318912: COMPLETED (60s)
+2026-04-06 01:28:43 [INFO]   Darshan log: mbanisha_hacc_io_mpiio_shared_id17318912-779360_4-6-5304-8624114327918901387_1.darshan
+2026-04-06 01:28:43 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:28:43 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:28:43 [INFO]   Result: BW=329.38 MB/s, speedup=1.12x
+2026-04-06 01:28:43 [INFO]   NEW BEST: 1.12x at iteration 2
+2026-04-06 01:28:43 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:28:43 [INFO] 
+2026-04-06 01:28:43 [INFO] ======================================================================
+2026-04-06 01:28:43 [INFO] RESULT: hacc_posix_shared_small -- 3 iterations, best=1.12x, status=converged, cost=$0.0041
+2026-04-06 01:28:43 [INFO] ======================================================================
+2026-04-06 01:28:43 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_hacc_posix_shared_small_llama-70b.json

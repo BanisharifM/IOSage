@@ -1,0 +1,212 @@
+[
+  {
+    "workload": "mdtest_metadata_storm",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 1.0
+        },
+        "strategy": "Reduce file count and batch metadata operations",
+        "config_changes": {
+          "items_per_rank": 1000,
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Reduced items_per_rank from 10000 to 1000 to decrease file count and metadata operations",
+          "Set unique_dir to true to enable shared directory and reduce file metadata operations"
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n5000_r32_rep3_229",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep2_228",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 16038.2,
+          "tokens_input": 1771,
+          "tokens_output": 166,
+          "timestamp": "2026-04-06T01:32:06Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 1000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 122.99941492080688,
+        "new_predictions": {
+          "access_granularity": 0.0015,
+          "metadata_intensity": 0.9954,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0011,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0011,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 0.45,
+        "new_bw": 0.001511255996371663,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 1.0
+        },
+        "strategy": "Reduce file count and batch metadata operations",
+        "config_changes": {
+          "items_per_rank": 1000,
+          "unique_dir": true
+        },
+        "changes_made": [
+          "Reduced items_per_rank from 10000 to 1000 to decrease file count and metadata operations",
+          "Set unique_dir to true to use a shared directory for all ranks, reducing file metadata operations"
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n5000_r32_rep3_229",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep2_228",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 8446.5,
+          "tokens_input": 1955,
+          "tokens_output": 164,
+          "timestamp": "2026-04-06T01:34:18Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 1000,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": true
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 93.64082312583923,
+        "new_predictions": {
+          "access_granularity": 0.0017,
+          "metadata_intensity": 0.9917,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0009,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0016,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "metadata_intensity"
+        ],
+        "speedup": 1.24,
+        "new_bw": 0.004184887101654994
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "metadata_intensity"
+        ],
+        "predictions": {
+          "metadata_intensity": 0.9917
+        },
+        "strategy": "Reduce file count and batch metadata operations",
+        "config_changes": {
+          "items_per_rank": 100,
+          "unique_dir": false
+        },
+        "changes_made": [
+          "Reduced items_per_rank from 1000 to 100 to decrease file count and metadata operations",
+          "Set unique_dir to false to enable shared directory and reduce metadata operations"
+        ],
+        "kb_citations": [
+          "mdtest_mdtest_meta_cross_n5000_r32_rep3_229",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep2_228",
+          "mdtest_mdtest_meta_cross_n5000_r32_rep1_227"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 4638.7,
+          "tokens_input": 1939,
+          "tokens_output": 157,
+          "timestamp": "2026-04-06T01:35:56Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "items_per_rank": 100,
+          "write_bytes": 100,
+          "files_only": true,
+          "unique_dir": false
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 30.546293258666992,
+        "new_predictions": {
+          "access_granularity": 0.0021,
+          "metadata_intensity": 0.0002,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0031,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0021,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0002
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 1.33,
+        "new_bw": 0.004493343448604732
+      }
+    ],
+    "best_iteration": 2,
+    "best_speedup": 1.33,
+    "best_config": {
+      "items_per_rank": 100,
+      "write_bytes": 100,
+      "files_only": true,
+      "unique_dir": false
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0037,
+    "total_tokens": 6152,
+    "total_llm_latency_ms": 29123.4,
+    "total_execution_time_s": 247.1865313053131,
+    "baseline_bw": 0.0033758075828709093,
+    "baseline_metrics": {
+      "total_bw_mb_s": 0.0033758075828709093,
+      "write_bw_mb_s": 0.0033758075828709093,
+      "read_bw_mb_s": 0.0,
+      "avg_write_size": 100.0,
+      "seq_write_ratio": 0.0,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.5809161402052568,
+      "POSIX_BYTES_WRITTEN": 1638400.0,
+      "POSIX_WRITES": 16384.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 485.3536653518677,
+      "nprocs": 16
+    },
+    "total_iterations": 3
+  }
+]

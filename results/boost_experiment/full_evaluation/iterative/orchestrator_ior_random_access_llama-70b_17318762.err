@@ -1,0 +1,54 @@
+2026-04-06 01:22:44 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:44 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:44 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:46 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:46 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:46 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:46 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:46 [INFO] Workloads: ['ior_random_access']
+2026-04-06 01:22:46 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO] ITERATIVE OPTIMIZATION: ior_random_access (run 0)
+2026-04-06 01:22:46 [INFO]   Bottleneck: access_pattern
+2026-04-06 01:22:46 [INFO]   Description: Random offset access (-z flag)
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:46 [INFO]   Submitted SLURM job 17318796
+2026-04-06 01:23:46 [INFO]   Job 17318796: COMPLETED (60s)
+2026-04-06 01:23:46 [INFO]   Darshan log: mbanisha_ior_id17318796-2298452_4-6-5002-4680340556177058073_1.darshan
+2026-04-06 01:23:46 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:46 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:46 [INFO]   Baseline BW: 102.00 MB/s
+2026-04-06 01:23:46 [INFO]   Initial detection: ['access_granularity', 'access_pattern']
+2026-04-06 01:23:46 [INFO]   KB matches: 3
+2026-04-06 01:23:46 [INFO] 
+2026-04-06 01:23:46 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:23:48 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:23:55 [INFO]   Strategy: Fix access_granularity and access_pattern bottlenecks by increasing transfer siz
+2026-04-06 01:23:55 [INFO]   Changes: ['Increased transfer size from 65536 to 1048576 to reduce syscall overhead and improve access granularity', 'Disabled random offsets (-z flag) to enable sequential access patterns and improve read-ahead and prefetching']
+2026-04-06 01:23:55 [INFO]   Executing: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/
+2026-04-06 01:23:56 [INFO]   Submitted SLURM job 17318850
+2026-04-06 01:25:26 [INFO]   Job 17318850: COMPLETED (90s)
+2026-04-06 01:25:26 [INFO]   Darshan log: mbanisha_ior_id17318850-942027_4-6-5079-2138018953872152769_1.darshan
+2026-04-06 01:25:26 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:25:26 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:25:26 [INFO]   Result: BW=42.52 MB/s, speedup=0.42x
+2026-04-06 01:25:26 [WARNING]   REGRESSION: 0.42x -- rolling back
+2026-04-06 01:25:26 [INFO] 
+2026-04-06 01:25:26 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:25:26 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:25:35 [INFO]   Strategy: Increase transfer size to reduce syscall overhead and enable sequential access
+2026-04-06 01:25:35 [INFO]   Changes: ['Increased transfer size to 1048576 bytes to reduce syscall overhead and improve access granularity', 'Removed -z flag to enable sequential access and improve access pattern']
+2026-04-06 01:25:35 [INFO]   Executing: ior -a POSIX -t 1048576 -b 1048576 -s 100 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/i
+2026-04-06 01:25:35 [INFO]   Submitted SLURM job 17318878
+2026-04-06 01:26:05 [INFO]   Job 17318878: COMPLETED (30s)
+2026-04-06 01:26:05 [INFO]   Darshan log: mbanisha_ior_id17318878-2304089_4-6-5155-14213851062887947458_1.darshan
+2026-04-06 01:26:05 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:26:05 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:26:05 [INFO]   Result: BW=101.62 MB/s, speedup=1.00x
+2026-04-06 01:26:05 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:26:05 [INFO] 
+2026-04-06 01:26:05 [INFO] ======================================================================
+2026-04-06 01:26:05 [INFO] RESULT: ior_random_access -- 2 iterations, best=1.00x, status=converged, cost=$0.0027
+2026-04-06 01:26:05 [INFO] ======================================================================
+2026-04-06 01:26:05 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_random_access_llama-70b.json

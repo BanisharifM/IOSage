@@ -1,0 +1,71 @@
+{
+  "n_samples": 131151,
+  "old_model": {
+    "access_granularity": {
+      "rate_pct": 30.8,
+      "count": 40329
+    },
+    "metadata_intensity": {
+      "rate_pct": 0.8,
+      "count": 1046
+    },
+    "parallelism_efficiency": {
+      "rate_pct": 1.6,
+      "count": 2133
+    },
+    "access_pattern": {
+      "rate_pct": 5.2,
+      "count": 6867
+    },
+    "interface_choice": {
+      "rate_pct": 1.2,
+      "count": 1530
+    },
+    "file_strategy": {
+      "rate_pct": 1.4,
+      "count": 1863
+    },
+    "throughput_utilization": {
+      "rate_pct": 20.4,
+      "count": 26820
+    },
+    "healthy": {
+      "rate_pct": 54.2,
+      "count": 71104
+    }
+  },
+  "new_model": {
+    "access_granularity": {
+      "rate_pct": 30.8,
+      "count": 40330
+    },
+    "metadata_intensity": {
+      "rate_pct": 0.8,
+      "count": 1065
+    },
+    "parallelism_efficiency": {
+      "rate_pct": 1.6,
+      "count": 2134
+    },
+    "access_pattern": {
+      "rate_pct": 5.2,
+      "count": 6863
+    },
+    "interface_choice": {
+      "rate_pct": 1.2,
+      "count": 1530
+    },
+    "file_strategy": {
+      "rate_pct": 1.4,
+      "count": 1859
+    },
+    "throughput_utilization": {
+      "rate_pct": 20.4,
+      "count": 26815
+    },
+    "healthy": {
+      "rate_pct": 54.2,
+      "count": 71058
+    }
+  }
+}

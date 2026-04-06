@@ -1,0 +1,43 @@
+2026-04-06 01:22:44 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:44 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:44 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:46 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:46 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:46 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:46 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:46 [INFO] Workloads: ['ior_misaligned']
+2026-04-06 01:22:46 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO] ITERATIVE OPTIMIZATION: ior_misaligned (run 0)
+2026-04-06 01:22:46 [INFO]   Bottleneck: access_granularity
+2026-04-06 01:22:46 [INFO]   Description: Non-power-of-2 transfer size (1000 bytes)
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:46 [INFO]   Submitted SLURM job 17318804
+2026-04-06 01:28:17 [INFO]   Job 17318804: COMPLETED (331s)
+2026-04-06 01:28:17 [INFO]   Darshan log: mbanisha_ior_id17318804-2972045_4-6-5004-11993612590364430284_2.darshan
+2026-04-06 01:28:17 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:28:17 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:28:17 [INFO]   Baseline BW: 0.35 MB/s
+2026-04-06 01:28:17 [INFO]   Initial detection: ['access_granularity']
+2026-04-06 01:28:17 [INFO]   KB matches: 3
+2026-04-06 01:28:17 [INFO] 
+2026-04-06 01:28:17 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:28:20 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:28:25 [INFO]   Strategy: Increase transfer size from 1000 bytes to 1MB to reduce syscall overhead while m
+2026-04-06 01:28:25 [INFO]   Changes: ['Increased transfer_size from 1000 bytes to 1048576 bytes (1MB) to eliminate small I/O overhead', 'Kept block_size and segments unchanged to maintain same total data volume (50MB per process)', 'This reduces syscalls per process from 50,000 to ~48, dramatically reducing kernel overhead']
+2026-04-06 01:28:25 [WARNING]   Config validation warnings: ['block_size 1000000 not a multiple of transfer_size 1048576, adjusted to 1048576']
+2026-04-06 01:28:25 [INFO]   Executing: ior -a POSIX -t 1048576 -b 1048576 -s 50 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/it
+2026-04-06 01:28:25 [INFO]   Submitted SLURM job 17318924
+2026-04-06 01:29:25 [INFO]   Job 17318924: COMPLETED (60s)
+2026-04-06 01:29:25 [INFO]   Darshan log: mbanisha_ior_id17318924-2503533_4-6-5339-11406087098867523269_1.darshan
+2026-04-06 01:29:25 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:29:25 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:29:25 [INFO]   Result: BW=55.39 MB/s, speedup=158.72x
+2026-04-06 01:29:25 [INFO]   NEW BEST: 158.72x at iteration 0
+2026-04-06 01:29:25 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:29:25 [INFO] 
+2026-04-06 01:29:25 [INFO] ======================================================================
+2026-04-06 01:29:25 [INFO] RESULT: ior_misaligned -- 1 iterations, best=158.72x, status=converged, cost=$0.0116
+2026-04-06 01:29:25 [INFO] ======================================================================
+2026-04-06 01:29:25 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_misaligned_claude.json

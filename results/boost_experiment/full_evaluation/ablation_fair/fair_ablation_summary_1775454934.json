@@ -1,0 +1,50 @@
+{
+  "C0": {
+    "name": "Full pipeline",
+    "avg_groundedness": 1.0,
+    "avg_n_recs": 1.75,
+    "avg_latency_ms": 19253.175,
+    "n_workloads": 8,
+    "n_errors": 0
+  },
+  "C1": {
+    "name": "w/o ML classifier",
+    "avg_groundedness": 1.0,
+    "avg_n_recs": 4.0,
+    "avg_latency_ms": 24968.3875,
+    "n_workloads": 8,
+    "n_errors": 0
+  },
+  "C2": {
+    "name": "w/o knowledge grounding",
+    "avg_groundedness": 0.0,
+    "avg_n_recs": 2.25,
+    "avg_latency_ms": 17942.25,
+    "n_workloads": 8,
+    "n_errors": 0
+  },
+  "C3": {
+    "name": "w/o feature attribution",
+    "avg_groundedness": 1.0,
+    "avg_n_recs": 1.75,
+    "avg_latency_ms": 13123.55,
+    "n_workloads": 8,
+    "n_errors": 0
+  },
+  "C4": {
+    "name": "Detection only (no recommendations)",
+    "avg_groundedness": null,
+    "avg_n_recs": null,
+    "avg_latency_ms": null,
+    "n_workloads": 8,
+    "n_errors": 0
+  },
+  "C5": {
+    "name": "LLM only (no ML, no KB)",
+    "avg_groundedness": 0.0,
+    "avg_n_recs": 4.125,
+    "avg_latency_ms": 8994.8875,
+    "n_workloads": 8,
+    "n_errors": 0
+  }
+}

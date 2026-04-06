@@ -135,11 +135,18 @@ def run_c1_no_ml(pipeline, features, workload_name):
 
 
 def run_c2_no_kb(pipeline, features, workload_name):
-    """C2: No KB — ML + SHAP detect, but LLM gets no KB entries."""
+    """C2: No KB — ML detects, but LLM gets no KB entries.
+
+    SHAP removed from pipeline (Entry 77); pass empty shap_features.
+    This condition tests KB contribution, not SHAP.
+    """
     predictions, detected = pipeline.detector.detect_from_features(features)
-    X = np.array([[features.get(col, 0) for col in pipeline.detector.feature_cols]],
-                  dtype=np.float32)
-    shap_features = pipeline.explainer.explain(X, detected_dims=detected)
+    # SHAP is no longer in the online pipeline — use empty features
+    shap_features = {}
+    if pipeline.explainer is not None:
+        X = np.array([[features.get(col, 0) for col in pipeline.detector.feature_cols]],
+                      dtype=np.float32)
+        shap_features = pipeline.explainer.explain(X, detected_dims=detected)
     darshan_summary = _build_darshan_summary(features)
 
     # Build prompt WITHOUT KB entries — pass empty list
@@ -183,19 +190,18 @@ def run_c3_no_shap(pipeline, features, workload_name):
 
 
 def run_c4_ml_only(pipeline, features, workload_name):
-    """C4: ML detection only — no LLM recommendation."""
+    """C4: ML detection only — no LLM recommendation.
+
+    SHAP removed from pipeline (Entry 77). Detection-only does not need SHAP.
+    """
     predictions, detected = pipeline.detector.detect_from_features(features)
-    X = np.array([[features.get(col, 0) for col in pipeline.detector.feature_cols]],
-                  dtype=np.float32)
-    shap_features = pipeline.explainer.explain(X, detected_dims=detected)
 
     return {
         "condition": "C4_detection_only",
         "workload": workload_name,
-        "has_ml": True, "has_shap": True, "has_kb": False,
+        "has_ml": True, "has_shap": False, "has_kb": False,
         "detected": detected,
         "predictions": {k: round(v, 4) for k, v in predictions.items()},
-        "shap_top_features": {dim: feats[:3] for dim, feats in shap_features.items()},
         "recommendation": None,
         "metadata": {"latency_ms": 0, "tokens_input": 0, "tokens_output": 0},
         "groundedness": {"groundedness_score": None, "note": "No LLM — no recommendations"},
@@ -275,13 +281,22 @@ def _build_darshan_summary(features):
 
 
 def _normalize_result(result, condition, workload_name, has_ml, has_shap, has_kb):
-    """Normalize pipeline.analyze() output to standard format."""
+    """Normalize pipeline.analyze() output to standard format.
+
+    Pipeline output keys changed when SHAP was removed (Entry 77):
+    Old: step4_recommendation  New: step3_recommendation
+    Also handles step1_detection vs step2_detection naming.
+    """
     if isinstance(result, dict):
-        # Extract from pipeline output format
-        gnd = result.get("groundedness", result.get("step4_recommendation", {}).get("groundedness", {}))
-        rec = result.get("recommendation", result.get("step4_recommendation", {}).get("parsed"))
-        meta = result.get("metadata", result.get("step4_recommendation", {}).get("metadata", {}))
-        det = result.get("detected", result.get("step2_detection", {}).get("detected", []))
+        # Extract from pipeline output format — try both old and new key names
+        rec_step = (result.get("step3_recommendation") or
+                    result.get("step4_recommendation") or {})
+        gnd = result.get("groundedness", rec_step.get("groundedness", {}))
+        rec = result.get("recommendation", rec_step.get("parsed"))
+        meta = result.get("metadata", rec_step.get("metadata", {}))
+        det = result.get("detected",
+                         result.get("step1_detection", {}).get("detected",
+                         result.get("step2_detection", {}).get("detected", [])))
 
         return {
             "condition": condition,

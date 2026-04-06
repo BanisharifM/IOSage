@@ -59,23 +59,24 @@ OI = COLORS
 
 RCPARAMS_SC2026 = {
     # Fonts — serif to match IEEE body text
+    # IEEE guideline: ~9-10pt for readability in two-column format
     "font.family": "serif",
     "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
-    "font.size": 8,
+    "font.size": 9,
     "mathtext.fontset": "stix",
 
     # Axes
-    "axes.titlesize": 9,
-    "axes.labelsize": 8,
+    "axes.titlesize": 10,
+    "axes.labelsize": 9,
     "axes.linewidth": 0.5,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "axes.grid": True,
     "axes.axisbelow": True,
 
-    # Ticks
-    "xtick.labelsize": 7,
-    "ytick.labelsize": 7,
+    # Ticks — increased from 7 to 8 to prevent y-axis overlap
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
     "xtick.major.width": 0.5,
     "ytick.major.width": 0.5,
     "xtick.major.size": 3,
@@ -84,7 +85,7 @@ RCPARAMS_SC2026 = {
     "ytick.direction": "out",
 
     # Legend
-    "legend.fontsize": 7,
+    "legend.fontsize": 8,
     "legend.frameon": False,
     "legend.handlelength": 1.5,
 
@@ -93,11 +94,11 @@ RCPARAMS_SC2026 = {
     "grid.linestyle": "--",
     "grid.linewidth": 0.5,
 
-    # Figure
+    # Figure — increased pad_inches to prevent y-axis clipping
     "figure.dpi": 150,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.02,
+    "savefig.pad_inches": 0.05,
 
     # Lines
     "lines.linewidth": 1.0,
@@ -143,9 +144,9 @@ def fig_closed_loop_speedup():
     geo_mean = 7.7
 
     x = np.arange(len(labels))
-    width = 0.32
+    width = 0.28
 
-    fig, ax = plt.subplots(figsize=(3.5, 2.8))
+    fig, ax = plt.subplots(figsize=(3.5, 2.5))
 
     bars_b = ax.bar(x - width / 2, before, width,
                     color=OI["vermilion"], edgecolor="black", linewidth=0.4,
@@ -160,37 +161,27 @@ def fig_closed_loop_speedup():
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(
         lambda v, _: f"{v:,.0f}" if v >= 1 else f"{v:.1f}"))
 
-    # Geometric mean line
-    ax.axhline(geo_mean * before.min(), color=OI["gray"], linestyle=":",
-               linewidth=0.6, alpha=0.0)  # hidden helper
-
-    # Speedup annotations
+    # Speedup annotations — use black for readability
     for i, sp in enumerate(speedups):
         y_top = max(before[i], after[i])
         ax.annotate(
-            f"{sp}x",
-            xy=(x[i], y_top * 1.25),
+            f"{sp}\u00d7",
+            xy=(x[i], y_top * 1.3),
             ha="center", va="bottom",
-            fontsize=7, fontweight="bold", color=OI["blue"],
+            fontsize=8, fontweight="bold", color="black",
         )
 
-    # Geo-mean annotation (dashed horizontal)
-    # Compute a representative bandwidth: geo_mean of after values for reference
-    ax.axhline(geo_mean, color=OI["blue"], linestyle="--", linewidth=0.8,
-               alpha=0.0)  # not meaningful on bandwidth axis
-
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=7)
-    ax.set_ylabel("Write Bandwidth (MiB/s)")
-    ax.legend(loc="upper left", fontsize=6.5, framealpha=0.8)
+    ax.set_xticklabels(labels, fontsize=8)
+    ax.set_ylabel("Write Bandwidth (MiB/s)", labelpad=8)
+    ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
     ax.grid(axis="y", alpha=0.25, which="both")
 
-    # Add text for geo mean
-    ax.text(0.98, 0.02, f"Geometric mean: {geo_mean}x",
-            transform=ax.transAxes, ha="right", va="bottom",
-            fontsize=6.5, style="italic", color=OI["blue"])
+    # Geometric mean — place above the figure as subtitle, not inside bars
+    ax.set_title(f"Geometric mean: {geo_mean}\u00d7", fontsize=9,
+                 style="italic", pad=8)
 
-    fig.tight_layout()
+    fig.tight_layout(pad=1.2)
     save_fig(fig, "fig_closed_loop_speedup")
 
 

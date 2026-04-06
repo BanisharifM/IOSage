@@ -1,0 +1,157 @@
+[
+  {
+    "workload": "hacc_posix_shared_small",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "interface_choice": 0.7937,
+          "throughput_utilization": 0.6072
+        },
+        "strategy": "Switch from POSIX to MPI-IO with collective buffering to fix interface choice and enable better throughput utilization through aggregated writes",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Changed executable from posix_shared to mpiio_shared to fix interface_choice bottleneck - MPI-IO provides better coordination for shared file access",
+          "Enabled collective_buffering to fix throughput_utilization bottleneck - ROMIO will aggregate small writes from multiple ranks into larger transfers",
+          "Kept num_particles=200 to maintain same data volume for fair comparison"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 97665.3,
+          "tokens_input": 2266,
+          "tokens_output": 333,
+          "timestamp": "2026-04-06T01:25:30Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 30.337404251098633,
+        "new_predictions": {
+          "access_granularity": 0.0015,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9772,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0804,
+          "file_strategy": 0.1493,
+          "throughput_utilization": 0.2588,
+          "healthy": 0.0065
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 1.52,
+        "new_bw": 328.8779647531659
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9772
+        },
+        "strategy": "Increase particle count to create larger I/O operations and better amortize overhead across ranks",
+        "config_changes": {
+          "num_particles": 2000
+        },
+        "changes_made": [
+          "Increased num_particles from 200 to 2000 (10x increase) to create larger I/O operations per rank",
+          "This increases data volume from ~7.6KB to ~76KB per rank (38 bytes * particles), reducing small I/O ratio",
+          "Larger operations better amortize system call overhead and improve parallelism efficiency",
+          "Maintains MPI-IO shared file approach with collective buffering for optimal coordination"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6289.2,
+          "tokens_input": 2460,
+          "tokens_output": 314,
+          "timestamp": "2026-04-06T01:26:06Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 2000,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 90.55868148803711,
+        "new_predictions": {
+          "access_granularity": 0.0013,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.165,
+          "access_pattern": 0.0,
+          "interface_choice": 0.1867,
+          "file_strategy": 0.0003,
+          "throughput_utilization": 0.0161,
+          "healthy": 0.0112
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 1.09,
+        "new_bw": 235.68296964329363
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 1.52,
+    "best_config": {
+      "executable": "mpiio_shared",
+      "num_particles": 200,
+      "collective_buffering": "enabled"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0239,
+    "total_tokens": 5373,
+    "total_llm_latency_ms": 103954.5,
+    "total_execution_time_s": 120.89608573913574,
+    "baseline_bw": 216.5645613868542,
+    "baseline_metrics": {
+      "total_bw_mb_s": 397.38683983752804,
+      "write_bw_mb_s": 216.5645613868542,
+      "read_bw_mb_s": 2407.7898668080816,
+      "avg_write_size": 174396.0275862069,
+      "seq_write_ratio": 0.993103448275862,
+      "small_io_ratio": 0.8827586206896552,
+      "metadata_time_ratio": 0.5134262782970926,
+      "POSIX_BYTES_WRITTEN": 25287424.0,
+      "POSIX_WRITES": 145.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 0.5219259262084961,
+      "nprocs": 16
+    },
+    "total_iterations": 2
+  }
+]

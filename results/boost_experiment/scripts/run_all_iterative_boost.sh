@@ -72,6 +72,7 @@ echo "Start: \$(date)"
     --model "${model}" \
     --max-iterations 5 \
     --n-runs 1 \
+    --no-shap \
     --output "${OUTDIR}/trackc_${wl}_${mname}.json"
 
 echo "End: \$(date)"

@@ -1,0 +1,92 @@
+2026-04-06 01:22:47 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:47 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:47 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:51 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:51 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:51 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:51 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:51 [INFO] Workloads: ['h5bench_indep_vs_coll']
+2026-04-06 01:22:51 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:51 [INFO] ======================================================================
+2026-04-06 01:22:51 [INFO] ITERATIVE OPTIMIZATION: h5bench_indep_vs_coll (run 0)
+2026-04-06 01:22:51 [INFO]   Bottleneck: interface_choice
+2026-04-06 01:22:51 [INFO]   Description: Independent HDF5 I/O vs collective (should use collective)
+2026-04-06 01:22:51 [INFO] ======================================================================
+2026-04-06 01:22:51 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:51 [INFO]   Submitted SLURM job 17318829
+2026-04-06 01:23:51 [INFO]   Job 17318829: COMPLETED (60s)
+2026-04-06 01:23:51 [INFO]   Darshan log: mbanisha_h5bench_read_id17318829-2610318_4-6-5010-3259546517713073519_1.darshan
+2026-04-06 01:23:52 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:52 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:52 [INFO]   Baseline BW: 1079.74 MB/s
+2026-04-06 01:23:52 [INFO]   Initial detection: ['interface_choice']
+2026-04-06 01:23:52 [INFO]   KB matches: 3
+2026-04-06 01:23:52 [INFO] 
+2026-04-06 01:23:52 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:25:24 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:25:32 [INFO]   Strategy: Enable collective I/O for improved performance
+2026-04-06 01:25:32 [INFO]   Changes: ['Enabled collective I/O by setting COLLECTIVE_DATA to YES, which allows multiple ranks to write to the same file simultaneously, improving performance.']
+2026-04-06 01:25:32 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:25:32 [INFO]   Submitted SLURM job 17318877
+2026-04-06 01:31:04 [INFO]   Job 17318877: COMPLETED (331s)
+2026-04-06 01:31:04 [INFO]   Darshan log: mbanisha_h5bench_read_id17318877-1638050_4-6-5452-14650404169650407606_1.darshan
+2026-04-06 01:31:04 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:31:04 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:31:04 [INFO]   Result: BW=1689.63 MB/s, speedup=1.56x
+2026-04-06 01:31:04 [INFO]   NEW BEST: 1.56x at iteration 0
+2026-04-06 01:31:04 [INFO] 
+2026-04-06 01:31:04 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:31:04 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:31:21 [INFO]   Strategy: Enable collective metadata operations to improve parallelism efficiency
+2026-04-06 01:31:21 [INFO]   Changes: ['Enabled collective metadata operations to reduce overhead and improve parallelism efficiency. This change is based on the evidence from KB entries h5bench_h5b_indep_small_n16_r1_464, h5bench_h5b_indep_small_n16_r2_465, and h5bench_h5b_indep_small_n16_r2_417, which suggest that using collective I/O can improve performance.']
+2026-04-06 01:31:21 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:31:21 [INFO]   Submitted SLURM job 17318972
+2026-04-06 01:32:22 [INFO]   Job 17318972: COMPLETED (60s)
+2026-04-06 01:32:22 [INFO]   Darshan log: mbanisha_h5bench_read_id17318972-958550_4-6-5523-18138118312777566605_1.darshan
+2026-04-06 01:32:22 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:32:22 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:32:22 [INFO]   Result: BW=1541.75 MB/s, speedup=1.43x
+2026-04-06 01:32:22 [INFO] 
+2026-04-06 01:32:22 [INFO] --- Iteration 3/5 ---
+2026-04-06 01:32:22 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:32:31 [INFO]   Strategy: Enable collective I/O and adjust memory/file patterns for better performance
+2026-04-06 01:32:31 [INFO]   Changes: ['Enabled collective I/O (COLLECTIVE_DATA=YES) to improve parallelism efficiency by allowing ranks to coordinate their I/O operations.', 'Enabled collective metadata I/O (COLLECTIVE_METADATA=YES) to reduce metadata overhead.', 'Changed memory pattern to INTERLEAVED (MEM_PATTERN=INTERLEAVED) to improve data locality and reduce memory access overhead.']
+2026-04-06 01:32:32 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:32:32 [INFO]   Submitted SLURM job 17318992
+2026-04-06 01:33:32 [INFO]   Job 17318992: COMPLETED (60s)
+2026-04-06 01:33:32 [INFO]   Darshan log: mbanisha_h5bench_write_id17318992-959192_4-6-5594-11484049244217481111_1.darshan
+2026-04-06 01:33:32 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:33:32 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:33:32 [INFO]   Result: BW=17.55 MB/s, speedup=0.02x
+2026-04-06 01:33:32 [WARNING]   REGRESSION: 0.02x -- rolling back
+2026-04-06 01:33:32 [INFO] 
+2026-04-06 01:33:32 [INFO] --- Iteration 4/5 ---
+2026-04-06 01:33:32 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:33:46 [INFO]   Strategy: Enable collective metadata operations to improve parallelism efficiency
+2026-04-06 01:33:46 [INFO]   Changes: ['Enabled collective metadata operations by setting COLLECTIVE_METADATA to YES. This change helps to reduce the overhead of metadata operations and improve parallelism efficiency, as seen in KB entries h5bench_h5b_indep_small_n16_r1_464, h5bench_h5b_indep_small_n16_r2_465, and h5bench_h5b_indep_small_n16_r2_417.']
+2026-04-06 01:33:46 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:33:46 [INFO]   Submitted SLURM job 17319007
+2026-04-06 01:34:46 [INFO]   Job 17319007: COMPLETED (60s)
+2026-04-06 01:34:46 [INFO]   Darshan log: mbanisha_h5bench_read_id17319007-959916_4-6-5669-2552155558581118072_1.darshan
+2026-04-06 01:34:46 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:34:46 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:34:46 [INFO]   Result: BW=1851.95 MB/s, speedup=1.72x
+2026-04-06 01:34:46 [INFO]   NEW BEST: 1.72x at iteration 3
+2026-04-06 01:34:46 [INFO] 
+2026-04-06 01:34:46 [INFO] --- Iteration 5/5 ---
+2026-04-06 01:34:46 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:34:54 [INFO]   Strategy: Enable collective I/O and adjust memory/file patterns for better parallelism eff
+2026-04-06 01:34:54 [INFO]   Changes: ['Enabled collective I/O (COLLECTIVE_DATA=YES, COLLECTIVE_METADATA=YES) to improve parallelism efficiency by allowing ranks to coordinate their I/O operations.', 'Changed memory pattern to INTERLEAVED (MEM_PATTERN=INTERLEAVED) to reduce memory access contention and improve data locality.', 'Changed file pattern to INTERLEAVED (FILE_PATTERN=INTERLEAVED) to match the memory pattern and reduce file access contention.']
+2026-04-06 01:34:54 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/h5bench/build/h5bench_write /work/hdd/bdau/mbanisharifdehkordi/SC (phase 1)
+2026-04-06 01:34:55 [INFO]   Submitted SLURM job 17319028
+2026-04-06 01:35:55 [INFO]   Job 17319028: COMPLETED (60s)
+2026-04-06 01:35:55 [INFO]   Darshan log: mbanisha_h5bench_write_id17319028-2913382_4-6-5740-1916423014006513454_1.darshan
+2026-04-06 01:35:55 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:35:55 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:35:56 [INFO]   Result: BW=41.91 MB/s, speedup=0.04x
+2026-04-06 01:35:56 [WARNING]   REGRESSION: 0.04x -- rolling back
+2026-04-06 01:35:56 [INFO] 
+2026-04-06 01:35:56 [INFO] ======================================================================
+2026-04-06 01:35:56 [INFO] RESULT: h5bench_indep_vs_coll -- 5 iterations, best=1.72x, status=max_iterations_reached, cost=$0.0065
+2026-04-06 01:35:56 [INFO] ======================================================================
+2026-04-06 01:35:56 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_h5bench_indep_vs_coll_llama-70b.json

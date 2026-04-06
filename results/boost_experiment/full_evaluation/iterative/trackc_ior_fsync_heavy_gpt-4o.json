@@ -1,0 +1,105 @@
+[
+  {
+    "workload": "ior_fsync_heavy",
+    "run_id": 0,
+    "model": "gpt-4o",
+    "model_id": "openai/gpt-4o",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 0.9053
+        },
+        "strategy": "Increase transfer size to reduce syscall overhead by aggregating small writes into larger buffers.",
+        "config_changes": {
+          "transfer_size": "1048576",
+          "extra_flags": "-e -C -w -r"
+        },
+        "changes_made": [
+          "Increased transfer_size from 65536 to 1048576 to reduce the number of syscalls by aggregating writes into larger chunks.",
+          "Removed the -Y flag to avoid fsync after every write, which can further reduce overhead and improve throughput."
+        ],
+        "kb_citations": [
+          "ior_ior_small_direct_t16384_n16_r3_53",
+          "ior_ior_small_direct_t8192_n16_r2_101",
+          "ior_ior_small_direct_t16384_n16_r3_108"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4o",
+          "latency_ms": 4700.4,
+          "tokens_input": 1958,
+          "tokens_output": 211,
+          "timestamp": "2026-04-06T01:26:52Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "POSIX",
+          "transfer_size": "1048576",
+          "block_size": "104857600",
+          "segments": "10",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.33508563041687,
+        "new_predictions": {
+          "access_granularity": 0.026,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0081,
+          "throughput_utilization": 0.0018,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 12.19,
+        "new_bw": 124.46426996959877
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 12.19,
+    "best_config": {
+      "api": "POSIX",
+      "transfer_size": "1048576",
+      "block_size": "104857600",
+      "segments": "10",
+      "file_per_proc": true,
+      "extra_flags": "-e -C -w -r"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.007,
+    "total_tokens": 2169,
+    "total_llm_latency_ms": 4700.4,
+    "total_execution_time_s": 60.33508563041687,
+    "baseline_bw": 10.208875977670774,
+    "baseline_metrics": {
+      "total_bw_mb_s": 20.325133085892332,
+      "write_bw_mb_s": 10.208875977670774,
+      "read_bw_mb_s": 2240.329256202953,
+      "avg_write_size": 65536.0,
+      "seq_write_ratio": 0.9999375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.0004322194711924088,
+      "POSIX_BYTES_WRITTEN": 16777216000.0,
+      "POSIX_WRITES": 256000.0,
+      "POSIX_FSYNCS": 256016.0,
+      "runtime_seconds": 176.12850713729858,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

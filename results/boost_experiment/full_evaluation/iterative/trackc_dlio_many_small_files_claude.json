@@ -1,0 +1,398 @@
+[
+  {
+    "workload": "dlio_many_small_files",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.9978
+        },
+        "strategy": "Fix access_granularity by increasing record_length to reduce syscall overhead, and fix access_pattern by disabling shuffling to enable sequential access",
+        "config_changes": {
+          "record_length": 65536,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 256B to 64KB to fix access_granularity - reduces syscall overhead by batching small I/O into larger transfers",
+          "Set sample_shuffle=off to fix access_pattern - enables sequential file access and OS read-ahead",
+          "Set file_shuffle=off to fix access_pattern - maintains sequential file ordering for better prefetching"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6568.4,
+          "tokens_input": 2389,
+          "tokens_output": 278,
+          "timestamp": "2026-04-06T01:27:59Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 65536,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.62769079208374,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9978,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0239,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 9.33,
+        "new_bw": 55.857410409773685
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.9978
+        },
+        "strategy": "Dramatically increase record size to fix access granularity bottleneck while consolidating files to reduce metadata overhead",
+        "config_changes": {
+          "record_length": 2097152,
+          "num_files_train": 64,
+          "num_samples_per_file": 31
+        },
+        "changes_made": [
+          "Increased record_length from 65536 to 2097152 (2MB) to fix access_granularity - KB shows transfers >=1MB eliminate syscall overhead",
+          "Reduced num_files_train from 2000 to 64 and increased num_samples_per_file from 1 to 31 to maintain same total data volume (2000 samples) while drastically reducing metadata operations",
+          "This consolidation reduces file open/close overhead from 2000 operations to 64 operations, addressing the 96% metadata time ratio"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 6700.2,
+          "tokens_input": 2628,
+          "tokens_output": 303,
+          "timestamp": "2026-04-06T01:29:37Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 2097152,
+          "num_files_train": 64,
+          "num_samples_per_file": 31,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 152.30631589889526,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9986,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0602,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.04,
+        "new_bw": 0.23651662503251053,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.9978
+        },
+        "strategy": "Consolidate tiny files into fewer larger files to reduce metadata overhead and enable larger I/O operations",
+        "config_changes": {
+          "num_files_train": 100,
+          "num_samples_per_file": 20,
+          "batch_size": 8,
+          "read_threads": 4
+        },
+        "changes_made": [
+          "Reduced num_files_train from 2000 to 100 (20x fewer files)",
+          "Increased num_samples_per_file from 1 to 20 (20x more data per file)",
+          "Increased batch_size from 1 to 8 to enable larger read operations",
+          "Increased read_threads from 1 to 4 to improve I/O parallelism",
+          "Maintains same total data volume: 100 files \u00d7 20 samples = 2000 total samples"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 8551.6,
+          "tokens_input": 2644,
+          "tokens_output": 433,
+          "timestamp": "2026-04-06T01:32:18Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 65536,
+          "num_files_train": 100,
+          "num_samples_per_file": 20,
+          "batch_size": 8,
+          "read_threads": 4,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.7054615020752,
+        "new_predictions": {
+          "access_granularity": 0.9982,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9956,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0337,
+          "healthy": 0.0005
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.46,
+        "new_bw": 2.7838449636869647,
+        "rollback": true
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.9978
+        },
+        "strategy": "Consolidate into fewer, larger files with many samples each to aggregate small writes and reduce metadata overhead",
+        "config_changes": {
+          "num_files_train": 20,
+          "num_samples_per_file": 100,
+          "batch_size": 32
+        },
+        "changes_made": [
+          "Reduced num_files_train from 2000 to 20 (100x fewer files) to drastically cut metadata operations",
+          "Increased num_samples_per_file from 1 to 100 to aggregate small writes within each file",
+          "Increased batch_size from 1 to 32 to improve read efficiency and amortize file open costs"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 9912.3,
+          "tokens_input": 2644,
+          "tokens_output": 426,
+          "timestamp": "2026-04-06T01:34:00Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 65536,
+          "num_files_train": 20,
+          "num_samples_per_file": 100,
+          "batch_size": 32,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.67693138122559,
+        "new_predictions": {
+          "access_granularity": 0.9984,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.996,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0092,
+          "healthy": 0.0006
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 4.61,
+        "new_bw": 27.620968707605634
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9984,
+          "access_pattern": 0.996
+        },
+        "strategy": "Maximize record size and consolidate files to achieve large I/O transfers while maintaining sequential access",
+        "config_changes": {
+          "record_length": 1048576,
+          "num_files_train": 1,
+          "num_samples_per_file": 2000,
+          "batch_size": 64,
+          "read_threads": 4
+        },
+        "changes_made": [
+          "Increased record_length to 1MB (1048576 bytes) to eliminate small I/O syscall overhead per Evidence 1&2",
+          "Reduced num_files_train to 1 file to minimize metadata operations and file opening overhead",
+          "Increased num_samples_per_file to 2000 to maintain total data volume while consolidating into fewer large files",
+          "Increased batch_size to 64 to amortize I/O overhead across larger data chunks",
+          "Increased read_threads to 4 to improve I/O parallelism and throughput utilization",
+          "Kept sample_shuffle=off and file_shuffle=off to maintain sequential access pattern per Evidence 3"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 7062.6,
+          "tokens_input": 2626,
+          "tokens_output": 371,
+          "timestamp": "2026-04-06T01:35:39Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 10,
+          "num_samples_per_file": 1000,
+          "batch_size": 64,
+          "read_threads": 4,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [
+          "num_files_train 1 below minimum 10"
+        ],
+        "executed": true,
+        "execution_time_s": 2468.9317278862,
+        "new_predictions": {
+          "access_granularity": 0.9989,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9978,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.01,
+          "healthy": 0.0012
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.06,
+        "new_bw": 0.3356557782164306,
+        "rollback": true
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 9.33,
+    "best_config": {
+      "record_length": 65536,
+      "num_files_train": 2000,
+      "num_samples_per_file": 1,
+      "batch_size": 1,
+      "read_threads": 1,
+      "computation_time": 0.01,
+      "epochs": 2,
+      "format": "npz",
+      "sample_shuffle": "off",
+      "file_shuffle": "off",
+      "seed": 42
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.066,
+    "total_tokens": 14742,
+    "total_llm_latency_ms": 38795.1,
+    "total_execution_time_s": 2896.2481274604797,
+    "baseline_bw": 5.986800590956241,
+    "baseline_metrics": {
+      "total_bw_mb_s": 319.6954904636887,
+      "write_bw_mb_s": 5.986800590956241,
+      "read_bw_mb_s": 384.6353545953557,
+      "avg_write_size": 198.7320717131474,
+      "seq_write_ratio": 0.9950199203187251,
+      "small_io_ratio": 0.6444897521193261,
+      "metadata_time_ratio": 0.9610997808204429,
+      "POSIX_BYTES_WRITTEN": 199527.0,
+      "POSIX_WRITES": 1004.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 26.918467044830322,
+      "nprocs": 1
+    },
+    "total_iterations": 5
+  }
+]

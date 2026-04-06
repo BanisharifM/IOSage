@@ -1,0 +1,54 @@
+2026-04-06 01:22:46 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:46 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:46 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:51 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:51 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:51 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:51 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:51 [INFO] Workloads: ['hacc_posix_shared_small']
+2026-04-06 01:22:51 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-06 01:22:51 [INFO] ======================================================================
+2026-04-06 01:22:51 [INFO] ITERATIVE OPTIMIZATION: hacc_posix_shared_small (run 0)
+2026-04-06 01:22:51 [INFO]   Bottleneck: interface_choice
+2026-04-06 01:22:51 [INFO]   Description: POSIX shared file with small particles (should use MPI-IO)
+2026-04-06 01:22:51 [INFO] ======================================================================
+2026-04-06 01:22:51 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:51 [INFO]   Submitted SLURM job 17318830
+2026-04-06 01:23:52 [INFO]   Job 17318830: COMPLETED (60s)
+2026-04-06 01:23:52 [INFO]   Darshan log: mbanisha_hacc_io_posix_shared_id17318830-2190705_4-6-5002-4672265895608502714_1.darshan
+2026-04-06 01:23:52 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:52 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:52 [INFO]   Baseline BW: 216.56 MB/s
+2026-04-06 01:23:52 [INFO]   Initial detection: ['interface_choice', 'throughput_utilization']
+2026-04-06 01:23:52 [INFO]   KB matches: 3
+2026-04-06 01:23:52 [INFO] 
+2026-04-06 01:23:52 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:25:25 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:25:30 [INFO]   Strategy: Switch from POSIX to MPI-IO with collective buffering to fix interface choice an
+2026-04-06 01:25:30 [INFO]   Changes: ['Changed executable from posix_shared to mpiio_shared to fix interface_choice bottleneck - MPI-IO provides better coordination for shared file access', 'Enabled collective_buffering to fix throughput_utilization bottleneck - ROMIO will aggregate small writes from multiple ranks into larger transfers', 'Kept num_particles=200 to maintain same data volume for fair comparison']
+2026-04-06 01:25:30 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ite
+2026-04-06 01:25:30 [INFO]   Submitted SLURM job 17318874
+2026-04-06 01:26:00 [INFO]   Job 17318874: COMPLETED (30s)
+2026-04-06 01:26:00 [INFO]   Darshan log: mbanisha_hacc_io_mpiio_shared_id17318874-3583318_4-6-5156-9165941554662898292_1.darshan
+2026-04-06 01:26:00 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:26:00 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:26:00 [INFO]   Result: BW=328.88 MB/s, speedup=1.52x
+2026-04-06 01:26:00 [INFO]   NEW BEST: 1.52x at iteration 0
+2026-04-06 01:26:00 [INFO] 
+2026-04-06 01:26:00 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:26:01 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:26:07 [INFO]   Strategy: Increase particle count to create larger I/O operations and better amortize over
+2026-04-06 01:26:07 [INFO]   Changes: ['Increased num_particles from 200 to 2000 (10x increase) to create larger I/O operations per rank', 'This increases data volume from ~7.6KB to ~76KB per rank (38 bytes * particles), reducing small I/O ratio', 'Larger operations better amortize system call overhead and improve parallelism efficiency']
+2026-04-06 01:26:07 [INFO]   Executing: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_mpiio_shared 2000 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/it
+2026-04-06 01:26:07 [INFO]   Submitted SLURM job 17318887
+2026-04-06 01:27:37 [INFO]   Job 17318887: COMPLETED (90s)
+2026-04-06 01:27:37 [INFO]   Darshan log: mbanisha_hacc_io_mpiio_shared_id17318887-3584264_4-6-5231-5819938043406173889_1.darshan
+2026-04-06 01:27:37 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:27:37 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:27:37 [INFO]   Result: BW=235.68 MB/s, speedup=1.09x
+2026-04-06 01:27:37 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:27:37 [INFO] 
+2026-04-06 01:27:37 [INFO] ======================================================================
+2026-04-06 01:27:37 [INFO] RESULT: hacc_posix_shared_small -- 2 iterations, best=1.52x, status=converged, cost=$0.0239
+2026-04-06 01:27:37 [INFO] ======================================================================
+2026-04-06 01:27:37 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_hacc_posix_shared_small_claude.json

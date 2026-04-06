@@ -1,0 +1,24 @@
+2026-04-06 01:22:44 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:44 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:44 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:46 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:46 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:46 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:46 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:46 [INFO] Workloads: ['custom_load_imbalance']
+2026-04-06 01:22:46 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO] ITERATIVE OPTIMIZATION: custom_load_imbalance (run 0)
+2026-04-06 01:22:46 [INFO]   Bottleneck: parallelism_efficiency
+2026-04-06 01:22:46 [INFO]   Description: Rank 0 writes 10x more data than other ranks
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:46 [INFO]   Submitted SLURM job 17318798
+2026-04-06 01:23:46 [INFO]   Job 17318798: COMPLETED (60s)
+2026-04-06 01:23:46 [INFO]   Darshan log: mbanisha_python_id17318798-2189912_4-6-5002-3541555555504011917_1.darshan
+2026-04-06 01:23:47 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:47 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:47 [INFO]   Baseline BW: 171.26 MB/s
+2026-04-06 01:23:47 [INFO]   Initial detection: ['healthy']
+2026-04-06 01:23:47 [INFO]   No bottlenecks detected -- already healthy
+2026-04-06 01:23:47 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_custom_load_imbalance_claude.json

@@ -1,0 +1,105 @@
+[
+  {
+    "workload": "ior_misaligned",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 1.0
+        },
+        "strategy": "Increase transfer size to reduce syscall overhead",
+        "config_changes": {
+          "transfer_size": "1048576"
+        },
+        "changes_made": [
+          "Increased transfer size from 1000 bytes to 1048576 bytes to reduce the number of syscalls and improve I/O efficiency."
+        ],
+        "kb_citations": [
+          "ior_ior_small_posix_t1024_n16_r3_29",
+          "ior_ior_misaligned_t1000_n16_r1_112",
+          "ior_ior_misaligned_t1000_n16_r3_114"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 8444.6,
+          "tokens_input": 1958,
+          "tokens_output": 154,
+          "timestamp": "2026-04-06T01:24:25Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "POSIX",
+          "transfer_size": "1048576",
+          "block_size": "1048576",
+          "segments": "50",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r"
+        },
+        "validation_errors": [
+          "block_size 1000000 not a multiple of transfer_size 1048576, adjusted to 1048576"
+        ],
+        "executed": true,
+        "execution_time_s": 60.41713857650757,
+        "new_predictions": {
+          "access_granularity": 0.0003,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0043,
+          "throughput_utilization": 0.0011,
+          "healthy": 0.1099
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 30.22,
+        "new_bw": 88.6241735968397
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 30.22,
+    "best_config": {
+      "api": "POSIX",
+      "transfer_size": "1048576",
+      "block_size": "1048576",
+      "segments": "50",
+      "file_per_proc": true,
+      "extra_flags": "-e -C -w -r"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0013,
+    "total_tokens": 2112,
+    "total_llm_latency_ms": 8444.6,
+    "total_execution_time_s": 60.41713857650757,
+    "baseline_bw": 2.932888826134621,
+    "baseline_metrics": {
+      "total_bw_mb_s": 5.798614853275064,
+      "write_bw_mb_s": 2.932888826134621,
+      "read_bw_mb_s": 253.21596128986494,
+      "avg_write_size": 1000.0,
+      "seq_write_ratio": 0.99998,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.004963354608545192,
+      "POSIX_BYTES_WRITTEN": 800000000.0,
+      "POSIX_WRITES": 800000.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 52.512859582901,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

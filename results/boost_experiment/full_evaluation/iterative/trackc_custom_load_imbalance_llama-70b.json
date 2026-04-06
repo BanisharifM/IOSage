@@ -1,0 +1,39 @@
+[
+  {
+    "workload": "custom_load_imbalance",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": null,
+    "final_status": "already_healthy",
+    "total_cost_usd": 0,
+    "total_tokens": 0,
+    "total_llm_latency_ms": 0,
+    "total_execution_time_s": 0,
+    "baseline_bw": 128.33697839259057,
+    "baseline_metrics": {
+      "total_bw_mb_s": 199.49839665319894,
+      "write_bw_mb_s": 128.33697839259057,
+      "read_bw_mb_s": 333.5194653049246,
+      "avg_write_size": 5242923.0,
+      "seq_write_ratio": 0.0,
+      "small_io_ratio": 0.5418994413407822,
+      "metadata_time_ratio": 0.8536419420231719,
+      "POSIX_BYTES_WRITTEN": 10485846.0,
+      "POSIX_WRITES": 2.0,
+      "POSIX_FSYNCS": 1.0,
+      "runtime_seconds": 3.6688122749328613,
+      "nprocs": 1
+    }
+  }
+]

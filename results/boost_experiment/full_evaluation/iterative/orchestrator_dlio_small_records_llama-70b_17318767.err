@@ -1,0 +1,92 @@
+2026-04-06 01:22:45 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:45 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:45 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:49 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:49 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:49 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:49 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:49 [INFO] Workloads: ['dlio_small_records']
+2026-04-06 01:22:49 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:49 [INFO] ======================================================================
+2026-04-06 01:22:49 [INFO] ITERATIVE OPTIMIZATION: dlio_small_records (run 0)
+2026-04-06 01:22:49 [INFO]   Bottleneck: access_granularity
+2026-04-06 01:22:49 [INFO]   Description: Small record reads (DL data loading with 1KB samples, like BERT tokenized text)
+2026-04-06 01:22:49 [INFO] ======================================================================
+2026-04-06 01:22:49 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:49 [INFO]   Submitted SLURM job 17318823
+2026-04-06 01:27:50 [INFO]   Job 17318823: COMPLETED (301s)
+2026-04-06 01:27:50 [INFO]   Darshan log: mbanisha_python3.9_id17318823-4134984_4-6-5209-3868513751207888593_1.darshan
+2026-04-06 01:27:52 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:27:52 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:27:53 [INFO]   Baseline BW: 55.14 MB/s
+2026-04-06 01:27:53 [INFO]   Initial detection: ['access_granularity', 'access_pattern']
+2026-04-06 01:27:53 [INFO]   KB matches: 3
+2026-04-06 01:27:53 [INFO] 
+2026-04-06 01:27:53 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:28:27 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:28:34 [INFO]   Strategy: Increase transfer size and sequentialize access pattern
+2026-04-06 01:28:34 [INFO]   Changes: ['Increased record_length from 1024 to 1048576 to reduce syscall overhead and improve access granularity', "Set sample_shuffle and file_shuffle to 'off' to enable sequential access pattern and improve read-ahead and prefetching"]
+2026-04-06 01:28:34 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 01:28:34 [INFO]   Submitted SLURM job 17318927
+2026-04-06 01:30:34 [INFO]   Job 17318927: COMPLETED (120s)
+2026-04-06 01:30:34 [INFO]   Darshan log: mbanisha_python3.9_id17318927-3209497_4-6-5393-18370059724012370706_1.darshan
+2026-04-06 01:30:35 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:30:35 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:30:35 [INFO]   Result: BW=41.75 MB/s, speedup=0.76x
+2026-04-06 01:30:35 [WARNING]   REGRESSION: 0.76x -- rolling back
+2026-04-06 01:30:35 [INFO] 
+2026-04-06 01:30:35 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:30:36 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:30:42 [INFO]   Strategy: Increase transfer size and sequentialize access pattern
+2026-04-06 01:30:42 [INFO]   Changes: ['Increased record_length to 1048576 bytes to reduce the number of I/O operations and increase the transfer size, addressing the access_granularity bottleneck.', "Set sample_shuffle and file_shuffle to 'off' to sequentialize the access pattern, addressing the access_pattern bottleneck."]
+2026-04-06 01:30:42 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 01:30:42 [INFO]   Submitted SLURM job 17318962
+2026-04-06 01:33:13 [INFO]   Job 17318962: COMPLETED (150s)
+2026-04-06 01:33:13 [INFO]   Darshan log: mbanisha_python3.9_id17318962-2153711_4-6-5536-843343274480139425_1.darshan
+2026-04-06 01:33:14 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:33:14 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:33:14 [INFO]   Result: BW=14.73 MB/s, speedup=0.27x
+2026-04-06 01:33:14 [WARNING]   REGRESSION: 0.27x -- rolling back
+2026-04-06 01:33:14 [INFO] 
+2026-04-06 01:33:14 [INFO] --- Iteration 3/5 ---
+2026-04-06 01:33:14 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:33:35 [INFO]   Strategy: Increase transfer size and sequentialize access pattern
+2026-04-06 01:33:35 [INFO]   Changes: ['Increased record_length to 1048576 bytes to reduce the number of small I/O operations and alleviate syscall overhead (Evidence 1 and 2).', "Set sample_shuffle and file_shuffle to 'off' to enable sequential access pattern and improve read-ahead and prefetching (Evidence 3)."]
+2026-04-06 01:33:35 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 01:33:35 [INFO]   Submitted SLURM job 17319004
+2026-04-06 01:35:05 [INFO]   Job 17319004: COMPLETED (90s)
+2026-04-06 01:35:05 [INFO]   Darshan log: mbanisha_python3.9_id17319004-1896656_4-6-5649-10017741900908428619_1.darshan
+2026-04-06 01:35:06 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:35:07 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:35:07 [INFO]   Result: BW=29.96 MB/s, speedup=0.54x
+2026-04-06 01:35:07 [WARNING]   REGRESSION: 0.54x -- rolling back
+2026-04-06 01:35:07 [INFO] 
+2026-04-06 01:35:07 [INFO] --- Iteration 4/5 ---
+2026-04-06 01:35:07 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:35:11 [INFO]   Strategy: Increase transfer size and sequentialize access pattern
+2026-04-06 01:35:11 [INFO]   Changes: ['Increased record_length to 1048576 bytes to reduce the number of I/O operations and increase the transfer size, addressing the access_granularity bottleneck.', "Set sample_shuffle and file_shuffle to 'off' to sequentialize the access pattern, addressing the access_pattern bottleneck."]
+2026-04-06 01:35:11 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 01:35:12 [INFO]   Submitted SLURM job 17319036
+2026-04-06 01:36:42 [INFO]   Job 17319036: COMPLETED (90s)
+2026-04-06 01:36:42 [INFO]   Darshan log: mbanisha_python3.9_id17319036-2156644_4-6-5753-15879834601083690102_1.darshan
+2026-04-06 01:36:43 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:36:43 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:36:43 [INFO]   Result: BW=57.99 MB/s, speedup=1.05x
+2026-04-06 01:36:43 [INFO]   NEW BEST: 1.05x at iteration 3
+2026-04-06 01:36:43 [INFO] 
+2026-04-06 01:36:43 [INFO] --- Iteration 5/5 ---
+2026-04-06 01:36:43 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:36:48 [INFO]   Strategy: Increase transfer size and sequentialize access pattern
+2026-04-06 01:36:48 [INFO]   Changes: ['Increased record_length to 1048576 bytes to reduce the number of small I/O operations and alleviate syscall overhead (Evidence 1 and 2).', "Set sample_shuffle and file_shuffle to 'off' to enable sequential access pattern and improve read-ahead and prefetching (Evidence 3)."]
+2026-04-06 01:36:48 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 01:36:48 [INFO]   Submitted SLURM job 17319066
+2026-04-06 01:39:48 [INFO]   Job 17319066: COMPLETED (180s)
+2026-04-06 01:39:48 [INFO]   Darshan log: mbanisha_python3.9_id17319066-2158946_4-6-5935-11400177415197422508_1.darshan
+2026-04-06 01:39:49 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:39:49 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:39:50 [INFO]   Result: BW=54.68 MB/s, speedup=0.99x
+2026-04-06 01:39:50 [INFO] 
+2026-04-06 01:39:50 [INFO] ======================================================================
+2026-04-06 01:39:50 [INFO] RESULT: dlio_small_records -- 5 iterations, best=1.05x, status=max_iterations_reached, cost=$0.0071
+2026-04-06 01:39:50 [INFO] ======================================================================
+2026-04-06 01:39:50 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_dlio_small_records_llama-70b.json

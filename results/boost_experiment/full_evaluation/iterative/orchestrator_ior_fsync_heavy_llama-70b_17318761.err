@@ -1,0 +1,55 @@
+2026-04-06 01:22:45 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:45 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:45 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:47 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:47 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:47 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:47 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:47 [INFO] Workloads: ['ior_fsync_heavy']
+2026-04-06 01:22:47 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:47 [INFO] ======================================================================
+2026-04-06 01:22:47 [INFO] ITERATIVE OPTIMIZATION: ior_fsync_heavy (run 0)
+2026-04-06 01:22:47 [INFO]   Bottleneck: throughput_utilization
+2026-04-06 01:22:47 [INFO]   Description: fsync after every write (-Y flag)
+2026-04-06 01:22:47 [INFO] ======================================================================
+2026-04-06 01:22:47 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:47 [INFO]   Submitted SLURM job 17318813
+2026-04-06 01:28:18 [INFO]   Job 17318813: COMPLETED (331s)
+2026-04-06 01:28:18 [INFO]   Darshan log: mbanisha_ior_id17318813-2971699_4-6-5002-13574062574379747811_1.darshan
+2026-04-06 01:28:18 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:28:18 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:28:18 [INFO]   Baseline BW: 6.93 MB/s
+2026-04-06 01:28:18 [INFO]   Initial detection: ['access_granularity']
+2026-04-06 01:28:18 [INFO]   KB matches: 3
+2026-04-06 01:28:18 [INFO] 
+2026-04-06 01:28:18 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:28:20 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:28:28 [INFO]   Strategy: Increase transfer size to reduce syscall overhead
+2026-04-06 01:28:28 [INFO]   Changes: ['Increased transfer size from 65536 to 1048576 to reduce the number of syscalls and improve I/O efficiency. This change is based on the KB evidence that suggests aggregating small writes into large buffers can improve performance.']
+2026-04-06 01:28:28 [INFO]   Executing: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -Y -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterati
+2026-04-06 01:28:28 [INFO]   Submitted SLURM job 17318926
+2026-04-06 01:32:29 [INFO]   Job 17318926: COMPLETED (241s)
+2026-04-06 01:32:29 [INFO]   Darshan log: mbanisha_ior_id17318926-2503491_4-6-5339-4641402165370336321_2.darshan
+2026-04-06 01:32:29 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:32:29 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:32:29 [INFO]   Result: BW=11.66 MB/s, speedup=1.68x
+2026-04-06 01:32:29 [INFO]   NEW BEST: 1.68x at iteration 0
+2026-04-06 01:32:29 [INFO] 
+2026-04-06 01:32:29 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:32:29 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:32:33 [INFO]   Strategy: Reduce excessive sync overhead by removing fsync after every write
+2026-04-06 01:32:33 [INFO]   Changes: ['Removed -Y flag to reduce excessive sync overhead']
+2026-04-06 01:32:33 [INFO]   Executing: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/
+2026-04-06 01:32:33 [INFO]   Submitted SLURM job 17318993
+2026-04-06 01:33:33 [INFO]   Job 17318993: COMPLETED (60s)
+2026-04-06 01:33:33 [INFO]   Darshan log: mbanisha_ior_id17318993-243763_4-6-5594-7085202633763621353_1.darshan
+2026-04-06 01:33:33 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:33:33 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:33:33 [INFO]   Result: BW=138.46 MB/s, speedup=19.98x
+2026-04-06 01:33:33 [INFO]   NEW BEST: 19.98x at iteration 1
+2026-04-06 01:33:33 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:33:33 [INFO] 
+2026-04-06 01:33:33 [INFO] ======================================================================
+2026-04-06 01:33:33 [INFO] RESULT: ior_fsync_heavy -- 2 iterations, best=19.98x, status=converged, cost=$0.0026
+2026-04-06 01:33:33 [INFO] ======================================================================
+2026-04-06 01:33:33 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_fsync_heavy_llama-70b.json

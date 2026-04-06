@@ -1,0 +1,24 @@
+2026-04-06 01:22:45 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:45 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:45 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:46 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:46 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:46 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:46 [INFO] IterativeOptimizer: model=llama-70b, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:46 [INFO] Workloads: ['h5bench_interleaved_pattern']
+2026-04-06 01:22:46 [INFO] Model: llama-70b, Runs: 1, Max iterations: 5
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO] ITERATIVE OPTIMIZATION: h5bench_interleaved_pattern (run 0)
+2026-04-06 01:22:46 [INFO]   Bottleneck: access_pattern
+2026-04-06 01:22:46 [INFO]   Description: Interleaved memory+file pattern causing non-contiguous I/O
+2026-04-06 01:22:46 [INFO] ======================================================================
+2026-04-06 01:22:46 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:47 [INFO]   Submitted SLURM job 17318810
+2026-04-06 01:23:47 [INFO]   Job 17318810: COMPLETED (60s)
+2026-04-06 01:23:47 [INFO]   Darshan log: mbanisha_h5bench_write_id17318810-3400746_4-6-5002-5505726170224829130_1.darshan
+2026-04-06 01:23:47 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:23:47 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:23:47 [INFO]   Baseline BW: 30.80 MB/s
+2026-04-06 01:23:47 [INFO]   Initial detection: ['healthy']
+2026-04-06 01:23:47 [INFO]   No bottlenecks detected -- already healthy
+2026-04-06 01:23:47 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_h5bench_interleaved_pattern_llama-70b.json

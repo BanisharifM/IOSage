@@ -1,0 +1,55 @@
+2026-04-06 01:22:46 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:46 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:46 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:50 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:50 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:50 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:50 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:50 [INFO] Workloads: ['mdtest_metadata_storm']
+2026-04-06 01:22:50 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-06 01:22:50 [INFO] ======================================================================
+2026-04-06 01:22:50 [INFO] ITERATIVE OPTIMIZATION: mdtest_metadata_storm (run 0)
+2026-04-06 01:22:50 [INFO]   Bottleneck: metadata_intensity
+2026-04-06 01:22:50 [INFO]   Description: Many file creates in shared directory
+2026-04-06 01:22:50 [INFO] ======================================================================
+2026-04-06 01:22:50 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:50 [INFO]   Submitted SLURM job 17318828
+2026-04-06 01:33:23 [INFO]   Job 17318828: COMPLETED (632s)
+2026-04-06 01:33:23 [INFO]   Darshan log: mbanisha_mdtest_id17318828-2190593_4-6-5002-8230407770439216653_1.darshan
+2026-04-06 01:33:26 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:33:26 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:33:26 [INFO]   Baseline BW: 0.00 MB/s
+2026-04-06 01:33:26 [INFO]   Initial detection: ['metadata_intensity']
+2026-04-06 01:33:26 [INFO]   KB matches: 3
+2026-04-06 01:33:26 [INFO] 
+2026-04-06 01:33:26 [INFO] --- Iteration 1/5 ---
+2026-04-06 01:34:43 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:34:48 [INFO]   Strategy: Reduce metadata intensity by significantly decreasing file count while maintaini
+2026-04-06 01:34:48 [INFO]   Changes: ['Reduced items_per_rank from 10,000 to 1,000 (10x fewer files per rank)', 'Increased write_bytes from 100 to 1,000 (10x larger writes per file)', 'Maintains same total data volume: 16 ranks × 1,000 files × 1,000 bytes = 16MB total']
+2026-04-06 01:34:48 [INFO]   Executing: mdtest -n 1000 -w 1000 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_cl
+2026-04-06 01:34:48 [INFO]   Submitted SLURM job 17319026
+2026-04-06 01:35:48 [INFO]   Job 17319026: COMPLETED (60s)
+2026-04-06 01:35:48 [INFO]   Darshan log: mbanisha_mdtest_id17319026-782464_4-6-5703-8916866152717606818_1.darshan
+2026-04-06 01:35:51 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:35:51 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:35:51 [INFO]   Result: BW=0.07 MB/s, speedup=24.20x
+2026-04-06 01:35:51 [INFO]   NEW BEST: 24.20x at iteration 0
+2026-04-06 01:35:51 [INFO] 
+2026-04-06 01:35:51 [INFO] --- Iteration 2/5 ---
+2026-04-06 01:35:52 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 01:35:57 [INFO]   Strategy: Reduce metadata intensity by dramatically decreasing file count while maintainin
+2026-04-06 01:35:57 [INFO]   Changes: ['Reduced items_per_rank from 1000 to 100 (10x fewer files per rank)', 'Increased write_bytes from 1000 to 10000 (10x larger files)', 'Maintains same total data volume: 100 files × 10000 bytes = 1000 files × 1000 bytes']
+2026-04-06 01:35:57 [INFO]   Executing: mdtest -n 100 -w 10000 -F -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_cl
+2026-04-06 01:35:57 [INFO]   Submitted SLURM job 17319049
+2026-04-06 01:36:28 [INFO]   Job 17319049: COMPLETED (30s)
+2026-04-06 01:36:28 [INFO]   Darshan log: mbanisha_mdtest_id17319049-782933_4-6-5776-8708445596069601407_1.darshan
+2026-04-06 01:36:28 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:36:28 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:36:28 [INFO]   Result: BW=0.43 MB/s, speedup=146.57x
+2026-04-06 01:36:28 [INFO]   NEW BEST: 146.57x at iteration 1
+2026-04-06 01:36:28 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 01:36:28 [INFO] 
+2026-04-06 01:36:28 [INFO] ======================================================================
+2026-04-06 01:36:28 [INFO] RESULT: mdtest_metadata_storm -- 2 iterations, best=146.57x, status=converged, cost=$0.0236
+2026-04-06 01:36:28 [INFO] ======================================================================
+2026-04-06 01:36:28 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_mdtest_metadata_storm_claude.json

@@ -1,0 +1,221 @@
+[
+  {
+    "workload": "hacc_posix_shared_small",
+    "run_id": 0,
+    "model": "llama-70b",
+    "model_id": "meta-llama/llama-3.1-70b-instruct",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "parallelism_efficiency",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.946,
+          "interface_choice": 0.7428,
+          "throughput_utilization": 0.566
+        },
+        "strategy": "Switch to MPI-IO with collective buffering to improve parallelism efficiency and interface choice",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice",
+          "Enabled collective buffering to reduce small I/O operations and improve throughput utilization"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 115785.4,
+          "tokens_input": 1933,
+          "tokens_output": 197,
+          "timestamp": "2026-04-06T01:25:30Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 31.731335163116455,
+        "new_predictions": {
+          "access_granularity": 0.0037,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.2556,
+          "access_pattern": 0.0,
+          "interface_choice": 0.2496,
+          "file_strategy": 0.007,
+          "throughput_utilization": 0.341,
+          "healthy": 0.0074
+        },
+        "new_detected": [
+          "throughput_utilization"
+        ],
+        "speedup": 0.47,
+        "new_bw": 136.9102566480003,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.946,
+          "interface_choice": 0.7428,
+          "throughput_utilization": 0.566
+        },
+        "strategy": "Switch to MPI-IO with collective buffering to improve parallelism efficiency and interface choice",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice",
+          "Enabled collective buffering to reduce overhead and improve throughput"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 4499.1,
+          "tokens_input": 2134,
+          "tokens_output": 187,
+          "timestamp": "2026-04-06T01:26:07Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 91.39134764671326,
+        "new_predictions": {
+          "access_granularity": 0.0247,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.1897,
+          "access_pattern": 0.0,
+          "interface_choice": 0.1729,
+          "file_strategy": 0.006,
+          "throughput_utilization": 0.2371,
+          "healthy": 0.0052
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 0.74,
+        "new_bw": 218.51883733313554,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "parallelism_efficiency",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.946,
+          "interface_choice": 0.7428,
+          "throughput_utilization": 0.566
+        },
+        "strategy": "Switch to MPI-IO with collective buffering to improve parallelism efficiency and interface choice",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Switched from POSIX shared file to MPI-IO shared file to improve parallelism efficiency and interface choice",
+          "Enabled collective buffering to reduce overhead of small I/O operations"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606"
+        ],
+        "metadata": {
+          "model": "meta-llama/llama-3.1-70b-instruct",
+          "latency_ms": 4353.2,
+          "tokens_input": 2134,
+          "tokens_output": 189,
+          "timestamp": "2026-04-06T01:27:43Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.489288330078125,
+        "new_predictions": {
+          "access_granularity": 0.0047,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.1319,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0754,
+          "file_strategy": 0.0045,
+          "throughput_utilization": 0.2268,
+          "healthy": 0.0047
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 1.12,
+        "new_bw": 329.37739279992303
+      }
+    ],
+    "best_iteration": 2,
+    "best_speedup": 1.12,
+    "best_config": {
+      "executable": "mpiio_shared",
+      "num_particles": 200,
+      "collective_buffering": "enabled"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0041,
+    "total_tokens": 6774,
+    "total_llm_latency_ms": 124637.7,
+    "total_execution_time_s": 183.61197113990784,
+    "baseline_bw": 293.58739442099727,
+    "baseline_metrics": {
+      "total_bw_mb_s": 524.1024832258377,
+      "write_bw_mb_s": 293.58739442099727,
+      "read_bw_mb_s": 2439.5791616730153,
+      "avg_write_size": 174396.0275862069,
+      "seq_write_ratio": 0.993103448275862,
+      "small_io_ratio": 0.8827586206896552,
+      "metadata_time_ratio": 0.3044044656483302,
+      "POSIX_BYTES_WRITTEN": 25287424.0,
+      "POSIX_WRITES": 145.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 0.4104952812194824,
+      "nprocs": 16
+    },
+    "total_iterations": 3
+  }
+]

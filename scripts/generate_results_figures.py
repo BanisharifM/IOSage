@@ -60,23 +60,24 @@ HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
 
 RCPARAMS_SC2026 = {
     # Fonts — serif to match IEEE body text
+    # IEEE guideline: ~9-10pt for readability in two-column format
     "font.family": "serif",
     "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
-    "font.size": 8,
+    "font.size": 9,
     "mathtext.fontset": "stix",
 
     # Axes
-    "axes.titlesize": 9,
-    "axes.labelsize": 8,
+    "axes.titlesize": 10,
+    "axes.labelsize": 9,
     "axes.linewidth": 0.5,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "axes.grid": True,
     "axes.axisbelow": True,
 
-    # Ticks
-    "xtick.labelsize": 7,
-    "ytick.labelsize": 7,
+    # Ticks — increased from 7 to 8 to prevent y-axis overlap
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
     "xtick.major.width": 0.5,
     "ytick.major.width": 0.5,
     "xtick.major.size": 3,
@@ -85,7 +86,7 @@ RCPARAMS_SC2026 = {
     "ytick.direction": "out",
 
     # Legend
-    "legend.fontsize": 7,
+    "legend.fontsize": 8,
     "legend.frameon": False,
     "legend.handlelength": 1.5,
 
@@ -94,11 +95,11 @@ RCPARAMS_SC2026 = {
     "grid.linestyle": "--",
     "grid.linewidth": 0.5,
 
-    # Figure
+    # Figure — increased pad_inches to prevent y-axis clipping
     "figure.dpi": 150,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.02,
+    "savefig.pad_inches": 0.05,
 
     # Lines
     "lines.linewidth": 1.0,
@@ -131,31 +132,30 @@ def fig_baseline_comparison():
     macro_f1 = [0.036, 0.240, 0.283, 0.282, 0.900]
 
     x = np.arange(len(methods))
-    width = 0.35
+    width = 0.28
 
-    fig, ax = plt.subplots(figsize=(7.16, 2.8))
+    fig, ax = plt.subplots(figsize=(7.16, 3.2))
     bars1 = ax.bar(x - width/2, micro_f1, width, label="Micro-F1",
                    color=COLORS["blue"], edgecolor="black", linewidth=0.4, hatch="")
     bars2 = ax.bar(x + width/2, macro_f1, width, label="Macro-F1",
                    color=COLORS["orange"], edgecolor="black", linewidth=0.4, hatch="//")
 
-    ax.set_ylabel("F1 Score")
-    ax.set_title("Baseline Comparison on Ground-Truth Test Set (n=436)")
+    ax.set_ylabel("F1 Score", labelpad=8)
     ax.set_xticks(x)
     ax.set_xticklabels(methods)
-    ax.set_ylim(0, 1.05)
-    ax.legend()
+    ax.set_ylim(0, 1.12)
+    ax.legend(loc="upper left")
     ax.grid(axis="y", alpha=0.3)
 
     # Add value labels
     for bar in bars1:
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=6.5)
+                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=8)
     for bar in bars2:
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=6.5)
+                f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=8)
 
-    fig.tight_layout()
+    fig.tight_layout(pad=1.2)
     path = FIG_DIR / "fig_baseline_comparison.pdf"
     save_fig(fig, path)
 
@@ -166,32 +166,28 @@ def fig_training_progression():
     phase2_f1 = [0.926, 1.000, 1.000, 0.690, 0.956, 0.903, 0.899, 0.824]
 
     x = np.arange(len(DIMS))
-    width = 0.35
+    width = 0.28
 
-    fig, ax = plt.subplots(figsize=(7.16, 2.8))
-    bars1 = ax.bar(x - width/2, phase1_f1, width, label="Phase 1 (Heuristic Only)",
+    fig, ax = plt.subplots(figsize=(7.16, 3.2))
+    bars1 = ax.bar(x - width/2, phase1_f1, width, label="Drishti (Heuristic)",
                    color=COLORS["vermilion"], edgecolor="black", linewidth=0.4, hatch="//")
-    bars2 = ax.bar(x + width/2, phase2_f1, width, label="Phase 2 (Biquality)",
-                   color=COLORS["green"], edgecolor="black", linewidth=0.4, hatch="")
+    bars2 = ax.bar(x + width/2, phase2_f1, width, label="IOSage (Biquality)",
+                   color=COLORS["blue"], edgecolor="black", linewidth=0.4, hatch="")
 
-    ax.set_ylabel("F1 Score")
-    ax.set_title("Per-Dimension Detection Quality: Phase 1 vs Phase 2")
+    ax.set_ylabel("F1 Score", labelpad=8)
     ax.set_xticks(x)
     ax.set_xticklabels(DIM_SHORT, rotation=30, ha="right")
-    ax.set_ylim(0, 1.15)
-    ax.legend(loc="upper left")
+    ax.set_ylim(0, 1.18)
+    # Place legend in upper-right to avoid overlap with bars
+    ax.legend(loc="upper right", bbox_to_anchor=(1.0, 1.0))
     ax.grid(axis="y", alpha=0.3)
 
-    # Highlight improvement
-    for i in range(len(DIMS)):
-        if phase2_f1[i] - phase1_f1[i] > 0.3:
-            ax.annotate(f"+{phase2_f1[i]-phase1_f1[i]:.2f}",
-                        xy=(x[i] + width/2, phase2_f1[i]),
-                        xytext=(0, 5), textcoords="offset points",
-                        ha="center", fontsize=6.5, color=COLORS["green"],
-                        fontweight="bold")
+    # Add value labels above bars — offset to prevent overlap
+    for bar in bars2:
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
+                f"{bar.get_height():.2f}", ha="center", va="bottom", fontsize=7.5)
 
-    fig.tight_layout()
+    fig.tight_layout(pad=1.2)
     path = FIG_DIR / "fig_training_progression.pdf"
     save_fig(fig, path)
 

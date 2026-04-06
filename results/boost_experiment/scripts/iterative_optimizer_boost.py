@@ -51,10 +51,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-LOCAL_PKGS = Path(__file__).resolve().parent.parent.parent / ".local_pkgs"
-if LOCAL_PKGS.exists():
-    sys.path.insert(0, str(LOCAL_PKGS))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,8 +60,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
 DIMENSIONS = [
     "access_granularity", "metadata_intensity", "parallelism_efficiency",
@@ -744,7 +740,10 @@ Respond in JSON:
         current_config = dict(bad_config)
 
         if not self.dry_run:
-            job_base = f"iter_{workload_name}_r{run_id}_baseline"
+            # Include model key in job name to avoid scratch dir collisions
+            # when the same workload runs concurrently with different LLMs.
+            model_short = self.model_key.replace("claude-sonnet", "claude").replace("llama-70b", "llama")
+            job_base = f"iter_{workload_name}_r{run_id}_{model_short}_baseline"
             job_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{job_base}"
             if benchmark_type == "mdtest":
                 sanitized = dict(current_config)
@@ -941,7 +940,7 @@ Respond in JSON:
 
             # Execute
             if not self.dry_run:
-                iter_job = f"iter_{workload_name}_r{run_id}_i{iteration}"
+                iter_job = f"iter_{workload_name}_r{run_id}_{model_short}_i{iteration}"
                 iter_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{iter_job}"
                 if benchmark_type == "mdtest":
                     cmd = self.builder.build_mdtest_command(sanitized, output_dir=iter_scratch)

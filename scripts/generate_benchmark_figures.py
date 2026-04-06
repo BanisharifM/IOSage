@@ -55,26 +55,27 @@ PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
 HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
 
 RCPARAMS_SC2026 = {
+    # Fonts — IEEE guideline: ~9-10pt for readability in two-column format
     "font.family": "serif",
     "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
-    "font.size": 8,
+    "font.size": 9,
     "mathtext.fontset": "stix",
-    "axes.titlesize": 9,
-    "axes.labelsize": 8,
+    "axes.titlesize": 10,
+    "axes.labelsize": 9,
     "axes.linewidth": 0.5,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "axes.grid": True,
     "axes.axisbelow": True,
-    "xtick.labelsize": 7,
-    "ytick.labelsize": 7,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
     "xtick.major.width": 0.5,
     "ytick.major.width": 0.5,
     "xtick.major.size": 3,
     "ytick.major.size": 3,
     "xtick.direction": "out",
     "ytick.direction": "out",
-    "legend.fontsize": 7,
+    "legend.fontsize": 8,
     "legend.frameon": False,
     "legend.handlelength": 1.5,
     "grid.alpha": 0.3,
@@ -83,7 +84,7 @@ RCPARAMS_SC2026 = {
     "figure.dpi": 150,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.02,
+    "savefig.pad_inches": 0.05,
     "lines.linewidth": 1.0,
     "lines.markersize": 4,
     "pdf.fonttype": 42,
@@ -252,22 +253,21 @@ def fig_gt_vs_heuristic():
         gt_rates = {d: 10.0 for d in DIMENSION_ORDER}
 
     dims = DIMENSION_ORDER
-    fig, ax = plt.subplots(figsize=(7.16, 2.8), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(7.16, 3.2), constrained_layout=True)
     x = np.arange(len(dims))
-    width = 0.35
+    width = 0.28
 
     h_vals = [heuristic_rates.get(d, 0) for d in dims]
     g_vals = [gt_rates.get(d, 0) for d in dims]
 
-    bars1 = ax.bar(x - width / 2, h_vals, width, label="Heuristic (131K prod.)",
+    bars1 = ax.bar(x - width / 2, h_vals, width, label="Heuristic (131K production)",
                    color=COLORS["blue"], hatch="", edgecolor="white", linewidth=0.3)
-    bars2 = ax.bar(x + width / 2, g_vals, width, label="Ground-truth (623 bench.)",
+    bars2 = ax.bar(x + width / 2, g_vals, width, label="Ground-truth (623 benchmark)",
                    color=COLORS["orange"], hatch="//", edgecolor="white", linewidth=0.3)
 
     ax.set_xticks(x)
     ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center")
-    ax.set_ylabel("Positive rate (%)")
-    ax.set_title("Label distribution: heuristic (production) vs ground-truth (benchmark)")
+    ax.set_ylabel("Positive rate (%)", labelpad=8)
     ax.legend(loc="upper right")
 
     save_fig(fig, "fig_gt_vs_heuristic")
@@ -436,21 +436,21 @@ def fig_facility_health():
         rates.append(rate)
         counts.append(count)
 
-    fig, ax = plt.subplots(figsize=(7.16, 2.4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(7.16, 3.0), constrained_layout=True)
     x = np.arange(len(dims))
-    bars = ax.bar(x, rates, color=PALETTE_8, edgecolor="white", linewidth=0.3,
+    bars = ax.bar(x, rates, width=0.55, color=PALETTE_8, edgecolor="white", linewidth=0.3,
                   hatch=[HATCHES[i] for i in range(len(dims))])
 
     # Annotate with counts
     for i, (rate, count) in enumerate(zip(rates, counts)):
         label = f"{rate:.1f}%\n({count:,})"
-        ax.text(i, rate + 1.0, label, ha="center", va="bottom", fontsize=6)
+        ax.text(i, rate + 1.0, label, ha="center", va="bottom", fontsize=8)
 
     ax.set_xticks(x)
     ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center")
-    ax.set_ylabel("Prevalence (%)")
-    ax.set_title(f"I/O bottleneck prevalence across {len(df):,} production Darshan logs (ALCF Polaris)")
-    ax.set_ylim(0, max(rates) * 1.25)
+    ax.set_ylabel("Prevalence (%)", labelpad=8)
+    ax.set_title(f"Bottleneck prevalence across {len(df):,} production Darshan logs (ALCF Polaris)")
+    ax.set_ylim(0, max(rates) * 1.3)
 
     save_fig(fig, "fig_facility_health")
 

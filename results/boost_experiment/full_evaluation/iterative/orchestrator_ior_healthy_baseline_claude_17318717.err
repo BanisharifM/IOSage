@@ -1,0 +1,24 @@
+2026-04-06 01:22:46 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 01:22:46 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 01:22:46 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 01:22:58 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 01:22:58 [INFO]   KB loaded: 623 entries
+2026-04-06 01:22:58 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 01:22:58 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 01:22:58 [INFO] Workloads: ['ior_healthy_baseline']
+2026-04-06 01:22:58 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-06 01:22:58 [INFO] ======================================================================
+2026-04-06 01:22:58 [INFO] ITERATIVE OPTIMIZATION: ior_healthy_baseline (run 0)
+2026-04-06 01:22:58 [INFO]   Bottleneck: healthy
+2026-04-06 01:22:58 [INFO]   Description: Already optimal MPI-IO collective (should not degrade)
+2026-04-06 01:22:58 [INFO] ======================================================================
+2026-04-06 01:22:58 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 01:22:58 [INFO]   Submitted SLURM job 17318831
+2026-04-06 01:52:05 [INFO]   Job 17318831: COMPLETED (1746s)
+2026-04-06 01:52:05 [INFO]   Darshan log: mbanisha_ior_id17318831-2190595_4-6-5002-2882351480934765384_1.darshan
+2026-04-06 01:52:05 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 01:52:05 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 01:52:05 [INFO]   Baseline BW: 68.29 MB/s
+2026-04-06 01:52:05 [INFO]   Initial detection: ['healthy']
+2026-04-06 01:52:05 [INFO]   No bottlenecks detected -- already healthy
+2026-04-06 01:52:05 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_healthy_baseline_claude.json

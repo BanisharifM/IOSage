@@ -1,0 +1,80 @@
+{
+  "darshan_log": "mbanisha_ior_id16651179-3906016_3-15-80065-6478200923875165160_1.darshan",
+  "stages": {
+    "1_feature_extraction": {
+      "mean_ms": 48.563,
+      "std_ms": 28.353,
+      "p50_ms": 38.937,
+      "p95_ms": 91.889,
+      "p99_ms": 125.239,
+      "min_ms": 38.14,
+      "max_ms": 133.577,
+      "n_reps": 10
+    },
+    "2_ml_inference": {
+      "mean_ms": 2.841,
+      "std_ms": 3.362,
+      "p50_ms": 2.435,
+      "p95_ms": 2.926,
+      "p99_ms": 4.533,
+      "min_ms": 2.395,
+      "max_ms": 36.2,
+      "n_reps": 100
+    },
+    "3_shap_explanation": {
+      "mean_ms": 1.999,
+      "std_ms": 0.033,
+      "p50_ms": 1.993,
+      "p95_ms": 2.068,
+      "p99_ms": 2.096,
+      "min_ms": 1.97,
+      "max_ms": 2.241,
+      "n_reps": 100
+    },
+    "4_kb_retrieval": {
+      "mean_ms": 1.948,
+      "std_ms": 0.083,
+      "p50_ms": 1.932,
+      "p95_ms": 1.979,
+      "p99_ms": 2.316,
+      "min_ms": 1.908,
+      "max_ms": 2.406,
+      "n_reps": 100
+    },
+    "5_llm_cache_hit": {
+      "mean_ms": 0.456,
+      "std_ms": 0.028,
+      "p50_ms": 0.453,
+      "p95_ms": 0.498,
+      "p99_ms": 0.572,
+      "min_ms": 0.424,
+      "max_ms": 0.598,
+      "n_reps": 100
+    }
+  },
+  "one_time_costs": {
+    "tree_explainer_build_ms": 570.0,
+    "kb_load_ms": 12.9
+  },
+  "end_to_end": {
+    "ml_only_p50_ms": 41.4,
+    "ml_only_p95_ms": 94.8,
+    "full_pipeline_p50_ms": 45.8,
+    "full_pipeline_p95_ms": 99.4
+  },
+  "pipeline_context": {
+    "n_models": 8,
+    "n_features": 157,
+    "n_detected": 1,
+    "detected_dims": [
+      "access_granularity"
+    ],
+    "n_kb_entries": 623,
+    "n_kb_retrieved": 3
+  },
+  "config": {
+    "seed": 42,
+    "n_reps_fast": 100,
+    "n_reps_feat": 10
+  }
+}
