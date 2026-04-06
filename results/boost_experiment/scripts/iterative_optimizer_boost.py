@@ -1111,7 +1111,7 @@ def main():
     )
     parser.add_argument("--workload", default=None, help="Workload name from iterative.yaml")
     parser.add_argument("--model", default="claude-sonnet",
-                        choices=["claude-sonnet", "gpt-4o", "llama-70b"])
+                        choices=["claude-sonnet", "gpt-4o", "llama-70b", "gpt-4.1-mini"])
     parser.add_argument("--max-iterations", type=int, default=5)
     parser.add_argument("--n-runs", type=int, default=1, help="Repetitions per workload")
     parser.add_argument("--sweep", action="store_true", help="Run all workloads")
