@@ -202,7 +202,7 @@ def main():
     ax.text(0.70, 0.915, "Benchmark Knowledge Base", fontsize=8.5,
             fontweight="bold", ha="center", color=COL_TEXT, zorder=6)
     draw_doc_icon(ax, 0.64, 0.82, s=0.028)
-    ax.text(0.76, 0.82, "6 suites, 623 configs\nDarshan signature\n+ fix + source code",
+    ax.text(0.76, 0.82, "6 suites, 623 configs\nDarshan signature\n+ cause + validated fix",
             fontsize=5.5, ha="center", va="center", color=COL_SUB,
             linespacing=1.3, zorder=6)
     ax.text(0.70, 0.735, "IOR / mdtest / DLIO / h5bench / HACC-IO / custom",
@@ -238,62 +238,52 @@ def main():
 
     # Step 1: ML Detect
     stage_num(ax, 0.175, r2y + bh2 + 0.015, 1, "#1565C0")
-    rbox(ax, 0.16, r2y, 0.15, bh2, BG["ml"], BG["bd_ml"])
-    ax.text(0.235, r2y + bh2 - 0.025, "ML Detect", fontsize=8,
+    rbox(ax, 0.16, r2y, 0.17, bh2, BG["ml"], BG["bd_ml"])
+    ax.text(0.245, r2y + bh2 - 0.025, "ML Detect", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    draw_tree_icon(ax, 0.235, r2y + 0.11, s=0.025)
-    ax.text(0.235, r2y + 0.02, "8-dim, 3.9 ms",
+    draw_tree_icon(ax, 0.245, r2y + 0.11, s=0.025)
+    ax.text(0.245, r2y + 0.02, "8-dim, 3.9 ms",
             fontsize=5.5, ha="center", color=COL_SUB, zorder=6)
 
-    # Step 2: SHAP Attribution
-    stage_num(ax, 0.355, r2y + bh2 + 0.015, 2, "#E65100")
-    rbox(ax, 0.34, r2y, 0.14, bh2, BG["llm"], BG["bd_llm"])
-    ax.text(0.41, r2y + bh2 - 0.025, "SHAP", fontsize=8,
+    # Step 2: KB Retrieval
+    stage_num(ax, 0.395, r2y + bh2 + 0.015, 2, "#2E7D32")
+    rbox(ax, 0.38, r2y, 0.17, bh2, BG["kb"], BG["bd_kb"])
+    ax.text(0.465, r2y + bh2 - 0.025, "KB Retrieve", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    draw_bars_icon(ax, 0.41, r2y + 0.11, s=0.025)
-    ax.text(0.41, r2y + 0.02, "per-label top-K",
+    draw_doc_icon(ax, 0.465, r2y + 0.11, s=0.022)
+    ax.text(0.465, r2y + 0.02, "623 entries",
             fontsize=5.5, ha="center", color=COL_SUB, zorder=6)
 
-    # Step 3: KB Retrieval
-    stage_num(ax, 0.525, r2y + bh2 + 0.015, 3, "#2E7D32")
-    rbox(ax, 0.51, r2y, 0.14, bh2, BG["kb"], BG["bd_kb"])
-    ax.text(0.58, r2y + bh2 - 0.025, "KB Retrieve", fontsize=8,
+    # Step 3: LLM Recommendation
+    stage_num(ax, 0.615, r2y + bh2 + 0.015, 3, "#E65100")
+    rbox(ax, 0.60, r2y, 0.17, bh2, BG["llm"], BG["bd_llm"])
+    ax.text(0.685, r2y + bh2 - 0.025, "LLM Generate", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    draw_doc_icon(ax, 0.58, r2y + 0.11, s=0.022)
-    ax.text(0.58, r2y + 0.02, "623 entries",
-            fontsize=5.5, ha="center", color=COL_SUB, zorder=6)
-
-    # Step 4: LLM Recommendation
-    stage_num(ax, 0.695, r2y + bh2 + 0.015, 4, "#E65100")
-    rbox(ax, 0.68, r2y, 0.15, bh2, BG["llm"], BG["bd_llm"])
-    ax.text(0.755, r2y + bh2 - 0.025, "LLM Generate", fontsize=8,
-            fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    draw_code_icon(ax, 0.755, r2y + 0.11)
-    ax.text(0.755, r2y + 0.02, "Claude / GPT-4o / Llama",
+    draw_code_icon(ax, 0.685, r2y + 0.11)
+    ax.text(0.685, r2y + 0.02, "Claude / GPT-4o / Llama",
             fontsize=4.5, ha="center", color=COL_SUB, zorder=6)
 
-    # Output: Code Fix
-    rbox(ax, 0.86, r2y, 0.13, bh2, BG["out"], BG["bd_out"])
-    ax.text(0.925, r2y + bh2 - 0.025, "Code-Level\nFix", fontsize=8,
+    # Output: Optimization Fix
+    rbox(ax, 0.80, r2y, 0.18, bh2, BG["out"], BG["bd_out"])
+    ax.text(0.89, r2y + bh2 - 0.025, "Optimization\nFix", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    ax.text(0.925, r2y + 0.08, "grounded\nrecommendation",
+    ax.text(0.89, r2y + 0.08, "grounded\nconfiguration fix",
             fontsize=5.5, ha="center", va="center", color=COL_SUB,
             linespacing=1.3, zorder=6)
-    ax.text(0.925, r2y + 0.02, "single-shot mode",
+    ax.text(0.89, r2y + 0.02, "detection mode",
             fontsize=5, ha="center", color="#00695C",
             fontweight="bold", fontstyle="italic", zorder=6)
 
-    # Phase 2 arrows (with good spacing)
+    # Phase 2 arrows (3 stages + output)
     arr(ax, 0.13, r2y + bh2/2, 0.16, r2y + bh2/2)
-    arr(ax, 0.31, r2y + bh2/2, 0.34, r2y + bh2/2)
-    arr(ax, 0.48, r2y + bh2/2, 0.51, r2y + bh2/2)
-    arr(ax, 0.65, r2y + bh2/2, 0.68, r2y + bh2/2)
-    arr(ax, 0.83, r2y + bh2/2, 0.86, r2y + bh2/2)
+    arr(ax, 0.33, r2y + bh2/2, 0.38, r2y + bh2/2)
+    arr(ax, 0.55, r2y + bh2/2, 0.60, r2y + bh2/2)
+    arr(ax, 0.77, r2y + bh2/2, 0.80, r2y + bh2/2)
 
     # Vertical arrows: trained model → ML Detect, KB → KB Retrieve
-    darr(ax, 0.925, 0.735, 0.235, r2y + bh2 + 0.005,
+    darr(ax, 0.925, 0.735, 0.245, r2y + bh2 + 0.005,
          color="#1565C0", lw=0.7)
-    darr(ax, 0.70, 0.72, 0.58, r2y + bh2 + 0.005,
+    darr(ax, 0.70, 0.72, 0.465, r2y + bh2 + 0.005,
          color="#2E7D32", lw=0.7)
 
     # =====================================================================
@@ -332,7 +322,7 @@ def main():
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
     ax.text(0.875, r3y + 0.055, "33/33 runs\n6 benchmarks",
             fontsize=5.5, ha="center", va="center", color=COL_SUB, zorder=6)
-    ax.text(0.875, r3y + 0.015, "iterative mode",
+    ax.text(0.875, r3y + 0.015, "feedback-driven mode",
             fontsize=5, ha="center", color=COL_LOOP,
             fontweight="bold", fontstyle="italic", zorder=6)
 
@@ -342,15 +332,15 @@ def main():
     arr(ax, 0.74, r3y + bh3/2, 0.79, r3y + bh3/2, color=COL_LOOP)
 
     # LLM → Execute (down from inference to loop)
-    carr(ax, 0.72, r2y, 0.25, r3y + bh3,
+    carr(ax, 0.65, r2y, 0.25, r3y + bh3,
          color=COL_LOOP, lw=1.2, rad=0.15)
 
-    # ML Re-detect → back to SHAP (iterate loop — dashed, going up)
-    carr(ax, 0.655, r3y + bh3, 0.41, r2y,
+    # ML Re-detect → back to KB Retrieve (iterate loop — dashed, going up)
+    carr(ax, 0.655, r3y + bh3, 0.465, r2y,
          color=COL_LOOP, lw=1.2, rad=0.35)
 
     # "iterate" label on loop arrow with white background
-    ax.text(0.50, 0.295, "iterate", fontsize=7.5, color=COL_LOOP,
+    ax.text(0.53, 0.295, "iterate", fontsize=7.5, color=COL_LOOP,
             fontweight="bold", ha="center", rotation=50, zorder=8,
             path_effects=[pe.withStroke(linewidth=3, foreground="white")])
 

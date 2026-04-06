@@ -40,29 +40,37 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class IOPrescriber:
-    """Full pipeline: detect → explain → retrieve → recommend → validate."""
+    """Full pipeline: detect → retrieve → recommend → validate."""
 
-    def __init__(self, llm_model="claude-sonnet", cache_dir=None):
+    def __init__(self, llm_model="claude-sonnet", cache_dir=None, use_shap=False):
         from src.ioprescriber.detector import Detector
-        from src.ioprescriber.explainer import Explainer
         from src.ioprescriber.retriever import Retriever
         from src.ioprescriber.recommender import Recommender
 
         logger.info("Initializing IOPrescriber pipeline...")
 
+        self.use_shap = use_shap
         self.detector = Detector()
-        self.explainer = Explainer(
-            self.detector.models, self.detector.feature_cols, top_k=10
-        )
+        self.explainer = None
+        if self.use_shap:
+            try:
+                from src.ioprescriber.explainer import Explainer
+                self.explainer = Explainer(
+                    self.detector.models, self.detector.feature_cols, top_k=10
+                )
+                logger.info("SHAP explainer loaded (optional)")
+            except ImportError:
+                logger.warning("SHAP not available; continuing without attribution")
+                self.use_shap = False
         self.retriever = Retriever()
         self.recommender = Recommender(
             model=llm_model,
             cache_dir=cache_dir or str(PROJECT_DIR / "data" / "llm_cache" / "ioprescriber"),
         )
 
-        logger.info("IOPrescriber ready: detector=%d models, KB=%d entries, LLM=%s",
+        logger.info("IOPrescriber ready: detector=%d models, KB=%d entries, LLM=%s, SHAP=%s",
                     len(self.detector.models), len(self.retriever.kb),
-                    self.recommender.model_id)
+                    self.recommender.model_id, self.use_shap)
 
     def analyze(self, darshan_features, workload_name="unknown"):
         """Run full analysis pipeline on a feature dict.
@@ -80,30 +88,32 @@ class IOPrescriber:
         predictions, detected = self.detector.detect_from_features(darshan_features)
         logger.info("  Detected: %s", detected)
 
-        # Step 2: Explain
-        logger.info("Step 2: SHAP Attribution...")
-        X = np.array([[darshan_features.get(col, 0) for col in self.detector.feature_cols]],
-                      dtype=np.float32)
-        shap_features = self.explainer.explain(X, detected_dims=detected)
-        for dim in detected:
-            if dim in shap_features and shap_features[dim]:
-                top_feat = shap_features[dim][0]
-                logger.info("  %s: top feature = %s (|SHAP|=%.4f)",
-                            dim, top_feat["feature"], top_feat["abs_importance"])
+        # Step 2: Explain (optional, offline analysis only)
+        shap_features = {}
+        if self.use_shap and self.explainer:
+            logger.info("Step 2: SHAP Attribution (optional)...")
+            X = np.array([[darshan_features.get(col, 0) for col in self.detector.feature_cols]],
+                          dtype=np.float32)
+            shap_features = self.explainer.explain(X, detected_dims=detected)
+            for dim in detected:
+                if dim in shap_features and shap_features[dim]:
+                    top_feat = shap_features[dim][0]
+                    logger.info("  %s: top feature = %s (|SHAP|=%.4f)",
+                                dim, top_feat["feature"], top_feat["abs_importance"])
 
-        # Step 3: Retrieve
-        logger.info("Step 3: KB Retrieval...")
+        # Step 2: Retrieve
+        logger.info("Step 2: KB Retrieval...")
         kb_entries = self.retriever.retrieve(detected, darshan_features)
         logger.info("  Retrieved %d KB entries", len(kb_entries))
 
-        # Step 4: Recommend (if API key available)
+        # Step 3: Recommend (if API key available)
         recommendation = None
         groundedness = None
         metadata = None
         raw_response = None
 
         if self.recommender.api_key:
-            logger.info("Step 4: LLM Recommendation...")
+            logger.info("Step 3: LLM Recommendation...")
             # Build darshan summary
             summary_keys = ["nprocs", "runtime_seconds", "POSIX_BYTES_WRITTEN",
                              "avg_write_size", "small_io_ratio", "seq_write_ratio",
@@ -124,7 +134,7 @@ class IOPrescriber:
             else:
                 logger.warning("  LLM response could not be parsed")
         else:
-            logger.info("Step 4: SKIPPED (no API key set)")
+            logger.info("Step 3: SKIPPED (no API key set)")
 
         total_ms = (time.perf_counter() - t0) * 1000
 
@@ -135,15 +145,15 @@ class IOPrescriber:
                 "predictions": predictions,
                 "detected": detected,
             },
-            "step2_shap": {dim: feats[:3] for dim, feats in shap_features.items()},
-            "step3_retrieval": {
+            "shap_analysis": {dim: feats[:3] for dim, feats in shap_features.items()} if shap_features else {},
+            "step2_retrieval": {
                 "n_entries": len(kb_entries),
                 "entries": [{"entry_id": e["entry"]["entry_id"],
                              "similarity": e["similarity"],
                              "matched_dims": e["matched_dims"]}
                             for e in kb_entries],
             },
-            "step4_recommendation": {
+            "step3_recommendation": {
                 "parsed": recommendation,
                 "groundedness": groundedness,
                 "metadata": metadata,

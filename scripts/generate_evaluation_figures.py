@@ -245,62 +245,74 @@ def fig_llm_groundedness():
 # ===========================================================================
 
 def fig_ablation_trackb():
-    """Bar chart: 5 ablation conditions for Single-shot pipeline."""
-    logger.info("Generating Figure 20: Single-shot Ablation...")
+    """Bar chart: recommendation ablation (fair ablation results)."""
+    logger.info("Generating Figure 20: Recommendation Ablation...")
 
     conditions = ["Full\nPipeline", "w/o ML\nClassifier", "w/o Knowledge\nGrounding",
-                  "w/o Feature\nAttribution", "Detection\nOnly"]
-    groundedness = [1.0, 0.0, 0.0, 1.0, None]  # None = N/A
-    n_recs = [1.4, 2.1, 1.8, 1.3, 0.0]  # avg recommendations per query
+                  "Detection\nOnly", "LLM Only\n(no ML, no KB)"]
+    groundedness = [1.0, 1.0, 0.0, None, 0.0]  # None = N/A
+    rec_precision = [0.70, 0.16, 0.67, None, 0.0]
+    n_recs = [1.2, 4.0, 2.6, 0.0, 4.1]
 
-    # Colors: green for full, shades for ablations
-    colors = [OI["green"], OI["vermilion"], OI["vermilion"],
-              OI["orange"], OI["gray"]]
+    # Colors: green for full, orange for partial, red for broken, gray for N/A
+    colors = [OI["green"], OI["orange"], OI["vermilion"],
+              OI["gray"], OI["vermilion"]]
 
     fig, ax1 = plt.subplots(figsize=(3.5, 2.8))
 
     x = np.arange(len(conditions))
-    width = 0.55
+    width = 0.35
 
     # Hatching patterns per condition for B&W readability
-    condition_hatches = ["", "//", "\\\\", "xx", ".."]
+    condition_hatches = ["", "//", "\\\\", "..", "xx"]
 
-    # Plot groundedness bars
+    # Plot groundedness bars (left group)
     for i, (g, c) in enumerate(zip(groundedness, colors)):
         if g is not None:
-            ax1.bar(x[i], g, width, color=c, edgecolor="black",
-                    linewidth=0.4, hatch=condition_hatches[i], zorder=3)
-            ax1.text(x[i], g + 0.04, f"{g:.1f}", ha="center", va="bottom",
-                     fontsize=6.5, fontweight="bold")
+            ax1.bar(x[i] - width/2, g, width, color=c, edgecolor="black",
+                    linewidth=0.4, hatch=condition_hatches[i], zorder=3,
+                    label="Groundedness" if i == 0 else "")
         else:
-            # N/A case
-            ax1.bar(x[i], 0.05, width, color=c, edgecolor="black",
+            ax1.bar(x[i] - width/2, 0.05, width, color=c, edgecolor="black",
                     linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.4)
-            ax1.text(x[i], 0.10, "N/A", ha="center", va="bottom",
-                     fontsize=6.5, fontweight="bold", color=OI["gray"])
+            ax1.text(x[i] - width/2, 0.10, "N/A", ha="center", va="bottom",
+                     fontsize=5.5, color=OI["gray"])
+
+    # Plot rec precision bars (right group)
+    for i, (rp, c) in enumerate(zip(rec_precision, colors)):
+        if rp is not None:
+            ax1.bar(x[i] + width/2, rp, width, color=OI["cyan"], edgecolor="black",
+                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.7,
+                    label="Rec. Precision" if i == 0 else "")
+        else:
+            ax1.bar(x[i] + width/2, 0.05, width, color=OI["gray"], edgecolor="black",
+                    linewidth=0.4, hatch=condition_hatches[i], zorder=3, alpha=0.4)
+            ax1.text(x[i] + width/2, 0.10, "N/A", ha="center", va="bottom",
+                     fontsize=5.5, color=OI["gray"])
 
     ax1.set_xticks(x)
-    ax1.set_xticklabels(conditions, fontsize=6.5)
-    ax1.set_ylabel("Groundedness Score")
+    ax1.set_xticklabels(conditions, fontsize=6)
+    ax1.set_ylabel("Score")
     ax1.set_ylim(0, 1.25)
     ax1.grid(axis="y", alpha=0.25)
 
     # Secondary axis for number of recommendations
     ax2 = ax1.twinx()
     ax2.plot(x, n_recs, "D-", color=OI["purple"], markersize=4,
-             linewidth=1.0, zorder=4, label="Avg. recs/query")
+             linewidth=1.0, zorder=4)
     ax2.set_ylabel("Avg. Recommendations", color=OI["purple"], fontsize=7)
     ax2.tick_params(axis="y", labelcolor=OI["purple"], labelsize=6.5)
-    ax2.set_ylim(0, 3.0)
+    ax2.set_ylim(0, 5.5)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(0.5)
 
-    # Combined legend
-    bar_patch = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
+    # Legend
+    bar_gnd = mpatches.Patch(facecolor=OI["green"], label="Groundedness")
+    bar_rp = mpatches.Patch(facecolor=OI["cyan"], alpha=0.7, label="Rec. Precision")
     line_patch = plt.Line2D([0], [0], color=OI["purple"], marker="D",
-                            markersize=3, label="Avg. recs/query")
-    ax1.legend(handles=[bar_patch, line_patch], loc="upper center",
-               fontsize=6, framealpha=0.8, ncol=2)
+                            markersize=3, label="Avg. recs")
+    ax1.legend(handles=[bar_gnd, bar_rp, line_patch], loc="upper center",
+               fontsize=5.5, framealpha=0.8, ncol=3)
 
     fig.tight_layout()
     save_fig(fig, "fig_ablation_trackb")
