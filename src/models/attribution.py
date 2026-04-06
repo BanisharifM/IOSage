@@ -235,9 +235,9 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
     plt.tight_layout(pad=1.5)
 
     fig.savefig(output_path, dpi=300, bbox_inches="tight",
-                pad_inches=0.05)
+                pad_inches=0.01)
     fig.savefig(str(output_path).replace(".pdf", ".png"), dpi=300,
-                bbox_inches="tight", pad_inches=0.05)
+                bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
     logger.info("Saved global bar: %s", output_path)
 

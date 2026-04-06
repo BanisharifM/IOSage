@@ -84,7 +84,7 @@ RCPARAMS_SC2026 = {
     "figure.dpi": 150,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.05,
+    "savefig.pad_inches": 0.01,
     "lines.linewidth": 1.0,
     "lines.markersize": 4,
     "pdf.fonttype": 42,
@@ -188,9 +188,9 @@ def fig_gt_label_distribution():
             else:
                 counts[bench].append(0)
 
-    fig, ax = plt.subplots(figsize=(7.16, 3.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(3.5, 3.0))
     x = np.arange(len(dims))
-    width = 0.45
+    width = 0.5
     bottom = np.zeros(len(dims))
 
     for bench in benchmarks:
@@ -201,20 +201,30 @@ def fig_gt_label_distribution():
                color=color, hatch=hatch, edgecolor="white", linewidth=0.3)
         bottom += vals
 
+    short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
+                    "Access Pattern", "Interface Ch.", "File Strategy",
+                    "Throughput Util.", "Healthy"]
     ax.set_xticks(x)
-    ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center",
-                       fontsize=8)
-    ax.set_ylabel("Number of samples", labelpad=8)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.08),
-              ncol=6, fontsize=8, frameon=True, framealpha=0.9)
+    ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=7)
+    ax.set_ylabel("Number of samples", fontsize=9)
+    # Legend in 2 rows of 3
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.18),
+              ncol=3, fontsize=7, frameon=True, framealpha=0.9,
+              columnspacing=0.8, handletextpad=0.4)
 
     # Annotate totals above bars
     for i, total in enumerate(bottom):
         if total > 0:
-            ax.text(i, total + 3, str(int(total)), ha="center",
-                    va="bottom", fontsize=8, fontweight="bold")
+            ax.text(i, total + 5, str(int(total)), ha="center",
+                    va="bottom", fontsize=7, fontweight="bold")
 
-    save_fig(fig, "fig_gt_label_distribution")
+    ax.set_ylim(0, max(bottom) * 1.18)
+    fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.pdf"),
+                format="pdf", bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.png"),
+                format="png", dpi=300, bbox_inches="tight", pad_inches=0.01)
+    plt.close(fig)
+    logger.info("Saved fig_gt_label_distribution")
 
 
 # ===========================================================================

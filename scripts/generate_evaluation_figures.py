@@ -98,7 +98,7 @@ RCPARAMS_SC2026 = {
     "figure.dpi": 150,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.05,
+    "savefig.pad_inches": 0.01,
 
     # Lines
     "lines.linewidth": 1.0,
