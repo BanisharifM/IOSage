@@ -64,10 +64,10 @@ def load_data():
     del prod_features, prod_labels
     gc.collect()
 
-    # Benchmark data (boost experiment)
-    gt_dir = PROJECT_DIR / "results" / "boost_experiment" / "new_gt"
-    bench_features = pd.read_parquet(gt_dir / "features.parquet")
-    bench_labels = pd.read_parquet(gt_dir / "labels.parquet")
+    # Benchmark data (boost experiment) — all 689 GT samples
+    splits_dir = PROJECT_DIR / "results" / "boost_experiment" / "new_splits"
+    bench_features = pd.read_parquet(splits_dir / "features.parquet")
+    bench_labels = pd.read_parquet(splits_dir / "labels.parquet")
 
     with open(PROJECT_DIR / "results" / "boost_experiment" / "new_splits" / "split_indices.pkl", "rb") as f:
         split_info = pickle.load(f)
@@ -180,7 +180,7 @@ def train_rf(X_combined, y_combined, weights, X_test, y_test, output_dir):
         models = {}
         for i, dim in enumerate(DIMENSIONS):
             clf = RandomForestClassifier(
-                **rf_params, random_state=seed, class_weight="balanced",
+                **rf_params, random_state=seed,
             )
             clf.fit(X_combined, y_combined[:, i], sample_weight=weights)
             models[dim] = clf
@@ -256,30 +256,8 @@ def main():
 
     all_results = {}
 
-    # Also re-evaluate existing XGBoost models for Hamming/SubsetAcc
-    logger.info("=" * 60)
-    logger.info("Re-evaluating XGBoost (for Hamming/SubsetAcc)")
-    logger.info("=" * 60)
-    xgb_results = []
-    for seed in SEEDS:
-        fpath = output_dir / f"xgboost_biquality_w{CLEAN_WEIGHT}_seed{seed}.pkl"
-        if fpath.exists():
-            with open(fpath, "rb") as f:
-                models = pickle.load(f)
-            y_pred = np.zeros_like(y_test)
-            for i, dim in enumerate(DIMENSIONS):
-                y_pred[:, i] = models[dim].predict(X_test)
-            result = evaluate(y_test, y_pred)
-            result["seed"] = seed
-            xgb_results.append(result)
-            logger.info("  Seed %d: Micro-F1=%.4f, Hamming=%.4f, SubsetAcc=%.4f",
-                        seed, result["micro_f1"], result["hamming_loss"], result["subset_accuracy"])
-    all_results["xgboost"] = xgb_results
-
-    logger.info("=" * 60)
-    logger.info("Training LightGBM")
-    logger.info("=" * 60)
-    all_results["lightgbm"] = train_lightgbm(X_combined, y_combined, weights, X_test, y_test, output_dir)
+    # Skip XGBoost and LightGBM (already trained from previous run)
+    logger.info("Skipping XGBoost and LightGBM (already done)")
 
     logger.info("=" * 60)
     logger.info("Training Random Forest")

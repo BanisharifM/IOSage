@@ -37,7 +37,9 @@ if shap_path.exists():
     print(f'SHAP data type: {type(shap_data)}, keys: {list(shap_data.keys()) if isinstance(shap_data, dict) else \"not dict\"}')
 
     if isinstance(shap_data, dict) and 'shap_dict' in shap_data:
-        shap_dict = shap_data['shap_dict']
+        raw = shap_data['shap_dict']
+        # Handle tuple (shap_dict, X_sample) format
+        shap_dict = raw[0] if isinstance(raw, tuple) else raw
         feature_names = shap_data.get('feature_names', [f'f{i}' for i in range(157)])
         from src.models.attribution import plot_global_bar
         output_path = PROJECT / 'paper/figures/fig_shap_global_bar.pdf'
