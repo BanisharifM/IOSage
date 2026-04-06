@@ -215,11 +215,12 @@ def fig_gt_label_distribution():
 
     ax.set_ylim(0, max(bottom) * 1.15)
 
-    # Legend inside chart — place in the empty area (right side has short bars)
+    # Legend inside chart — upper-right where bars are short
     ax.legend(loc="upper right", bbox_to_anchor=(0.98, 0.98),
               ncol=2, fontsize=6.5, frameon=True, framealpha=0.95,
               edgecolor="#cccccc",
-              columnspacing=0.5, handletextpad=0.3)
+              columnspacing=0.5, handletextpad=0.3,
+              borderpad=0.2, borderaxespad=0.1, labelspacing=0.2)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.pdf"),
                 format="pdf", bbox_inches="tight", pad_inches=0.01)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.png"),
