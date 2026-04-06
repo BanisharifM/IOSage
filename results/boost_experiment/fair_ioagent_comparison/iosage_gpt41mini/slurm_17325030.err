@@ -1,0 +1,274 @@
+2026-04-06 06:52:32,780 INFO LLM Evaluation: 1 models × 12 workloads × 1 runs = 12 total calls
+2026-04-06 06:52:34,528 INFO Selected 12 diverse workloads
+2026-04-06 06:52:34,529 INFO   ior/ior_small_posix_t64_n4_r1: ['access_granularity']
+2026-04-06 06:52:34,529 INFO   mdtest/mdtest_meta_shared_n1000_r4_rep2: ['metadata_intensity']
+2026-04-06 06:52:34,529 INFO   custom/custom_imbalance_f2_mb10_n4_r1: ['parallelism_efficiency']
+2026-04-06 06:52:34,530 INFO   ior/ior_random_posix_t4096_n4_r1: ['access_pattern']
+2026-04-06 06:52:34,530 INFO   ior/ior_interface_mpiio_indep_t1048576_n128_r1: ['interface_choice']
+2026-04-06 06:52:34,530 INFO   ior/ior_file_explosion_t65536_n128_r1: ['file_strategy']
+2026-04-06 06:52:34,530 INFO   dlio/dlio_ckpt_ms100000000_n4_rep1: ['throughput_utilization']
+2026-04-06 06:52:34,530 INFO   ior/ior_healthy_collective_t4194304_n128_r1: ['healthy']
+2026-04-06 06:52:34,530 INFO   ior/ior_small_direct_t4096_n16_r1: ['access_granularity']
+2026-04-06 06:52:34,531 INFO   ior/ior_misaligned_t1000_n4_r1: ['access_granularity']
+2026-04-06 06:52:34,531 INFO   ior/ior_misaligned_t3000_n4_r3: ['access_granularity']
+2026-04-06 06:52:34,531 INFO   ior/ior_misaligned_t7000_n16_r2: ['access_granularity']
+2026-04-06 06:52:34,531 INFO 
+2026-04-06 06:52:34,531 INFO ======================================================================
+2026-04-06 06:52:34,531 INFO MODEL: gpt-4.1-mini
+2026-04-06 06:52:34,531 INFO ======================================================================
+2026-04-06 06:52:34,586 INFO Initializing IOPrescriber pipeline...
+2026-04-06 06:52:41,537 INFO Detector loaded: 8 models, 157 features, threshold=0.30
+2026-04-06 06:52:41,644 INFO Retriever loaded: 623 KB entries, 8 dimensions indexed
+2026-04-06 06:52:41,645 INFO Recommender initialized: model=openai/gpt-4.1-mini, temp=0.0, cache=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/llm_cache/ioprescriber
+2026-04-06 06:52:41,645 INFO IOPrescriber ready: detector=8 models, KB=623 entries, LLM=openai/gpt-4.1-mini, SHAP=False
+2026-04-06 06:52:41,647 INFO 
+2026-04-06 06:52:41,647 INFO Workload 1/12, Run 1/1: ior_ior_small_posix_t64_n4_r1
+2026-04-06 06:52:41,647 INFO 
+2026-04-06 06:52:41,647 INFO ============================================================
+2026-04-06 06:52:41,647 INFO IOPrescriber Analysis: ior_ior_small_posix_t64_n4_r1_run0
+2026-04-06 06:52:41,647 INFO ============================================================
+2026-04-06 06:52:41,647 INFO Step 1: ML Detection...
+2026-04-06 06:52:41,674 INFO   Detected: ['access_granularity']
+2026-04-06 06:52:41,674 INFO Step 2: KB Retrieval...
+2026-04-06 06:52:41,678 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-06 06:52:41,678 INFO   Retrieved 3 KB entries
+2026-04-06 06:52:41,678 INFO Step 3: LLM Recommendation...
+2026-04-06 06:53:32,677 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:53:39,547 INFO   LLM response: 1750 chars, 1895 tokens, 20007ms
+2026-04-06 06:53:39,547 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:53:39,547 INFO   Generated 1 recommendations
+2026-04-06 06:53:39,548 INFO   Groundedness: 1.00
+2026-04-06 06:53:39,548 INFO 
+2026-04-06 06:53:39,548 INFO Pipeline completed in 57900ms
+2026-04-06 06:53:39,548 INFO ============================================================
+2026-04-06 06:53:39,550 INFO 
+2026-04-06 06:53:39,550 INFO Workload 2/12, Run 1/1: mdtest_mdtest_meta_shared_n1000_r4_rep2
+2026-04-06 06:53:39,550 INFO 
+2026-04-06 06:53:39,550 INFO ============================================================
+2026-04-06 06:53:39,550 INFO IOPrescriber Analysis: mdtest_mdtest_meta_shared_n1000_r4_rep2_run0
+2026-04-06 06:53:39,550 INFO ============================================================
+2026-04-06 06:53:39,550 INFO Step 1: ML Detection...
+2026-04-06 06:53:39,556 INFO   Detected: ['metadata_intensity']
+2026-04-06 06:53:39,556 INFO Step 2: KB Retrieval...
+2026-04-06 06:53:39,557 INFO Retrieved 3/93 KB entries for dims=['metadata_intensity']
+2026-04-06 06:53:39,557 INFO   Retrieved 3 KB entries
+2026-04-06 06:53:39,557 INFO Step 3: LLM Recommendation...
+2026-04-06 06:53:39,852 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:53:44,372 INFO   LLM response: 1785 chars, 1670 tokens, 4776ms
+2026-04-06 06:53:44,373 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:53:44,373 INFO   Generated 1 recommendations
+2026-04-06 06:53:44,374 INFO   Groundedness: 1.00
+2026-04-06 06:53:44,374 INFO 
+2026-04-06 06:53:44,374 INFO Pipeline completed in 4824ms
+2026-04-06 06:53:44,374 INFO ============================================================
+2026-04-06 06:53:44,375 INFO 
+2026-04-06 06:53:44,375 INFO Workload 3/12, Run 1/1: custom_custom_imbalance_f2_mb10_n4_r1
+2026-04-06 06:53:44,375 INFO 
+2026-04-06 06:53:44,375 INFO ============================================================
+2026-04-06 06:53:44,375 INFO IOPrescriber Analysis: custom_custom_imbalance_f2_mb10_n4_r1_run0
+2026-04-06 06:53:44,375 INFO ============================================================
+2026-04-06 06:53:44,375 INFO Step 1: ML Detection...
+2026-04-06 06:53:44,380 INFO   Detected: ['parallelism_efficiency']
+2026-04-06 06:53:44,380 INFO Step 2: KB Retrieval...
+2026-04-06 06:53:44,383 INFO Retrieved 3/71 KB entries for dims=['parallelism_efficiency']
+2026-04-06 06:53:44,384 INFO   Retrieved 3 KB entries
+2026-04-06 06:53:44,384 INFO Step 3: LLM Recommendation...
+2026-04-06 06:53:44,649 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:53:49,408 INFO   LLM response: 1646 chars, 1567 tokens, 4956ms
+2026-04-06 06:53:49,408 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:53:49,408 INFO   Generated 1 recommendations
+2026-04-06 06:53:49,408 INFO   Groundedness: 1.00
+2026-04-06 06:53:49,408 INFO 
+2026-04-06 06:53:49,408 INFO Pipeline completed in 5033ms
+2026-04-06 06:53:49,408 INFO ============================================================
+2026-04-06 06:53:49,409 INFO 
+2026-04-06 06:53:49,409 INFO Workload 4/12, Run 1/1: ior_ior_random_posix_t4096_n4_r1
+2026-04-06 06:53:49,409 INFO 
+2026-04-06 06:53:49,410 INFO ============================================================
+2026-04-06 06:53:49,410 INFO IOPrescriber Analysis: ior_ior_random_posix_t4096_n4_r1_run0
+2026-04-06 06:53:49,410 INFO ============================================================
+2026-04-06 06:53:49,410 INFO Step 1: ML Detection...
+2026-04-06 06:53:49,414 INFO   Detected: ['access_pattern']
+2026-04-06 06:53:49,415 INFO Step 2: KB Retrieval...
+2026-04-06 06:53:49,415 INFO Retrieved 3/18 KB entries for dims=['access_pattern']
+2026-04-06 06:53:49,415 INFO   Retrieved 3 KB entries
+2026-04-06 06:53:49,415 INFO Step 3: LLM Recommendation...
+2026-04-06 06:53:49,749 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:53:57,642 INFO   LLM response: 3116 chars, 2207 tokens, 8129ms
+2026-04-06 06:53:57,642 INFO   Groundedness: 1.00 (2/2 citations verified)
+2026-04-06 06:53:57,642 INFO   Generated 2 recommendations
+2026-04-06 06:53:57,642 INFO   Groundedness: 1.00
+2026-04-06 06:53:57,642 INFO 
+2026-04-06 06:53:57,642 INFO Pipeline completed in 8233ms
+2026-04-06 06:53:57,642 INFO ============================================================
+2026-04-06 06:53:57,643 INFO 
+2026-04-06 06:53:57,643 INFO Workload 5/12, Run 1/1: ior_ior_interface_mpiio_indep_t1048576_n128_r1
+2026-04-06 06:53:57,643 INFO 
+2026-04-06 06:53:57,643 INFO ============================================================
+2026-04-06 06:53:57,643 INFO IOPrescriber Analysis: ior_ior_interface_mpiio_indep_t1048576_n128_r1_run0
+2026-04-06 06:53:57,644 INFO ============================================================
+2026-04-06 06:53:57,644 INFO Step 1: ML Detection...
+2026-04-06 06:53:57,648 INFO   Detected: ['interface_choice']
+2026-04-06 06:53:57,649 INFO Step 2: KB Retrieval...
+2026-04-06 06:53:57,654 INFO Retrieved 3/93 KB entries for dims=['interface_choice']
+2026-04-06 06:53:57,654 INFO   Retrieved 3 KB entries
+2026-04-06 06:53:57,654 INFO Step 3: LLM Recommendation...
+2026-04-06 06:53:57,881 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:02,494 INFO   LLM response: 1842 chars, 1849 tokens, 4796ms
+2026-04-06 06:54:02,494 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:54:02,494 INFO   Generated 1 recommendations
+2026-04-06 06:54:02,495 INFO   Groundedness: 1.00
+2026-04-06 06:54:02,495 INFO 
+2026-04-06 06:54:02,495 INFO Pipeline completed in 4851ms
+2026-04-06 06:54:02,495 INFO ============================================================
+2026-04-06 06:54:02,496 INFO 
+2026-04-06 06:54:02,496 INFO Workload 6/12, Run 1/1: ior_ior_file_explosion_t65536_n128_r1
+2026-04-06 06:54:02,496 INFO 
+2026-04-06 06:54:02,496 INFO ============================================================
+2026-04-06 06:54:02,496 INFO IOPrescriber Analysis: ior_ior_file_explosion_t65536_n128_r1_run0
+2026-04-06 06:54:02,496 INFO ============================================================
+2026-04-06 06:54:02,496 INFO Step 1: ML Detection...
+2026-04-06 06:54:02,502 INFO   Detected: ['access_granularity', 'file_strategy']
+2026-04-06 06:54:02,502 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:02,510 INFO Retrieved 3/261 KB entries for dims=['access_granularity', 'file_strategy']
+2026-04-06 06:54:02,510 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:02,511 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:02,837 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:10,928 INFO   LLM response: 3033 chars, 2224 tokens, 8366ms
+2026-04-06 06:54:10,928 INFO   Groundedness: 1.00 (2/2 citations verified)
+2026-04-06 06:54:10,928 INFO   Generated 2 recommendations
+2026-04-06 06:54:10,928 INFO   Groundedness: 1.00
+2026-04-06 06:54:10,928 INFO 
+2026-04-06 06:54:10,928 INFO Pipeline completed in 8432ms
+2026-04-06 06:54:10,928 INFO ============================================================
+2026-04-06 06:54:10,929 INFO 
+2026-04-06 06:54:10,929 INFO Workload 7/12, Run 1/1: dlio_dlio_ckpt_ms100000000_n4_rep1
+2026-04-06 06:54:10,929 INFO 
+2026-04-06 06:54:10,929 INFO ============================================================
+2026-04-06 06:54:10,929 INFO IOPrescriber Analysis: dlio_dlio_ckpt_ms100000000_n4_rep1_run0
+2026-04-06 06:54:10,929 INFO ============================================================
+2026-04-06 06:54:10,930 INFO Step 1: ML Detection...
+2026-04-06 06:54:10,941 INFO   Detected: ['access_granularity', 'throughput_utilization']
+2026-04-06 06:54:10,942 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:10,947 INFO Retrieved 3/258 KB entries for dims=['access_granularity', 'throughput_utilization']
+2026-04-06 06:54:10,948 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:10,948 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:11,167 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:17,948 INFO   LLM response: 2771 chars, 2219 tokens, 6950ms
+2026-04-06 06:54:17,948 INFO   Groundedness: 1.00 (2/2 citations verified)
+2026-04-06 06:54:17,949 INFO   Generated 2 recommendations
+2026-04-06 06:54:17,949 INFO   Groundedness: 1.00
+2026-04-06 06:54:17,949 INFO 
+2026-04-06 06:54:17,949 INFO Pipeline completed in 7019ms
+2026-04-06 06:54:17,949 INFO ============================================================
+2026-04-06 06:54:17,950 INFO 
+2026-04-06 06:54:17,950 INFO Workload 8/12, Run 1/1: ior_ior_healthy_collective_t4194304_n128_r1
+2026-04-06 06:54:17,950 INFO 
+2026-04-06 06:54:17,950 INFO ============================================================
+2026-04-06 06:54:17,950 INFO IOPrescriber Analysis: ior_ior_healthy_collective_t4194304_n128_r1_run0
+2026-04-06 06:54:17,950 INFO ============================================================
+2026-04-06 06:54:17,950 INFO Step 1: ML Detection...
+2026-04-06 06:54:17,956 INFO   Detected: ['healthy']
+2026-04-06 06:54:17,956 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:17,958 INFO Retrieved 3/105 KB entries for dims=['healthy']
+2026-04-06 06:54:17,958 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:17,958 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:18,198 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:20,414 INFO   LLM response: 625 chars, 1309 tokens, 2367ms
+2026-04-06 06:54:20,414 INFO   Groundedness: 0.00 (0/0 citations verified)
+2026-04-06 06:54:20,414 INFO   Generated 0 recommendations
+2026-04-06 06:54:20,414 INFO   Groundedness: 0.00
+2026-04-06 06:54:20,414 INFO 
+2026-04-06 06:54:20,415 INFO Pipeline completed in 2464ms
+2026-04-06 06:54:20,415 INFO ============================================================
+2026-04-06 06:54:20,416 INFO 
+2026-04-06 06:54:20,416 INFO Workload 9/12, Run 1/1: ior_ior_small_direct_t4096_n16_r1
+2026-04-06 06:54:20,416 INFO 
+2026-04-06 06:54:20,416 INFO ============================================================
+2026-04-06 06:54:20,416 INFO IOPrescriber Analysis: ior_ior_small_direct_t4096_n16_r1_run0
+2026-04-06 06:54:20,416 INFO ============================================================
+2026-04-06 06:54:20,416 INFO Step 1: ML Detection...
+2026-04-06 06:54:20,421 INFO   Detected: ['access_granularity']
+2026-04-06 06:54:20,421 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:20,429 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-06 06:54:20,429 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:20,429 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:20,725 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:25,807 INFO   LLM response: 1746 chars, 1891 tokens, 5317ms
+2026-04-06 06:54:25,807 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:54:25,808 INFO   Generated 1 recommendations
+2026-04-06 06:54:25,808 INFO   Groundedness: 1.00
+2026-04-06 06:54:25,808 INFO 
+2026-04-06 06:54:25,808 INFO Pipeline completed in 5392ms
+2026-04-06 06:54:25,808 INFO ============================================================
+2026-04-06 06:54:25,809 INFO 
+2026-04-06 06:54:25,809 INFO Workload 10/12, Run 1/1: ior_ior_misaligned_t1000_n4_r1
+2026-04-06 06:54:25,809 INFO 
+2026-04-06 06:54:25,809 INFO ============================================================
+2026-04-06 06:54:25,809 INFO IOPrescriber Analysis: ior_ior_misaligned_t1000_n4_r1_run0
+2026-04-06 06:54:25,809 INFO ============================================================
+2026-04-06 06:54:25,809 INFO Step 1: ML Detection...
+2026-04-06 06:54:25,815 INFO   Detected: ['access_granularity']
+2026-04-06 06:54:25,815 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:25,819 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-06 06:54:25,819 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:25,819 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:26,095 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:33,256 INFO   LLM response: 1884 chars, 1935 tokens, 7372ms
+2026-04-06 06:54:33,256 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:54:33,256 INFO   Generated 1 recommendations
+2026-04-06 06:54:33,256 INFO   Groundedness: 1.00
+2026-04-06 06:54:33,257 INFO 
+2026-04-06 06:54:33,257 INFO Pipeline completed in 7447ms
+2026-04-06 06:54:33,257 INFO ============================================================
+2026-04-06 06:54:33,258 INFO 
+2026-04-06 06:54:33,258 INFO Workload 11/12, Run 1/1: ior_ior_misaligned_t3000_n4_r3
+2026-04-06 06:54:33,258 INFO 
+2026-04-06 06:54:33,258 INFO ============================================================
+2026-04-06 06:54:33,258 INFO IOPrescriber Analysis: ior_ior_misaligned_t3000_n4_r3_run0
+2026-04-06 06:54:33,258 INFO ============================================================
+2026-04-06 06:54:33,258 INFO Step 1: ML Detection...
+2026-04-06 06:54:33,263 INFO   Detected: ['access_granularity']
+2026-04-06 06:54:33,263 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:33,270 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-06 06:54:33,270 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:33,270 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:33,508 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:37,740 INFO   LLM response: 1766 chars, 1877 tokens, 4433ms
+2026-04-06 06:54:37,740 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:54:37,740 INFO   Generated 1 recommendations
+2026-04-06 06:54:37,740 INFO   Groundedness: 1.00
+2026-04-06 06:54:37,740 INFO 
+2026-04-06 06:54:37,741 INFO Pipeline completed in 4483ms
+2026-04-06 06:54:37,741 INFO ============================================================
+2026-04-06 06:54:37,741 INFO 
+2026-04-06 06:54:37,742 INFO Workload 12/12, Run 1/1: ior_ior_misaligned_t7000_n16_r2
+2026-04-06 06:54:37,742 INFO 
+2026-04-06 06:54:37,742 INFO ============================================================
+2026-04-06 06:54:37,742 INFO IOPrescriber Analysis: ior_ior_misaligned_t7000_n16_r2_run0
+2026-04-06 06:54:37,742 INFO ============================================================
+2026-04-06 06:54:37,742 INFO Step 1: ML Detection...
+2026-04-06 06:54:37,747 INFO   Detected: ['access_granularity']
+2026-04-06 06:54:37,747 INFO Step 2: KB Retrieval...
+2026-04-06 06:54:37,751 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-06 06:54:37,751 INFO   Retrieved 3 KB entries
+2026-04-06 06:54:37,751 INFO Step 3: LLM Recommendation...
+2026-04-06 06:54:38,041 INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 06:54:43,045 INFO   LLM response: 1790 chars, 1888 tokens, 5231ms
+2026-04-06 06:54:43,046 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-06 06:54:43,046 INFO   Generated 1 recommendations
+2026-04-06 06:54:43,046 INFO   Groundedness: 1.00
+2026-04-06 06:54:43,046 INFO 
+2026-04-06 06:54:43,046 INFO Pipeline completed in 5304ms
+2026-04-06 06:54:43,046 INFO ============================================================
+2026-04-06 06:54:43,064 INFO 
+2026-04-06 06:54:43,064 INFO ================================================================================
+2026-04-06 06:54:43,064 INFO TABLE 3: LLM Recommendation Quality
+2026-04-06 06:54:43,064 INFO ================================================================================
+2026-04-06 06:54:43,064 INFO Model                Ground.      Latency(ms)    Tokens     #Recs    Parse%  
+2026-04-06 06:54:43,064 INFO ------------------------------------------------------------------------
+2026-04-06 06:54:43,064 INFO gpt-4.1-mini         0.000±0.000  0±0            0          0.0      0%      
+2026-04-06 06:54:43,064 INFO ================================================================================
+2026-04-06 06:54:43,094 INFO 
+2026-04-06 06:54:43,094 INFO Results saved: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/iosage_gpt41mini/evaluation_results_1775476483.json
+2026-04-06 06:54:43,095 INFO Summary saved: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/iosage_gpt41mini/evaluation_summary.json

@@ -1,0 +1,1125 @@
+{
+  "gpt-4.1-mini": [
+    {
+      "workload": "ior_ior_small_posix_t64_n4_r1_run0",
+      "pipeline_latency_ms": 57900.4,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.9997,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r1_0",
+            "similarity": 0.9231,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+            "similarity": 0.9193,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+            "similarity": 0.9165,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This job performs exclusively small POSIX write operations of 64 bytes each, resulting in a very high small I/O ratio (100%) and a very low average write size (64 bytes). Such tiny writes cause excessive system call overhead and metadata operations (metadata time ratio ~19%), severely limiting I/O bandwidth to about 29 MB/s. The sequential write pattern indicates no randomness, so aggregating writes is feasible and beneficial.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many small POSIX write calls (64 bytes each), causing excessive syscall overhead and metadata operations. Aggregating these small writes into larger buffers (>=1MB) before issuing a single write reduces syscall frequency and improves throughput.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "size_t offset = 0;\nchar big_buf[1048576];\nfor (i=0; i<n; i++) {\n  memcpy(big_buf + offset, buf, 64);\n  offset += 64;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) {\n  write(fd, big_buf, offset);\n}",
+              "expected_speedup": "Up to 3-5x based on KB entries ior_ior_small_posix_t64_n4_r1_0, ior_ior_small_posix_t64_n4_r3_2, ior_ior_small_posix_t64_n4_r2_1",
+              "kb_citation": "ior_ior_small_posix_t64_n4_r1_0, ior_ior_small_posix_t64_n4_r3_2, ior_ior_small_posix_t64_n4_r2_1",
+              "confidence": "high",
+              "api_change": "POSIX write with small sizes -> POSIX write with large buffered chunks"
+            }
+          ],
+          "overall_expected_improvement": "3x to 5x total speedup by reducing syscall overhead and metadata time through write aggregation"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 20006.6,
+          "tokens_input": 1395,
+          "tokens_output": 500,
+          "timestamp": "2026-04-06T06:53:39Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 0,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "mdtest_mdtest_meta_shared_n1000_r4_rep2_run0",
+      "pipeline_latency_ms": 4823.7,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0,
+          "metadata_intensity": 1.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0005
+        },
+        "detected": [
+          "metadata_intensity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep2_148",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          },
+          {
+            "entry_id": "mdtest_mdtest_meta_shared_n1000_r4_rep3_149",
+            "similarity": 1.0,
+            "matched_dims": [
+              "metadata_intensity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This job suffers from excessive file metadata operations, such as open, stat, and close calls, relative to the actual data I/O. Darshan reports a metadata_time_ratio of 1.0, indicating that all I/O time is spent on metadata operations rather than reading or writing data. This inefficiency is caused by creating and closing a very large number of small files (file-per-process or file-per-iteration), which leads to high overhead on the file system metadata servers and severely degrades performance.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "metadata_intensity",
+              "explanation": "The job creates and closes thousands of files individually, causing excessive metadata operations that dominate I/O time. This can be optimized by reducing the number of files created, for example by using a single shared file for all processes or batching file creation operations.",
+              "code_before": "for (i=0; i<50000; i++) {\n  fd = open(path_i, O_CREAT|O_WRONLY, 0600);\n  close(fd);\n}",
+              "code_after": "MPI_File_open(comm, shared_path, MPI_MODE_CREATE|MPI_MODE_WRONLY, info, &fh);\n/* Use MPI_File_write_all or similar collective I/O calls to write data into shared file */\nMPI_File_close(&fh);",
+              "expected_speedup": "Up to 10x or more metadata overhead reduction based on mdtest benchmark results",
+              "kb_citation": "mdtest_mdtest_meta_shared_n1000_r4_rep1_147, mdtest_mdtest_meta_shared_n1000_r4_rep2_148, mdtest_mdtest_meta_shared_n1000_r4_rep3_149",
+              "confidence": "high",
+              "api_change": "POSIX open/close -> MPI_File_open/MPI_File_close with collective MPI-IO"
+            }
+          ],
+          "overall_expected_improvement": "At least 5x to 10x reduction in metadata overhead, significantly reducing total I/O time"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4776.3,
+          "tokens_input": 1231,
+          "tokens_output": 439,
+          "timestamp": "2026-04-06T06:53:44Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 1,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 110,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "custom_custom_imbalance_f2_mb10_n4_r1_run0",
+      "pipeline_latency_ms": 5033.4,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 1.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0001,
+          "healthy": 0.0013
+        },
+        "detected": [
+          "parallelism_efficiency"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r1_327",
+            "similarity": 1.0,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r2_328",
+            "similarity": 0.9837,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          },
+          {
+            "entry_id": "custom_custom_imbalance_f2_mb10_n4_r3_329",
+            "similarity": 0.8975,
+            "matched_dims": [
+              "parallelism_efficiency"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job suffers from poor parallel I/O efficiency due to uneven I/O load distribution across the 4 MPI ranks. Darshan data shows a high metadata time ratio (0.9154) and a low sequential write ratio (0.2), indicating many small, possibly uncoordinated writes. The average write size (~5MB) is moderate but over half of the I/O is small, which combined with rank imbalance leads to serialization and idle time on some ranks, limiting overall bandwidth to ~77 MB/s.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "parallelism_efficiency",
+              "explanation": "The current code performs all I/O on rank 0, causing serialization and load imbalance. This leads to poor parallel efficiency and underutilization of the I/O system. Using MPI collective I/O distributes the workload evenly across ranks, enabling concurrent writes and better bandwidth utilization.",
+              "code_before": "if (rank == 0) write(fd, all_data, total_size);  /* rank 0 does all I/O */",
+              "code_after": "MPI_File_write_all(fh, my_data, my_size, MPI_BYTE, &status);  /* all ranks write their portion collectively */",
+              "expected_speedup": "Up to 2-4x speedup based on KB entries custom_custom_imbalance_f2_mb10_n4_r1_327, r2_328, r3_329",
+              "kb_citation": "custom_custom_imbalance_f2_mb10_n4_r1_327, custom_custom_imbalance_f2_mb10_n4_r2_328, custom_custom_imbalance_f2_mb10_n4_r3_329",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_all"
+            }
+          ],
+          "overall_expected_improvement": "2-4x total runtime speedup by eliminating I/O serialization and balancing load across ranks"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4956.3,
+          "tokens_input": 1144,
+          "tokens_output": 423,
+          "timestamp": "2026-04-06T06:53:49Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 1,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 238,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_random_posix_t4096_n4_r1_run0",
+      "pipeline_latency_ms": 8232.5,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0006,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 1.0,
+          "interface_choice": 0.0001,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_pattern"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r1_54",
+            "similarity": 0.8983,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r1_127",
+            "similarity": 0.8966,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_random_posix_t4096_n4_r2_128",
+            "similarity": 0.896,
+            "matched_dims": [
+              "access_pattern"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job exhibits a significant amount of random (non-sequential) file access, as indicated by the access pattern bottleneck detected with high confidence. Despite writing a large volume of data (4GB) with an average write size of 4KB, only about 50% of the writes are sequential, which defeats OS read-ahead and storage prefetching mechanisms. This results in very low overall bandwidth (0.341 MB/s) and long runtime (over 6000 seconds). The very low metadata time ratio indicates the bottleneck is purely in data access pattern rather than metadata overhead.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "Random file access causes inefficient I/O by defeating OS and storage prefetching. Sorting the access offsets to perform sequential I/O improves throughput by enabling better read-ahead and caching.",
+              "code_before": "for (i=0; i<n; i++) {\n  offset = random_offsets[i];\n  pwrite(fd, buf, size, offset);  /* random offsets */\n}",
+              "code_after": "/* Sort offsets for sequential access */\nqsort(random_offsets, n, sizeof(off_t), compare);\nfor (i=0; i<n; i++) {\n  pwrite(fd, buf, size, random_offsets[i]);\n}",
+              "expected_speedup": "Up to 2-3x based on IOR random POSIX benchmarks with sorted offsets (KB entries ior_ior_random_posix_t4096_n4_r1_54, ior_ior_random_posix_t4096_n4_r1_127, ior_ior_random_posix_t4096_n4_r2_128)",
+              "kb_citation": "ior_ior_random_posix_t4096_n4_r1_54, ior_ior_random_posix_t4096_n4_r1_127, ior_ior_random_posix_t4096_n4_r2_128",
+              "confidence": "high",
+              "api_change": "POSIX pwrite with random offsets -> POSIX pwrite with sorted offsets"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "access_pattern",
+              "explanation": "If random access cannot be avoided, enabling MPI-IO data sieving can reduce the number of small, random I/O operations by aggregating them into fewer large sequential accesses, improving performance.",
+              "code_before": "for (i=0; i<n; i++) {\n  MPI_File_write(fh, buf, size, MPI_BYTE, &status);  /* random offsets */\n}",
+              "code_after": "/* Enable MPI-IO data sieving by setting appropriate hints */\nMPI_Info info;\nMPI_Info_create(&info);\nMPI_Info_set(info, \"romio_ds_read\", \"enable\");\nMPI_Info_set(info, \"romio_ds_write\", \"enable\");\nMPI_File_set_info(fh, info);\nMPI_Info_free(&info);\n\n/* Perform writes as usual, MPI-IO will aggregate internally */\nfor (i=0; i<n; i++) {\n  MPI_File_write(fh, buf, size, MPI_BYTE, &status);\n}",
+              "expected_speedup": "Potential 1.5-2x improvement in random access scenarios based on MPI-IO data sieving benefits (general knowledge, consistent with KB entries)",
+              "kb_citation": "ior_ior_random_posix_t4096_n4_r1_54 (MPIIO_indep example)",
+              "confidence": "medium",
+              "api_change": "POSIX pwrite -> MPI_File_write with data sieving enabled"
+            }
+          ],
+          "overall_expected_improvement": "2-3x speedup by sorting offsets for sequential access; additional 1.5-2x possible if MPI-IO data sieving is enabled for unavoidable random access"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 8129.4,
+          "tokens_input": 1357,
+          "tokens_output": 850,
+          "timestamp": "2026-04-06T06:53:57Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 1,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 40,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_run0",
+      "pipeline_latency_ms": 4851.3,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0119,
+          "metadata_intensity": 0.0012,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.973,
+          "file_strategy": 0.1944,
+          "throughput_utilization": 0.1248,
+          "healthy": 0.0145
+        },
+        "detected": [
+          "interface_choice"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141",
+            "similarity": 0.9766,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r2_142",
+            "similarity": 0.9758,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+            "similarity": 0.9673,
+            "matched_dims": [
+              "interface_choice"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job performs large, sequential writes (1 MiB per write) from 128 processes to a shared file using POSIX I/O. This leads to inefficient independent file positioning (lseek) and uncoordinated writes, causing poor aggregate bandwidth (1.6 MB/s) despite the large write size and fully sequential pattern. The metadata overhead is negligible, so the bottleneck is the suboptimal I/O interface choice: POSIX instead of MPI-IO collective I/O, which can coordinate access and enable collective buffering to improve throughput.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "Using POSIX independent writes on a shared file causes serialization and poor coordination among ranks, limiting bandwidth. Switching to MPI-IO collective writes (MPI_File_write_all) enables the MPI library to optimize data aggregation and file system interactions, significantly improving write performance.",
+              "code_before": "lseek(fd, my_offset, SEEK_SET);\nwrite(fd, buf, size);",
+              "code_after": "MPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, size, MPI_BYTE, &status);",
+              "expected_speedup": "Up to 10x based on IOR benchmark scenarios with 128 ranks and 1 MiB writes (KB entries ior_ior_interface_mpiio_indep_t1048576_n128_r1_141, _r2_142, _r3_143)",
+              "kb_citation": "ior_ior_interface_mpiio_indep_t1048576_n128_r1_141, ior_ior_interface_mpiio_indep_t1048576_n128_r2_142, ior_ior_interface_mpiio_indep_t1048576_n128_r3_143",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_all"
+            }
+          ],
+          "overall_expected_improvement": "Approximately 5-10x total speedup in write bandwidth by replacing POSIX independent writes with MPI-IO collective writes on the shared file"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4795.8,
+          "tokens_input": 1381,
+          "tokens_output": 468,
+          "timestamp": "2026-04-06T06:54:02Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 1,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 105,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_file_explosion_t65536_n128_r1_run0",
+      "pipeline_latency_ms": 8431.7,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.877,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.9997,
+          "throughput_utilization": 0.0001,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity",
+          "file_strategy"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563",
+            "similarity": 0.1893,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r2_564",
+            "similarity": 0.1893,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+            "similarity": 0.1893,
+            "matched_dims": [
+              "file_strategy",
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job suffers from two main I/O problems: first, it performs many small I/O operations with transfer sizes smaller than 1MB, causing excessive system call overhead and reducing throughput. Although the average write size reported by Darshan is 64KB, the benchmark evidence shows that even smaller writes (e.g., 64B) are common in the code, which leads to inefficient I/O. Second, the job uses a suboptimal file strategy, likely involving either file-per-process or shared-file contention, which further degrades performance by increasing metadata operations and synchronization overhead. The very high sequential write ratio (0.9994) indicates mostly sequential writes, but the total bandwidth is low (~3.5 MB/s), confirming inefficiencies in I/O patterns.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many small write calls (e.g., 64 bytes), causing excessive syscall overhead and poor bandwidth utilization. Aggregating these small writes into larger buffers of at least 1MB before issuing a write reduces syscall overhead and improves throughput.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "Up to 2-3x bandwidth improvement based on KB entries 563, 564, 565",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563, hacc_io_hacc_fpp_small_many_p50_n128_r2_564, hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+              "confidence": "high",
+              "api_change": "POSIX write -> POSIX write with buffered aggregation"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "file_strategy",
+              "explanation": "The job likely uses a suboptimal file strategy causing file-per-process explosion or shared-file contention. Switching to a shared file with collective MPI-IO operations and larger datatypes can reduce metadata overhead and contention, improving scalability and bandwidth.",
+              "code_before": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status);  /* small count, many calls */",
+              "code_after": "/* Use collective I/O with larger datatypes and fewer calls */\nMPI_File_write_at_all(fh, offset, large_buf, large_count, MPI_FLOAT, &status);",
+              "expected_speedup": "Additional 1.5-2x improvement when combined with access granularity fixes (KB entries 563-565)",
+              "kb_citation": "hacc_io_hacc_fpp_small_many_p50_n128_r1_563, hacc_io_hacc_fpp_small_many_p50_n128_r2_564, hacc_io_hacc_fpp_small_many_p50_n128_r3_565",
+              "confidence": "high",
+              "api_change": "MPI_File_write_at_all with small counts -> MPI_File_write_at_all with large counts and collective I/O"
+            }
+          ],
+          "overall_expected_improvement": "2-3x total speedup by combining buffered large writes and improved file strategy"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 8365.7,
+          "tokens_input": 1460,
+          "tokens_output": 764,
+          "timestamp": "2026-04-06T06:54:10Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 1,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 102,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "dlio_dlio_ckpt_ms100000000_n4_rep1_run0",
+      "pipeline_latency_ms": 7019.2,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.9741,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0001,
+          "access_pattern": 0.0001,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.6925,
+          "healthy": 0.0013
+        },
+        "detected": [
+          "access_granularity",
+          "throughput_utilization"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+            "similarity": 0.3317,
+            "matched_dims": [
+              "access_granularity",
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607",
+            "similarity": 0.3164,
+            "matched_dims": [
+              "access_granularity",
+              "throughput_utilization"
+            ]
+          },
+          {
+            "entry_id": "hacc_io_hacc_posix_shared_small_single_ost_p200_n128_r2_612",
+            "similarity": 0.3066,
+            "matched_dims": [
+              "access_granularity",
+              "throughput_utilization"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This job performs many small I/O writes with an average write size of only 247 bytes and a high small I/O ratio of 58.44%, causing excessive system call overhead and metadata operations (metadata time ratio 98.22%). The writes are also only partially sequential (50%), limiting throughput. These factors lead to underutilization of the available I/O bandwidth (197 MB/s), resulting in inefficient I/O performance.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many very small write calls (~247 bytes), causing excessive syscall overhead and metadata operations. Aggregating these small writes into larger buffers of at least 1MB before issuing a write reduces syscall overhead and improves throughput.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 64); offset += 64;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2x to 3x based on KB entries 1, 2, 3",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605, hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607, hacc_io_hacc_posix_shared_small_single_ost_p200_n128_r2_612",
+              "confidence": "high",
+              "api_change": "POSIX write with small sizes -> POSIX write with large buffered chunks"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The job's throughput is below achievable levels due to excessive synchronization and possibly writing to a single OST, causing contention and redundant traffic. Using MPI-IO collective writes with larger datatypes can improve parallel I/O throughput by enabling better OST striping and reducing synchronization overhead.",
+              "code_before": "MPI_File_write_at_all(fh, offset, buf, count, MPI_FLOAT, &status);  /* small count per call */",
+              "code_after": "/* Aggregate data into larger buffers and use collective I/O */\nMPI_File_write_at_all(fh, offset, big_buf, big_count, MPI_FLOAT, &status);",
+              "expected_speedup": "1.5x to 2x based on KB entries 1, 2, 3",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605, hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607, hacc_io_hacc_posix_shared_small_single_ost_p200_n128_r2_612",
+              "confidence": "medium",
+              "api_change": "MPI_File_write_at_all with small counts -> MPI_File_write_at_all with larger collective buffers"
+            }
+          ],
+          "overall_expected_improvement": "2x to 3x total speedup by combining buffering of small writes and improved collective MPI-IO throughput"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 6949.6,
+          "tokens_input": 1501,
+          "tokens_output": 718,
+          "timestamp": "2026-04-06T06:54:17Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 1,
+        "healthy": 0
+      },
+      "workload_index": 213,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_healthy_collective_t4194304_n128_r1_run0",
+      "pipeline_latency_ms": 2464.3,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.0012,
+          "metadata_intensity": 0.0002,
+          "parallelism_efficiency": 0.0001,
+          "access_pattern": 0.0001,
+          "interface_choice": 0.0001,
+          "file_strategy": 0.0022,
+          "throughput_utilization": 0.0002,
+          "healthy": 0.9971
+        },
+        "detected": [
+          "healthy"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_healthy_collective_t4194304_n128_r1_144",
+            "similarity": 0.9157,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_healthy_collective_t4194304_n128_r3_146",
+            "similarity": 0.9131,
+            "matched_dims": [
+              "healthy"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_healthy_collective_t4194304_n128_r2_145",
+            "similarity": 0.9113,
+            "matched_dims": [
+              "healthy"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job performs large, sequential, collective writes with an average write size of 1 MiB and a very high sequential write ratio (97.67%). All I/O is collective, which is optimal for parallel file systems. The total bandwidth achieved is about 17.9 MB/s, which is consistent with the job's runtime and I/O volume. Darshan and ML classifier detect no significant I/O bottlenecks, indicating the current I/O pattern is efficient and well-optimized.",
+          "recommendations": [],
+          "overall_expected_improvement": "No improvement expected as the I/O pattern is already optimal and no bottlenecks were detected."
+        },
+        "groundedness": {
+          "groundedness_score": 0.0,
+          "n_recommendations": 0,
+          "n_grounded": 0,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 2366.8,
+          "tokens_input": 1169,
+          "tokens_output": 140,
+          "timestamp": "2026-04-06T06:54:20Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 0,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 1
+      },
+      "workload_index": 108,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_small_direct_t4096_n16_r1_run0",
+      "pipeline_latency_ms": 5391.9,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0004,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_small_direct_t4096_n16_r1_39",
+            "similarity": 0.9986,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_direct_t4096_n16_r3_41",
+            "similarity": 0.996,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_small_direct_t4096_n16_r2_40",
+            "similarity": 0.9944,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job performs many small I/O write operations with an average write size of 4096 bytes (4KB), which is well below the recommended 1MB transfer size. This causes excessive system call overhead and inefficient use of the I/O subsystem, resulting in low overall bandwidth (~8 MB/s) despite sequential writes and a large total data volume (~1.6 GB).",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues very small write calls (~4KB each), causing excessive syscall overhead and poor I/O throughput. Aggregating these small writes into larger buffers of at least 1MB before issuing a write reduces syscall overhead and improves bandwidth.",
+              "code_before": "for (i = 0; i < n; i++) write(fd, buf, 4096);  /* 4KB per call */",
+              "code_after": "size_t offset = 0;\nchar big_buf[1048576];  /* 1MB buffer */\nfor (i = 0; i < n; i++) {\n  memcpy(big_buf + offset, buf, 4096);\n  offset += 4096;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) {\n  write(fd, big_buf, offset);\n}",
+              "expected_speedup": "Up to 2-3x bandwidth improvement based on KB entries ior_ior_small_direct_t4096_n16_r1_39, ior_ior_small_direct_t4096_n16_r2_40, ior_ior_small_direct_t4096_n16_r3_41",
+              "kb_citation": "ior_ior_small_direct_t4096_n16_r1_39, ior_ior_small_direct_t4096_n16_r2_40, ior_ior_small_direct_t4096_n16_r3_41",
+              "confidence": "high",
+              "api_change": "POSIX write with small buffers -> POSIX write with large aggregated buffer"
+            }
+          ],
+          "overall_expected_improvement": "2-3x overall I/O bandwidth improvement by reducing syscall overhead and increasing transfer size"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 5317.5,
+          "tokens_input": 1386,
+          "tokens_output": 505,
+          "timestamp": "2026-04-06T06:54:25Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 27,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_misaligned_t1000_n4_r1_run0",
+      "pipeline_latency_ms": 7447.3,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 1.0,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_misaligned_t1000_n4_r1_109",
+            "similarity": 0.9231,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t1000_n4_r2_110",
+            "similarity": 0.9212,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t1000_n4_r3_111",
+            "similarity": 0.916,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This HPC job performs exclusively small I/O write operations with an average write size of about 1000 bytes and a small I/O ratio of 1.0, meaning all writes are small. Such small transfer sizes cause excessive system call overhead, limiting I/O throughput despite sequential access and a decent total bandwidth of ~165 MB/s. The metadata time ratio of ~10% also indicates overhead related to many small I/O calls. Aggregating these small writes into larger buffers (>=1MB) before issuing I/O calls would reduce syscall overhead and improve performance significantly.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many small write calls (~1KB each), causing excessive syscall overhead and limiting I/O throughput. Increasing the transfer size to >=1MB by buffering small writes before flushing reduces syscall overhead and improves bandwidth.",
+              "code_before": "for (i = 0; i < n; i++) write(fd, buf, 1000);  /* 1KB per call */",
+              "code_after": "size_t offset = 0;\nchar big_buf[1048576];\nfor (i = 0; i < n; i++) {\n  memcpy(big_buf + offset, buf, 1000);\n  offset += 1000;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) {\n  write(fd, big_buf, offset);\n}",
+              "expected_speedup": "Up to 2-3x based on KB entries ior_ior_misaligned_t1000_n4_r1_109, ior_ior_misaligned_t1000_n4_r2_110, ior_ior_misaligned_t1000_n4_r3_111",
+              "kb_citation": "ior_ior_misaligned_t1000_n4_r1_109, ior_ior_misaligned_t1000_n4_r2_110, ior_ior_misaligned_t1000_n4_r3_111",
+              "confidence": "high",
+              "api_change": "POSIX write with small sizes -> POSIX write with large buffered chunks"
+            }
+          ],
+          "overall_expected_improvement": "2-3x total speedup by eliminating excessive syscall overhead from small writes"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 7372.3,
+          "tokens_input": 1402,
+          "tokens_output": 533,
+          "timestamp": "2026-04-06T06:54:33Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 85,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_misaligned_t3000_n4_r3_run0",
+      "pipeline_latency_ms": 4482.5,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 1.0,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0002,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_misaligned_t3000_n4_r3_117",
+            "similarity": 0.9167,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t3000_n4_r2_116",
+            "similarity": 0.9054,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t3000_n4_r1_115",
+            "similarity": 0.9029,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "The job performs many I/O operations with very small transfer sizes (average write size ~3000 bytes), which is significantly below the recommended 1MB threshold. This causes excessive system call overhead and reduces I/O throughput despite a high sequential write ratio. The metadata overhead is low, so the main bottleneck is inefficient access granularity leading to suboptimal bandwidth utilization.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many small write calls (~3KB each), causing excessive syscall overhead and limiting I/O performance. Increasing the transfer size to at least 1MB by buffering small writes into larger chunks reduces syscall frequency and improves throughput.",
+              "code_before": "for (i = 0; i < n; i++) write(fd, buf, 3000);  /* ~3KB per call */",
+              "code_after": "size_t offset = 0;\nchar big_buf[1048576];  /* 1MB buffer */\nfor (i = 0; i < n; i++) {\n  memcpy(big_buf + offset, buf, 3000);\n  offset += 3000;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) write(fd, big_buf, offset);",
+              "expected_speedup": "Up to 2-3x based on IOR benchmarks with similar small write aggregation (KB entries ior_ior_misaligned_t3000_n4_r1_115, r2_116, r3_117)",
+              "kb_citation": "ior_ior_misaligned_t3000_n4_r1_115, ior_ior_misaligned_t3000_n4_r2_116, ior_ior_misaligned_t3000_n4_r3_117",
+              "confidence": "high",
+              "api_change": "POSIX write with small sizes -> POSIX write with aggregated large buffers"
+            }
+          ],
+          "overall_expected_improvement": "2-3x I/O throughput improvement by eliminating excessive syscall overhead through write aggregation"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4432.9,
+          "tokens_input": 1392,
+          "tokens_output": 485,
+          "timestamp": "2026-04-06T06:54:37Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 88,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    },
+    {
+      "workload": "ior_ior_misaligned_t7000_n16_r2_run0",
+      "pipeline_latency_ms": 5304.1,
+      "step1_detection": {
+        "predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0018,
+          "throughput_utilization": 0.0,
+          "healthy": 0.0
+        },
+        "detected": [
+          "access_granularity"
+        ]
+      },
+      "shap_analysis": {},
+      "step2_retrieval": {
+        "n_entries": 3,
+        "entries": [
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r2_125",
+            "similarity": 0.9166,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r3_126",
+            "similarity": 0.9127,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          },
+          {
+            "entry_id": "ior_ior_misaligned_t7000_n16_r1_124",
+            "similarity": 0.9003,
+            "matched_dims": [
+              "access_granularity"
+            ]
+          }
+        ]
+      },
+      "step3_recommendation": {
+        "parsed": {
+          "diagnosis": "This job performs sequential POSIX writes with an average write size of about 7 KB, which is significantly smaller than the recommended 1 MB transfer size. Such small I/O operations cause excessive system call overhead, limiting the achievable bandwidth despite a high sequential write ratio and large total data volume. The metadata overhead is low, so the main bottleneck is inefficient access granularity due to many small writes.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job issues many small POSIX write calls (~7 KB each), causing excessive syscall overhead and limiting I/O throughput. Increasing the write buffer size to at least 1 MB by aggregating small writes into a large buffer before flushing reduces syscall frequency and improves bandwidth.",
+              "code_before": "for (i = 0; i < n; i++) write(fd, buf, 7000);  /* ~7KB per call */",
+              "code_after": "size_t offset = 0;\nchar big_buf[1048576];  /* 1MB buffer */\nfor (i = 0; i < n; i++) {\n  memcpy(big_buf + offset, buf, 7000);\n  offset += 7000;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) write(fd, big_buf, offset);",
+              "expected_speedup": "Up to 2-3x based on IOR benchmarks with similar small write aggregation (KB entries ior_ior_misaligned_t7000_n16_r1_124, r2_125, r3_126)",
+              "kb_citation": "ior_ior_misaligned_t7000_n16_r1_124, ior_ior_misaligned_t7000_n16_r2_125, ior_ior_misaligned_t7000_n16_r3_126",
+              "confidence": "high",
+              "api_change": "POSIX write (buffered aggregation)"
+            }
+          ],
+          "overall_expected_improvement": "2-3x speedup in I/O throughput by reducing syscall overhead and increasing effective transfer size"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 1,
+          "n_grounded": 1,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 5231.3,
+          "tokens_input": 1393,
+          "tokens_output": 495,
+          "timestamp": "2026-04-06T06:54:43Z"
+        }
+      },
+      "ground_truth_labels": {
+        "access_granularity": 1,
+        "metadata_intensity": 0,
+        "parallelism_efficiency": 0,
+        "access_pattern": 0,
+        "interface_choice": 0,
+        "file_strategy": 0,
+        "throughput_utilization": 0,
+        "healthy": 0
+      },
+      "workload_index": 92,
+      "run": 0,
+      "model": "gpt-4.1-mini"
+    }
+  ]
+}

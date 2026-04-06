@@ -317,7 +317,9 @@ def fig_domain_shift_tsne():
 
     # Load production features (sample)
     prod_path = PROJECT_DIR / "data" / "processed" / "production" / "features.parquet"
-    bench_path = PROJECT_DIR / "data" / "processed" / "benchmark" / "features.parquet"
+    # Use boost experiment (689 GT) if available
+    bench_path_boost = PROJECT_DIR / "results" / "boost_experiment" / "new_splits" / "features.parquet"
+    bench_path = bench_path_boost if bench_path_boost.exists() else PROJECT_DIR / "data" / "processed" / "benchmark" / "features.parquet"
 
     if not prod_path.exists() or not bench_path.exists():
         logger.warning("Feature files not found. Skipping t-SNE.")

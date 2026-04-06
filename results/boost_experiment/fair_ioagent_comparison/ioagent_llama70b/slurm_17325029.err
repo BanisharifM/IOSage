@@ -1,0 +1,22 @@
+2026-04-06 06:52:35,320 [INFO] Loaded 689 labels
+2026-04-06 06:52:35,337 [INFO] Selected 50 traces for evaluation
+2026-04-06 06:52:35,395 [INFO] Found darshan files for 50/50 traces
+Traceback (most recent call last):
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/run_ioagent_multimodel.py", line 126, in __init__
+    from openai import AsyncOpenAI
+ModuleNotFoundError: No module named 'openai'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/run_ioagent_multimodel.py", line 850, in <module>
+    asyncio.run(main())
+  File "/projects/bdau/envs/sc2026/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/projects/bdau/envs/sc2026/lib/python3.9/asyncio/base_events.py", line 647, in run_until_complete
+    return future.result()
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/run_ioagent_multimodel.py", line 745, in main
+    client = OpenAIClient(api_key=api_key, model=args.model)
+  File "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/boost_experiment/fair_ioagent_comparison/run_ioagent_multimodel.py", line 128, in __init__
+    raise ImportError("openai package required. Install with: pip install openai")
+ImportError: openai package required. Install with: pip install openai
