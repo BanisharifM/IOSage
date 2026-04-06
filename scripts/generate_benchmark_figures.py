@@ -188,9 +188,9 @@ def fig_gt_label_distribution():
             else:
                 counts[bench].append(0)
 
-    fig, ax = plt.subplots(figsize=(7.16, 2.8), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(7.16, 3.5), constrained_layout=True)
     x = np.arange(len(dims))
-    width = 0.65
+    width = 0.45
     bottom = np.zeros(len(dims))
 
     for bench in benchmarks:
@@ -202,15 +202,17 @@ def fig_gt_label_distribution():
         bottom += vals
 
     ax.set_xticks(x)
-    ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center")
-    ax.set_ylabel("Number of samples")
-    ax.set_title("Ground-truth label distribution by benchmark suite")
-    ax.legend(loc="upper right", ncol=3)
+    ax.set_xticklabels([DIMENSION_LABELS[d] for d in dims], ha="center",
+                       fontsize=8)
+    ax.set_ylabel("Number of samples", labelpad=8)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.08),
+              ncol=6, fontsize=8, frameon=True, framealpha=0.9)
 
-    # Annotate totals
+    # Annotate totals above bars
     for i, total in enumerate(bottom):
         if total > 0:
-            ax.text(i, total + 2, str(int(total)), ha="center", va="bottom", fontsize=6.5)
+            ax.text(i, total + 3, str(int(total)), ha="center",
+                    va="bottom", fontsize=8, fontweight="bold")
 
     save_fig(fig, "fig_gt_label_distribution")
 

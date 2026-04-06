@@ -203,27 +203,41 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
     total = contributions.sum(axis=1)
     top_idx = np.argsort(total)[-top_k:]
 
-    fig, ax = plt.subplots(figsize=(10, 7))
+    # IEEE two-column: single-column width is ~3.5in, full-width is ~7.16in
+    fig, ax = plt.subplots(figsize=(7.16, 5.0))
+
     y_pos = np.arange(top_k)
+    bar_height = 0.65
     left = np.zeros(top_k)
 
     colors = plt.cm.Set2(np.linspace(0, 1, len(DIMENSIONS)))
 
     for j, dim in enumerate(DIMENSIONS):
         widths = contributions[top_idx, j]
-        ax.barh(y_pos, widths, left=left, label=DIM_SHORT[dim],
+        ax.barh(y_pos, widths, height=bar_height, left=left,
+                label=DIM_SHORT[dim],
                 color=colors[j], edgecolor="white", linewidth=0.3)
         left += widths
 
+    # Feature names as y-tick labels — larger font for readability
     ax.set_yticks(y_pos)
-    ax.set_yticklabels([feature_names[i] for i in top_idx], fontsize=8)
+    ax.set_yticklabels([feature_names[i] for i in top_idx], fontsize=10,
+                       fontfamily="monospace")
     ax.set_xlabel("Mean |SHAP| Value", fontsize=11)
-    ax.set_title(f"Global Feature Importance — Top {top_k}", fontsize=12)
-    ax.legend(loc="lower right", fontsize=8, ncol=2)
-    plt.tight_layout()
 
-    fig.savefig(output_path, dpi=300, bbox_inches="tight")
-    fig.savefig(str(output_path).replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
+    # Legend at top, horizontal, outside the bars
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.1),
+              fontsize=9, ncol=4, frameon=True, framealpha=0.9)
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(axis="x", alpha=0.3, linestyle="--")
+    plt.tight_layout(pad=1.5)
+
+    fig.savefig(output_path, dpi=300, bbox_inches="tight",
+                pad_inches=0.05)
+    fig.savefig(str(output_path).replace(".pdf", ".png"), dpi=300,
+                bbox_inches="tight", pad_inches=0.05)
     plt.close(fig)
     logger.info("Saved global bar: %s", output_path)
 
