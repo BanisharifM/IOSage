@@ -72,6 +72,7 @@ MODELS = {
     "claude-sonnet": "anthropic/claude-sonnet-4",
     "gpt-4o": "openai/gpt-4o",
     "llama-70b": "meta-llama/llama-3.1-70b-instruct",
+    "gpt-4.1-mini": "openai/gpt-4.1-mini",
 }
 
 # Per-model pricing (USD per million tokens)
@@ -79,6 +80,7 @@ MODEL_COSTS = {
     "anthropic/claude-sonnet-4": {"input": 3.0, "output": 15.0},
     "openai/gpt-4o": {"input": 2.50, "output": 10.0},
     "meta-llama/llama-3.1-70b-instruct": {"input": 0.59, "output": 0.79},
+    "openai/gpt-4.1-mini": {"input": 0.40, "output": 1.60},
 }
 
 DIM_DESCRIPTIONS = {
