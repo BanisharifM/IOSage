@@ -167,36 +167,41 @@ def fig_training_progression():
     phase2_f1 = [0.926, 1.000, 1.000, 0.690, 0.956, 0.903, 0.899, 0.824]
 
     x = np.arange(len(DIMS))
-    width = 0.32
+    width = 0.35
 
-    fig, ax = plt.subplots(figsize=(7.16, 3.5))
-    bars1 = ax.bar(x - width/2, phase1_f1, width, label="Drishti (Heuristic)",
+    # Single-column figure — native size matches paper column width
+    fig, ax = plt.subplots(figsize=(3.5, 2.6))
+    bars1 = ax.bar(x - width/2, phase1_f1, width, label="Drishti",
                    color=COLORS["vermilion"], edgecolor="black", linewidth=0.4, hatch="//")
-    bars2 = ax.bar(x + width/2, phase2_f1, width, label="IOSage (Biquality)",
+    bars2 = ax.bar(x + width/2, phase2_f1, width, label="IOSage",
                    color=COLORS["blue"], edgecolor="black", linewidth=0.4, hatch="")
 
-    ax.set_ylabel("F1 Score", labelpad=8)
+    ax.set_ylabel("F1 Score", fontsize=8)
     ax.set_xticks(x)
-    ax.set_xticklabels(DIM_SHORT, ha="center", fontsize=8)
-    ax.set_ylim(0, 1.22)
-    # Legend at top-center, outside plot area to avoid any overlap
-    ax.legend(loc="upper center", ncol=2, fontsize=9,
-              bbox_to_anchor=(0.5, 1.12), frameon=True, framealpha=0.9)
+    # Rotated labels like Fig 2
+    short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
+                    "Access Pattern", "Interface Ch.", "File Strategy",
+                    "Throughput Util.", "Healthy"]
+    ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
+    ax.set_ylim(0, 1.15)
+    # Legend inside chart — upper-right (File Strategy/Healthy area is short)
+    ax.legend(loc="upper right", bbox_to_anchor=(0.99, 0.99),
+              ncol=1, fontsize=7,
+              frameon=True, framealpha=0.95, edgecolor="#cccccc",
+              borderpad=0.4, borderaxespad=0)
     ax.grid(axis="y", alpha=0.3)
 
-    # Value labels on BOTH bar sets
+    # Value labels on BOTH bar sets — colored to match bars
     for bar in bars1:
         h = bar.get_height()
         if h > 0.01:  # Skip zero-height bars
-            ax.text(bar.get_x() + bar.get_width()/2, h + 0.02,
-                    f"{h:.2f}", ha="center", va="bottom", fontsize=7,
-                    color=COLORS["vermilion"])
+            ax.text(bar.get_x() + bar.get_width()/2, h + 0.015,
+                    f"{h:.2f}", ha="center", va="bottom", fontsize=6,
+                    color=COLORS["vermilion"], fontweight="bold")
     for bar in bars2:
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                f"{bar.get_height():.2f}", ha="center", va="bottom", fontsize=7,
-                color=COLORS["blue"])
-
-    fig.tight_layout(pad=1.5)
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.015,
+                f"{bar.get_height():.2f}", ha="center", va="bottom", fontsize=6,
+                color=COLORS["blue"], fontweight="bold")
     path = FIG_DIR / "fig_training_progression.pdf"
     save_fig(fig, path)
 
