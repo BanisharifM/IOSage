@@ -188,7 +188,7 @@ def fig_gt_label_distribution():
             else:
                 counts[bench].append(0)
 
-    fig, ax = plt.subplots(figsize=(3.5, 3.0))
+    fig, ax = plt.subplots(figsize=(3.5, 2.6))
     x = np.arange(len(dims))
     width = 0.5
     bottom = np.zeros(len(dims))
@@ -205,20 +205,20 @@ def fig_gt_label_distribution():
                     "Access Pattern", "Interface Ch.", "File Strategy",
                     "Throughput Util.", "Healthy"]
     ax.set_xticks(x)
-    ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=7)
-    ax.set_ylabel("Number of samples", fontsize=9)
+    ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
+    ax.set_ylabel("Samples", fontsize=8)
     # Legend in 2 rows of 3
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.18),
-              ncol=3, fontsize=7, frameon=True, framealpha=0.9,
-              columnspacing=0.8, handletextpad=0.4)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.2),
+              ncol=3, fontsize=6.5, frameon=True, framealpha=0.9,
+              columnspacing=0.6, handletextpad=0.3)
 
     # Annotate totals above bars
     for i, total in enumerate(bottom):
         if total > 0:
-            ax.text(i, total + 5, str(int(total)), ha="center",
-                    va="bottom", fontsize=7, fontweight="bold")
+            ax.text(i, total + 3, str(int(total)), ha="center",
+                    va="bottom", fontsize=6.5, fontweight="bold")
 
-    ax.set_ylim(0, max(bottom) * 1.18)
+    ax.set_ylim(0, max(bottom) * 1.12)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.pdf"),
                 format="pdf", bbox_inches="tight", pad_inches=0.01)
     fig.savefig(str(FIG_DIR / "fig_gt_label_distribution.png"),
