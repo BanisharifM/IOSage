@@ -251,8 +251,8 @@ def fig_ablation_trackb():
     conditions = ["Full\nPipeline", "w/o ML\nClassifier", "w/o Knowledge\nGrounding",
                   "Detection\nOnly", "LLM Only\n(no ML, no KB)"]
     groundedness = [1.0, 1.0, 0.0, None, 0.0]  # None = N/A
-    rec_precision = [0.70, 0.16, 0.67, None, 0.0]
-    n_recs = [1.2, 4.0, 2.6, 0.0, 4.1]
+    rec_precision = [0.73, 0.16, 0.67, None, 0.0]
+    n_recs = [1.4, 4.0, 2.6, 0.0, 4.1]
 
     # Colors: green for full, orange for partial, red for broken, gray for N/A
     colors = [OI["green"], OI["orange"], OI["vermilion"],
