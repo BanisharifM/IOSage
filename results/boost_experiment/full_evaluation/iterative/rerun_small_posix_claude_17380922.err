@@ -1,0 +1,42 @@
+2026-04-07 04:14:45 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-07 04:14:45 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-07 04:14:45 [INFO] NumExpr defaulting to 16 threads.
+2026-04-07 04:15:01 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-07 04:15:02 [INFO]   KB loaded: 623 entries
+2026-04-07 04:15:02 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-07 04:15:02 [INFO] IterativeOptimizer: model=claude-sonnet, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-07 04:15:02 [INFO] Workloads: ['ior_small_posix']
+2026-04-07 04:15:02 [INFO] Model: claude-sonnet, Runs: 1, Max iterations: 5
+2026-04-07 04:15:02 [INFO] ======================================================================
+2026-04-07 04:15:02 [INFO] ITERATIVE OPTIMIZATION: ior_small_posix (run 0)
+2026-04-07 04:15:02 [INFO]   Bottleneck: access_granularity
+2026-04-07 04:15:02 [INFO]   Description: Small POSIX writes (64B transfers)
+2026-04-07 04:15:02 [INFO] ======================================================================
+2026-04-07 04:15:02 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-07 04:15:02 [INFO]   Submitted SLURM job 17380928
+2026-04-07 04:15:32 [INFO]   Job 17380928: COMPLETED (30s)
+2026-04-07 04:15:32 [INFO]   Darshan log: mbanisha_ior_id17380928-3157127_4-7-15317-17940542351642692793_1.darshan
+2026-04-07 04:15:33 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-07 04:15:33 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-07 04:15:33 [INFO]   Baseline BW: 26.66 MB/s
+2026-04-07 04:15:33 [INFO]   Initial detection: ['access_granularity']
+2026-04-07 04:15:34 [INFO]   KB matches: 3
+2026-04-07 04:15:34 [INFO] 
+2026-04-07 04:15:34 [INFO] --- Iteration 1/5 ---
+2026-04-07 04:17:17 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-07 04:17:22 [INFO]   Strategy: Increase transfer size from 64B to 1MB to eliminate syscall overhead while maint
+2026-04-07 04:17:22 [INFO]   Changes: ['Increased transfer_size from 64 to 1048576 bytes (1MB) to fix access_granularity bottleneck', 'Kept block_size=1M and segments=100 unchanged to maintain same total data volume per process', 'This reduces syscalls per process from 1,638,400 to 100, eliminating excessive overhead']
+2026-04-07 04:17:22 [INFO]   Executing: ior -a POSIX -t 1048576 -b 1048576 -s 100 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/i
+2026-04-07 04:17:23 [INFO]   Submitted SLURM job 17380938
+2026-04-07 04:18:23 [INFO]   Job 17380938: COMPLETED (60s)
+2026-04-07 04:18:23 [INFO]   Darshan log: mbanisha_ior_id17380938-3939285_4-7-15486-1967200634950136206_1.darshan
+2026-04-07 04:18:23 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-07 04:18:23 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-07 04:18:23 [INFO]   Result: BW=159.25 MB/s, speedup=5.97x
+2026-04-07 04:18:23 [INFO]   NEW BEST: 5.97x at iteration 0
+2026-04-07 04:18:23 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-07 04:18:23 [INFO] 
+2026-04-07 04:18:23 [INFO] ======================================================================
+2026-04-07 04:18:23 [INFO] RESULT: ior_small_posix -- 1 iterations, best=5.97x, status=converged, cost=$0.0111
+2026-04-07 04:18:23 [INFO] ======================================================================
+2026-04-07 04:18:23 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/rerun_trackc_ior_small_posix_claude.json
