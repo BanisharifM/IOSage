@@ -476,7 +476,7 @@ def fig_ioagent_overgeneration():
     fig, ax = plt.subplots(figsize=(3.5, 2.6))
 
     models = ['GPT-4.1-\nmini', 'GPT-4o', 'Claude\nSonnet', 'Llama-3.1\n70B']
-    ioagent_f1 = [0.465, 0.319, 0.305, 0.262]
+    ioagent_f1 = [0.337, 0.319, 0.305, 0.262]
     x = np.arange(len(models))
 
     # IOSage constant line
