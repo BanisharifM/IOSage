@@ -516,7 +516,7 @@ def fig_iterative_speedup_comparison():
     """Grouped bar chart: iterative speedups across 17 workloads x 4 LLMs."""
     logger.info("Generating: Iterative speedup comparison...")
 
-    fig, ax = plt.subplots(figsize=(7.16, 2.6))
+    fig, ax = plt.subplots(figsize=(7.16, 2.2))
 
     workloads = [
         'Small\nPOSIX', 'Small\nO_DIR', 'fsync\nheavy', 'Random\naccess',
@@ -553,8 +553,11 @@ def fig_iterative_speedup_comparison():
     ax.set_xticks(x)
     ax.set_xticklabels(workloads, fontsize=6.5)
     ax.axhline(y=1.0, color='black', linewidth=0.5, linestyle=':', alpha=0.4)
-    ax.legend(loc='upper right', ncol=4, frameon=True, framealpha=0.95,
-              edgecolor='#cccccc', columnspacing=0.8, fontsize=7)
+
+    # Legend below the suite labels, inside the plot area
+    ax.legend(loc='upper center', ncol=4, frameon=True, framealpha=0.95,
+              edgecolor='#cccccc', columnspacing=0.8, fontsize=7,
+              bbox_to_anchor=(0.5, 1.0))
     ax.set_ylim(0.8, 5000)
 
     # Suite separators
@@ -562,14 +565,18 @@ def fig_iterative_speedup_comparison():
         ax.axvline(x=pos, color='gray', linewidth=0.4, linestyle='--',
                    alpha=0.4)
 
-    # Suite labels
-    y_label = 3200
-    ax.text(2, y_label, 'IOR', fontsize=7, ha='center', color='#666666')
-    ax.text(5, y_label, 'mdtest', fontsize=6.5, ha='center', color='#666666')
-    ax.text(7, y_label, 'DLIO', fontsize=7, ha='center', color='#666666')
+    # Suite labels above legend
+    y_label = 3500
+    ax.text(2, y_label, 'IOR', fontsize=7, ha='center', color='#666666',
+            fontstyle='italic')
+    ax.text(5, y_label, 'mdtest', fontsize=6.5, ha='center', color='#666666',
+            fontstyle='italic')
+    ax.text(7, y_label, 'DLIO', fontsize=7, ha='center', color='#666666',
+            fontstyle='italic')
     ax.text(9.5, y_label, 'h5bench', fontsize=6.5, ha='center',
-            color='#666666')
-    ax.text(11, y_label, 'HACC', fontsize=6.5, ha='center', color='#666666')
+            color='#666666', fontstyle='italic')
+    ax.text(11, y_label, 'HACC', fontsize=6.5, ha='center', color='#666666',
+            fontstyle='italic')
 
     save_fig(fig, "fig_iterative_speedup_comparison")
 
