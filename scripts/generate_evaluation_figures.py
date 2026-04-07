@@ -554,10 +554,10 @@ def fig_iterative_speedup_comparison():
     ax.set_xticklabels(workloads, fontsize=6.5)
     ax.axhline(y=1.0, color='black', linewidth=0.5, linestyle=':', alpha=0.4)
 
-    # Legend below the suite labels, inside the plot area
+    # Legend inside plot, below suite labels
     ax.legend(loc='upper center', ncol=4, frameon=True, framealpha=0.95,
               edgecolor='#cccccc', columnspacing=0.8, fontsize=7,
-              bbox_to_anchor=(0.5, 1.0))
+              bbox_to_anchor=(0.5, 0.85))
     ax.set_ylim(0.8, 5000)
 
     # Suite separators
