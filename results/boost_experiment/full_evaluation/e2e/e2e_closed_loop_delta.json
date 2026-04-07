@@ -1,0 +1,386 @@
+{
+  "metadata": {
+    "date": "2026-04-07 00:23:45",
+    "description": "E2E real application closed-loop validation on Delta",
+    "benchmark": "E2E (Lofstead et al., HPDC 2011)",
+    "grid": "256x256x128 (8x8x1 decomposition, 64 procs, 4 nodes)",
+    "data_volume_mb": 640
+  },
+  "configs": {
+    "pathological": 16.77183827594123,
+    "baseline": null,
+    "ultra_optimized": 11.272944434141138
+  },
+  "speedups": {
+    "pathological_to_optimized": {
+      "before_bw": 16.77183827594123,
+      "after_bw": 11.272944434141138,
+      "speedup": 0.67
+    }
+  },
+  "pipeline_results": [
+    {
+      "config": "pathological",
+      "darshan_path": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/e2e/mbanisha_write_3d_nc4_pathological_id17180725-2595834_4-1-10811-10274183653940611078_3.darshan",
+      "metrics": {
+        "total_bw_mb_s": 16.77183827594123,
+        "write_bw_mb_s": 32.693691197138854,
+        "read_bw_mb_s": 2.979486653402722,
+        "avg_write_size": 15470.71417955303,
+        "avg_read_size": 3132.5743011589507,
+        "small_io_ratio": 0.01275818422415281,
+        "seq_write_ratio": 0.941893885580023,
+        "metadata_time_ratio": 0.000980849214875976,
+        "POSIX_BYTES_WRITTEN": 1415647701.0,
+        "POSIX_WRITES": 91505.0,
+        "POSIX_FSYNCS": 768.0,
+        "nprocs": 64,
+        "runtime_seconds": 19.305638313293457
+      },
+      "predictions": {
+        "access_granularity": 0.9673,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0032,
+        "access_pattern": 0.0005,
+        "interface_choice": 0.4401,
+        "file_strategy": 0.0037,
+        "throughput_utilization": 0.55,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity",
+        "interface_choice",
+        "throughput_utilization"
+      ],
+      "shap_top_features": {
+        "access_granularity": [
+          {
+            "feature": "POSIX_FILE_NOT_ALIGNED",
+            "importance": 2.3335
+          },
+          {
+            "feature": "POSIX_F_FASTEST_RANK_TIME",
+            "importance": 1.7233
+          },
+          {
+            "feature": "STDIO_MAX_BYTE_WRITTEN",
+            "importance": 1.4254
+          },
+          {
+            "feature": "has_apmpi",
+            "importance": 1.2925
+          },
+          {
+            "feature": "POSIX_WRITES",
+            "importance": 1.2301
+          }
+        ],
+        "interface_choice": [
+          {
+            "feature": "collective_ratio",
+            "importance": 1.5572
+          },
+          {
+            "feature": "POSIX_SLOWEST_RANK_BYTES",
+            "importance": 1.4522
+          },
+          {
+            "feature": "MPIIO_ACCESS1_COUNT",
+            "importance": 1.3751
+          },
+          {
+            "feature": "MPIIO_HINTS",
+            "importance": 1.209
+          },
+          {
+            "feature": "MPIIO_VIEWS",
+            "importance": 1.0525
+          }
+        ],
+        "throughput_utilization": [
+          {
+            "feature": "seq_write_ratio",
+            "importance": 1.1317
+          },
+          {
+            "feature": "POSIX_MAX_BYTE_READ",
+            "importance": 0.8563
+          },
+          {
+            "feature": "MPIIO_INDEP_READS",
+            "importance": 0.6591
+          },
+          {
+            "feature": "POSIX_STRIDE4_COUNT",
+            "importance": 0.6325
+          },
+          {
+            "feature": "stats_per_op",
+            "importance": 0.496
+          }
+        ]
+      },
+      "kb_matches": 3,
+      "recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits severe I/O inefficiency with 91,505 POSIX write operations totaling 1.4GB, resulting in an average write size of only 15.5KB per operation. The small transfer sizes cause excessive syscall overhead, evidenced by the low write bandwidth of 32.7 MB/s. With 137,694 unaligned file accesses and high POSIX write count, the job is performing many small, inefficient I/O operations instead of aggregating data into larger transfers. The collective_ratio of 0.284 indicates suboptimal use of MPI-IO collective operations for shared file access.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "access_granularity",
+              "explanation": "The job performs 91,505 POSIX writes with average size 15.5KB, causing excessive syscall overhead. Small transfers (<1MB) prevent efficient utilization of storage bandwidth.",
+              "code_before": "for (i=0; i<n; i++) write(fd, buf, 15470);  /* 15.5KB per call */",
+              "code_after": "/* Buffer small writes, flush in large chunks */\nmemcpy(big_buf + offset, buf, 15470); offset += 15470;\nif (offset >= 1048576) { write(fd, big_buf, offset); offset = 0; }",
+              "expected_speedup": "2-4x based on KB evidence from similar small transfer scenarios",
+              "kb_citation": "h5bench_h5b_indep_small_single_ost_n128_r2_537",
+              "confidence": "high",
+              "api_change": "POSIX write buffering -> large block writes"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "interface_choice",
+              "explanation": "With collective_ratio of 0.284 and 59,436 MPI-IO access operations, the job is not fully utilizing MPI-IO collective operations for shared file access, missing opportunities for coordinated I/O.",
+              "code_before": "H5Dwrite(dset, type, memspace, filespace, H5P_DEFAULT, data)  /* independent */",
+              "code_after": "H5Dwrite(dset, type, memspace, filespace, dxpl_coll, data)  /* collective */",
+              "expected_speedup": "1.5-2x for shared file access patterns",
+              "kb_citation": "h5bench_h5b_indep_small_single_ost_n128_r1_536",
+              "confidence": "medium",
+              "api_change": "HDF5 independent -> HDF5 collective I/O"
+            },
+            {
+              "priority": 3,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "Despite high sequential write ratio (0.942), the job achieves only 32.7 MB/s write bandwidth due to small transfer sizes and 768 fsync operations causing synchronization overhead.",
+              "code_before": "write(fd, buf, size);\nfsync(fd);  /* frequent synchronization */",
+              "code_after": "/* Reduce fsync frequency */\nwrite(fd, buf, size);\nif (++write_count % 100 == 0) fsync(fd);  /* sync every 100 writes */",
+              "expected_speedup": "1.3-1.8x by reducing synchronization overhead",
+              "kb_citation": "hacc_io_hacc_posix_shared_small_single_ost_p200_n64_r1_608",
+              "confidence": "medium",
+              "api_change": "frequent fsync -> batched synchronization"
+            }
+          ],
+          "overall_expected_improvement": "3-7x total speedup by combining transfer size optimization (2-4x), collective I/O adoption (1.5-2x), and reduced synchronization overhead (1.3-1.8x)"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 3,
+          "n_grounded": 3,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 33316.9,
+          "tokens_input": 2511,
+          "tokens_output": 991,
+          "timestamp": "2026-04-07T00:23:20Z"
+        }
+      },
+      "nc_nofill_recommended": false,
+      "status": "SUCCESS"
+    },
+    {
+      "config": "write",
+      "darshan_path": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/e2e/mbanisha_write_3d_nc4_id17178078-4104653_4-1-4730-15467726145997143120_1.darshan",
+      "metrics": {
+        "total_bw_mb_s": 44.251146208850706,
+        "write_bw_mb_s": 44.251146208850706,
+        "read_bw_mb_s": 0.0,
+        "avg_write_size": 1021453.1689497717,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.01598173515981735,
+        "seq_write_ratio": 0.997716894977169,
+        "metadata_time_ratio": 0.004479826335988791,
+        "POSIX_BYTES_WRITTEN": 1342189464.0,
+        "POSIX_WRITES": 1314.0,
+        "POSIX_FSYNCS": 128.0,
+        "nprocs": 64,
+        "runtime_seconds": 3.904722213745117
+      },
+      "predictions": {
+        "access_granularity": 0.0515,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.028,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0004,
+        "file_strategy": 0.0231,
+        "throughput_utilization": 0.6003,
+        "healthy": 0.0024
+      },
+      "detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {
+        "throughput_utilization": [
+          {
+            "feature": "seq_write_ratio",
+            "importance": 2.3806
+          },
+          {
+            "feature": "POSIX_MAX_BYTE_READ",
+            "importance": 1.4296
+          },
+          {
+            "feature": "stats_per_op",
+            "importance": 0.7257
+          },
+          {
+            "feature": "POSIX_BYTES_READ",
+            "importance": 0.6661
+          },
+          {
+            "feature": "POSIX_STATS",
+            "importance": 0.3866
+          }
+        ]
+      },
+      "kb_matches": 3,
+      "recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits poor I/O throughput utilization (44.25 MB/s) despite highly sequential writes (99.77% sequential). The primary issues are: (1) Using POSIX I/O for shared-file parallel writes across 64 processes, causing serialization and coordination overhead, and (2) Excessive synchronization with 128 fsync calls for only 1314 writes (1 fsync per ~10 writes), forcing frequent disk flushes that block throughput.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The job uses POSIX write() calls for shared-file parallel I/O across 64 processes. Each process independently seeks and writes, causing serialization and poor coordination. MPI-IO collective operations provide automatic coordination and collective buffering.",
+              "code_before": "/* POSIX on shared file \u2014 each rank seeks and writes independently */\nlseek(fd, my_offset, SEEK_SET);\nwrite(fd, buf, size);",
+              "code_after": "/* MPI-IO collective \u2014 automatic coordination */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, size, MPI_BYTE, &status);",
+              "expected_speedup": "2-5x based on similar HACC-IO scenarios",
+              "kb_citation": "hacc_io_hacc_posix_shared_many_single_ost_p500000_n64_r3_619",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_all"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The job performs 128 fsync calls for 1314 writes (1 fsync per ~10 writes), causing excessive synchronization. Each fsync forces data to disk and blocks subsequent I/O operations, severely limiting throughput.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "1.5-3x based on reduced synchronization overhead",
+              "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n64_r1_590",
+              "confidence": "high",
+              "api_change": "Reduce fsync frequency"
+            }
+          ],
+          "overall_expected_improvement": "3-8x throughput improvement (from 44 MB/s to 130-350 MB/s) by combining MPI-IO collective operations with reduced synchronization"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 11674.8,
+          "tokens_input": 2034,
+          "tokens_output": 776,
+          "timestamp": "2026-04-07T00:23:32Z"
+        }
+      },
+      "nc_nofill_recommended": false,
+      "status": "SUCCESS"
+    },
+    {
+      "config": "ultra_optimized",
+      "darshan_path": "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/e2e/mbanisha_write_3d_nc4_ultra_optimized_id17178077-1004034_4-1-4730-13971264952632947954_2.darshan",
+      "metrics": {
+        "total_bw_mb_s": 11.272944434141138,
+        "write_bw_mb_s": 11.272944434141138,
+        "read_bw_mb_s": 0.0,
+        "avg_write_size": 994270.0014814815,
+        "avg_read_size": 0.0,
+        "small_io_ratio": 0.035555555555555556,
+        "seq_write_ratio": 0.9955555555555555,
+        "metadata_time_ratio": 0.0015381362115530174,
+        "POSIX_BYTES_WRITTEN": 671132251.0,
+        "POSIX_WRITES": 675.0,
+        "POSIX_FSYNCS": 128.0,
+        "nprocs": 64,
+        "runtime_seconds": 2.97906756401062
+      },
+      "predictions": {
+        "access_granularity": 0.0003,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.1437,
+        "file_strategy": 0.005,
+        "throughput_utilization": 0.9505,
+        "healthy": 0.0046
+      },
+      "detected": [
+        "throughput_utilization"
+      ],
+      "shap_top_features": {
+        "throughput_utilization": [
+          {
+            "feature": "seq_write_ratio",
+            "importance": 2.0608
+          },
+          {
+            "feature": "POSIX_MAX_BYTE_READ",
+            "importance": 1.3662
+          },
+          {
+            "feature": "stats_per_op",
+            "importance": 0.6883
+          },
+          {
+            "feature": "POSIX_BYTES_READ",
+            "importance": 0.6743
+          },
+          {
+            "feature": "POSIX_FASTEST_RANK",
+            "importance": 0.6577
+          }
+        ]
+      },
+      "kb_matches": 3,
+      "recommendation": {
+        "parsed": {
+          "diagnosis": "This job exhibits poor I/O throughput utilization (11.27 MB/s) despite having 64 processes and nearly sequential write patterns (seq_write_ratio=0.9956). The primary issues are: (1) Excessive synchronization with 128 fsync calls for only 675 writes (fsync-to-write ratio of 0.19), causing frequent disk flushes that serialize I/O operations, and (2) Using POSIX I/O for shared-file parallel access instead of MPI-IO collectives, which prevents coordination between the 64 ranks and likely results in single-OST serialization on the filesystem.",
+          "recommendations": [
+            {
+              "priority": 1,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "The job performs 128 fsync calls for 675 writes (ratio 0.19), causing excessive synchronization. Each fsync forces immediate disk writes, serializing I/O operations and preventing batching optimizations.",
+              "code_before": "for (i=0; i<n; i++) {\n  write(fd, buf, size);\n  fsync(fd);  /* fsync after EVERY write */\n}",
+              "code_after": "/* Batch writes, fsync only at end */\nfor (i=0; i<n; i++) write(fd, buf, size);\nfsync(fd);  /* single fsync at end */",
+              "expected_speedup": "Significant improvement based on KB entries 592 and 591 showing this exact pattern fix",
+              "kb_citation": "hacc_io_hacc_posix_shared_single_ost_p500000_n64_r3_592",
+              "confidence": "high",
+              "api_change": "Remove per-write fsync, keep single final fsync"
+            },
+            {
+              "priority": 2,
+              "bottleneck_dimension": "throughput_utilization",
+              "explanation": "With 64 processes writing to shared files using POSIX I/O, each rank independently seeks and writes, causing coordination overhead and potential single-OST serialization. MPI-IO collectives provide automatic coordination and better parallel filesystem utilization.",
+              "code_before": "/* POSIX on shared file \u2014 each rank seeks and writes independently */\nlseek(fd, my_offset, SEEK_SET);\nwrite(fd, buf, size);",
+              "code_after": "/* MPI-IO collective \u2014 automatic coordination */\nMPI_File_set_view(fh, my_offset, MPI_BYTE, filetype, \"native\", info);\nMPI_File_write_all(fh, buf, size, MPI_BYTE, &status);",
+              "expected_speedup": "Additional improvement for parallel coordination as shown in KB entry 617",
+              "kb_citation": "hacc_io_hacc_posix_shared_many_single_ost_p500000_n64_r1_617",
+              "confidence": "high",
+              "api_change": "POSIX write -> MPI_File_write_all"
+            }
+          ],
+          "overall_expected_improvement": "Combined optimizations should provide substantial throughput improvement, with the fsync reduction being the primary contributor and MPI-IO collectives providing additional parallel coordination benefits"
+        },
+        "groundedness": {
+          "groundedness_score": 1.0,
+          "n_recommendations": 2,
+          "n_grounded": 2,
+          "n_ungrounded": 0
+        },
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 13050.5,
+          "tokens_input": 2000,
+          "tokens_output": 810,
+          "timestamp": "2026-04-07T00:23:45Z"
+        }
+      },
+      "nc_nofill_recommended": false,
+      "status": "SUCCESS"
+    }
+  ]
+}

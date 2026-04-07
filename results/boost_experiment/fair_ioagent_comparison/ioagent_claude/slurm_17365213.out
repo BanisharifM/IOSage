@@ -1,0 +1,32 @@
+=== IOAgent (IONavigator) with Claude Sonnet (fair comparison) ===
+Start: Tue Apr  7 00:02:48 CDT 2026
+Node: cn065.delta.ncsa.illinois.edu
+
+======================================================================
+IONavigator (ION) Baseline Evaluation Results
+======================================================================
+Model: anthropic/claude-sonnet-4
+Traces processed: 50/50
+Avg time per trace: 504.12s
+Avg API calls per trace: 9.6
+Total API cost: $1.3977
+
+Overall Metrics:
+  Micro-F1:     0.3054
+  Macro-F1:     0.3234
+  Micro-Prec:   0.1821
+  Micro-Recall: 0.9444
+
+Per-Dimension F1:
+  access_granularity            : P=0.347 R=1.000 F1=0.515 (TP=17 FP=32 FN=0 TN=1)
+  metadata_intensity            : P=0.160 R=1.000 F1=0.276 (TP=8 FP=42 FN=0 TN=0)
+  parallelism_efficiency        : P=0.000 R=0.000 F1=0.000 (TP=0 FP=34 FN=0 TN=16)
+  access_pattern                : P=0.036 R=0.333 F1=0.065 (TP=1 FP=27 FN=2 TN=20)
+  interface_choice              : P=0.423 R=0.917 F1=0.579 (TP=11 FP=15 FN=1 TN=23)
+  file_strategy                 : P=0.091 R=1.000 F1=0.167 (TP=4 FP=40 FN=0 TN=6)
+  throughput_utilization        : P=0.204 R=1.000 F1=0.339 (TP=10 FP=39 FN=0 TN=1)
+
+Compare with our ML system: Micro-F1 = 0.923
+======================================================================
+End: Tue Apr  7 01:36:30 CDT 2026
+Exit code: 0

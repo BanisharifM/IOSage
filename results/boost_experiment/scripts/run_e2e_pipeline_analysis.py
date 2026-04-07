@@ -53,7 +53,7 @@ logging.basicConfig(
 logger = logging.getLogger("e2e_pipeline")
 
 DARSHAN_LOG_DIR = PROJECT_DIR / "data" / "benchmark_logs" / "e2e"
-RESULTS_DIR = PROJECT_DIR / "results" / "e2e_evaluation"
+RESULTS_DIR = PROJECT_DIR / "results" / "boost_experiment" / "full_evaluation" / "e2e"
 SLURM_OUTPUT_DIR = PROJECT_DIR / "results" / "closed_loop"
 
 DIMENSIONS = [
