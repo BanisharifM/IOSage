@@ -466,6 +466,115 @@ def fig_pipeline_walkthrough():
 
 
 # ===========================================================================
+# Fig A: IOAgent overgeneration — F1 drops with stronger LLMs
+# ===========================================================================
+
+def fig_ioagent_overgeneration():
+    """IOAgent detection F1 vs IOSage ML detection across 4 LLMs."""
+    logger.info("Generating: IOAgent overgeneration comparison...")
+
+    fig, ax = plt.subplots(figsize=(3.5, 2.6))
+
+    models = ['GPT-4.1-\nmini', 'GPT-4o', 'Claude\nSonnet', 'Llama-3.1\n70B']
+    ioagent_f1 = [0.465, 0.319, 0.305, 0.262]
+    x = np.arange(len(models))
+
+    # IOSage constant line
+    ax.axhline(y=0.929, color=COLORS["green"], linewidth=2, linestyle='-',
+               label='IOSage (ML detection)', zorder=3)
+    ax.fill_between([-0.5, len(models) - 0.5], 0.926, 0.932,
+                    color=COLORS["green"], alpha=0.1, zorder=1)
+    ax.text(len(models) - 0.55, 0.942, 'IOSage: 0.929',
+            fontsize=7.5, color=COLORS["green"], fontweight='bold', ha='right')
+
+    # IOAgent bars
+    bars = ax.bar(x, ioagent_f1, width=0.55, color=COLORS["vermilion"],
+                  edgecolor='white', linewidth=0.5,
+                  label='IOAgent (LLM-only)', zorder=2)
+
+    for bar, val in zip(bars, ioagent_f1):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.015,
+                f'{val:.3f}', ha='center', va='bottom', fontsize=7.5,
+                color=COLORS["vermilion"])
+
+    ax.set_ylabel('Micro-F1')
+    ax.set_xticks(x)
+    ax.set_xticklabels(models)
+    ax.set_ylim(0, 1.02)
+    ax.set_xlim(-0.5, len(models) - 0.5)
+    ax.legend(loc='center right', frameon=True, framealpha=0.95,
+              edgecolor='#cccccc')
+
+    save_fig(fig, "fig_ioagent_overgeneration")
+
+
+# ===========================================================================
+# Fig B: Iterative speedup comparison across 4 LLMs
+# ===========================================================================
+
+def fig_iterative_speedup_comparison():
+    """Grouped bar chart: iterative speedups across 17 workloads x 4 LLMs."""
+    logger.info("Generating: Iterative speedup comparison...")
+
+    fig, ax = plt.subplots(figsize=(7.16, 2.6))
+
+    workloads = [
+        'Small\nPOSIX', 'Small\nO_DIR', 'fsync\nheavy', 'Random\naccess',
+        'Mis-\naligned',
+        'Meta.\nstorm',
+        'Small\nrecs', 'Many\nsmall', 'Shuffle\nheavy',
+        'Small\naccess', 'Indep\nvs coll',
+        'Shared\nfile',
+    ]
+
+    claude = [2241, 11.0, 13.0, 15.5, 158.7, 146.6, 1.0, 9.3, 1.2,
+              9.6, 8.8, 1.5]
+    gpt4o = [4.6, 11.3, 12.2, 12.3, 2.1, 3.5, 1.0, 1.0, 1.0,
+             43.0, 3.8, 1.6]
+    llama = [4.8, 12.2, 20.0, 1.0, 30.2, 1.3, 1.1, 1.3, 1.0,
+             43.1, 1.7, 1.1]
+    mini = [3.1, 3.6, 1.5, 1.0, 15.0, 15.6, 1.0, 1.1, 3.1,
+            53.9, 3.9, 1.3]
+
+    x = np.arange(len(workloads))
+    width = 0.19
+    offsets = [-1.5, -0.5, 0.5, 1.5]
+    colors = [COLORS["blue"], COLORS["vermilion"], COLORS["green"],
+              COLORS["orange"]]
+    labels = ['Claude', 'GPT-4o', 'Llama-70B', 'GPT-4.1-mini']
+    data = [claude, gpt4o, llama, mini]
+
+    for i, (vals, color, label) in enumerate(zip(data, colors, labels)):
+        ax.bar(x + offsets[i] * width, vals, width, label=label,
+               color=color, edgecolor='white', linewidth=0.3)
+
+    ax.set_yscale('log')
+    ax.set_ylabel('Speedup (log scale)')
+    ax.set_xticks(x)
+    ax.set_xticklabels(workloads, fontsize=6.5)
+    ax.axhline(y=1.0, color='black', linewidth=0.5, linestyle=':', alpha=0.4)
+    ax.legend(loc='upper right', ncol=4, frameon=True, framealpha=0.95,
+              edgecolor='#cccccc', columnspacing=0.8, fontsize=7)
+    ax.set_ylim(0.8, 5000)
+
+    # Suite separators
+    for pos in [4.5, 5.5, 8.5, 10.5]:
+        ax.axvline(x=pos, color='gray', linewidth=0.4, linestyle='--',
+                   alpha=0.4)
+
+    # Suite labels
+    y_label = 3200
+    ax.text(2, y_label, 'IOR', fontsize=7, ha='center', color='#666666')
+    ax.text(5, y_label, 'mdtest', fontsize=6.5, ha='center', color='#666666')
+    ax.text(7, y_label, 'DLIO', fontsize=7, ha='center', color='#666666')
+    ax.text(9.5, y_label, 'h5bench', fontsize=6.5, ha='center',
+            color='#666666')
+    ax.text(11, y_label, 'HACC', fontsize=6.5, ha='center', color='#666666')
+
+    save_fig(fig, "fig_iterative_speedup_comparison")
+
+
+# ===========================================================================
 # Main
 # ===========================================================================
 
@@ -475,4 +584,6 @@ if __name__ == "__main__":
     fig_llm_groundedness()
     fig_ablation_trackb()
     fig_pipeline_walkthrough()
-    logger.info("All 4 evaluation figures saved to %s", FIG_DIR)
+    fig_ioagent_overgeneration()
+    fig_iterative_speedup_comparison()
+    logger.info("All 6 evaluation figures saved to %s", FIG_DIR)
