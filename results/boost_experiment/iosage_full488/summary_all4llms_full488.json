@@ -1,0 +1,62 @@
+{
+  "gpt-4.1-mini": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "n_healthy": 78,
+    "n_traces_with_recs": 405,
+    "groundedness_mean": 0.8285519125683061,
+    "groundedness_std": 0.37568989064828723,
+    "rec_precision_mean": 0.917283950617284,
+    "rec_precision_std": 0.25027343680816905,
+    "latency_mean_ms": 8231.32930327869,
+    "latency_std_ms": 4796.795147858023,
+    "tokens_mean": 1783.9282786885246,
+    "avg_recommendations": 1.0901639344262295
+  },
+  "gpt-4o": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "n_healthy": 78,
+    "n_traces_with_recs": 405,
+    "groundedness_mean": 0.8288934426229508,
+    "groundedness_std": 0.37592127941585934,
+    "rec_precision_mean": 0.9156378600823046,
+    "rec_precision_std": 0.2548883625422729,
+    "latency_mean_ms": 4403.356967213115,
+    "latency_std_ms": 2970.156006864857,
+    "tokens_mean": 1634.22131147541,
+    "avg_recommendations": 1.0040983606557377
+  },
+  "claude-sonnet-4": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "n_healthy": 78,
+    "n_traces_with_recs": 466,
+    "groundedness_mean": 0.9549180327868853,
+    "groundedness_std": 0.2074839353909367,
+    "rec_precision_mean": 0.7968526466380544,
+    "rec_precision_std": 0.38724244750067055,
+    "latency_mean_ms": 11762.74549180328,
+    "latency_std_ms": 4556.545818899857,
+    "tokens_mean": 2287.7131147540986,
+    "avg_recommendations": 1.5061475409836065
+  },
+  "llama-3.1-70b-instruct": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 4,
+    "n_healthy": 78,
+    "n_traces_with_recs": 406,
+    "groundedness_mean": 0.8288934426229508,
+    "groundedness_std": 0.3759212794158593,
+    "rec_precision_mean": 0.9207717569786537,
+    "rec_precision_std": 0.241332180982584,
+    "latency_mean_ms": 16632.251229508194,
+    "latency_std_ms": 7565.69860457885,
+    "tokens_mean": 1739.9426229508197,
+    "avg_recommendations": 1.0227272727272727
+  }
+}
