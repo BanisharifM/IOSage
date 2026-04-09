@@ -1,0 +1,81 @@
+{
+  "training_config": {
+    "model_family": "XGBoost",
+    "training_mode": "GT-only (no heuristic, no biquality)",
+    "n_heuristic_samples": 0,
+    "n_gt_samples": 201,
+    "n_features": 157,
+    "threshold_for_metrics": 0.5,
+    "n_test_samples": 488,
+    "n_dimensions": 8,
+    "seed": 456
+  },
+  "per_seed": {
+    "456": {
+      "seed": 456,
+      "micro_f1": 0.9099018733273863,
+      "macro_f1": 0.902192259717581,
+      "hamming_loss": 0.025870901639344263,
+      "subset_accuracy": 0.8545081967213115,
+      "micro_f1_ci": [
+        0.8885016656826547,
+        0.9302335844331779
+      ],
+      "macro_f1_ci": [
+        0.8762193265606729,
+        0.924254406649951
+      ],
+      "per_label": {
+        "access_granularity": {
+          "f1": 0.9407894736842105,
+          "precision": 0.9662162162162162,
+          "recall": 0.9166666666666666,
+          "support": 156
+        },
+        "metadata_intensity": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 65
+        },
+        "parallelism_efficiency": {
+          "f1": 0.9514563106796117,
+          "precision": 0.9245283018867925,
+          "recall": 0.98,
+          "support": 50
+        },
+        "access_pattern": {
+          "f1": 0.8333333333333334,
+          "precision": 0.8064516129032258,
+          "recall": 0.8620689655172413,
+          "support": 29
+        },
+        "interface_choice": {
+          "f1": 0.835820895522388,
+          "precision": 0.8115942028985508,
+          "recall": 0.8615384615384616,
+          "support": 65
+        },
+        "file_strategy": {
+          "f1": 0.9387755102040817,
+          "precision": 0.8846153846153846,
+          "recall": 1.0,
+          "support": 46
+        },
+        "throughput_utilization": {
+          "f1": 0.8059701492537313,
+          "precision": 0.7012987012987013,
+          "recall": 0.9473684210526315,
+          "support": 57
+        },
+        "healthy": {
+          "f1": 0.9113924050632911,
+          "precision": 0.9,
+          "recall": 0.9230769230769231,
+          "support": 78
+        }
+      },
+      "train_time_seconds": 13.299691438674927
+    }
+  }
+}
