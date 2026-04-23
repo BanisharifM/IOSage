@@ -219,15 +219,20 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
                 color=colors[j], edgecolor="white", linewidth=0.2)
         left += widths
 
-    # Feature names — readable monospace font
+    # Tighten right-side whitespace: bound x-axis just past the longest bar
+    max_bar_total = float(left.max())
+    ax.set_xlim(0, max_bar_total * 1.02)
+
+    # Feature names — readable monospace font (+1pt for legibility)
     ax.set_yticks(y_pos)
-    ax.set_yticklabels([feature_names[i] for i in top_idx], fontsize=6,
+    ax.set_yticklabels([feature_names[i] for i in top_idx], fontsize=7,
                        fontfamily="monospace")
-    ax.set_xlabel("Mean |SHAP| Value", fontsize=8)
+    ax.set_xlabel("Mean |SHAP| Value", fontsize=9)
+    ax.tick_params(axis="x", labelsize=7)
 
     # Legend inside chart — lower-right has space (short bars there)
     ax.legend(loc="lower right", bbox_to_anchor=(0.99, 0.01),
-              fontsize=5.5, ncol=2, frameon=True, framealpha=0.95,
+              fontsize=6, ncol=2, frameon=True, framealpha=0.95,
               edgecolor="#cccccc", borderpad=0.4,
               columnspacing=0.6, handletextpad=0.3, labelspacing=0.3)
 

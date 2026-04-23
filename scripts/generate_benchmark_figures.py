@@ -239,15 +239,15 @@ def fig_gt_label_distribution():
 # B3: Ground-truth vs heuristic label distribution comparison
 # ===========================================================================
 def fig_gt_vs_heuristic():
-    """Per-dimension F1 comparison: IOSage vs Drishti on GT test set."""
-    logger.info("Generating Fig 3: IOSage vs Drishti F1 comparison...")
+    """Per-dimension F1 comparison: IOSage vs Drishti, WisIO, IOAgent on the
+    488-sample DIOBench test set. Full-width figure (4 systems x 8 dimensions).
+    """
+    logger.info("Generating Fig 3: IOSage vs Drishti, WisIO, IOAgent F1...")
 
     import json
 
-    # Load actual F1 scores from boost experiment results
     metrics_path = PROJECT_DIR / "results" / "boost_experiment" / "full_evaluation" / "final_metrics.json"
     if not metrics_path.exists():
-        # Fallback to original results
         metrics_path = PROJECT_DIR / "results" / "final_metrics.json"
     if not metrics_path.exists():
         logger.warning("final_metrics.json not found. Skipping.")
@@ -256,19 +256,46 @@ def fig_gt_vs_heuristic():
     with open(metrics_path) as f:
         metrics = json.load(f)
 
+    # IOAgent per-dimension F1 (separate file, full-488 GPT-4o evaluation)
+    ioagent_path = PROJECT_DIR / "results" / "boost_experiment" / "ioagent_gpt4o_full488" / "merged_full488" / "evaluation_metrics.json"
+    ioagent_per_dim = {}
+    if ioagent_path.exists():
+        with open(ioagent_path) as f:
+            ioa = json.load(f)
+        ioagent_per_dim = ioa.get("per_dimension", {})
+
     dims = DIMENSION_ORDER
     iosage_f1 = [metrics["xgboost"]["metrics"]["per_label"][d]["f1"] for d in dims]
     drishti_f1 = [metrics["drishti"]["metrics"]["per_label"][d]["f1"] for d in dims]
+    wisio_f1 = [metrics["wisio"]["metrics"]["per_label"][d]["f1"] for d in dims]
+    # IOAgent is missing 'healthy' (it does not predict that dimension);
+    # show 0.0 for the missing entry to make the absence visible.
+    ioagent_f1 = [ioagent_per_dim.get(d, {}).get("f1", 0.0) for d in dims]
 
-    # Single-column figure
+    # Single-column figure with 4 systems; thinner bars to fit
     fig, ax = plt.subplots(figsize=(3.5, 2.6))
     x = np.arange(len(dims))
-    width = 0.35
+    width = 0.20
 
-    bars1 = ax.bar(x - width / 2, drishti_f1, width, label="Drishti",
-                   color=COLORS["orange"], hatch="//", edgecolor="black", linewidth=0.3)
-    bars2 = ax.bar(x + width / 2, iosage_f1, width, label="IOSage",
-                   color=COLORS["blue"], hatch="", edgecolor="black", linewidth=0.3)
+    # Paul Tol's "Bright" qualitative palette (Tol 2021, SRON Technical Note
+    # SRON/EPS/TN/09-002 issue 3.2). More saturated than Tol Muted, designed
+    # for scientific data visualization, colorblind-safe, and visually
+    # distinct from Figure 5's Okabe-Ito palette (which uses #0072B2 blue,
+    # #E69F00 orange, #D55E00 vermillion). Source: https://personal.sron.nl/~pault/
+    TOL_BLUE  = "#4477AA"  # IOSage (ours), saturated blue, visual focus
+    TOL_YELLOW = "#CCBB44"  # Drishti
+    TOL_GREEN = "#228833"  # WisIO
+    TOL_PINK  = "#EE6677"  # IOAgent
+
+    # Order: weakest to strongest, so IOSage is rightmost (visually wins)
+    bars_ioa = ax.bar(x - 1.5 * width, ioagent_f1, width, label="IOAgent (GPT-4o)",
+                      color=TOL_PINK, edgecolor="black", linewidth=0.3)
+    bars_wis = ax.bar(x - 0.5 * width, wisio_f1, width, label="WisIO",
+                      color=TOL_GREEN, edgecolor="black", linewidth=0.3)
+    bars_dri = ax.bar(x + 0.5 * width, drishti_f1, width, label="Drishti",
+                      color=TOL_YELLOW, edgecolor="black", linewidth=0.3)
+    bars_ios = ax.bar(x + 1.5 * width, iosage_f1, width, label="IOSage (ours)",
+                      color=TOL_BLUE, edgecolor="black", linewidth=0.3)
 
     short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
                     "Access Pattern", "Interface Ch.", "File Strategy",
@@ -276,34 +303,27 @@ def fig_gt_vs_heuristic():
     ax.set_xticks(x)
     ax.set_xticklabels(short_labels, rotation=35, ha="right", fontsize=6.5)
     ax.set_ylabel("F1 Score", fontsize=8)
-    ax.set_ylim(0, 1.15)
+    ax.set_ylim(0, 1.18)
+    ax.tick_params(axis="y", labelsize=7)
 
-    # Value labels — nudge apart to prevent overlap
-    for bar in bars1:
-        h = bar.get_height()
-        # Show all values including 0.00
-        y_pos = max(h, 0.01) + 0.015
-        ax.text(bar.get_x() + bar.get_width()/2 - 0.13, y_pos,
-                f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
-                color=COLORS["orange"], fontweight="bold")
-    for bar in bars2:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2 + 0.13, h + 0.015,
-                f"{h:.2f}", ha="center", va="bottom", fontsize=5.5,
-                color=COLORS["blue"], fontweight="bold")
-
-    # Legend inside chart — upper-right, shifted up to avoid bar overlap
-    ax.legend(loc="upper right", bbox_to_anchor=(0.99, 1.05),
-              fontsize=7, frameon=True, framealpha=0.95, edgecolor="#cccccc",
-              borderpad=0.4, borderaxespad=0)
+    # Legend inside chart — upper area, 2 rows of 2
+    ax.legend(loc="upper right", bbox_to_anchor=(1.0, 1.06),
+              fontsize=6, frameon=True, framealpha=0.95, edgecolor="#cccccc",
+              borderpad=0.3, borderaxespad=0, ncol=2,
+              columnspacing=0.6, handletextpad=0.3, labelspacing=0.2)
     ax.grid(axis="y", alpha=0.3)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    # Reduce left padding so bars use more horizontal space
+    fig.subplots_adjust(left=0.11, right=0.99, top=0.97, bottom=0.22)
 
     fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.pdf"),
-                format="pdf", bbox_inches="tight", pad_inches=0.01)
+                format="pdf", bbox_inches="tight", pad_inches=0.02)
     fig.savefig(str(FIG_DIR / "fig_gt_vs_heuristic.png"),
-                format="png", dpi=300, bbox_inches="tight", pad_inches=0.01)
+                format="png", dpi=300, bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
-    logger.info("Saved fig_gt_vs_heuristic (IOSage vs Drishti F1)")
+    logger.info("Saved fig_gt_vs_heuristic (4 systems, Okabe-Ito palette)")
 
 
 # ===========================================================================
