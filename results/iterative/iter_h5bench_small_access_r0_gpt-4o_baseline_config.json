@@ -1,0 +1,48 @@
+{
+    "mpi": {
+        "command": "srun",
+        "ranks": "WILL_BE_SET_BY_SLURM"
+    },
+    "vol": {},
+    "file-system": {},
+    "directory": "/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_small_access_r0_gpt-4o_baseline",
+    "benchmarks": [
+        {
+            "benchmark": "write",
+            "file": "h5bench_output.h5",
+            "configuration": {
+                "MEM_PATTERN": "CONTIG",
+                "FILE_PATTERN": "CONTIG",
+                "TIMESTEPS": "10",
+                "DELAYED_CLOSE_TIMESTEPS": "0",
+                "COLLECTIVE_DATA": "NO",
+                "COLLECTIVE_METADATA": "NO",
+                "EMULATED_COMPUTE_TIME_PER_TIMESTEP": "0 s",
+                "NUM_DIMS": "1",
+                "DIM_1": "1024",
+                "DIM_2": "1",
+                "DIM_3": "1",
+                "CSV_FILE": "output.csv"
+            }
+        },
+        {
+            "benchmark": "read",
+            "file": "h5bench_output.h5",
+            "configuration": {
+                "MEM_PATTERN": "CONTIG",
+                "FILE_PATTERN": "CONTIG",
+                "TIMESTEPS": "10",
+                "DELAYED_CLOSE_TIMESTEPS": "0",
+                "COLLECTIVE_DATA": "NO",
+                "COLLECTIVE_METADATA": "NO",
+                "EMULATED_COMPUTE_TIME_PER_TIMESTEP": "0 s",
+                "NUM_DIMS": "1",
+                "DIM_1": "1024",
+                "DIM_2": "1",
+                "DIM_3": "1",
+                "CSV_FILE": "output.csv",
+                "READ_OPTION": "FULL"
+            }
+        }
+    ]
+}

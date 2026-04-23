@@ -1,0 +1,84 @@
+PE 0: MPICH MPIIO environment settings ===============================
+PE 0:   MPICH_MPIIO_HINTS_DISPLAY                      = 1
+PE 0:   MPICH_MPIIO_HINTS                              = *:romio_cb_write=enable:romio_ds_write=disable
+PE 0:   MPICH_MPIIO_ABORT_ON_RW_ERROR                  = disable
+PE 0:   MPICH_MPIIO_CB_ALIGN                           = 2
+PE 0:   MPICH_MPIIO_DVS_MAXNODES                       = -1
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY       = 0
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_STRIDE        = -1
+PE 0:   MPICH_MPIIO_MAX_NUM_IRECV                      = 50
+PE 0:   MPICH_MPIIO_MAX_NUM_ISEND                      = 50
+PE 0:   MPICH_MPIIO_MAX_SIZE_ISEND                     = 10485760
+PE 0:   MPICH_MPIIO_OFI_STARTUP_CONNECT                = disable
+PE 0:   MPICH_MPIIO_OFI_STARTUP_NODES_AGGREGATOR        = 2
+PE 0: MPICH MPIIO statistics environment settings ====================
+PE 0:   MPICH_MPIIO_STATS                              = 0
+PE 0:   MPICH_MPIIO_TIMERS                             = 0
+PE 0:   MPICH_MPIIO_WRITE_EXIT_BARRIER                 = 1
+PE 0: MPIIO hints for /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_h5bench_indep_vs_coll_r0_llama_i4/h5bench_output.h5:
+          romio_cb_pfr             = disable
+          romio_cb_fr_types        = aar
+          cb_align                 = 2
+          cb_buffer_size           = 16777216
+          romio_cb_fr_alignment    = 1
+          romio_cb_ds_threshold    = 0
+          romio_cb_alltoall        = automatic
+          romio_cb_read            = automatic
+          romio_cb_write           = enable
+          romio_no_indep_rw        = false
+          romio_ds_write           = disable
+          ind_wr_buffer_size       = 524288
+          romio_ds_read            = disable
+          ind_rd_buffer_size       = 4194304
+          direct_io                = false
+          striping_factor          = 4
+          striping_unit            = 1048576
+          overstriping_factor      = 0
+          romio_lustre_start_iodevice = -1
+          aggregator_placement_stride = -1
+          abort_on_rw_error        = disable
+          cb_config_list           = *:*
+          cb_nodes                 = 4
+          romio_filesystem_type    = CRAY ADIO:
+PE 0: MPIIO hints for /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_h5bench_write_id17319028-2913382_4-6-5740-1916423014006513454.darshan_partial:
+          romio_cb_pfr             = disable
+          romio_cb_fr_types        = aar
+          cb_align                 = 2
+          cb_buffer_size           = 16777216
+          romio_cb_fr_alignment    = 1
+          romio_cb_ds_threshold    = 0
+          romio_cb_alltoall        = automatic
+          romio_cb_read            = enable
+          romio_cb_write           = enable
+          romio_no_indep_rw        = true
+          romio_ds_write           = disable
+          ind_wr_buffer_size       = 524288
+          romio_ds_read            = disable
+          ind_rd_buffer_size       = 4194304
+          direct_io                = false
+          striping_factor          = 4
+          striping_unit            = 1048576
+          overstriping_factor      = 0
+          romio_lustre_start_iodevice = -1
+          aggregator_placement_stride = -1
+          abort_on_rw_error        = disable
+          cb_config_list           = *:*
+          cb_nodes                 = 4
+          romio_filesystem_type    = CRAY ADIO:
+PE 0: MPICH MPIIO environment settings ===============================
+PE 0:   MPICH_MPIIO_HINTS_DISPLAY                      = 1
+PE 0:   MPICH_MPIIO_HINTS                              = *:romio_cb_write=enable:romio_ds_write=disable
+PE 0:   MPICH_MPIIO_ABORT_ON_RW_ERROR                  = disable
+PE 0:   MPICH_MPIIO_CB_ALIGN                           = 2
+PE 0:   MPICH_MPIIO_DVS_MAXNODES                       = -1
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_DISPLAY       = 0
+PE 0:   MPICH_MPIIO_AGGREGATOR_PLACEMENT_STRIDE        = -1
+PE 0:   MPICH_MPIIO_MAX_NUM_IRECV                      = 50
+PE 0:   MPICH_MPIIO_MAX_NUM_ISEND                      = 50
+PE 0:   MPICH_MPIIO_MAX_SIZE_ISEND                     = 10485760
+PE 0:   MPICH_MPIIO_OFI_STARTUP_CONNECT                = disable
+PE 0:   MPICH_MPIIO_OFI_STARTUP_NODES_AGGREGATOR        = 2
+PE 0: MPICH MPIIO statistics environment settings ====================
+PE 0:   MPICH_MPIIO_STATS                              = 0
+PE 0:   MPICH_MPIIO_TIMERS                             = 0
+PE 0:   MPICH_MPIIO_WRITE_EXIT_BARRIER                 = 1

@@ -1,0 +1,35 @@
+============================================================
+IOSage Iterative Optimization - Benchmark Execution
+Job: iter_mdtest_metadata_storm_r0_gpt-4o_i4
+Command: mdtest -n 10000 -w 100 -d /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_gpt-4o_i4/mdtest_dir
+Date: Mon Apr  6 01:54:58 CDT 2026
+Host: cn065.delta.ncsa.illinois.edu
+============================================================
+-- started at 04/06/2026 01:54:59 --
+
+mdtest-3.3.0 was launched with 16 total task(s) on 1 node(s)
+Command line used: /sw/rh9.4/spack/v1.0.0/sw/linux-x86_64_v2/ior-3.3.0-oznn4mz/bin/mdtest '-n' '10000' '-w' '100' '-d' '/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_gpt-4o_i4/mdtest_dir'
+Path: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_mdtest_metadata_storm_r0_gpt-4o_i4
+FS: 1.5 TiB   Used FS: 43.6%   Inodes: 2.4 Mi   Used Inodes: 71.6%
+
+Nodemap: 1111111111111111
+16 tasks, 160000 files/directories
+
+SUMMARY rate: (of 1 iterations)
+   Operation                      Max            Min           Mean        Std Dev
+   ---------                      ---            ---           ----        -------
+   Directory creation        :       4154.689       4154.673       4154.687          0.004
+   Directory stat            :      29654.249      29587.331      29649.314         16.006
+   Directory removal         :       3602.902       3602.877       3602.882          0.005
+   File creation             :       1212.725       1212.571       1212.711          0.038
+   File stat                 :     230305.804     224865.045     225371.975       1350.927
+   File read                 :      13891.519      13891.163      13891.383          0.075
+   File removal              :       3226.321       3226.172       3226.298          0.037
+   Tree creation             :        196.018        196.018        196.018          0.000
+   Tree removal              :         70.781         70.781         70.781          0.000
+-- finished at 04/06/2026 01:59:41 --
+
+
+Exit code: 0
+Completed: Mon Apr  6 01:59:42 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_mdtest_id17319283-3777903_4-6-6899-10083657546647545427_1.darshan

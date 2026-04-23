@@ -1,0 +1,17 @@
+============================================================
+IOSage Iterative Optimization - HACC-IO Execution
+Job: iter_hacc_posix_shared_small_r0_claude_baseline
+Command: /work/hdd/bdau/mbanisharifdehkordi/hacc-io/hacc_io_posix_shared 200 /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/iter_hacc_posix_shared_small_r0_claude_baseline/hacc_checkpoint
+Collective buffering: disabled
+Date: Mon Apr  6 01:23:22 CDT 2026
+Host: cn050.delta.ncsa.illinois.edu
+============================================================
+-------- Aggregate Performance --------
+ WRITE Checkpoint Perf: 55.5638 BW[MB/s] 25287424 Bytes 0.434023 MaxTime[sec] 
+-------- Aggregate Performance --------
+ READ Restart Perf: 8255.93 BW[MB/s] 402774784 Bytes 0.046526 MaxTime[sec] 
+ CONTENTS VERIFIED... Success 
+
+Exit code: 0
+Completed: Mon Apr  6 01:23:23 CDT 2026
+Darshan log: /work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/iterative/mbanisha_hacc_io_posix_shared_id17318830-2190705_4-6-5002-4672265895608502714_1.darshan
