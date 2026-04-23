@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SC 2026 — Reproduce All Paper Results
+# IOSage — Reproduce All Paper Results
 # =============================================================================
 # One script to reproduce every result in the paper.
 # Assumes: conda env sc2026 activated, data in data/processed/

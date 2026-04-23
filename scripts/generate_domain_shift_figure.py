@@ -30,7 +30,7 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 
 # ---------------------------------------------------------------------------
-# Style: SC 2026 RC-params (Okabe-Ito palette, serif, pdf.fonttype=42)
+# Style: IOSage RC-params (Okabe-Ito palette, serif, pdf.fonttype=42)
 # ---------------------------------------------------------------------------
 RCPARAMS_SC2026 = {
     "font.family": "serif",

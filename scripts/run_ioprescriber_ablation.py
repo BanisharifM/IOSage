@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ablation Study for IOPrescriber — SC 2026 Paper Table 4.
+Ablation Study for IOPrescriber — IOSage paper Table 4.
 
 Runs 6 ablation conditions to prove each component adds value:
   A1: Full system vs LLM alone (no ML detection, raw Darshan to LLM)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate Paper-Ready Figures for SC 2026 Labeling Section
+Generate Paper-Ready Figures for IOSage Labeling Section
 =========================================================
 Produces publication-quality figures for the heuristic labeling results.
 
@@ -366,7 +366,7 @@ def fig_L5_cardinality(df):
 # ===================================================================
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate labeling figures for SC 2026 paper'
+        description='Generate labeling figures for IOSage paper'
     )
     parser.add_argument(
         '--figures', nargs='+', default=['L1', 'L2', 'L3', 'L4', 'L5'],

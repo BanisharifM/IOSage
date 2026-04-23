@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================
-# Compile SC 2026 Paper (LaTeX → PDF)
+# Compile IOSage Paper (LaTeX → PDF)
 # ==============================================================
 # Usage: bash scripts/compile_paper.sh
 #

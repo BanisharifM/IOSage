@@ -1,5 +1,5 @@
 """
-Shared figure configuration for SC 2026 paper.
+Shared figure configuration for IOSage paper.
 ===============================================
 All figure scripts import from here to ensure consistent styling.
 See docs/figure_style_guide.md for rationale.

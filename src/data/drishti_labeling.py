@@ -7,7 +7,7 @@ reimplementing Drishti's 30 heuristic rules as vectorized pandas operations.
 This operates on the already-extracted production/features.parquet, not on
 raw .darshan files. A full labeling pass over 131K rows completes in seconds.
 
-Terminology (per SC 2026 paper convention):
+Terminology (per IOSage paper convention):
   - "heuristic labels" = Drishti rule-based labels on production logs
   - "ground-truth labels" = benchmark-derived labels (by construction)
   - See docs/paper_materials.md Section 2.5.1 for rationale.

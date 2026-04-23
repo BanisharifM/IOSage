@@ -1,5 +1,5 @@
 """
-ML Ablation Studies for SC 2026 Paper
+ML Ablation Studies for IOSage Paper
 
 Addresses reviewer concern: "Did the ML just learn Drishti's rules?"
 
@@ -441,7 +441,7 @@ def run_ablation3_lobo(config, seed=42):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ML Ablation Studies for SC 2026")
+    parser = argparse.ArgumentParser(description="ML Ablation Studies for IOSage")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 

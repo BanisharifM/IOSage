@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fair Ablation Study for IOSage — SC 2026 Paper.
+Fair Ablation Study for IOSage — IOSage paper.
 
 The original ablation had a flaw: "w/o ML classifier" also silently
 disabled KB retrieval because the RAG query depends on ML-detected

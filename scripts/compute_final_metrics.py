@@ -1,5 +1,5 @@
 """
-Compute all missing ML metrics for SC 2026 paper.
+Compute all missing ML metrics for IOSage paper.
 
 Metrics computed:
 1. Micro-F1, Macro-F1 for all models

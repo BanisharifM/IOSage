@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run systematic LLM evaluation for SC 2026 paper.
+Run systematic LLM evaluation for IOSage paper.
 
 Evaluates IOPrescriber Single-shot (single-shot recommendation) across:
   - 12 diverse workloads (covering all 8 bottleneck types)
@@ -225,7 +225,7 @@ def print_table3(summary):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run LLM evaluation for SC 2026")
+    parser = argparse.ArgumentParser(description="Run LLM evaluation for IOSage")
     parser.add_argument("--model", default="all", choices=["all"] + MODELS)
     parser.add_argument("--n-workloads", type=int, default=12)
     parser.add_argument("--n-runs", type=int, default=1, help="Runs per workload (5 for paper)")

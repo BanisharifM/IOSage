@@ -4,7 +4,7 @@ Comprehensive TraceBench evaluation: ALL 35 traces, 3-way comparison, bootstrap 
 Runs IOSage full pipeline on all 35 TraceBench traces (real_app_bench, IO500,
 single_issue_bench) and compares against IONavigator 1.0 and Drishti outputs.
 
-This is the DEFINITIVE TraceBench evaluation for the SC 2026 paper.
+This is the DEFINITIVE TraceBench evaluation for the IOSage paper.
 
 Usage:
     source .env && python scripts/run_tracebench_full_evaluation.py [--ml-only] [--subset all|real_app|io500|single]

@@ -1,7 +1,7 @@
 """
 Standalone evaluation module for multi-label I/O bottleneck classifiers.
 
-Computes all metrics required for SC 2026:
+Computes all metrics required for IOSage evaluation:
 - Primary: Micro-F1, Macro-F1
 - Secondary: Hamming loss, per-label F1/P/R, subset accuracy
 - Statistical: Bootstrap 95% CI, paired model comparison

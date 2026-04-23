@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate benchmark ground-truth and supplementary figures for SC 2026 paper.
+"""Generate benchmark ground-truth and supplementary figures for IOSage paper.
 
 Figures:
   B1. fig_gt_label_distribution.pdf   -- GT label distribution stacked by benchmark

@@ -1,5 +1,5 @@
 """
-Dataset Characterization Analysis for SC 2026 Paper
+Dataset Characterization Analysis for IOSage
 ====================================================
 Generates figures and statistics from the raw feature parquet file.
 
@@ -495,7 +495,7 @@ def plot_correlation_heatmap(df, fig_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Dataset characterization analysis for SC 2026 paper')
+        description='Dataset characterization analysis for IOSage paper')
     parser.add_argument('--input', required=True,
                         help='Input parquet file (raw_features.parquet)')
     parser.add_argument('--output-dir', required=True,

@@ -1,7 +1,7 @@
 """
-Generate Paper-Ready Figures for SC 2026 Dataset/Preprocessing Section
+Generate Paper-Ready Figures for IOSage Dataset/Preprocessing Section
 ======================================================================
-Produces publication-quality figures for the SC 2026 paper.
+Produces publication-quality figures for the IOSage paper.
 
 Output directory: figures/preprocessing/
 All figures are saved as both PDF (for LaTeX) and PNG (for review).
@@ -716,7 +716,7 @@ TABLE_REGISTRY = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate paper-ready figures for SC 2026'
+        description='Generate paper-ready figures for IOSage'
     )
     parser.add_argument(
         '--data-dir', type=str, default='data/processed',

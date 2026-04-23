@@ -1,5 +1,5 @@
 """
-Biquality weight sensitivity analysis for SC 2026 reviewer response.
+Biquality weight sensitivity analysis for reviewer response.
 
 Addresses W12: "Biquality weight=100 is used without justification."
 

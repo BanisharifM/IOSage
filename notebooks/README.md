@@ -1,4 +1,4 @@
-# Notebooks — SC 2026
+# Notebooks — IOSage
 
 Jupyter notebooks for reviewers and artifact evaluation.
 
