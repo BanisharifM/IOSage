@@ -1,0 +1,161 @@
+=== WisIO baseline on full 488-sample test set ===
+Start: Wed Apr  8 11:11:23 CDT 2026
+Node: cn037.delta.ncsa.illinois.edu
+======================================================================
+WisIO Baseline Evaluation on Benchmark Ground-Truth Logs
+======================================================================
+
+Loaded 488 ground-truth labels
+Unique job_ids: 422
+Benchmarks: {'ior': 160, 'mdtest': 84, 'h5bench': 78, 'custom': 64, 'hacc_io': 58, 'dlio': 44}
+Found darshan files for 422/422 unique jobs
+Dask client started
+  [10/422] 50s elapsed, 0.20 jobs/s, ETA: 2076s | errors so far: 0
+  [20/422] 90s elapsed, 0.22 jobs/s, ETA: 1815s | errors so far: 0
+  [30/422] 130s elapsed, 0.23 jobs/s, ETA: 1702s | errors so far: 0
+  [40/422] 171s elapsed, 0.23 jobs/s, ETA: 1634s | errors so far: 0
+  [50/422] 211s elapsed, 0.24 jobs/s, ETA: 1571s | errors so far: 0
+  [60/422] 250s elapsed, 0.24 jobs/s, ETA: 1508s | errors so far: 0
+  [70/422] 287s elapsed, 0.24 jobs/s, ETA: 1443s | errors so far: 0
+  [80/422] 327s elapsed, 0.24 jobs/s, ETA: 1400s | errors so far: 0
+  [90/422] 366s elapsed, 0.25 jobs/s, ETA: 1352s | errors so far: 0
+  [100/422] 405s elapsed, 0.25 jobs/s, ETA: 1305s | errors so far: 0
+  [110/422] 448s elapsed, 0.25 jobs/s, ETA: 1271s | errors so far: 0
+  [120/422] 498s elapsed, 0.24 jobs/s, ETA: 1253s | errors so far: 0
+  [130/422] 582s elapsed, 0.22 jobs/s, ETA: 1306s | errors so far: 0
+  [140/422] 634s elapsed, 0.22 jobs/s, ETA: 1277s | errors so far: 0
+  [150/422] 682s elapsed, 0.22 jobs/s, ETA: 1238s | errors so far: 0
+  [160/422] 772s elapsed, 0.21 jobs/s, ETA: 1264s | errors so far: 0
+  [170/422] 850s elapsed, 0.20 jobs/s, ETA: 1260s | errors so far: 0
+  [180/422] 964s elapsed, 0.19 jobs/s, ETA: 1296s | errors so far: 0
+  [190/422] 1046s elapsed, 0.18 jobs/s, ETA: 1278s | errors so far: 0
+  [200/422] 1154s elapsed, 0.17 jobs/s, ETA: 1281s | errors so far: 0
+  [210/422] 1194s elapsed, 0.18 jobs/s, ETA: 1205s | errors so far: 0
+  [220/422] 1235s elapsed, 0.18 jobs/s, ETA: 1134s | errors so far: 0
+  [230/422] 1277s elapsed, 0.18 jobs/s, ETA: 1066s | errors so far: 0
+  [240/422] 1318s elapsed, 0.18 jobs/s, ETA: 1000s | errors so far: 0
+  [250/422] 1360s elapsed, 0.18 jobs/s, ETA: 935s | errors so far: 0
+  [260/422] 1400s elapsed, 0.19 jobs/s, ETA: 872s | errors so far: 0
+  [270/422] 1443s elapsed, 0.19 jobs/s, ETA: 813s | errors so far: 0
+  [280/422] 1487s elapsed, 0.19 jobs/s, ETA: 754s | errors so far: 0
+  [290/422] 1531s elapsed, 0.19 jobs/s, ETA: 697s | errors so far: 0
+  [300/422] 1574s elapsed, 0.19 jobs/s, ETA: 640s | errors so far: 0
+  [310/422] 1615s elapsed, 0.19 jobs/s, ETA: 584s | errors so far: 0
+  [320/422] 1659s elapsed, 0.19 jobs/s, ETA: 529s | errors so far: 0
+  [330/422] 1704s elapsed, 0.19 jobs/s, ETA: 475s | errors so far: 0
+  [340/422] 1746s elapsed, 0.19 jobs/s, ETA: 421s | errors so far: 0
+  [350/422] 1787s elapsed, 0.20 jobs/s, ETA: 368s | errors so far: 0
+  [360/422] 1831s elapsed, 0.20 jobs/s, ETA: 315s | errors so far: 0
+  [370/422] 1873s elapsed, 0.20 jobs/s, ETA: 263s | errors so far: 0
+  [380/422] 1916s elapsed, 0.20 jobs/s, ETA: 212s | errors so far: 0
+  [390/422] 1957s elapsed, 0.20 jobs/s, ETA: 161s | errors so far: 0
+  [400/422] 1998s elapsed, 0.20 jobs/s, ETA: 110s | errors so far: 0
+  [410/422] 2039s elapsed, 0.20 jobs/s, ETA: 60s | errors so far: 0
+  [420/422] 2086s elapsed, 0.20 jobs/s, ETA: 10s | errors so far: 0
+
+Processed 422 unique jobs, 0 errors in 2093.5s
+
+Saved predictions (488 rows) to /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/wisio_baseline_full488
+
+======================================================================
+EVALUATION RESULTS
+======================================================================
+Dimension                       Prec  Recall      F1  Sup(+)  Pred(+)
+---------------------------------------------------------------------
+  *access_granularity           0.377   0.769   0.506     156      318
+  *metadata_intensity           0.274   1.000   0.430      65      237
+  *parallelism_efficiency       0.269   1.000   0.424      50      186
+  *access_pattern               0.063   1.000   0.119      29      459
+   interface_choice             0.000   0.000   0.000      65        0
+   file_strategy                0.000   0.000   0.000      46        0
+   throughput_utilization       0.000   0.000   0.000      57        0
+   healthy                      1.000   0.115   0.207      78        9
+---------------------------------------------------------------------
+  Micro F1 (all dims):        0.3111
+  Macro F1 (all dims):        0.2108
+  Micro F1 (mapped dims):     0.3520
+  Macro F1 (mapped dims):     0.3698
+  N samples:                  488
+
+======================================================================
+PER-BENCHMARK BREAKDOWN
+======================================================================
+
+  custom (n=64):
+    Micro F1 (all):    0.3268
+    Macro F1 (all):    0.1096
+    Micro F1 (mapped): 0.3425
+      access_granularity         P=0.000 R=0.000 F1=0.000 sup=0 pred=50
+      metadata_intensity         P=0.000 R=0.000 F1=0.000 sup=0 pred=64
+      parallelism_efficiency     P=0.781 R=1.000 F1=0.877 sup=50 pred=64
+      access_pattern             P=0.000 R=0.000 F1=0.000 sup=0 pred=64
+      healthy                    P=0.000 R=0.000 F1=0.000 sup=14 pred=0
+
+  dlio (n=44):
+    Micro F1 (all):    0.0559
+    Macro F1 (all):    0.0322
+    Micro F1 (mapped): 0.0633
+      access_granularity         P=0.333 R=0.053 F1=0.091 sup=19 pred=3
+      metadata_intensity         P=0.000 R=0.000 F1=0.000 sup=0 pred=44
+      parallelism_efficiency     P=0.000 R=0.000 F1=0.000 sup=0 pred=44
+      access_pattern             P=0.091 R=1.000 F1=0.167 sup=4 pred=44
+      throughput_utilization     P=0.000 R=0.000 F1=0.000 sup=13 pred=0
+      healthy                    P=0.000 R=0.000 F1=0.000 sup=8 pred=0
+
+  h5bench (n=78):
+    Micro F1 (all):    0.1520
+    Macro F1 (all):    0.0813
+    Micro F1 (mapped): 0.1977
+      access_granularity         P=0.491 R=0.963 F1=0.650 sup=27 pred=53
+      metadata_intensity         P=0.000 R=0.000 F1=0.000 sup=0 pred=42
+      parallelism_efficiency     P=0.000 R=0.000 F1=0.000 sup=0 pred=78
+      access_pattern             P=0.000 R=0.000 F1=0.000 sup=0 pred=63
+      interface_choice           P=0.000 R=0.000 F1=0.000 sup=35 pred=0
+      throughput_utilization     P=0.000 R=0.000 F1=0.000 sup=11 pred=0
+      healthy                    P=0.000 R=0.000 F1=0.000 sup=33 pred=0
+
+  hacc_io (n=58):
+    Micro F1 (all):    0.2246
+    Macro F1 (all):    0.1456
+    Micro F1 (mapped): 0.2243
+      access_granularity         P=0.324 R=0.706 F1=0.444 sup=17 pred=37
+      metadata_intensity         P=0.000 R=0.000 F1=0.000 sup=0 pred=4
+      access_pattern             P=0.000 R=0.000 F1=0.000 sup=0 pred=49
+      interface_choice           P=0.000 R=0.000 F1=0.000 sup=27 pred=0
+      file_strategy              P=0.000 R=0.000 F1=0.000 sup=10 pred=0
+      throughput_utilization     P=0.000 R=0.000 F1=0.000 sup=18 pred=0
+      healthy                    P=1.000 R=0.562 F1=0.720 sup=16 pred=9
+
+  ior (n=160):
+    Micro F1 (all):    0.4579
+    Macro F1 (all):    0.1187
+    Micro F1 (mapped): 0.5036
+      access_granularity         P=0.547 R=0.871 F1=0.672 sup=93 pred=148
+      access_pattern             P=0.161 R=1.000 F1=0.278 sup=25 pred=155
+      interface_choice           P=0.000 R=0.000 F1=0.000 sup=3 pred=0
+      file_strategy              P=0.000 R=0.000 F1=0.000 sup=17 pred=0
+      throughput_utilization     P=0.000 R=0.000 F1=0.000 sup=15 pred=0
+      healthy                    P=0.000 R=0.000 F1=0.000 sup=7 pred=0
+
+  mdtest (n=84):
+    Micro F1 (all):    0.4676
+    Macro F1 (all):    0.1098
+    Micro F1 (mapped): 0.5019
+      access_granularity         P=0.000 R=0.000 F1=0.000 sup=0 pred=27
+      metadata_intensity         P=0.783 R=1.000 F1=0.878 sup=65 pred=83
+      access_pattern             P=0.000 R=0.000 F1=0.000 sup=0 pred=84
+      file_strategy              P=0.000 R=0.000 F1=0.000 sup=19 pred=0
+
+======================================================================
+WISIO RAW RULE DETECTION RATES
+======================================================================
+  excessive_metadata_access            237/488 (48.6%)
+  operation_imbalance                  186/488 (38.1%)
+  random_operations                    459/488 (94.1%)
+  size_imbalance                       183/488 (37.5%)
+  small_reads                           50/488 (10.2%)
+  small_writes                         280/488 (57.4%)
+
+Saved metrics to /work/hdd/bdau/mbanisharifdehkordi/SC_2026/results/wisio_baseline_full488/wisio_metrics.json
+End: Wed Apr  8 11:51:54 CDT 2026
+Exit code: 0
