@@ -1,13 +1,13 @@
-# SC 2026: ML+LLM Hybrid for HPC I/O Bottleneck Detection
+# IOSage: Benchmark-Grounded Multi-Label I/O Bottleneck Diagnosis with Validated Recommendations
 
-Research project for [SC 2026](https://sc26.supercomputing.org/) (Supercomputing Conference).
+Submitted to [SC 2026](https://sc26.supercomputing.org/) (Supercomputing Conference).
 
 **Track:** Performance Measurement, Modeling, & Tools
 **Format:** IEEE proceedings, 10 pages excl. bibliography, double-anonymous
 
 ## Overview
 
-A hybrid ML+LLM system that combines trained classifiers for multi-label I/O bottleneck detection with a retrieval-augmented LLM for code-level fix recommendations. Trained on 1.37M Darshan logs from ALCF Polaris and benchmark-verified ground truth.
+IOSage is a hybrid ML+LLM system that combines trained classifiers for multi-label I/O bottleneck detection with a retrieval-augmented LLM for code-level fix recommendations. Trained on 1.37M Darshan logs from ALCF Polaris and benchmark-verified ground truth.
 
 ### Architecture
 
@@ -21,93 +21,60 @@ Darshan Log -> Feature Extraction (157 features)
 
 ### Key Contributions
 
-- Hybrid ML+LLM architecture combining learned detection with grounded recommendations
-- Benchmark-grounded Knowledge Base mapping I/O signatures to verified code fixes
-- Facility-scale analysis on 1.37M production Darshan logs from ALCF Polaris
-- Comprehensive evaluation against AIIO, Drishti, IOAgent baselines
+- Facility-scale I/O bottleneck study on 1.37M production Darshan logs from ALCF Polaris
+- IOSage three-stage pipeline: ML detection as precision gate for LLM recommendations (0.929 Micro-F1, 94% false-positive reduction)
+- DIOBench: benchmark-grounded knowledge base (689 entries) and test set (488 traces) from six benchmark suites
+- Closed-loop validation with four LLMs (4.5-11.4x geometric-mean speedup) and 9 real applications from four HPC facilities
 
 ## Project Structure
 
 ```
-SC_2026/
+IOSage/
 ├── src/                     # Source code
 │   ├── data/                # Darshan parsing, feature extraction, preprocessing
-│   ├── models/              # ML classifiers, training
+│   ├── models/              # ML classifiers, training, SHAP attribution
+│   ├── llm/                 # LLM recommendation, knowledge base, iterative optimizer
+│   ├── ioprescriber/        # End-to-end pipeline (detector, retriever, recommender)
 │   └── utils/               # Metrics, visualization, logging
 ├── configs/                 # Hyperparameter YAML files
-├── scripts/                 # Pipeline scripts (extraction, preprocessing, figures)
-├── paper/                   # LaTeX paper (synced to Overleaf via SC_2026_Paper repo)
-│   ├── main.tex             # Main document
-│   ├── sections/            # Per-section .tex files
-│   ├── figures/             # Paper figures (PDF + PNG)
-│   ├── tables/              # LaTeX tables
-│   └── references.bib       # Bibliography
-├── benchmarks/              # Ground truth generation (IOR, mdtest, DLIO)
+├── scripts/                 # Reproduction, figure generation, verification
+├── benchmarks/              # Ground truth generation (IOR, mdtest, DLIO, h5bench, HACC-IO, custom)
 ├── data/
-│   ├── raw/ -> Darshan_Logs # Symlink to raw Polaris logs
-│   ├── processed/           # Extracted features and preprocessed data (Git LFS)
-│   ├── sample_logs/         # Sample Darshan parser outputs
-│   └── splits/              # Train/val/test splits
-├── docs/                    # Research documentation and domain knowledge
-├── archive/                 # Old drafts and notes
+│   ├── processed/           # Extracted features and preprocessed data
+│   ├── knowledge_base/      # 689-entry benchmark-verified KB (JSON)
+│   └── llm_cache/           # Cached LLM outputs for offline reproduction
+├── models/                  # Trained model weights
+├── results/                 # Experiment outputs and evaluation metrics
+├── notebooks/               # Jupyter notebooks
 └── Darshan_Logs/            # Raw data (1.37M logs, not in git)
 ```
 
-## Setup
-
-### Environment
+## Quick Start
 
 ```bash
-# On Delta/Polaris: use the sc2026 conda environment
-source activate /projects/bdau/envs/sc2026
-
-# Or create a new environment
-conda create -n sc2026 python=3.9
+# Clone and setup
+git clone https://github.com/BanisharifM/IOSage.git
+cd IOSage
+conda env create -f environment.yml
 conda activate sc2026
-pip install -r requirements.txt
-```
+python -c "import xgboost; print('OK')"
 
-### Git LFS
+# Full reproduction (~65 min on 16 CPU cores)
+bash scripts/reproduce_all.sh
 
-Processed parquet files are tracked with Git LFS. After cloning:
-
-```bash
-git lfs install
-git lfs pull
-```
-
-### Data Pipeline
-
-```bash
-# 1. Extract features from Darshan logs
-python -m src.data.batch_extract --input-dir Darshan_Logs/ --output data/processed/raw_features.parquet
-
-# 2. Run preprocessing pipeline (cleaning, engineering, normalization)
-python scripts/run_preprocessing.py --config configs/preprocessing.yaml
-
-# 3. Generate paper figures
-python scripts/generate_paper_figures.py --output-dir paper/figures/preprocessing
-```
-
-### Paper
-
-```bash
-# Compile LaTeX paper
-bash scripts/compile_paper.sh
-
-# Sync to Overleaf (via SC_2026_Paper GitHub repo)
-bash scripts/sync_paper_to_overleaf.sh "Update message"
+# Quick reproduction (~20 min, pre-processed data + cached LLM outputs)
+bash scripts/reproduce_all.sh --quick
 ```
 
 ## Dataset
 
-1.37M anonymized Darshan I/O profiling logs from the ALCF Polaris supercomputer (Apr 2024 -- Feb 2026).
+1.37M anonymized Darshan I/O profiling logs from the ALCF Polaris supercomputer (Apr 2024 to Feb 2026).
 
 **Source:** [Zenodo DOI: 10.5281/zenodo.15052603](https://doi.org/10.5281/zenodo.15052603)
 
 | Stage | Rows | Features |
 |-------|------|----------|
-| Raw extraction | 1,397,293 | 186 |
+| Raw extraction | 1,397,216 | 186 |
 | After cleaning | 131,151 | 186 |
 | After exclusion | 131,151 | 157 |
 | Train / Val / Test | 91,807 / 19,672 / 19,672 | 157 |
@@ -116,20 +83,27 @@ bash scripts/sync_paper_to_overleaf.sh "Update message"
 
 | Component | Specification |
 |-----------|---------------|
-| Nodes | 560 HPE Apollo 6500 Gen 10+ |
+| Nodes | 520 HPE Apollo 6500 Gen 10+ |
 | CPU | AMD EPYC Milan 7543P (32-core) |
 | GPU | 4x NVIDIA A100 per node |
 | Storage | Eagle/Grand Lustre (100 PiB, 650 GiB/s) |
 
-## Key Dates
+## Hardware Requirements
 
-| Date | Milestone |
-|------|-----------|
-| March 1 | Submissions open |
-| April 1 | Abstract registration |
-| April 8 | Full paper submission |
-| April 24 | AD appendix due |
-| June 8-11 | Rebuttal period |
+- **Training:** CPU only (16+ cores, 16 GB RAM minimum)
+- **GPU:** Not required for any component
+- **Storage:** 2 GB for processed data + models
+
+## Software Versions
+
+| Package | Version |
+|---------|---------|
+| Python | 3.9 |
+| XGBoost | 2.1.4 |
+| LightGBM | 4.5.0 |
+| scikit-learn | 1.6.1 |
+| SHAP | 0.49.1 |
+| PyDarshan | 3.5.0 |
 
 ## References
 
