@@ -1,0 +1,88 @@
+{
+  "per_dimension": {
+    "access_granularity": {
+      "tp": 17,
+      "fp": 32,
+      "fn": 0,
+      "tn": 1,
+      "precision": 0.3469,
+      "recall": 1.0,
+      "f1": 0.5152
+    },
+    "metadata_intensity": {
+      "tp": 8,
+      "fp": 42,
+      "fn": 0,
+      "tn": 0,
+      "precision": 0.16,
+      "recall": 1.0,
+      "f1": 0.2759
+    },
+    "parallelism_efficiency": {
+      "tp": 0,
+      "fp": 34,
+      "fn": 0,
+      "tn": 16,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "access_pattern": {
+      "tp": 1,
+      "fp": 27,
+      "fn": 2,
+      "tn": 20,
+      "precision": 0.0357,
+      "recall": 0.3333,
+      "f1": 0.0645
+    },
+    "interface_choice": {
+      "tp": 11,
+      "fp": 15,
+      "fn": 1,
+      "tn": 23,
+      "precision": 0.4231,
+      "recall": 0.9167,
+      "f1": 0.5789
+    },
+    "file_strategy": {
+      "tp": 4,
+      "fp": 40,
+      "fn": 0,
+      "tn": 6,
+      "precision": 0.0909,
+      "recall": 1.0,
+      "f1": 0.1667
+    },
+    "throughput_utilization": {
+      "tp": 10,
+      "fp": 39,
+      "fn": 0,
+      "tn": 1,
+      "precision": 0.2041,
+      "recall": 1.0,
+      "f1": 0.339
+    }
+  },
+  "overall": {
+    "micro_precision": 0.1821,
+    "micro_recall": 0.9444,
+    "micro_f1": 0.3054,
+    "macro_f1": 0.3234,
+    "total_tp": 51,
+    "total_fp": 229,
+    "total_fn": 3,
+    "total_tn": 67
+  },
+  "api_metrics": {
+    "total_api_calls": 480,
+    "total_prompt_tokens": 704336,
+    "total_completion_tokens": 231123,
+    "total_cost_usd": 1.3977
+  },
+  "n_traces_processed": 50,
+  "n_traces_attempted": 50,
+  "model": "anthropic/claude-sonnet-4",
+  "avg_time_per_trace": 504.12,
+  "avg_api_calls_per_trace": 9.6
+}

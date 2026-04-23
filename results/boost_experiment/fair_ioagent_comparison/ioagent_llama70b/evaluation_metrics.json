@@ -1,0 +1,88 @@
+{
+  "per_dimension": {
+    "access_granularity": {
+      "tp": 16,
+      "fp": 19,
+      "fn": 1,
+      "tn": 14,
+      "precision": 0.4571,
+      "recall": 0.9412,
+      "f1": 0.6154
+    },
+    "metadata_intensity": {
+      "tp": 8,
+      "fp": 34,
+      "fn": 0,
+      "tn": 8,
+      "precision": 0.1905,
+      "recall": 1.0,
+      "f1": 0.32
+    },
+    "parallelism_efficiency": {
+      "tp": 0,
+      "fp": 17,
+      "fn": 0,
+      "tn": 33,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "access_pattern": {
+      "tp": 1,
+      "fp": 21,
+      "fn": 2,
+      "tn": 26,
+      "precision": 0.0455,
+      "recall": 0.3333,
+      "f1": 0.08
+    },
+    "interface_choice": {
+      "tp": 1,
+      "fp": 9,
+      "fn": 11,
+      "tn": 29,
+      "precision": 0.1,
+      "recall": 0.0833,
+      "f1": 0.0909
+    },
+    "file_strategy": {
+      "tp": 2,
+      "fp": 27,
+      "fn": 2,
+      "tn": 19,
+      "precision": 0.069,
+      "recall": 0.5,
+      "f1": 0.1212
+    },
+    "throughput_utilization": {
+      "tp": 0,
+      "fp": 5,
+      "fn": 10,
+      "tn": 35,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0
+    }
+  },
+  "overall": {
+    "micro_precision": 0.175,
+    "micro_recall": 0.5185,
+    "micro_f1": 0.2617,
+    "macro_f1": 0.2046,
+    "total_tp": 28,
+    "total_fp": 132,
+    "total_fn": 26,
+    "total_tn": 164
+  },
+  "api_metrics": {
+    "total_api_calls": 80,
+    "total_prompt_tokens": 84349,
+    "total_completion_tokens": 26361,
+    "total_cost_usd": 0.1634
+  },
+  "n_traces_processed": 50,
+  "n_traces_attempted": 50,
+  "model": "meta-llama/llama-3.1-70b-instruct",
+  "avg_time_per_trace": 569.9,
+  "avg_api_calls_per_trace": 1.6
+}
