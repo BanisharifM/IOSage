@@ -4,19 +4,11 @@
 
 Submitted to SC 2026 (Track: Performance Measurement, Modeling, and Tools).
 
-## Overview
+## Architecture
 
-IOSage detects I/O bottlenecks in HPC applications from Darshan profiling logs and generates code-level optimization recommendations. It combines a multi-label XGBoost classifier with LLM-generated fixes grounded in a benchmark-verified knowledge base. The classifier acts as a precision gate: only detected bottleneck dimensions are forwarded to the LLM, reducing false positives by 94% compared to LLM-only diagnosis.
+![IOSage Architecture](figures/architecture.png)
 
-**Pipeline:**
-
-```
-Darshan log --> Feature extraction (157 features)
-            --> ML detection (8 bottleneck dimensions, 43 ms)
-            --> KB retrieval (689 verified entries, top-3 by cosine similarity)
-            --> LLM recommendation (structured JSON, must cite KB entry)
-            --> Closed-loop validation (re-run benchmark, measure speedup)
-```
+IOSage detects I/O bottlenecks in HPC applications from Darshan profiling logs and generates code-level optimization recommendations. It combines a multi-label XGBoost classifier with LLM-generated fixes grounded in a benchmark-verified knowledge base (DIOBench, 689 entries from six benchmark suites). The classifier acts as a precision gate: only detected bottleneck dimensions are forwarded to the LLM, reducing false positives by 94% compared to LLM-only diagnosis.
 
 ## Main Results
 
@@ -29,6 +21,14 @@ Darshan log --> Feature extraction (157 features)
 | TraceBench real-app precision | 0.857 |
 | Detection latency (median) | 43 ms |
 | LLM latency (per trace) | 4 to 18 s |
+
+### Per-Dimension Detection (F1)
+
+![Per-Dimension F1](figures/per_dimension_f1.png)
+
+### Iterative Closed-Loop Speedups (4 LLMs)
+
+![Iterative Speedups](figures/iterative_speedups.png)
 
 ## Getting Started
 
