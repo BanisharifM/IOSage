@@ -1,0 +1,62 @@
+{
+  "gpt-4.1-mini": {
+    "n_total_traces": 488,
+    "n_healthy": 78,
+    "n_with_recs": 405,
+    "n_zero_recs": 83,
+    "groundedness_mean": 0.828551912568306,
+    "groundedness_std": 0.3760754114173994,
+    "rec_precision_mean": 0.917283950617284,
+    "rec_precision_std": 0.25058298972402226,
+    "latency_mean_s": 9.312237530864197,
+    "latency_std_s": 4.554220319254518,
+    "tokens_mean": 1882.079012345679,
+    "avg_recommendations_per_nonhealthy": 1.3135802469135802,
+    "formula_note": "groundedness = mean over all 488 traces; 0-rec traces count as 0"
+  },
+  "gpt-4o": {
+    "n_total_traces": 488,
+    "n_healthy": 78,
+    "n_with_recs": 405,
+    "n_zero_recs": 83,
+    "groundedness_mean": 0.8288934426229508,
+    "groundedness_std": 0.37630703762861273,
+    "rec_precision_mean": 0.9156378600823045,
+    "rec_precision_std": 0.25520362346987374,
+    "latency_mean_s": 4.85864938271605,
+    "latency_std_s": 3.0468102607206338,
+    "tokens_mean": 1710.3382716049382,
+    "avg_recommendations_per_nonhealthy": 1.2098765432098766,
+    "formula_note": "groundedness = mean over all 488 traces; 0-rec traces count as 0"
+  },
+  "claude-sonnet-4": {
+    "n_total_traces": 488,
+    "n_healthy": 78,
+    "n_with_recs": 466,
+    "n_zero_recs": 22,
+    "groundedness_mean": 0.9549180327868853,
+    "groundedness_std": 0.20769684866952481,
+    "rec_precision_mean": 0.7968526466380543,
+    "rec_precision_std": 0.3876586136041129,
+    "latency_mean_s": 11.907816309012876,
+    "latency_std_s": 4.59884662064844,
+    "tokens_mean": 2309.6609442060085,
+    "avg_recommendations_per_nonhealthy": 1.5772532188841202,
+    "formula_note": "groundedness = mean over all 488 traces; 0-rec traces count as 0"
+  },
+  "llama-3.1-70b-instruct": {
+    "n_total_traces": 488,
+    "n_healthy": 78,
+    "n_with_recs": 406,
+    "n_zero_recs": 82,
+    "groundedness_mean": 0.8288934426229508,
+    "groundedness_std": 0.37630703762861273,
+    "rec_precision_mean": 0.9207717569786535,
+    "rec_precision_std": 0.24162993825928936,
+    "latency_mean_s": 17.93654458128079,
+    "latency_std_s": 7.525314633747647,
+    "tokens_mean": 1807.472906403941,
+    "avg_recommendations_per_nonhealthy": 1.2192118226600985,
+    "formula_note": "groundedness = mean over all 488 traces; 0-rec traces count as 0"
+  }
+}

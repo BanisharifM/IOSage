@@ -1,0 +1,24 @@
+2026-04-06 15:05:06 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 15:05:06 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 15:05:06 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 15:05:19 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 15:05:19 [INFO]   KB loaded: 623 entries
+2026-04-06 15:05:20 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 15:05:20 [INFO] IterativeOptimizer: model=gpt-4.1-mini, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 15:05:20 [INFO] Workloads: ['h5bench_interleaved_pattern']
+2026-04-06 15:05:20 [INFO] Model: gpt-4.1-mini, Runs: 1, Max iterations: 5
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO] ITERATIVE OPTIMIZATION: h5bench_interleaved_pattern (run 0)
+2026-04-06 15:05:20 [INFO]   Bottleneck: access_pattern
+2026-04-06 15:05:20 [INFO]   Description: Interleaved memory+file pattern causing non-contiguous I/O
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 15:05:21 [INFO]   Submitted SLURM job 17338428
+2026-04-06 15:06:21 [INFO]   Job 17338428: COMPLETED (60s)
+2026-04-06 15:06:21 [INFO]   Darshan log: mbanisha_h5bench_write_id17338428-2659836_4-6-54354-6234006039718896118_1.darshan
+2026-04-06 15:06:22 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:06:22 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:06:22 [INFO]   Baseline BW: 17.66 MB/s
+2026-04-06 15:06:22 [INFO]   Initial detection: ['healthy']
+2026-04-06 15:06:22 [INFO]   No bottlenecks detected -- already healthy
+2026-04-06 15:06:22 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_h5bench_interleaved_pattern_gpt41mini.json

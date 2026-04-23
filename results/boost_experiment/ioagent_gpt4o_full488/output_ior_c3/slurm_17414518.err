@@ -1,0 +1,409 @@
+2026-04-08 09:54:12,759 [INFO] Loaded 488 test labels
+2026-04-08 09:54:13,182 [INFO] Selected 20 traces (benchmark=ior, chunk=3/8)
+2026-04-08 09:54:13,223 [INFO] Found darshan files for 20/20 traces
+2026-04-08 09:54:25,827 [INFO] Processing trace 1/20: 16653128 (ior)
+2026-04-08 09:54:26,580 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 09:54:30,795 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:54:36,464 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:54:46,414 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:54:51,301 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:54:53,192 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:54:59,616 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:06,405 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:08,456 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:14,829 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:21,897 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:24,343 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:28,994 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:35,870 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:38,577 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:43,764 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:49,420 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:52,108 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:55:58,510 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:04,066 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:06,579 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:12,475 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:17,808 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:24,895 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:32,890 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:41,388 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:51,431 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:56:58,748 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:11,460 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:13,729 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:17,485 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:24,019 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:26,723 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:35,714 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:42,218 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:44,027 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:52,174 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:57:58,226 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:06,980 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:14,430 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:22,583 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:23,552 [INFO]   Completed in 236.4s, API calls so far: 40, Cost so far: $0.0970
+2026-04-08 09:58:23,593 [INFO] Processing trace 2/20: 16653129 (ior)
+2026-04-08 09:58:23,911 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 09:58:24,471 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:26,805 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:31,352 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:40,897 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:43,760 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:50,180 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:58:59,740 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:02,068 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:08,700 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:14,640 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:17,353 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:23,456 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:29,138 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:31,648 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:38,142 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:41,582 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:43,440 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:51,770 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 09:59:58,062 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:00,476 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:05,207 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:11,613 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:23,040 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:31,817 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:39,324 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:46,995 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:00:54,017 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:02,465 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:04,621 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:09,443 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:16,749 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:19,618 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:24,962 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:33,868 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:38,231 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:49,896 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:01:57,205 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:05,434 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:12,308 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:21,471 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:22,487 [INFO]   Completed in 237.4s, API calls so far: 80, Cost so far: $0.1908
+2026-04-08 10:02:22,528 [INFO] Processing trace 3/20: 16653130 (ior)
+2026-04-08 10:02:22,911 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:02:23,541 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:27,231 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:35,706 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:44,877 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:47,886 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:02:54,196 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:02,919 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:05,591 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:13,833 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:20,304 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:22,754 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:33,955 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:43,116 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:45,707 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:03:52,679 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:01,268 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:03,723 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:12,545 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:19,566 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:22,947 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:28,788 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:36,217 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:47,780 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:04:56,653 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:04,188 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:15,152 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:23,129 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:33,379 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:35,870 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:43,855 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:54,237 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:05:56,867 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:04,868 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:16,588 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:19,913 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:32,920 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:42,053 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:06:55,743 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:03,883 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:12,671 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:13,272 [INFO]   Completed in 289.8s, API calls so far: 120, Cost so far: $0.2876
+2026-04-08 10:07:13,288 [INFO] Processing trace 4/20: 16653131 (ior)
+2026-04-08 10:07:13,477 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:07:14,131 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:16,726 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:26,580 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:33,102 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:35,531 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:43,379 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:49,737 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:07:52,806 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:03,783 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:11,656 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:14,001 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:19,922 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:24,986 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:26,741 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:35,400 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:44,559 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:47,779 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:08:55,838 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:04,247 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:07,740 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:13,860 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:18,851 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:26,306 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:35,267 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:43,512 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:09:53,001 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:00,303 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:08,624 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:10,105 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:16,049 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:22,335 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:24,460 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:31,846 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:39,433 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:42,114 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:50,011 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:10:55,944 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:06,413 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:18,048 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:30,630 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:31,243 [INFO]   Completed in 255.8s, API calls so far: 160, Cost so far: $0.3788
+2026-04-08 10:11:31,265 [INFO] Processing trace 5/20: 16653133 (ior)
+2026-04-08 10:11:31,510 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:11:31,970 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:35,315 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:43,366 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:48,701 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:11:51,129 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:01,413 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:09,365 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:11,572 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:21,652 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:29,927 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:32,150 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:39,976 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:48,768 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:12:50,743 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:05,243 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:12,741 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:15,072 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:22,494 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:28,540 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:31,418 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:36,314 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:42,374 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:49,509 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:13:57,453 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:04,829 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:13,966 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:24,914 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:34,305 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:36,425 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:41,588 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:51,111 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:53,229 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:14:57,750 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:11,300 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:15,426 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:27,282 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:34,450 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:42,535 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:15:51,289 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:01,674 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:02,470 [INFO]   Completed in 269.9s, API calls so far: 200, Cost so far: $0.4711
+2026-04-08 10:16:02,478 [INFO] Processing trace 6/20: 16653134 (ior)
+2026-04-08 10:16:02,764 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:16:03,252 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:06,735 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:14,784 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:20,969 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:24,558 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:33,442 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:41,957 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:43,756 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:16:54,055 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:01,497 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:04,593 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:17,682 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:24,362 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:26,530 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:32,751 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:39,902 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:42,233 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:53,936 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:17:59,674 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:02,227 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:10,622 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:20,104 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:30,802 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:39,079 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:45,826 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:18:56,309 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:10,885 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:23,707 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:25,803 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:31,170 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:39,464 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:42,107 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:47,528 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:55,346 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:19:58,295 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:04,877 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:13,849 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:20,874 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:31,587 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:45,030 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:45,700 [INFO]   Completed in 282.1s, API calls so far: 240, Cost so far: $0.5662
+2026-04-08 10:20:45,732 [INFO] Processing trace 7/20: 16653135 (ior)
+2026-04-08 10:20:45,993 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:20:46,625 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:50,371 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:20:59,725 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:06,613 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:08,169 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:15,794 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:22,558 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:24,489 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:33,724 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:40,306 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:43,332 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:52,236 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:21:59,602 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:03,499 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:11,425 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:19,905 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:23,355 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:33,901 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:40,811 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:44,498 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:50,582 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:22:55,599 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:23:06,534 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:23:23,946 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:23:31,304 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:23:45,960 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:23:54,082 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:04,032 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:05,917 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:10,564 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:16,724 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:18,885 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:24,866 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:32,392 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:34,813 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:42,948 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:52,351 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-08 10:24:59,367 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:24:59,369 [ERROR] ION pipeline failed for 16653135: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:24:59,369 [WARNING] Skipping trace 16653135 due to error
+2026-04-08 10:24:59,369 [INFO] Processing trace 8/20: 16653136 (ior)
+2026-04-08 10:24:59,732 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:24:59,892 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:24:59,893 [ERROR] ION pipeline failed for 16653136: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:24:59,893 [WARNING] Skipping trace 16653136 due to error
+2026-04-08 10:24:59,894 [INFO] Processing trace 9/20: 16653138 (ior)
+2026-04-08 10:25:00,239 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:00,373 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:00,374 [ERROR] ION pipeline failed for 16653138: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:00,374 [WARNING] Skipping trace 16653138 due to error
+2026-04-08 10:25:00,374 [INFO] Processing trace 10/20: 16653139 (ior)
+2026-04-08 10:25:01,197 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:01,391 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:01,393 [ERROR] ION pipeline failed for 16653139: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:01,393 [WARNING] Skipping trace 16653139 due to error
+2026-04-08 10:25:01,394 [INFO] Processing trace 11/20: 16653140 (ior)
+2026-04-08 10:25:01,774 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:01,921 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:01,922 [ERROR] ION pipeline failed for 16653140: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:01,922 [WARNING] Skipping trace 16653140 due to error
+2026-04-08 10:25:01,922 [INFO] Processing trace 12/20: 16653141 (ior)
+2026-04-08 10:25:02,365 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:02,500 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:02,501 [ERROR] ION pipeline failed for 16653141: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:02,501 [WARNING] Skipping trace 16653141 due to error
+2026-04-08 10:25:02,501 [INFO] Processing trace 13/20: 16653142 (ior)
+2026-04-08 10:25:03,068 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:03,250 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:03,251 [ERROR] ION pipeline failed for 16653142: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:03,251 [WARNING] Skipping trace 16653142 due to error
+2026-04-08 10:25:03,251 [INFO] Processing trace 14/20: 16653143 (ior)
+2026-04-08 10:25:03,549 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:03,657 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:03,658 [ERROR] ION pipeline failed for 16653143: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:03,658 [WARNING] Skipping trace 16653143 due to error
+2026-04-08 10:25:03,658 [INFO] Processing trace 15/20: 16653144 (ior)
+2026-04-08 10:25:04,066 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:04,181 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:04,182 [ERROR] ION pipeline failed for 16653144: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:04,182 [WARNING] Skipping trace 16653144 due to error
+2026-04-08 10:25:04,182 [INFO] Processing trace 16/20: 16653145 (ior)
+2026-04-08 10:25:04,672 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:05,273 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:05,275 [ERROR] ION pipeline failed for 16653145: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:05,275 [WARNING] Skipping trace 16653145 due to error
+2026-04-08 10:25:05,275 [INFO] Processing trace 17/20: 16653146 (ior)
+2026-04-08 10:25:05,758 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:05,944 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:05,945 [ERROR] ION pipeline failed for 16653146: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:05,945 [WARNING] Skipping trace 16653146 due to error
+2026-04-08 10:25:05,945 [INFO] Processing trace 18/20: 16653148 (ior)
+2026-04-08 10:25:06,663 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:06,807 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:06,808 [ERROR] ION pipeline failed for 16653148: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:06,808 [WARNING] Skipping trace 16653148 due to error
+2026-04-08 10:25:06,808 [INFO] Processing trace 19/20: 16653152 (ior)
+2026-04-08 10:25:07,166 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:07,307 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:07,308 [ERROR] ION pipeline failed for 16653152: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:07,308 [WARNING] Skipping trace 16653152 due to error
+2026-04-08 10:25:07,308 [INFO] Processing trace 20/20: 16653153 (ior)
+2026-04-08 10:25:08,068 [WARNING] Failed to summarize module LUSTRE: ['LUSTRE_STRIPE_OFFSET', 'LUSTRE_STRIPE_SIZE', 'LUSTRE_STRIPE_WIDTH']
+/work/hdd/bdau/mbanisharifdehkordi/SC_2026/external/IONavigator/ION/ion/Steps/Utils/darshan_modules.py:551: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if '-1' in self.posix_df["rank"].unique():
+2026-04-08 10:25:08,214 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-04-08 10:25:08,215 [ERROR] ION pipeline failed for 16653153: Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 3801. To increase, visit https://openrouter.ai/settings/credits and add more credits', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35Jkrmu23EcRuTfeacgovm2IBxN'}
+2026-04-08 10:25:08,215 [WARNING] Skipping trace 16653153 due to error
+2026-04-08 10:25:08,377 [INFO] Results saved to results/boost_experiment/ioagent_gpt4o_full488/output_ior_c3

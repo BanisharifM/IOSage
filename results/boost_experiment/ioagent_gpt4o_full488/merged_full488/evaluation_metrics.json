@@ -1,0 +1,97 @@
+{
+  "per_dimension": {
+    "access_granularity": {
+      "tp": 153,
+      "fp": 245,
+      "fn": 5,
+      "tn": 97,
+      "precision": 0.3844,
+      "recall": 0.9684,
+      "f1": 0.5504
+    },
+    "metadata_intensity": {
+      "tp": 51,
+      "fp": 298,
+      "fn": 14,
+      "tn": 137,
+      "precision": 0.1461,
+      "recall": 0.7846,
+      "f1": 0.2464
+    },
+    "parallelism_efficiency": {
+      "tp": 34,
+      "fp": 66,
+      "fn": 16,
+      "tn": 384,
+      "precision": 0.34,
+      "recall": 0.68,
+      "f1": 0.4533
+    },
+    "access_pattern": {
+      "tp": 24,
+      "fp": 147,
+      "fn": 6,
+      "tn": 323,
+      "precision": 0.1404,
+      "recall": 0.8,
+      "f1": 0.2388
+    },
+    "interface_choice": {
+      "tp": 46,
+      "fp": 263,
+      "fn": 21,
+      "tn": 170,
+      "precision": 0.1489,
+      "recall": 0.6866,
+      "f1": 0.2447
+    },
+    "file_strategy": {
+      "tp": 13,
+      "fp": 111,
+      "fn": 33,
+      "tn": 343,
+      "precision": 0.1048,
+      "recall": 0.2826,
+      "f1": 0.1529
+    },
+    "throughput_utilization": {
+      "tp": 5,
+      "fp": 37,
+      "fn": 53,
+      "tn": 405,
+      "precision": 0.119,
+      "recall": 0.0862,
+      "f1": 0.1
+    }
+  },
+  "overall": {
+    "micro_precision": 0.2184,
+    "micro_recall": 0.6878,
+    "micro_f1": 0.3315,
+    "macro_f1": 0.2838,
+    "hamming_loss": 0.3757,
+    "subset_accuracy": 0.052,
+    "total_tp": 326,
+    "total_fp": 1167,
+    "total_fn": 148,
+    "total_tn": 1859
+  },
+  "api_metrics": {
+    "total_api_calls": 13440,
+    "total_prompt_tokens": 16200067,
+    "total_completion_tokens": 4755623,
+    "total_cost_usd": 30.4668
+  },
+  "n_traces_processed": 500,
+  "n_traces_attempted": 488,
+  "model": "openai/gpt-4o",
+  "avg_time_per_trace": 258.43,
+  "per_benchmark_count": {
+    "ior": 162,
+    "mdtest": 84,
+    "h5bench": 88,
+    "dlio": 44,
+    "hacc_io": 58,
+    "custom": 64
+  }
+}

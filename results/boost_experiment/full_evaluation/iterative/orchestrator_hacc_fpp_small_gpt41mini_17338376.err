@@ -1,0 +1,24 @@
+2026-04-06 15:05:06 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 15:05:06 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 15:05:06 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 15:05:19 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 15:05:19 [INFO]   KB loaded: 623 entries
+2026-04-06 15:05:20 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 15:05:20 [INFO] IterativeOptimizer: model=gpt-4.1-mini, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 15:05:20 [INFO] Workloads: ['hacc_fpp_small']
+2026-04-06 15:05:20 [INFO] Model: gpt-4.1-mini, Runs: 1, Max iterations: 5
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO] ITERATIVE OPTIMIZATION: hacc_fpp_small (run 0)
+2026-04-06 15:05:20 [INFO]   Bottleneck: file_strategy
+2026-04-06 15:05:20 [INFO]   Description: File-per-process with many ranks and small particles
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 15:05:21 [INFO]   Submitted SLURM job 17338422
+2026-04-06 15:06:21 [INFO]   Job 17338422: COMPLETED (60s)
+2026-04-06 15:06:21 [INFO]   Darshan log: mbanisha_hacc_io_fpp_id17338422-1531933_4-6-54354-16442218361687371577_1.darshan
+2026-04-06 15:06:22 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:06:22 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:06:22 [INFO]   Baseline BW: 469.05 MB/s
+2026-04-06 15:06:22 [INFO]   Initial detection: ['healthy']
+2026-04-06 15:06:22 [INFO]   No bottlenecks detected -- already healthy
+2026-04-06 15:06:22 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_hacc_fpp_small_gpt41mini.json

@@ -1,0 +1,106 @@
+[
+  {
+    "workload": "ior_small_posix",
+    "run_id": 0,
+    "model": "claude-sonnet",
+    "model_id": "anthropic/claude-sonnet-4",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 1.0
+        },
+        "strategy": "Increase transfer size from 64B to 1MB to eliminate syscall overhead while maintaining same total data volume",
+        "config_changes": {
+          "transfer_size": "1048576",
+          "extra_flags": "-e -C -w -r"
+        },
+        "changes_made": [
+          "Increased transfer_size from 64 to 1048576 bytes (1MB) to fix access_granularity bottleneck",
+          "Kept block_size=1M and segments=100 unchanged to maintain same total data volume per process",
+          "This reduces syscalls per process from 1,638,400 to 100, eliminating excessive overhead"
+        ],
+        "kb_citations": [
+          "ior_ior_small_posix_t64_n16_r1_3",
+          "ior_ior_small_posix_t64_n16_r3_5",
+          "ior_ior_small_posix_t64_n16_r3_60"
+        ],
+        "metadata": {
+          "model": "anthropic/claude-sonnet-4",
+          "latency_ms": 108433.3,
+          "tokens_input": 2308,
+          "tokens_output": 281,
+          "timestamp": "2026-04-07T04:17:22Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "POSIX",
+          "transfer_size": "1048576",
+          "block_size": "1048576",
+          "segments": "100",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 61.17071509361267,
+        "new_predictions": {
+          "access_granularity": 0.038,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0091,
+          "throughput_utilization": 0.0045,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 5.97,
+        "new_bw": 159.25137837993492
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 5.97,
+    "best_config": {
+      "api": "POSIX",
+      "transfer_size": "1048576",
+      "block_size": "1048576",
+      "segments": "100",
+      "file_per_proc": true,
+      "extra_flags": "-e -C -w -r"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0111,
+    "total_tokens": 2589,
+    "total_llm_latency_ms": 108433.3,
+    "total_execution_time_s": 61.17071509361267,
+    "baseline_bw": 26.66185283923925,
+    "baseline_metrics": {
+      "total_bw_mb_s": 28.807453794846857,
+      "write_bw_mb_s": 26.66185283923925,
+      "read_bw_mb_s": 31.328609992956924,
+      "avg_write_size": 64.0,
+      "seq_write_ratio": 0.9999993896484375,
+      "small_io_ratio": 1.0,
+      "metadata_time_ratio": 0.2012188646876097,
+      "POSIX_BYTES_WRITTEN": 1677721600.0,
+      "POSIX_WRITES": 26214400.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 10.895644426345825,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

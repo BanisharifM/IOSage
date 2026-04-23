@@ -1,0 +1,386 @@
+[
+  {
+    "workload": "dlio_many_small_files",
+    "run_id": 0,
+    "model": "gpt-4.1-mini",
+    "model_id": "openai/gpt-4.1-mini",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 1.0,
+          "access_pattern": 0.9989
+        },
+        "strategy": "Increase record_length to reduce syscall overhead and disable shuffling to enable sequential access pattern",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 256B to 1MB to aggregate small I/O into larger transfers, reducing syscall overhead",
+          "Disabled sample_shuffle and file_shuffle to enforce sequential access pattern, improving prefetching and read-ahead"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 72975.1,
+          "tokens_input": 2029,
+          "tokens_output": 199,
+          "timestamp": "2026-04-06T15:30:43Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 422.60319566726685,
+        "new_predictions": {
+          "access_granularity": 1.0,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9997,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0117,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.8,
+        "new_bw": 48.43070584690158,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 1.0,
+          "access_pattern": 0.9989
+        },
+        "strategy": "Eliminate random file access by disabling sample and file shuffling, and increase record_length to reduce syscall overhead by aggregating I/O",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 256B to 1MB to aggregate small I/O into larger transfers, reducing syscall overhead",
+          "Disabled sample_shuffle to enforce sequential sample access, improving prefetching and read-ahead",
+          "Disabled file_shuffle to enforce sequential file access, further improving access pattern and reducing metadata overhead"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 5378.4,
+          "tokens_input": 2231,
+          "tokens_output": 224,
+          "timestamp": "2026-04-06T15:37:51Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 242.0658974647522,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9978,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0262,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.89,
+        "new_bw": 54.19503939416197,
+        "rollback": true
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 1.0,
+          "access_pattern": 0.9989
+        },
+        "strategy": "Increase record_length to aggregate small I/O into larger transfers and disable sample and file shuffling to enforce sequential access pattern",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Increased record_length from 256B to 1MB to fix access_granularity by aggregating small I/O into larger transfers",
+          "Set sample_shuffle to off to fix access_pattern by enforcing sequential sample access",
+          "Set file_shuffle to off to fix access_pattern by enforcing sequential file access"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_small_rl1024_n4_rep3_281",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 3499.2,
+          "tokens_input": 2231,
+          "tokens_output": 224,
+          "timestamp": "2026-04-06T15:41:56Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 151.9239001274109,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9977,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0319,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 1.02,
+        "new_bw": 61.94731227471877
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.9977
+        },
+        "strategy": "Increase record_length to improve access granularity and maintain sequential access by keeping sample_shuffle and file_shuffle off",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Kept record_length at 1MB to ensure large transfer size, reducing syscall overhead",
+          "Kept sample_shuffle and file_shuffle off to maintain sequential access pattern and enable OS prefetching"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 2843.4,
+          "tokens_input": 2233,
+          "tokens_output": 179,
+          "timestamp": "2026-04-06T15:44:31Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 242.0207724571228,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.998,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0285,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 1.12,
+        "new_bw": 67.75500344078363
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999,
+          "access_pattern": 0.998
+        },
+        "strategy": "Increase record_length to reduce syscall overhead and keep sequential access by disabling shuffles",
+        "config_changes": {
+          "record_length": 1048576,
+          "sample_shuffle": "off",
+          "file_shuffle": "off"
+        },
+        "changes_made": [
+          "Kept record_length at 1MB to ensure large transfer size, reducing syscall overhead",
+          "Ensured sample_shuffle and file_shuffle remain off to maintain sequential access pattern and enable prefetching"
+        ],
+        "kb_citations": [
+          "dlio_dlio_small_rl64_n4_rep1_267",
+          "dlio_dlio_shuffle_n4_rep3_323"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4096.5,
+          "tokens_input": 2233,
+          "tokens_output": 169,
+          "timestamp": "2026-04-06T15:48:37Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "record_length": 1048576,
+          "num_files_train": 2000,
+          "num_samples_per_file": 1,
+          "batch_size": 1,
+          "read_threads": 1,
+          "computation_time": 0.01,
+          "epochs": 2,
+          "format": "npz",
+          "sample_shuffle": "off",
+          "file_shuffle": "off",
+          "seed": 42
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 121.89199709892273,
+        "new_predictions": {
+          "access_granularity": 0.9999,
+          "metadata_intensity": 0.0001,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.9983,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0,
+          "throughput_utilization": 0.0147,
+          "healthy": 0.0
+        },
+        "new_detected": [
+          "access_granularity",
+          "access_pattern"
+        ],
+        "speedup": 0.77,
+        "new_bw": 46.463223521337824,
+        "rollback": true
+      }
+    ],
+    "best_iteration": 3,
+    "best_speedup": 1.12,
+    "best_config": {
+      "record_length": 1048576,
+      "num_files_train": 2000,
+      "num_samples_per_file": 1,
+      "batch_size": 1,
+      "read_threads": 1,
+      "computation_time": 0.01,
+      "epochs": 2,
+      "format": "npz",
+      "sample_shuffle": "off",
+      "file_shuffle": "off",
+      "seed": 42
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.006,
+    "total_tokens": 11952,
+    "total_llm_latency_ms": 88792.59999999999,
+    "total_execution_time_s": 1180.5057628154755,
+    "baseline_bw": 60.730064708170076,
+    "baseline_metrics": {
+      "total_bw_mb_s": 368.41876416809964,
+      "write_bw_mb_s": 60.730064708170076,
+      "read_bw_mb_s": 374.5335917370398,
+      "avg_write_size": 198.75697211155378,
+      "seq_write_ratio": 0.9950199203187251,
+      "small_io_ratio": 0.644344279888388,
+      "metadata_time_ratio": 0.9690503132662938,
+      "POSIX_BYTES_WRITTEN": 199552.0,
+      "POSIX_WRITES": 1004.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 29.10576295852661,
+      "nprocs": 1
+    },
+    "total_iterations": 5
+  }
+]

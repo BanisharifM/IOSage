@@ -62,3 +62,19 @@
 2026-04-06 02:31:10 [INFO]   Changes: ['Increased record_length to 16777216 to ensure larger transfer sizes, reducing syscall overhead.', 'Adjusted num_samples_per_file to 16 to maintain the same total data volume while increasing record length.']
 2026-04-06 02:31:10 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
 2026-04-06 02:31:10 [INFO]   Submitted SLURM job 17319798
+2026-04-06 03:32:19 [INFO]   Job 17319798: TIMEOUT (3669s)
+2026-04-06 03:32:19 [ERROR]   Execution FAILED
+2026-04-06 03:32:19 [INFO] 
+2026-04-06 03:32:19 [INFO] --- Iteration 5/5 ---
+2026-04-06 03:32:20 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 03:32:22 [INFO]   Strategy: Increase record length to improve access granularity and maintain sequential acc
+2026-04-06 03:32:22 [INFO]   Changes: ['Increased record_length to 16777216 to ensure larger transfer sizes, reducing syscall overhead.', 'Adjusted num_samples_per_file to 16 to maintain the same total data volume while increasing record length.']
+2026-04-06 03:32:22 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 03:32:22 [INFO]   Submitted SLURM job 17320626
+2026-04-06 04:33:31 [INFO]   Job 17320626: TIMEOUT (3669s)
+2026-04-06 04:33:31 [ERROR]   Execution FAILED
+2026-04-06 04:33:31 [INFO] 
+2026-04-06 04:33:31 [INFO] ======================================================================
+2026-04-06 04:33:31 [INFO] RESULT: dlio_small_records -- 5 iterations, best=1.00x, status=max_iterations_reached, cost=$0.0375
+2026-04-06 04:33:31 [INFO] ======================================================================
+2026-04-06 04:33:31 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_dlio_small_records_gpt-4o.json

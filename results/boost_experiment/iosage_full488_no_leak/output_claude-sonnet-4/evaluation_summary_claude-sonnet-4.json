@@ -1,0 +1,17 @@
+{
+  "claude-sonnet-4": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 0,
+    "n_healthy": 78,
+    "n_traces_with_recs": 459,
+    "groundedness_mean": 0.9405737704918032,
+    "groundedness_std": 0.23642071134872225,
+    "rec_precision_mean": 0.8010167029774873,
+    "rec_precision_std": 0.3782182904719409,
+    "latency_mean_ms": 11534.712295081967,
+    "latency_std_ms": 2830.228278194728,
+    "tokens_mean": 2287.1106557377047,
+    "avg_recommendations": 1.5061475409836065
+  }
+}

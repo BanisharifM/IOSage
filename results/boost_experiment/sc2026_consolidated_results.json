@@ -1,0 +1,450 @@
+{
+  "test_set": "488 benchmark samples (results/boost_experiment/new_splits/test_labels.parquet)",
+  "table_baselines": {
+    "iosage": {
+      "micro_f1": 0.9291,
+      "micro_f1_std": 0.0032,
+      "macro_f1": 0.9286,
+      "macro_f1_std": 0.0044,
+      "hamming_loss": 0.0194,
+      "hamming_loss_std": 0.0009,
+      "subset_accuracy": 0.8779,
+      "subset_accuracy_std": 0.0057,
+      "micro_precision": 0.9488,
+      "micro_precision_std": 0.0043,
+      "micro_recall": 0.9103,
+      "micro_recall_std": 0.0028,
+      "macro_precision": 0.9455,
+      "macro_precision_std": 0.0066,
+      "macro_recall": 0.9131,
+      "macro_recall_std": 0.0022,
+      "n_samples": 488,
+      "n_seeds": 5,
+      "speed": "<1 ms",
+      "training_config": {
+        "model_family": "XGBoost",
+        "biquality_weight_ratio": "100:1 (GT:heuristic)",
+        "n_heuristic_samples": 91807,
+        "n_gt_samples": 201,
+        "n_features": 157,
+        "threshold_for_metrics": 0.5,
+        "n_test_samples": 488,
+        "n_dimensions": 8,
+        "seeds": [
+          42,
+          123,
+          456,
+          789,
+          1024
+        ]
+      },
+      "per_seed_xgboost": {
+        "42": {
+          "micro_f1": 0.9307116104868914,
+          "macro_f1": 0.9292463294101403,
+          "hamming_loss": 0.018954918032786885,
+          "subset_accuracy": 0.8831967213114754,
+          "micro_precision": 0.9521072796934866,
+          "micro_recall": 0.9102564102564102,
+          "macro_precision": 0.9470368829537537,
+          "macro_recall": 0.9127083042486854,
+          "per_label": {
+            "access_granularity": {
+              "f1": 0.9245901639344263,
+              "precision": 0.9463087248322147,
+              "recall": 0.9038461538461539,
+              "support": 156
+            },
+            "metadata_intensity": {
+              "f1": 0.984375,
+              "precision": 1.0,
+              "recall": 0.9692307692307692,
+              "support": 65
+            },
+            "parallelism_efficiency": {
+              "f1": 0.9591836734693877,
+              "precision": 0.9791666666666666,
+              "recall": 0.94,
+              "support": 50
+            },
+            "access_pattern": {
+              "f1": 0.8813559322033898,
+              "precision": 0.8666666666666667,
+              "recall": 0.896551724137931,
+              "support": 29
+            },
+            "interface_choice": {
+              "f1": 0.9206349206349206,
+              "precision": 0.9508196721311475,
+              "recall": 0.8923076923076924,
+              "support": 65
+            },
+            "file_strategy": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 46
+            },
+            "throughput_utilization": {
+              "f1": 0.8108108108108109,
+              "precision": 0.8333333333333334,
+              "recall": 0.7894736842105263,
+              "support": 57
+            },
+            "healthy": {
+              "f1": 0.9530201342281879,
+              "precision": 1.0,
+              "recall": 0.9102564102564102,
+              "support": 78
+            }
+          }
+        },
+        "123": {
+          "micro_f1": 0.930841121495327,
+          "macro_f1": 0.9284865570600609,
+          "hamming_loss": 0.018954918032786885,
+          "subset_accuracy": 0.8831967213114754,
+          "micro_precision": 0.950381679389313,
+          "micro_recall": 0.9120879120879121,
+          "macro_precision": 0.9437187011499697,
+          "macro_recall": 0.9146313811717623,
+          "per_label": {
+            "access_granularity": {
+              "f1": 0.9245901639344263,
+              "precision": 0.9463087248322147,
+              "recall": 0.9038461538461539,
+              "support": 156
+            },
+            "metadata_intensity": {
+              "f1": 0.984375,
+              "precision": 1.0,
+              "recall": 0.9692307692307692,
+              "support": 65
+            },
+            "parallelism_efficiency": {
+              "f1": 0.9591836734693877,
+              "precision": 0.9791666666666666,
+              "recall": 0.94,
+              "support": 50
+            },
+            "access_pattern": {
+              "f1": 0.8666666666666667,
+              "precision": 0.8387096774193549,
+              "recall": 0.896551724137931,
+              "support": 29
+            },
+            "interface_choice": {
+              "f1": 0.921875,
+              "precision": 0.9365079365079365,
+              "recall": 0.9076923076923077,
+              "support": 65
+            },
+            "file_strategy": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 46
+            },
+            "throughput_utilization": {
+              "f1": 0.8181818181818182,
+              "precision": 0.8490566037735849,
+              "recall": 0.7894736842105263,
+              "support": 57
+            },
+            "healthy": {
+              "f1": 0.9530201342281879,
+              "precision": 1.0,
+              "recall": 0.9102564102564102,
+              "support": 78
+            }
+          }
+        },
+        "456": {
+          "micro_f1": 0.9325842696629213,
+          "macro_f1": 0.9343176048140909,
+          "hamming_loss": 0.018442622950819672,
+          "subset_accuracy": 0.8811475409836066,
+          "micro_precision": 0.9540229885057471,
+          "micro_recall": 0.9120879120879121,
+          "macro_precision": 0.9553269200314691,
+          "macro_recall": 0.9146313811717623,
+          "per_label": {
+            "access_granularity": {
+              "f1": 0.9245901639344263,
+              "precision": 0.9463087248322147,
+              "recall": 0.9038461538461539,
+              "support": 156
+            },
+            "metadata_intensity": {
+              "f1": 0.9692307692307692,
+              "precision": 0.9692307692307692,
+              "recall": 0.9692307692307692,
+              "support": 65
+            },
+            "parallelism_efficiency": {
+              "f1": 0.9591836734693877,
+              "precision": 0.9791666666666666,
+              "recall": 0.94,
+              "support": 50
+            },
+            "access_pattern": {
+              "f1": 0.9285714285714286,
+              "precision": 0.9629629629629629,
+              "recall": 0.896551724137931,
+              "support": 29
+            },
+            "interface_choice": {
+              "f1": 0.9291338582677166,
+              "precision": 0.9516129032258065,
+              "recall": 0.9076923076923077,
+              "support": 65
+            },
+            "file_strategy": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 46
+            },
+            "throughput_utilization": {
+              "f1": 0.8108108108108109,
+              "precision": 0.8333333333333334,
+              "recall": 0.7894736842105263,
+              "support": 57
+            },
+            "healthy": {
+              "f1": 0.9530201342281879,
+              "precision": 1.0,
+              "recall": 0.9102564102564102,
+              "support": 78
+            }
+          }
+        },
+        "789": {
+          "micro_f1": 0.9233644859813084,
+          "macro_f1": 0.9208850361574956,
+          "hamming_loss": 0.021004098360655737,
+          "subset_accuracy": 0.8709016393442623,
+          "micro_precision": 0.9427480916030534,
+          "micro_recall": 0.9047619047619048,
+          "macro_precision": 0.9348297817047817,
+          "macro_recall": 0.9090224068127879,
+          "per_label": {
+            "access_granularity": {
+              "f1": 0.9210526315789473,
+              "precision": 0.9459459459459459,
+              "recall": 0.8974358974358975,
+              "support": 156
+            },
+            "metadata_intensity": {
+              "f1": 0.984375,
+              "precision": 1.0,
+              "recall": 0.9692307692307692,
+              "support": 65
+            },
+            "parallelism_efficiency": {
+              "f1": 0.9591836734693877,
+              "precision": 0.9791666666666666,
+              "recall": 0.94,
+              "support": 50
+            },
+            "access_pattern": {
+              "f1": 0.8524590163934426,
+              "precision": 0.8125,
+              "recall": 0.896551724137931,
+              "support": 29
+            },
+            "interface_choice": {
+              "f1": 0.9076923076923077,
+              "precision": 0.9076923076923077,
+              "recall": 0.9076923076923077,
+              "support": 65
+            },
+            "file_strategy": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 46
+            },
+            "throughput_utilization": {
+              "f1": 0.8108108108108109,
+              "precision": 0.8333333333333334,
+              "recall": 0.7894736842105263,
+              "support": 57
+            },
+            "healthy": {
+              "f1": 0.9315068493150684,
+              "precision": 1.0,
+              "recall": 0.8717948717948718,
+              "support": 78
+            }
+          }
+        },
+        "1024": {
+          "micro_f1": 0.9282385834109972,
+          "macro_f1": 0.9300142713773345,
+          "hamming_loss": 0.019723360655737706,
+          "subset_accuracy": 0.8709016393442623,
+          "micro_precision": 0.9449715370018975,
+          "micro_recall": 0.9120879120879121,
+          "macro_precision": 0.9463493602583324,
+          "macro_recall": 0.9146313811717623,
+          "per_label": {
+            "access_granularity": {
+              "f1": 0.9245901639344263,
+              "precision": 0.9463087248322147,
+              "recall": 0.9038461538461539,
+              "support": 156
+            },
+            "metadata_intensity": {
+              "f1": 0.9618320610687023,
+              "precision": 0.9545454545454546,
+              "recall": 0.9692307692307692,
+              "support": 65
+            },
+            "parallelism_efficiency": {
+              "f1": 0.9591836734693877,
+              "precision": 0.9791666666666666,
+              "recall": 0.94,
+              "support": 50
+            },
+            "access_pattern": {
+              "f1": 0.9285714285714286,
+              "precision": 0.9629629629629629,
+              "recall": 0.896551724137931,
+              "support": 29
+            },
+            "interface_choice": {
+              "f1": 0.9147286821705426,
+              "precision": 0.921875,
+              "recall": 0.9076923076923077,
+              "support": 65
+            },
+            "file_strategy": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 46
+            },
+            "throughput_utilization": {
+              "f1": 0.8108108108108109,
+              "precision": 0.8333333333333334,
+              "recall": 0.7894736842105263,
+              "support": 57
+            },
+            "healthy": {
+              "f1": 0.9403973509933775,
+              "precision": 0.9726027397260274,
+              "recall": 0.9102564102564102,
+              "support": 78
+            }
+          }
+        }
+      }
+    },
+    "drishti": {
+      "micro_f1": 0.3635,
+      "macro_f1": 0.2848,
+      "hamming_loss": 0.2269,
+      "subset_accuracy": 0.2828,
+      "n_samples": 488,
+      "speed": "<1 s"
+    },
+    "ioagent_gpt4o": {
+      "micro_f1": 0.3315,
+      "macro_f1": 0.2838,
+      "hamming_loss": 0.3757,
+      "subset_accuracy": 0.052,
+      "n_samples": 500,
+      "speed": "~270 s",
+      "micro_precision": 0.2184,
+      "micro_recall": 0.6878
+    },
+    "wisio": {
+      "micro_f1": 0.3111,
+      "macro_f1": 0.2108,
+      "hamming_loss": 0.3097,
+      "subset_accuracy": 0.0184,
+      "n_samples": 488,
+      "speed": "~3.5 s",
+      "micro_precision": 0.2258,
+      "micro_recall": 0.5
+    },
+    "threshold_p90": {
+      "micro_f1": 0.2847,
+      "macro_f1": 0.2014,
+      "hamming_loss": 0.2523,
+      "subset_accuracy": 0.0553,
+      "n_samples": 488,
+      "speed": "<1 ms"
+    },
+    "majority_class": {
+      "micro_f1": 0.1509,
+      "macro_f1": 0.0345,
+      "hamming_loss": 0.2249,
+      "subset_accuracy": 0.1598,
+      "n_samples": 488,
+      "speed": "<1 ms"
+    }
+  },
+  "iosage_llm_quality": {
+    "gpt-4.1-mini": {
+      "groundedness_mean": 0.8272,
+      "groundedness_std": 0.3779,
+      "rec_precision_mean": 0.9144,
+      "rec_precision_std": 0.2528,
+      "latency_mean_s": 8.66,
+      "latency_std_s": 4.04,
+      "tokens_mean": 1893.0,
+      "avg_recommendations_per_nonhealthy": 1.33,
+      "n_with_recs": 405
+    },
+    "gpt-4o": {
+      "groundedness_mean": 0.8289,
+      "groundedness_std": 0.3763,
+      "rec_precision_mean": 0.8984,
+      "rec_precision_std": 0.2656,
+      "latency_mean_s": 4.37,
+      "latency_std_s": 1.96,
+      "tokens_mean": 1715.0,
+      "avg_recommendations_per_nonhealthy": 1.24,
+      "n_with_recs": 405
+    },
+    "claude-sonnet-4": {
+      "groundedness_mean": 0.9406,
+      "groundedness_std": 0.2367,
+      "rec_precision_mean": 0.801,
+      "rec_precision_std": 0.3786,
+      "latency_mean_s": 11.68,
+      "latency_std_s": 2.85,
+      "tokens_mean": 2315.0,
+      "avg_recommendations_per_nonhealthy": 1.6,
+      "n_with_recs": 459
+    },
+    "llama-3.1-70b-instruct": {
+      "groundedness_mean": 0.835,
+      "groundedness_std": 0.3708,
+      "rec_precision_mean": 0.893,
+      "rec_precision_std": 0.2636,
+      "latency_mean_s": 17.81,
+      "latency_std_s": 7.39,
+      "tokens_mean": 1812.0,
+      "avg_recommendations_per_nonhealthy": 1.27,
+      "n_with_recs": 408
+    }
+  },
+  "efficiency_per_trace": {
+    "ioagent_gpt4o": {
+      "llm_calls_per_trace_mean": 43.9,
+      "llm_calls_per_trace_std": 7.9,
+      "wall_time_per_trace_s": 270,
+      "cost_per_trace_usd": 0.48,
+      "total_cost_488_traces_usd": 30.47
+    },
+    "iosage_gpt4o": {
+      "llm_calls_per_non_healthy_trace": 1,
+      "wall_time_per_non_healthy_trace_s": 4.4,
+      "cost_per_non_healthy_trace_usd": 0.0085,
+      "total_cost_488_traces_gpt4o_only_usd": 3.59
+    }
+  }
+}

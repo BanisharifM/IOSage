@@ -1,0 +1,40 @@
+2026-04-08 11:43:55,495 INFO IOSage full pipeline: 1 model(s) ['gpt-4.1-mini'], n_runs=1, benchmark=None, n_max=1
+2026-04-08 11:44:10,354 INFO Selected 1 traces (benchmark=None, n_max=1)
+2026-04-08 11:44:10,354 INFO 
+2026-04-08 11:44:10,354 INFO ======================================================================
+2026-04-08 11:44:10,354 INFO MODEL: gpt-4.1-mini
+2026-04-08 11:44:10,354 INFO ======================================================================
+2026-04-08 11:44:10,624 INFO Initializing IOPrescriber pipeline...
+2026-04-08 11:45:52,899 INFO Detector loaded: 8 models, 157 features, threshold=0.30
+2026-04-08 11:45:53,032 INFO Retriever loaded: 623 KB entries, 8 dimensions indexed
+2026-04-08 11:45:53,032 INFO Recommender initialized: model=openai/gpt-4.1-mini, temp=0.0, cache=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/llm_cache/ioprescriber
+2026-04-08 11:45:53,032 INFO IOPrescriber ready: detector=8 models, KB=623 entries, LLM=openai/gpt-4.1-mini, SHAP=False
+2026-04-08 11:45:53,033 INFO Trace 1/1 run 1: ior_ior_small_posix_t64_n4_r1
+2026-04-08 11:45:53,034 INFO 
+2026-04-08 11:45:53,034 INFO ============================================================
+2026-04-08 11:45:53,034 INFO IOPrescriber Analysis: ior_ior_small_posix_t64_n4_r1_run0
+2026-04-08 11:45:53,034 INFO ============================================================
+2026-04-08 11:45:53,034 INFO Step 1: ML Detection...
+2026-04-08 11:45:53,044 INFO   Detected: ['access_granularity']
+2026-04-08 11:45:53,044 INFO Step 2: KB Retrieval...
+2026-04-08 11:45:53,048 INFO Retrieved 3/222 KB entries for dims=['access_granularity']
+2026-04-08 11:45:53,048 INFO   Retrieved 3 KB entries
+2026-04-08 11:45:53,048 INFO Step 3: LLM Recommendation...
+2026-04-08 11:45:53,126 INFO   Cache hit: 8e70bbe83e1d7803
+2026-04-08 11:45:53,127 INFO   Groundedness: 1.00 (1/1 citations verified)
+2026-04-08 11:45:53,127 INFO   Generated 1 recommendations
+2026-04-08 11:45:53,127 INFO   Groundedness: 1.00
+2026-04-08 11:45:53,127 INFO 
+2026-04-08 11:45:53,127 INFO Pipeline completed in 93ms
+2026-04-08 11:45:53,127 INFO ============================================================
+2026-04-08 11:45:53,165 INFO 
+2026-04-08 11:45:53,165 INFO ================================================================================
+2026-04-08 11:45:53,165 INFO TABLE 3: LLM Recommendation Quality
+2026-04-08 11:45:53,165 INFO ================================================================================
+2026-04-08 11:45:53,165 INFO Model                Ground.      Latency(ms)    Tokens     #Recs    Parse%  
+2026-04-08 11:45:53,165 INFO ------------------------------------------------------------------------
+2026-04-08 11:45:53,165 INFO gpt-4.1-mini         0.000±0.000  0±0            0          0.0      0%      
+2026-04-08 11:45:53,166 INFO ================================================================================
+2026-04-08 11:45:53,193 INFO 
+2026-04-08 11:45:53,193 INFO Per-model raw results in: results/boost_experiment/iosage_full488/smoke_gpt41mini
+2026-04-08 11:45:53,193 INFO Summary saved: results/boost_experiment/iosage_full488/smoke_gpt41mini/evaluation_summary_gpt-4.1-mini_smoke1.json

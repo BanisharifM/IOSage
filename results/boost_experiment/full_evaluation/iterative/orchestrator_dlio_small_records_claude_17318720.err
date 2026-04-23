@@ -53,3 +53,32 @@
 2026-04-06 01:31:19 [INFO]   Changes: ['Increased num_samples_per_file from 1 to 1000 to aggregate 1000 small 1KB records into larger 1MB files, reducing metadata operations from 500 files to same data volume', 'Set sample_shuffle=off to ensure sequential reading within each file, enabling OS read-ahead and prefetching', 'Set file_shuffle=off to ensure sequential file access order, further improving cache locality']
 2026-04-06 01:31:19 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
 2026-04-06 01:31:19 [INFO]   Submitted SLURM job 17318971
+2026-04-06 02:31:59 [INFO]   Job 17318971: TIMEOUT (3640s)
+2026-04-06 02:31:59 [ERROR]   Execution FAILED
+2026-04-06 02:31:59 [INFO] 
+2026-04-06 02:31:59 [INFO] --- Iteration 4/5 ---
+2026-04-06 02:32:00 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 02:32:04 [INFO]   Strategy: Aggregate small records into larger files and disable shuffling to create sequen
+2026-04-06 02:32:04 [INFO]   Changes: ['Increased num_samples_per_file from 1 to 1000 to aggregate 1000 small records (1KB each) into 1MB files, reducing metadata operations by 1000x', 'Set sample_shuffle=off to ensure sequential reading within each file', 'Set file_shuffle=off to enable predictable file access patterns']
+2026-04-06 02:32:04 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 02:32:04 [INFO]   Submitted SLURM job 17319803
+2026-04-06 03:36:15 [INFO]   Job 17319803: TIMEOUT (3851s)
+2026-04-06 03:36:15 [ERROR]   Execution FAILED
+2026-04-06 03:36:15 [INFO] 
+2026-04-06 03:36:15 [INFO] --- Iteration 5/5 ---
+2026-04-06 03:36:16 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 03:36:21 [INFO]   Strategy: Dramatically increase record size and consolidate files to reduce syscall overhe
+2026-04-06 03:36:21 [INFO]   Changes: ['Increased record_length from 1024 to 16384 bytes (16x larger) to reduce syscall overhead per Evidence 1&2', 'Reduced num_files_train from 500 to 50 and increased num_samples_per_file from 1 to 10 to consolidate data and improve sequential access', 'Set sample_shuffle=off and file_shuffle=off to ensure sequential access patterns per Evidence 3']
+2026-04-06 03:36:21 [INFO]   Executing: /projects/bdau/envs/sc2026/bin/dlio_benchmark workload=unet3d_v100 ++workload.workflow.generate_data (phase 1)
+2026-04-06 03:36:22 [INFO]   Submitted SLURM job 17320677
+2026-04-06 03:38:23 [INFO]   Job 17320677: COMPLETED (120s)
+2026-04-06 03:38:23 [INFO]   Darshan log: mbanisha_python3.9_id17320677-3996362_4-6-13051-7585587909875308494_1.darshan
+2026-04-06 03:38:24 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 03:38:24 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 03:38:24 [INFO]   Result: BW=40.09 MB/s, speedup=0.62x
+2026-04-06 03:38:24 [WARNING]   REGRESSION: 0.62x -- rolling back
+2026-04-06 03:38:24 [INFO] 
+2026-04-06 03:38:24 [INFO] ======================================================================
+2026-04-06 03:38:24 [INFO] RESULT: dlio_small_records -- 5 iterations, best=1.00x, status=max_iterations_reached, cost=$0.0609
+2026-04-06 03:38:24 [INFO] ======================================================================
+2026-04-06 03:38:24 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_dlio_small_records_claude.json

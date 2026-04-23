@@ -1,0 +1,109 @@
+[
+  {
+    "workload": "ior_small_direct",
+    "run_id": 0,
+    "model": "gpt-4.1-mini",
+    "model_id": "openai/gpt-4.1-mini",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "access_granularity"
+        ],
+        "predictions": {
+          "access_granularity": 0.9999
+        },
+        "strategy": "Increase transfer size to 1MB to reduce syscall overhead while keeping total data volume constant",
+        "config_changes": {
+          "transfer_size": "1048576",
+          "block_size": "1M",
+          "segments": 100,
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r -O useO_DIRECT=1"
+        },
+        "changes_made": [
+          "Increased transfer_size from 4096 bytes to 1048576 bytes (1MB) to aggregate small writes into larger buffers, reducing syscall overhead",
+          "Kept block_size and segments unchanged to maintain total data volume",
+          "Retained O_DIRECT flag to bypass page cache as per original config"
+        ],
+        "kb_citations": [
+          "ior_ior_small_direct_t4096_n16_r3_96",
+          "ior_ior_small_direct_t4096_n16_r1_94",
+          "ior_ior_small_direct_t4096_n16_r2_95"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 67159.2,
+          "tokens_input": 1964,
+          "tokens_output": 247,
+          "timestamp": "2026-04-06T15:07:58Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "api": "POSIX",
+          "transfer_size": "1048576",
+          "block_size": "1048576",
+          "segments": "100",
+          "file_per_proc": true,
+          "extra_flags": "-e -C -w -r -O useO_DIRECT=1"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.31987428665161,
+        "new_predictions": {
+          "access_granularity": 0.0316,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.0,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0032,
+          "throughput_utilization": 0.0126,
+          "healthy": 0.0001
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 3.56,
+        "new_bw": 12.541149932809995
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 3.56,
+    "best_config": {
+      "api": "POSIX",
+      "transfer_size": "1048576",
+      "block_size": "1048576",
+      "segments": "100",
+      "file_per_proc": true,
+      "extra_flags": "-e -C -w -r -O useO_DIRECT=1"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0012,
+    "total_tokens": 2211,
+    "total_llm_latency_ms": 67159.2,
+    "total_execution_time_s": 60.31987428665161,
+    "baseline_bw": 3.5207750228626433,
+    "baseline_metrics": {
+      "total_bw_mb_s": 5.834696541408595,
+      "write_bw_mb_s": 3.5207750228626433,
+      "read_bw_mb_s": 17.02166317245396,
+      "avg_write_size": 4096.0,
+      "seq_write_ratio": 0.9999609375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.002127799302281476,
+      "POSIX_BYTES_WRITTEN": 1677721600.0,
+      "POSIX_WRITES": 409600.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 41.23435187339783,
+      "nprocs": 16
+    },
+    "total_iterations": 1
+  }
+]

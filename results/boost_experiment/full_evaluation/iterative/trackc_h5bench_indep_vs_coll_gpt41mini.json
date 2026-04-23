@@ -1,0 +1,326 @@
+[
+  {
+    "workload": "h5bench_indep_vs_coll",
+    "run_id": 0,
+    "model": "gpt-4.1-mini",
+    "model_id": "openai/gpt-4.1-mini",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "interface_choice"
+        ],
+        "predictions": {
+          "interface_choice": 0.7295
+        },
+        "strategy": "Enable collective MPI-IO for data and metadata to improve interface choice and coordination among ranks",
+        "config_changes": {
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES"
+        },
+        "changes_made": [
+          "Set COLLECTIVE_DATA to YES to enable MPI-IO collective data operations, improving coordination and reducing overhead",
+          "Set COLLECTIVE_METADATA to YES to enable collective metadata operations, reducing metadata contention and latency"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_small_n16_r2_417",
+          "h5bench_h5b_indep_small_n16_r1_464",
+          "h5bench_h5b_indep_small_n16_r2_465"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 9391.5,
+          "tokens_input": 1867,
+          "tokens_output": 197,
+          "timestamp": "2026-04-06T15:19:33Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 1053.186925649643,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9993,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0006,
+          "healthy": 0.1024
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 3.87,
+        "new_bw": 2144.6292663407303
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9993
+        },
+        "strategy": "Reduce parallelism inefficiency by switching to collective metadata operations only, to balance metadata overhead and parallelism",
+        "config_changes": {
+          "COLLECTIVE_METADATA": "NO"
+        },
+        "changes_made": [
+          "Disabled COLLECTIVE_METADATA to reduce metadata synchronization overhead causing load imbalance",
+          "Kept COLLECTIVE_DATA=YES to maintain collective data I/O benefits"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_small_n16_r2_417",
+          "h5bench_h5b_indep_small_n16_r1_464",
+          "h5bench_h5b_indep_small_n16_r2_465"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 3055.7,
+          "tokens_input": 1961,
+          "tokens_output": 174,
+          "timestamp": "2026-04-06T15:37:09Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "NO",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 722.2031269073486,
+        "new_predictions": {
+          "access_granularity": 0.0,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9993,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0004,
+          "healthy": 0.0924
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 3.3,
+        "new_bw": 1829.071161967785
+      },
+      {
+        "iteration": 2,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9993
+        },
+        "strategy": "Enable collective metadata operations to improve parallelism efficiency by reducing metadata contention and synchronization overhead.",
+        "config_changes": {
+          "COLLECTIVE_METADATA": "YES"
+        },
+        "changes_made": [
+          "Enabled COLLECTIVE_METADATA=YES to coordinate metadata operations collectively, reducing metadata contention and improving parallelism efficiency"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_small_n16_r2_417",
+          "h5bench_h5b_indep_small_n16_r1_464",
+          "h5bench_h5b_indep_small_n16_r2_465"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 2159.1,
+          "tokens_input": 1961,
+          "tokens_output": 161,
+          "timestamp": "2026-04-06T15:49:14Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.40928387641907,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9995,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0003,
+          "healthy": 0.0896
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 2.92,
+        "new_bw": 1616.0218485196285
+      },
+      {
+        "iteration": 3,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9995
+        },
+        "strategy": "Reduce parallelism inefficiency by disabling collective metadata to balance I/O load",
+        "config_changes": {
+          "COLLECTIVE_METADATA": "NO"
+        },
+        "changes_made": [
+          "Disabled COLLECTIVE_METADATA to reduce metadata synchronization overhead and balance I/O load across ranks"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_small_n16_r2_417",
+          "h5bench_h5b_indep_small_n16_r1_464",
+          "h5bench_h5b_indep_small_n16_r2_465"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 2333.0,
+          "tokens_input": 1961,
+          "tokens_output": 152,
+          "timestamp": "2026-04-06T15:50:16Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "NO",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 63.027254581451416,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9992,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0004,
+          "healthy": 0.0891
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 3.44,
+        "new_bw": 1906.5138528086175
+      },
+      {
+        "iteration": 4,
+        "detected_dims": [
+          "parallelism_efficiency"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.9992
+        },
+        "strategy": "Enable collective metadata operations to improve parallelism efficiency by reducing metadata overhead and synchronizing I/O across ranks.",
+        "config_changes": {
+          "COLLECTIVE_METADATA": "YES"
+        },
+        "changes_made": [
+          "Enabled COLLECTIVE_METADATA=YES to coordinate metadata operations collectively, reducing uneven I/O load distribution and metadata overhead"
+        ],
+        "kb_citations": [
+          "h5bench_h5b_indep_small_n16_r2_417",
+          "h5bench_h5b_indep_small_n16_r1_464",
+          "h5bench_h5b_indep_small_n16_r2_465"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 3316.2,
+          "tokens_input": 1961,
+          "tokens_output": 165,
+          "timestamp": "2026-04-06T15:51:23Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "DIM_1": 262144,
+          "COLLECTIVE_DATA": "YES",
+          "COLLECTIVE_METADATA": "YES",
+          "TIMESTEPS": 5,
+          "MEM_PATTERN": "CONTIG",
+          "FILE_PATTERN": "CONTIG"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 30.59750747680664,
+        "new_predictions": {
+          "access_granularity": 0.0001,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9989,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0,
+          "file_strategy": 0.0001,
+          "throughput_utilization": 0.0005,
+          "healthy": 0.0905
+        },
+        "new_detected": [
+          "parallelism_efficiency"
+        ],
+        "speedup": 3.25,
+        "new_bw": 1800.5830017068824
+      }
+    ],
+    "best_iteration": 0,
+    "best_speedup": 3.87,
+    "best_config": {
+      "DIM_1": 262144,
+      "COLLECTIVE_DATA": "YES",
+      "COLLECTIVE_METADATA": "YES",
+      "TIMESTEPS": 5,
+      "MEM_PATTERN": "CONTIG",
+      "FILE_PATTERN": "CONTIG"
+    },
+    "final_status": "max_iterations_reached",
+    "total_cost_usd": 0.0052,
+    "total_tokens": 10560,
+    "total_llm_latency_ms": 20255.500000000004,
+    "total_execution_time_s": 1929.4240984916687,
+    "baseline_bw": 553.6394132522161,
+    "baseline_metrics": {
+      "total_bw_mb_s": 553.6394132522161,
+      "write_bw_mb_s": 0.0,
+      "read_bw_mb_s": 553.6394132522161,
+      "avg_write_size": 0.0,
+      "seq_write_ratio": 0.0,
+      "small_io_ratio": 0.09476661951909476,
+      "metadata_time_ratio": 0.03652645023384144,
+      "POSIX_BYTES_WRITTEN": 0.0,
+      "POSIX_WRITES": 0.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 0.28368353843688965,
+      "nprocs": 16
+    },
+    "total_iterations": 5
+  }
+]

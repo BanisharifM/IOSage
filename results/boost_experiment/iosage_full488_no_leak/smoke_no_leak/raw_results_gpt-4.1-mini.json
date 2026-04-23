@@ -1,0 +1,94 @@
+[
+  {
+    "workload": "ior_ior_small_posix_t64_n4_r1_run0",
+    "pipeline_latency_ms": 170644.6,
+    "step1_detection": {
+      "predictions": {
+        "access_granularity": 0.9997,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0,
+        "interface_choice": 0.0,
+        "file_strategy": 0.0,
+        "throughput_utilization": 0.0,
+        "healthy": 0.0
+      },
+      "detected": [
+        "access_granularity"
+      ]
+    },
+    "shap_analysis": {},
+    "step2_retrieval": {
+      "n_entries": 3,
+      "entries": [
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r3_2",
+          "similarity": 0.9193,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r2_1",
+          "similarity": 0.9165,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        },
+        {
+          "entry_id": "ior_ior_small_posix_t64_n4_r2_56",
+          "similarity": 0.9078,
+          "matched_dims": [
+            "access_granularity"
+          ]
+        }
+      ]
+    },
+    "step3_recommendation": {
+      "parsed": {
+        "diagnosis": "This job performs exclusively small POSIX write operations of 64 bytes each, as indicated by the avg_write_size of 64 bytes and a small_io_ratio of 1.0. Such very small I/O transfers cause excessive system call overhead and metadata operations (metadata_time_ratio ~19%), severely limiting I/O bandwidth to about 29 MB/s. The sequential write pattern does not mitigate the overhead caused by the tiny transfer sizes.",
+        "recommendations": [
+          {
+            "priority": 1,
+            "bottleneck_dimension": "access_granularity",
+            "explanation": "The job issues many small (64B) POSIX write calls, causing excessive syscall overhead and metadata operations. Aggregating these small writes into larger buffers of at least 1MB before issuing a write reduces syscall frequency and improves bandwidth.",
+            "code_before": "for (i=0; i<n; i++) write(fd, buf, 64);  /* 64B per call */",
+            "code_after": "size_t offset = 0;\nchar big_buf[1048576];\nfor (i=0; i<n; i++) {\n  memcpy(big_buf + offset, buf, 64);\n  offset += 64;\n  if (offset >= 1048576) {\n    write(fd, big_buf, offset);\n    offset = 0;\n  }\n}\nif (offset > 0) {\n  write(fd, big_buf, offset);\n}",
+            "expected_speedup": "Up to 3-5x bandwidth improvement based on KB entries ior_ior_small_posix_t64_n4_r3_2, ior_ior_small_posix_t64_n4_r2_1, and ior_ior_small_posix_t64_n4_r2_56",
+            "kb_citation": "ior_ior_small_posix_t64_n4_r3_2, ior_ior_small_posix_t64_n4_r2_1, ior_ior_small_posix_t64_n4_r2_56",
+            "confidence": "high",
+            "api_change": "POSIX write with small sizes -> POSIX write with aggregated large buffers"
+          }
+        ],
+        "overall_expected_improvement": "3x to 5x total I/O bandwidth increase by eliminating excessive syscall overhead from small writes"
+      },
+      "groundedness": {
+        "groundedness_score": 1.0,
+        "n_recommendations": 1,
+        "n_grounded": 1,
+        "n_ungrounded": 0
+      },
+      "metadata": {
+        "model": "openai/gpt-4.1-mini",
+        "latency_ms": 43732.5,
+        "tokens_input": 1395,
+        "tokens_output": 504,
+        "timestamp": "2026-04-08T16:35:11Z"
+      }
+    },
+    "ground_truth_labels": {
+      "access_granularity": 1,
+      "metadata_intensity": 0,
+      "parallelism_efficiency": 0,
+      "access_pattern": 0,
+      "interface_choice": 0,
+      "file_strategy": 0,
+      "throughput_utilization": 0,
+      "healthy": 0
+    },
+    "workload_index": 0,
+    "benchmark": "ior",
+    "run": 0,
+    "model": "gpt-4.1-mini"
+  }
+]

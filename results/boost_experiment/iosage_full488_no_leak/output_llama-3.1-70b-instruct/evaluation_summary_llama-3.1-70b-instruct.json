@@ -1,0 +1,17 @@
+{
+  "llama-3.1-70b-instruct": {
+    "n_valid": 488,
+    "n_errors": 0,
+    "n_parse_errors": 2,
+    "n_healthy": 78,
+    "n_traces_with_recs": 408,
+    "groundedness_mean": 0.8350409836065574,
+    "groundedness_std": 0.37045275572194536,
+    "rec_precision_mean": 0.8929738562091504,
+    "rec_precision_std": 0.26323296128922535,
+    "latency_mean_ms": 16528.061680327868,
+    "latency_std_ms": 7559.649516858068,
+    "tokens_mean": 1746.094262295082,
+    "avg_recommendations": 1.0637860082304527
+  }
+}

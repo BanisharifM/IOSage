@@ -1,0 +1,166 @@
+[
+  {
+    "workload": "hacc_posix_shared_small",
+    "run_id": 0,
+    "model": "gpt-4.1-mini",
+    "model_id": "openai/gpt-4.1-mini",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [
+      {
+        "iteration": 0,
+        "detected_dims": [
+          "parallelism_efficiency",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.933,
+          "interface_choice": 0.8859,
+          "throughput_utilization": 0.5963
+        },
+        "strategy": "Switch to MPI-IO backend with collective buffering enabled to improve interface choice and aggregate small writes into larger buffers, reducing system call overhead and improving parallelism efficiency.",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Changed executable from posix_shared to mpiio_shared to use MPI-IO interface, which is better suited for parallel I/O and collective operations",
+          "Enabled collective_buffering to aggregate small writes into larger buffers, reducing metadata overhead and improving throughput",
+          "This addresses interface_choice bottleneck by using a more appropriate I/O interface",
+          "Also improves parallelism_efficiency by better load distribution and reduces excessive sync overhead"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 96473.3,
+          "tokens_input": 1950,
+          "tokens_output": 268,
+          "timestamp": "2026-04-06T15:07:59Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.606680393218994,
+        "new_predictions": {
+          "access_granularity": 0.0034,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.9779,
+          "access_pattern": 0.0,
+          "interface_choice": 0.2742,
+          "file_strategy": 0.0916,
+          "throughput_utilization": 0.3257,
+          "healthy": 0.0048
+        },
+        "new_detected": [
+          "parallelism_efficiency",
+          "throughput_utilization"
+        ],
+        "speedup": 0.89,
+        "new_bw": 261.4917448198655,
+        "rollback": true
+      },
+      {
+        "iteration": 1,
+        "detected_dims": [
+          "parallelism_efficiency",
+          "interface_choice",
+          "throughput_utilization"
+        ],
+        "predictions": {
+          "parallelism_efficiency": 0.933,
+          "interface_choice": 0.8859,
+          "throughput_utilization": 0.5963
+        },
+        "strategy": "Switch from POSIX shared file to MPI-IO shared file to use a better interface and enable collective buffering to reduce metadata overhead and improve parallelism",
+        "config_changes": {
+          "executable": "mpiio_shared",
+          "collective_buffering": "enabled"
+        },
+        "changes_made": [
+          "Changed executable from posix_shared to mpiio_shared to fix interface_choice bottleneck by using MPI-IO collective I/O",
+          "Enabled collective_buffering to reduce metadata overhead and improve parallelism_efficiency",
+          "This combination reduces small I/O calls and aggregates data, improving throughput_utilization"
+        ],
+        "kb_citations": [
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r1_605",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r2_606",
+          "hacc_io_hacc_posix_shared_small_single_ost_p200_n32_r3_607"
+        ],
+        "metadata": {
+          "model": "openai/gpt-4.1-mini",
+          "latency_ms": 4665.9,
+          "tokens_input": 2154,
+          "tokens_output": 253,
+          "timestamp": "2026-04-06T15:09:04Z"
+        },
+        "parse_error": false,
+        "validated_config": {
+          "executable": "mpiio_shared",
+          "num_particles": 200,
+          "collective_buffering": "enabled"
+        },
+        "validation_errors": [],
+        "executed": true,
+        "execution_time_s": 60.94862222671509,
+        "new_predictions": {
+          "access_granularity": 0.0041,
+          "metadata_intensity": 0.0,
+          "parallelism_efficiency": 0.1465,
+          "access_pattern": 0.0,
+          "interface_choice": 0.0733,
+          "file_strategy": 0.0087,
+          "throughput_utilization": 0.2382,
+          "healthy": 0.0053
+        },
+        "new_detected": [
+          "healthy"
+        ],
+        "speedup": 1.31,
+        "new_bw": 386.0210497630514
+      }
+    ],
+    "best_iteration": 1,
+    "best_speedup": 1.31,
+    "best_config": {
+      "executable": "mpiio_shared",
+      "num_particles": 200,
+      "collective_buffering": "enabled"
+    },
+    "final_status": "converged",
+    "total_cost_usd": 0.0025,
+    "total_tokens": 4625,
+    "total_llm_latency_ms": 101139.2,
+    "total_execution_time_s": 121.55530261993408,
+    "baseline_bw": 294.35410707804346,
+    "baseline_metrics": {
+      "total_bw_mb_s": 503.0873718799096,
+      "write_bw_mb_s": 294.35410707804346,
+      "read_bw_mb_s": 1729.553578254778,
+      "avg_write_size": 174396.0275862069,
+      "seq_write_ratio": 0.993103448275862,
+      "small_io_ratio": 0.8827586206896552,
+      "metadata_time_ratio": 0.3365458447672516,
+      "POSIX_BYTES_WRITTEN": 25287424.0,
+      "POSIX_WRITES": 145.0,
+      "POSIX_FSYNCS": 0.0,
+      "runtime_seconds": 0.35944175720214844,
+      "nprocs": 16
+    },
+    "total_iterations": 2
+  }
+]

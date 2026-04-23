@@ -1,0 +1,88 @@
+{
+  "per_dimension": {
+    "access_granularity": {
+      "tp": 13,
+      "fp": 6,
+      "fn": 1,
+      "tn": 0,
+      "precision": 0.6842,
+      "recall": 0.9286,
+      "f1": 0.7879
+    },
+    "metadata_intensity": {
+      "tp": 0,
+      "fp": 8,
+      "fn": 0,
+      "tn": 12,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "parallelism_efficiency": {
+      "tp": 0,
+      "fp": 3,
+      "fn": 0,
+      "tn": 17,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "access_pattern": {
+      "tp": 6,
+      "fp": 5,
+      "fn": 0,
+      "tn": 9,
+      "precision": 0.5455,
+      "recall": 1.0,
+      "f1": 0.7059
+    },
+    "interface_choice": {
+      "tp": 0,
+      "fp": 19,
+      "fn": 0,
+      "tn": 1,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "file_strategy": {
+      "tp": 0,
+      "fp": 6,
+      "fn": 0,
+      "tn": 14,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    "throughput_utilization": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 20,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
+    }
+  },
+  "overall": {
+    "micro_precision": 0.2879,
+    "micro_recall": 0.95,
+    "micro_f1": 0.4419,
+    "macro_f1": 0.7469,
+    "total_tp": 19,
+    "total_fp": 47,
+    "total_fn": 1,
+    "total_tn": 73
+  },
+  "api_metrics": {
+    "total_api_calls": 520,
+    "total_prompt_tokens": 635314,
+    "total_completion_tokens": 184408,
+    "total_cost_usd": 1.1885
+  },
+  "n_traces_processed": 20,
+  "n_traces_attempted": 20,
+  "model": "openai/gpt-4o",
+  "avg_time_per_trace": 232.91,
+  "avg_api_calls_per_trace": 26.0
+}

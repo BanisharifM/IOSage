@@ -1,0 +1,67 @@
+2026-04-06 15:05:06 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 15:05:06 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 15:05:06 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 15:05:19 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 15:05:19 [INFO]   KB loaded: 623 entries
+2026-04-06 15:05:20 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 15:05:20 [INFO] IterativeOptimizer: model=gpt-4.1-mini, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 15:05:20 [INFO] Workloads: ['ior_random_access']
+2026-04-06 15:05:20 [INFO] Model: gpt-4.1-mini, Runs: 1, Max iterations: 5
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO] ITERATIVE OPTIMIZATION: ior_random_access (run 0)
+2026-04-06 15:05:20 [INFO]   Bottleneck: access_pattern
+2026-04-06 15:05:20 [INFO]   Description: Random offset access (-z flag)
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 15:05:21 [INFO]   Submitted SLURM job 17338430
+2026-04-06 15:06:51 [INFO]   Job 17338430: COMPLETED (90s)
+2026-04-06 15:06:51 [INFO]   Darshan log: mbanisha_ior_id17338430-1228238_4-6-54354-12996129539005102230_1.darshan
+2026-04-06 15:06:51 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:06:51 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:06:51 [INFO]   Baseline BW: 186.35 MB/s
+2026-04-06 15:06:51 [INFO]   Initial detection: ['access_granularity', 'access_pattern']
+2026-04-06 15:06:51 [INFO]   KB matches: 3
+2026-04-06 15:06:51 [INFO] 
+2026-04-06 15:06:51 [INFO] --- Iteration 1/5 ---
+2026-04-06 15:07:55 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 15:07:59 [INFO]   Strategy: Remove random offset flag to switch from random to sequential access pattern and
+2026-04-06 15:07:59 [INFO]   Changes: ['Removed -z flag to fix access_pattern by switching to sequential access', 'Increased transfer_size from 65536 to 1048576 bytes to fix access_granularity by reducing syscall overhead', 'Kept block_size and segments constant to maintain total data volume']
+2026-04-06 15:07:59 [INFO]   Executing: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/
+2026-04-06 15:07:59 [INFO]   Submitted SLURM job 17338589
+2026-04-06 15:08:59 [INFO]   Job 17338589: COMPLETED (60s)
+2026-04-06 15:08:59 [INFO]   Darshan log: mbanisha_ior_id17338589-1292824_4-6-54515-57391399680632485_1.darshan
+2026-04-06 15:08:59 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:08:59 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:08:59 [INFO]   Result: BW=147.10 MB/s, speedup=0.79x
+2026-04-06 15:08:59 [WARNING]   REGRESSION: 0.79x -- rolling back
+2026-04-06 15:08:59 [INFO] 
+2026-04-06 15:08:59 [INFO] --- Iteration 2/5 ---
+2026-04-06 15:08:59 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 15:09:05 [INFO]   Strategy: Remove random offset flag (-z) to switch from random to sequential access patter
+2026-04-06 15:09:05 [INFO]   Changes: ['Removed -z flag to eliminate random offsets and enable sequential access pattern, fixing access_pattern bottleneck', 'Added -Y flag to enable fsync per write to improve throughput stability', 'Kept transfer_size at 65536 to maintain access_granularity and total data volume']
+2026-04-06 15:09:05 [INFO]   Executing: ior -a POSIX -t 65536 -b 104857600 -s 10 -F -e -C -w -r -Y -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
+2026-04-06 15:09:05 [INFO]   Submitted SLURM job 17338612
+2026-04-06 15:10:35 [INFO]   Job 17338612: COMPLETED (90s)
+2026-04-06 15:10:35 [INFO]   Darshan log: mbanisha_ior_id17338612-1744547_4-6-54590-14092782210687608354_2.darshan
+2026-04-06 15:10:35 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:10:35 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:10:35 [INFO]   Result: BW=28.63 MB/s, speedup=0.15x
+2026-04-06 15:10:35 [WARNING]   REGRESSION: 0.15x -- rolling back
+2026-04-06 15:10:35 [INFO] 
+2026-04-06 15:10:35 [INFO] --- Iteration 3/5 ---
+2026-04-06 15:10:35 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 15:10:39 [INFO]   Strategy: Remove random offset flag (-z) to switch from random to sequential access patter
+2026-04-06 15:10:39 [INFO]   Changes: ['Removed -z flag to eliminate random offsets and enable sequential access pattern, improving read-ahead and prefetching', 'Increased transfer_size from 65536 to 1048576 bytes (1MB) to reduce syscall overhead and fix access_granularity bottleneck', 'Kept block_size and segments unchanged to maintain total data volume']
+2026-04-06 15:10:39 [INFO]   Executing: ior -a POSIX -t 1048576 -b 104857600 -s 10 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/
+2026-04-06 15:10:40 [INFO]   Submitted SLURM job 17338690
+2026-04-06 15:11:40 [INFO]   Job 17338690: COMPLETED (60s)
+2026-04-06 15:11:40 [INFO]   Darshan log: mbanisha_ior_id17338690-2279589_4-6-54664-3121719956018180093_1.darshan
+2026-04-06 15:11:40 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:11:40 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:11:40 [INFO]   Result: BW=180.16 MB/s, speedup=0.97x
+2026-04-06 15:11:40 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 15:11:40 [INFO] 
+2026-04-06 15:11:40 [INFO] ======================================================================
+2026-04-06 15:11:40 [INFO] RESULT: ior_random_access -- 3 iterations, best=1.00x, status=converged, cost=$0.0037
+2026-04-06 15:11:40 [INFO] ======================================================================
+2026-04-06 15:11:40 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_random_access_gpt41mini.json

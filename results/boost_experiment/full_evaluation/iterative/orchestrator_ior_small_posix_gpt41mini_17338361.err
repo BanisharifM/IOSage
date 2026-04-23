@@ -1,0 +1,42 @@
+2026-04-06 15:05:07 [INFO] Note: detected 128 virtual cores but NumExpr set to maximum of 64, check "NUMEXPR_MAX_THREADS" environment variable.
+2026-04-06 15:05:07 [INFO] Note: NumExpr detected 128 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-04-06 15:05:07 [INFO] NumExpr defaulting to 16 threads.
+2026-04-06 15:05:19 [INFO]   ML models loaded: 8 dimensions, 157 features
+2026-04-06 15:05:19 [INFO]   KB loaded: 623 entries
+2026-04-06 15:05:20 [INFO] IterativeExecutor: account=bdau-delta-cpu, partition=cpu, ntasks=16
+2026-04-06 15:05:20 [INFO] IterativeOptimizer: model=gpt-4.1-mini, max_iter=5, ml=True, shap=False, kb=True, feedback=True, dry=False
+2026-04-06 15:05:20 [INFO] Workloads: ['ior_small_posix']
+2026-04-06 15:05:20 [INFO] Model: gpt-4.1-mini, Runs: 1, Max iterations: 5
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO] ITERATIVE OPTIMIZATION: ior_small_posix (run 0)
+2026-04-06 15:05:20 [INFO]   Bottleneck: access_granularity
+2026-04-06 15:05:20 [INFO]   Description: Small POSIX writes (64B transfers)
+2026-04-06 15:05:20 [INFO] ======================================================================
+2026-04-06 15:05:20 [INFO]   Step 1: Running baseline (bad) config...
+2026-04-06 15:05:21 [INFO]   Submitted SLURM job 17338431
+2026-04-06 15:06:21 [INFO]   Job 17338431: COMPLETED (60s)
+2026-04-06 15:06:21 [INFO]   Darshan log: mbanisha_ior_id17338431-1228381_4-6-54356-16865565266190661786_1.darshan
+2026-04-06 15:06:22 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:06:22 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:06:22 [INFO]   Baseline BW: 20.71 MB/s
+2026-04-06 15:06:22 [INFO]   Initial detection: ['access_granularity']
+2026-04-06 15:06:22 [INFO]   KB matches: 3
+2026-04-06 15:06:22 [INFO] 
+2026-04-06 15:06:22 [INFO] --- Iteration 1/5 ---
+2026-04-06 15:07:55 [INFO] HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 15:08:02 [INFO]   Strategy: Increase transfer size to 1MB to reduce syscall overhead while keeping total dat
+2026-04-06 15:08:02 [INFO]   Changes: ['Increased transfer_size from 64B to 1MB to aggregate small writes into larger buffers, reducing syscall overhead', 'Kept block_size and segments unchanged to maintain total data volume', 'Retained POSIX API and existing flags to isolate impact of transfer size change']
+2026-04-06 15:08:02 [INFO]   Executing: ior -a POSIX -t 1048576 -b 1048576 -s 100 -F -e -C -w -r -o /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative/i
+2026-04-06 15:08:02 [INFO]   Submitted SLURM job 17338591
+2026-04-06 15:09:02 [INFO]   Job 17338591: COMPLETED (60s)
+2026-04-06 15:09:02 [INFO]   Darshan log: mbanisha_ior_id17338591-1292812_4-6-54515-1989457224697286147_1.darshan
+2026-04-06 15:09:02 [INFO] Computing derived features for 1 rows (vectorized)...
+2026-04-06 15:09:02 [INFO] Added 26 derived features (total: 194 columns)
+2026-04-06 15:09:02 [INFO]   Result: BW=64.03 MB/s, speedup=3.09x
+2026-04-06 15:09:02 [INFO]   NEW BEST: 3.09x at iteration 0
+2026-04-06 15:09:02 [INFO]   CONVERGED: all bottleneck confidences below 0.3
+2026-04-06 15:09:02 [INFO] 
+2026-04-06 15:09:02 [INFO] ======================================================================
+2026-04-06 15:09:02 [INFO] RESULT: ior_small_posix -- 1 iterations, best=3.09x, status=converged, cost=$0.0012
+2026-04-06 15:09:02 [INFO] ======================================================================
+2026-04-06 15:09:02 [INFO] Results saved: results/boost_experiment/full_evaluation/iterative/trackc_ior_small_posix_gpt41mini.json

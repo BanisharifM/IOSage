@@ -1,0 +1,32 @@
+=== IOAgent GPT-4o full 488: dlio chunk 2/4 ===
+Start: Wed Apr  8 11:01:33 CDT 2026
+Node: cn010.delta.ncsa.illinois.edu
+
+======================================================================
+IONavigator (ION) Baseline Evaluation Results
+======================================================================
+Model: openai/gpt-4o
+Traces processed: 11/11
+Avg time per trace: 254.58s
+Avg API calls per trace: 18.2
+Total API cost: $0.4766
+
+Overall Metrics:
+  Micro-F1:     0.0435
+  Macro-F1:     0.1818
+  Micro-Prec:   0.0278
+  Micro-Recall: 0.1000
+
+Per-Dimension F1:
+  access_granularity            : P=0.000 R=0.000 F1=0.000 (TP=0 FP=9 FN=0 TN=2)
+  metadata_intensity            : P=0.000 R=0.000 F1=0.000 (TP=0 FP=10 FN=0 TN=1)
+  parallelism_efficiency        : P=0.000 R=0.000 F1=0.000 (TP=0 FP=7 FN=0 TN=4)
+  access_pattern                : P=0.000 R=0.000 F1=0.000 (TP=0 FP=2 FN=0 TN=9)
+  interface_choice              : P=0.000 R=0.000 F1=0.000 (TP=0 FP=7 FN=0 TN=4)
+  file_strategy                 : P=0.000 R=0.000 F1=0.000 (TP=0 FP=0 FN=0 TN=11)
+  throughput_utilization        : P=1.000 R=0.100 F1=0.182 (TP=1 FP=0 FN=9 TN=1)
+
+Compare with our ML system: Micro-F1 = 0.923
+======================================================================
+End: Wed Apr  8 11:23:55 CDT 2026
+Exit code: 0

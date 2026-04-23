@@ -1,0 +1,39 @@
+[
+  {
+    "workload": "ior_interface_shared",
+    "run_id": 0,
+    "model": "gpt-4.1-mini",
+    "model_id": "openai/gpt-4.1-mini",
+    "max_iterations": 5,
+    "config": {
+      "use_ml": true,
+      "use_shap": false,
+      "use_kb": true,
+      "use_feedback": true
+    },
+    "iterations": [],
+    "best_iteration": -1,
+    "best_speedup": 1.0,
+    "best_config": null,
+    "final_status": "already_healthy",
+    "total_cost_usd": 0,
+    "total_tokens": 0,
+    "total_llm_latency_ms": 0,
+    "total_execution_time_s": 0,
+    "baseline_bw": 33.73592013840605,
+    "baseline_metrics": {
+      "total_bw_mb_s": 64.20173008317423,
+      "write_bw_mb_s": 33.73592013840605,
+      "read_bw_mb_s": 662.33377794036,
+      "avg_write_size": 1048576.0,
+      "seq_write_ratio": 0.9999375,
+      "small_io_ratio": 0.0,
+      "metadata_time_ratio": 0.00019870203092253744,
+      "POSIX_BYTES_WRITTEN": 16777216000.0,
+      "POSIX_WRITES": 16000.0,
+      "POSIX_FSYNCS": 16.0,
+      "runtime_seconds": 37.640947580337524,
+      "nprocs": 16
+    }
+  }
+]
