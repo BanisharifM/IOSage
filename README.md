@@ -159,4 +159,4 @@ All versions pinned in `environment.yml` and `requirements.txt`.
 
 ## License
 
-To be determined upon acceptance.
+MIT License. See [LICENSE](LICENSE) for details.
