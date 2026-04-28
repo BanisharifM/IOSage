@@ -121,15 +121,18 @@ fi
 # =============================================================================
 # Step 8: LLM recommendation evaluation  [AD: T4]
 # =============================================================================
+# Reproduces Section VI-C (LLM quality on 488 traces) and Table V
+# (recommendation ablation, n=8). LLM cache (data/llm_cache/) is consulted
+# automatically when present; live inference requires OPENROUTER_API_KEY.
 if [ "$STEP" = 0 ] || [ "$STEP" = 8 ]; then
 log "Step 8: LLM recommendation evaluation..."
 if [ "$QUICK" = true ]; then
-    log "  Quick mode: using cached LLM outputs (data/llm_cache/)"
-    python scripts/run_llm_evaluation.py --use-cache
-    python scripts/run_fair_ablation.py --use-cache
+    log "  Quick mode: 1 run per workload, using cached outputs in data/llm_cache/"
+    python scripts/run_llm_evaluation.py --n-runs 1
+    python scripts/run_fair_ablation.py
 else
-    log "  Full mode: live LLM inference (requires OPENROUTER_API_KEY)"
-    python scripts/run_llm_evaluation.py
+    log "  Full mode: 5 runs per workload (live inference if cache miss)"
+    python scripts/run_llm_evaluation.py --n-runs 5
     python scripts/run_fair_ablation.py
 fi
 fi
