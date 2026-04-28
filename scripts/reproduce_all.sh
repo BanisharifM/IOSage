@@ -103,10 +103,13 @@ python -m src.models.train --config configs/training.yaml --model xgboost --n-se
 fi
 
 # =============================================================================
-# Step 6: Phase 2 biquality training (5 seeds, all models)  [AD: T2]
+# Step 6: IOSage biquality training  [AD: T2]
 # =============================================================================
+# IOSage = XGBoost + biquality learning (91K heuristic + 201 GT, w=100).
+# Also trains LightGBM, Random Forest, MLP with biquality (Table III rows 3-5),
+# and XGBoost on 201 GT only (Table III row 2 ablation).
 if [ "$STEP" = 0 ] || [ "$STEP" = 6 ]; then
-log "Step 6: Phase 2 — Biquality training (5 seeds, 4 model families)..."
+log "Step 6: IOSage biquality training (5 seeds, 4 model families)..."
 python -m src.models.train_biquality --model all --clean-weight 100 --n-seeds 5 --save
 fi
 
@@ -166,11 +169,17 @@ log "============================================================"
 log "REPRODUCTION COMPLETE"
 log "============================================================"
 log ""
-log "Key results:"
-log "  Phase 2 XGBoost (5 seeds): Micro-F1=0.929+/-0.003"
-log "  vs Drishti baseline:       Micro-F1=0.364 (2.6x improvement)"
-log "  vs WisIO baseline:         Micro-F1=0.320 (2.9x improvement)"
-log "  vs IOAgent baseline:       Micro-F1=0.331 (2.8x improvement)"
+log "Key results (DIOBench 488-sample test set, 5 seeds):"
+log "  IOSage (XGBoost + biquality):   Micro-F1=0.929+/-0.003"
+log "  XGBoost (GT-only ablation):     Micro-F1=0.909+/-0.001"
+log "  LightGBM (with biquality):      Micro-F1=0.925"
+log "  Random Forest (with biquality): Micro-F1=0.916"
+log "  MLP (with biquality):           Micro-F1=0.767"
+log ""
+log "External baselines:"
+log "  Drishti:  Micro-F1=0.364 (IOSage 2.6x higher)"
+log "  WisIO:    Micro-F1=0.320 (IOSage 2.9x higher)"
+log "  IOAgent:  Micro-F1=0.331 (IOSage 2.8x higher)"
 log ""
 log "Figures saved to: paper/figures/"
 log "Models saved to:  models/phase2/"
