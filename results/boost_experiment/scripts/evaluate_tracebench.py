@@ -31,7 +31,7 @@ import pandas as pd
 import yaml
 
 # Setup paths
-PROJECT_ROOT = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.feature_extraction import extract_raw_features, FEATURE_GROUPS

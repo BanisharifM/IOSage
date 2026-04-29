@@ -37,7 +37,7 @@ from sklearn.metrics import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-PROJECT = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT))
 
 EXPERIMENT_DIR = PROJECT / "results" / "boost_experiment"

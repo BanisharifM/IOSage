@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROJECT = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT = Path(__file__).resolve().parent.parent.parent.parent
 BOOST_DIR = PROJECT / "results" / "boost_experiment"
 sys.path.insert(0, str(PROJECT))
 
