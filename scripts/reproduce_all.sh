@@ -25,6 +25,16 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${PROJECT_DIR}"
 
+# Cap BLAS / XGBoost / sklearn worker threads. On large shared machines (e.g.
+# HPC login nodes with 64+ cores), unbounded thread counts (1) cause thread
+# oversubscription that slows training, and (2) can trip cgroup / abuse-
+# prevention killers (SIGKILL, exit 137). Bound to a sensible default;
+# override by exporting NTHREADS before invoking the script.
+NTHREADS="${NTHREADS:-8}"
+export OMP_NUM_THREADS="${NTHREADS}"
+export OPENBLAS_NUM_THREADS="${NTHREADS}"
+export MKL_NUM_THREADS="${NTHREADS}"
+
 QUICK=false
 STEP=0
 for arg in "$@"; do
