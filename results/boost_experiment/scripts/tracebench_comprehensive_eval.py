@@ -16,7 +16,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parent.parent
+PROJECT = Path(__file__).resolve().parent.parent.parent.parent
 TRACEBENCH = PROJECT / "data" / "external" / "tracebench" / "TraceBench"
 LLMEVAL = TRACEBENCH / "LLMEval"
 LABELS_FILE = TRACEBENCH / "Datasets" / "real_app_bench" / "trace_labels.json"

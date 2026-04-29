@@ -42,7 +42,7 @@ logger = logging.getLogger('ionavigator_baseline')
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path('/work/hdd/bdau/mbanisharifdehkordi/SC_2026')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 BENCHMARK_LOGS = PROJECT_ROOT / 'data' / 'benchmark_logs'
 LABELS_PATH = PROJECT_ROOT / 'results' / 'boost_experiment' / 'new_splits' / 'labels.parquet'
 OUTPUT_DIR = PROJECT_ROOT / 'results' / 'boost_experiment' / 'fair_ioagent_comparison' / 'ioagent_output'
