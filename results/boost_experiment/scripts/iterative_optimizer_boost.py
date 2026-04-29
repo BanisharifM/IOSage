@@ -51,7 +51,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(

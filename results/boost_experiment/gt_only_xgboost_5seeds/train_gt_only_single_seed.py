@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 
 # Import the canonical functions from the existing biquality script.
-PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_DIR / "results" / "boost_experiment" / "scripts"))
 
 from train_biquality_boost import (  # noqa: E402

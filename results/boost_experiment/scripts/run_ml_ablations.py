@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 DIMENSIONS = [
     "access_granularity", "metadata_intensity", "parallelism_efficiency",

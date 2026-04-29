@@ -106,11 +106,18 @@ fi
 # Step 6: IOSage biquality training  [AD: T2]
 # =============================================================================
 # IOSage = XGBoost + biquality learning (91K heuristic + 201 GT, w=100).
-# Also trains LightGBM, Random Forest, MLP with biquality (Table III rows 3-5),
-# and XGBoost on 201 GT only (Table III row 2 ablation).
+# Trains all four model families (XGBoost, LightGBM, Random Forest, MLP) with
+# biquality (Table III rows 1, 3, 4, 5). Reads benchmark splits from
+# results/boost_experiment/new_splits/ (201 dev / 488 test, the paper's split).
 if [ "$STEP" = 0 ] || [ "$STEP" = 6 ]; then
 log "Step 6: IOSage biquality training (5 seeds, 4 model families)..."
-python -m src.models.train_biquality --model all --clean-weight 100 --n-seeds 5 --save
+N_SEEDS=5
+[ "$QUICK" = true ] && N_SEEDS=1
+python results/boost_experiment/scripts/train_biquality_boost.py \
+    --model all --clean-weight 100 --n-seeds $N_SEEDS --save
+log "  Also: GT-only XGBoost ablation (Table III row 2, baseline at 0.909)"
+python results/boost_experiment/gt_only_xgboost_5seeds/train_gt_only_single_seed.py \
+    --n-seeds $N_SEEDS || log "  (gt-only ablation skipped)"
 fi
 
 # =============================================================================
@@ -124,41 +131,57 @@ fi
 # =============================================================================
 # Step 8: LLM recommendation evaluation  [AD: T4]
 # =============================================================================
-# Reproduces Section VI-C (LLM quality on 488 traces) and Table V
-# (recommendation ablation, n=8). LLM cache (data/llm_cache/) is consulted
-# automatically when present; live inference requires OPENROUTER_API_KEY.
+# Reproduces Section VI-C (LLM quality on 488 traces, Table V LLM quality),
+# Table V (n=8 recommendation ablation), and Tables VIII-IX (TraceBench
+# cross-system). LLM cache (data/llm_cache/) is consulted automatically;
+# live inference requires OPENROUTER_API_KEY.
 if [ "$STEP" = 0 ] || [ "$STEP" = 8 ]; then
 log "Step 8: LLM recommendation evaluation..."
-if [ "$QUICK" = true ]; then
-    log "  Quick mode: 1 run per workload, using cached outputs in data/llm_cache/"
-    python scripts/run_llm_evaluation.py --n-runs 1
-    python scripts/run_fair_ablation.py
-else
-    log "  Full mode: 5 runs per workload (live inference if cache miss)"
-    python scripts/run_llm_evaluation.py --n-runs 5
-    python scripts/run_fair_ablation.py
-fi
+N_RUNS=5
+[ "$QUICK" = true ] && N_RUNS=1
+log "  (a) Full 488-trace LLM quality (4 LLMs, Section VI-C)..."
+for model in claude-sonnet-4 gpt-4o gpt-4.1-mini llama-3.1-70b-instruct; do
+    python results/boost_experiment/iosage_full488_no_leak/run_iosage_no_leak.py \
+        --model "$model" \
+        --output-dir "results/boost_experiment/iosage_full488_no_leak/output_${model}" \
+        || log "  (${model} skipped — likely missing API key, cache may not cover this run)"
+done
+log "  (b) Recommendation ablation (Table V, n=8 workloads)..."
+python results/boost_experiment/scripts/run_fair_ablation.py
+log "  (c) TraceBench cross-system evaluation (Tables VIII-IX)..."
+python results/boost_experiment/scripts/run_tracebench_full_evaluation.py \
+    || log "  (TraceBench skipped — requires data/external/tracebench/)"
 fi
 
 # =============================================================================
 # Step 9: Generate all paper figures and tables  [AD: T5]
 # =============================================================================
+# Produces Figures 2-5 and the LaTeX tables that read from the JSON outputs
+# of steps 6-8.
 if [ "$STEP" = 0 ] || [ "$STEP" = 9 ]; then
 log "Step 9: Generating paper figures and tables..."
 python scripts/generate_results_figures.py
 python scripts/generate_labeling_figures.py
+python scripts/generate_evaluation_figures.py
 if [ "$QUICK" = false ]; then
     python scripts/generate_paper_figures.py
 fi
+log "  Computing final aggregated metrics..."
+python results/boost_experiment/scripts/compute_final_metrics.py \
+    || log "  (compute_final_metrics skipped)"
 fi
 
 # =============================================================================
-# Step 10: Auxiliary checks (label agreement, ground-truth verification)
+# Step 10: Auxiliary checks (latency, ML ablations, weight sensitivity)
 # =============================================================================
 if [ "$STEP" = 0 ] || [ "$STEP" = 10 ]; then
-log "Step 10: Auxiliary checks..."
-python scripts/analyze_label_agreement.py
-python scripts/verify_all_ground_truth.py --bench-type all
+log "Step 10: Auxiliary measurements..."
+python results/boost_experiment/scripts/measure_latency.py \
+    || log "  (latency measurement skipped)"
+python results/boost_experiment/scripts/run_ml_ablations.py \
+    || log "  (ML ablations skipped)"
+python results/boost_experiment/scripts/run_weight_sensitivity.py \
+    || log "  (weight sensitivity skipped)"
 fi
 
 # =============================================================================

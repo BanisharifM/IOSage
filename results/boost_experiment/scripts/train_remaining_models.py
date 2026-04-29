@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, hamming_loss, accuracy_score, precision_score, recall_score
 from sklearn.neural_network import MLPClassifier
 
-PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

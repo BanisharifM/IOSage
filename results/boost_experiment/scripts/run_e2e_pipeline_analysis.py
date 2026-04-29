@@ -28,7 +28,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_DIR = Path("/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 # Load .env
