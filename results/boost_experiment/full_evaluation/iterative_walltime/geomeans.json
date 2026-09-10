@@ -1,0 +1,42 @@
+{
+  "claude-sonnet": {
+    "n_active": 12,
+    "geomean_bw_all_active": 9.344734677563586,
+    "geomean_walltime_all_active": 5.933202358717641,
+    "geomean_walltime_guarded": 5.50914426006227,
+    "n_rejected_by_work_guard": 2,
+    "n_bw_gt1": 11,
+    "geomean_bw_gt1_only": 11.44986421742309,
+    "geomean_walltime_same_subset": 6.975706110786575
+  },
+  "gpt-4o": {
+    "n_active": 12,
+    "geomean_bw_all_active": 3.9714296789768304,
+    "geomean_walltime_all_active": 2.3453149011112453,
+    "geomean_walltime_guarded": 2.430104211566227,
+    "n_rejected_by_work_guard": 1,
+    "n_bw_gt1": 9,
+    "geomean_bw_gt1_only": 6.289206231005424,
+    "geomean_walltime_same_subset": 3.1160294279107177
+  },
+  "gpt-4.1-mini": {
+    "n_active": 12,
+    "geomean_bw_all_active": 3.512561170747483,
+    "geomean_walltime_all_active": 1.8452677399871378,
+    "geomean_walltime_guarded": 1.8341967130107935,
+    "n_rejected_by_work_guard": 2,
+    "n_bw_gt1": 10,
+    "geomean_bw_gt1_only": 4.515945326535906,
+    "geomean_walltime_same_subset": 2.0857932951670146
+  },
+  "llama-70b": {
+    "n_active": 12,
+    "geomean_bw_all_active": 3.6457006681263926,
+    "geomean_walltime_all_active": 4.303641263712802,
+    "geomean_walltime_guarded": 2.6163710871663013,
+    "n_rejected_by_work_guard": 4,
+    "n_bw_gt1": 11,
+    "geomean_bw_gt1_only": 4.100643444616601,
+    "geomean_walltime_same_subset": 4.9142531326592955
+  }
+}
