@@ -3,6 +3,7 @@
 # Compile IOSage Paper (LaTeX → PDF)
 # ==============================================================
 # Usage: bash scripts/compile_paper.sh
+#        PAPER_DIR=papers/SC_2026 bash scripts/compile_paper.sh   # other paper
 #
 # Does: pdflatex → bibtex → pdflatex × 2
 # Checks: compilation errors, missing references
@@ -13,7 +14,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "${SCRIPT_DIR}")"
-PAPER_DIR="${PROJECT_ROOT}/paper"
+# Default: the active paper. Override with PAPER_DIR (absolute or root-relative).
+PAPER_DIR="${PAPER_DIR:-papers/IPDPS_2027}"
+case "${PAPER_DIR}" in /*) ;; *) PAPER_DIR="${PROJECT_ROOT}/${PAPER_DIR}" ;; esac
 MAIN="main"
 
 cd "${PAPER_DIR}"

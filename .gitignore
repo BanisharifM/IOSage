@@ -3,9 +3,13 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Paper (separate git repo connected to Overleaf)
+# Papers (separate git repos, each connected to its own Overleaf project)
+#   papers/SC_2026    -> BanisharifM/SC_2026_Paper_V3 (submitted, frozen)
+#   papers/IPDPS_2027 -> BanisharifM/IOSage_IPDPS_2027 (resubmission)
+#   paper             -> compatibility symlink to papers/SC_2026 (artifact scripts)
 # -----------------------------------------------------------------------------
-paper/
+papers/
+paper
 
 # -----------------------------------------------------------------------------
 # Python
@@ -68,11 +72,6 @@ mlruns/
 *.bcf
 *.run.xml
 *.xdv
-paper/*.log
-paper/*.out
-
-# Compiled PDF (regenerable; Overleaf compiles its own)
-paper/main.pdf
 
 # -----------------------------------------------------------------------------
 # Data Files
