@@ -200,3 +200,7 @@ Darshan_Logs/.last_collection
 
 # Large model files (> 100MB GitHub limit)
 results/boost_experiment/new_models/*.pkl
+
+# Core dumps from crashed benchmark runs
+core
+core.*
