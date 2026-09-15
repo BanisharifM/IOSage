@@ -16,7 +16,7 @@ export SLURM_CPUS_PER_TASK=1
 export PMI_NO_PREINITIALIZE=1
 export PMI_NO_FORK=1
 
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 E2E_DIR="${PROJECT_DIR}/benchmarks/e2e"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 export DARSHAN_LOGPATH="${PROJECT_DIR}/data/benchmark_logs/e2e"

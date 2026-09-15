@@ -10,7 +10,7 @@
 #
 # One-time setup:
 #   git clone git@github.com:BanisharifM/SC_2026_Paper.git \
-#       /work/hdd/bdau/mbanisharifdehkordi/SC_2026_Paper
+#       /work/hdd/bdau/mbanisharifdehkordi/IOSage_Paper
 # ==============================================================
 
 set -euo pipefail

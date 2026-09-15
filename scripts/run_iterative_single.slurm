@@ -29,7 +29,7 @@ export PATH=/projects/bdau/envs/sc2026/bin:$PATH
 # Do NOT add .local_pkgs — numpy 1.24.3 breaks TensorFlow/DLIO imports
 unset PYTHONPATH
 
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 
 # API key (set in environment or .env file)
 if [ -f .env ]; then
