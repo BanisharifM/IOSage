@@ -11,7 +11,7 @@
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/iterative/detect_%j.out
 # Run the ML detector on Darshan logs as a batch job (self-contained /work env).
 # Usage: sbatch scripts/run_detector_logs.slurm <model.pkl> <output.json> <log>...
-IOSAGE_ENV="${IOSAGE_ENV:-/work/hdd/bdau/mbanisharifdehkordi/envs/iosage}"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
 export PATH="$IOSAGE_ENV/bin:$PATH" PYTHONNOUSERSITE=1; unset PYTHONPATH
 cd /work/hdd/bdau/mbanisharifdehkordi/IOSage || exit 1
 MODEL="$1"; OUT="$2"; shift 2

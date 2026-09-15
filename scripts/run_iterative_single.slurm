@@ -20,7 +20,7 @@
 #   benchmark jobs this driver submits inherit the driver's (clean) environment.
 # =============================================================================
 export SLURM_EXPORT_ENV=ALL
-IOSAGE_ENV="${IOSAGE_ENV:-/work/hdd/bdau/mbanisharifdehkordi/envs/iosage}"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
 
 echo "============================================================"
 echo "Iterative: Iterative LLM Code Optimization"

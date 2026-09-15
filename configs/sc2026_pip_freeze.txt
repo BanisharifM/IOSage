@@ -1,3 +1,9 @@
+# pip layer of the IOSage environment (conda layer: configs/sc2026_explicit_spec.txt).
+# Captured with pip freeze from /projects/bdau/envs/sc2026, whose interpreter also imported
+# packages from the user site (~/.local/lib/python3.9/site-packages, 27 of these pins).
+# Correction 2026-09-14: the capture had pyparsing==3.0.9 (user-site copy shadowing conda's
+# 3.2.0), which violates pydot 4.0.1 (pyparsing>=3.1.0). Pinned to conda's 3.2.0; verified
+# with pip install --dry-run against the conda layer (resolves) and pip check after install.
 absl-py==2.3.1
 alembic==1.14.0
 annotated-types==0.7.0
@@ -121,7 +127,7 @@ pydot==4.0.1
 Pygments==2.19.2
 pygraphviz==1.11
 PyMuPDF==1.26.5
-pyparsing==3.0.9
+pyparsing==3.2.0
 pypdf==6.10.2
 pypdfium2==5.8.0
 PyQt5==5.15.10
