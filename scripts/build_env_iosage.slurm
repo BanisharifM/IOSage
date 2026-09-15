@@ -8,7 +8,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=03:00:00
 #SBATCH --export=NONE
-#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/envs/iosage_build.log
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/iterative/build_env_%j.out
 # =============================================================================
 # Rebuild the paper's Python environment on /work from the captured specs
 # (configs/sc2026_explicit_spec.txt: conda explicit URLs; configs/sc2026_pip_freeze.txt: pip).
@@ -17,9 +17,11 @@
 # =============================================================================
 set -u
 REPO=/work/hdd/bdau/mbanisharifdehkordi/IOSage
-ENVS=/work/hdd/bdau/mbanisharifdehkordi/envs
+ENVS="${ENVS:-/work/hdd/bdau/mbanisharifdehkordi/envs}"   # override: sbatch --export=NONE,ENVS=/work/nvme/...
 PREFIX=$ENVS/iosage
+mkdir -p "$ENVS"
 export CONDARC=$ENVS/condarc
+[ -f "$CONDARC" ] || printf "solver: libmamba\nauto_activate_base: false\nenvs_dirs:\n  - %s\npkgs_dirs:\n  - %s/.conda_pkgs\n" "$ENVS" "$ENVS" > "$CONDARC"
 export CONDA_PKGS_DIRS=$ENVS/.conda_pkgs
 export PIP_CACHE_DIR=$ENVS/.pip_cache
 export PYTHONNOUSERSITE=1      # pip must not see ~/.local packages as already satisfied
