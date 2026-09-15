@@ -26,11 +26,6 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Add local packages
-LOCAL_PKGS = PROJECT_DIR / ".local_pkgs"
-if LOCAL_PKGS.exists():
-    import sys
-    sys.path.insert(0, str(LOCAL_PKGS))
 
 # OpenRouter model IDs
 MODELS = {

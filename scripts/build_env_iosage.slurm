@@ -41,7 +41,7 @@ fi
 "$PREFIX/bin/python" -m pip install -r "$REPO/configs/sc2026_pip_freeze.txt"
 rc=$?; echo "pip install rc=$rc"
 "$PREFIX/bin/python" -m pip check; rc3=$?; echo "pip check rc=$rc3"; rc=$((rc + rc3))
-"$PREFIX/bin/python" -c "import xgboost, shap, lightgbm, pandas, darshan, sklearn, numpy; print('imports ok: xgboost', xgboost.__version__, 'shap', shap.__version__, 'numpy', numpy.__version__); import xgboost, os; print('xgboost from', os.path.dirname(xgboost.__file__))"
+"$PREFIX/bin/python" -c "import xgboost, shap, lightgbm, pandas, darshan, sklearn, numpy, openai, anthropic; print('imports ok: xgboost', xgboost.__version__, 'shap', shap.__version__, 'numpy', numpy.__version__, 'openai', openai.__version__); import xgboost, os; print('xgboost from', os.path.dirname(xgboost.__file__))"
 rc2=$?
 echo "files: $(find "$PREFIX" -type f | wc -l)  size: $(du -sh "$PREFIX" | cut -f1)"
 echo "end $(date)"

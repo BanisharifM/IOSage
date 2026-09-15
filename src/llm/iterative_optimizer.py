@@ -51,9 +51,6 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-LOCAL_PKGS = Path(__file__).resolve().parent.parent.parent / ".local_pkgs"
-if LOCAL_PKGS.exists():
-    sys.path.insert(0, str(LOCAL_PKGS))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 logging.basicConfig(
