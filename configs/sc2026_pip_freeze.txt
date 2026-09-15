@@ -4,6 +4,9 @@
 # Correction 2026-09-14: the capture had pyparsing==3.0.9 (user-site copy shadowing conda's
 # 3.2.0), which violates pydot 4.0.1 (pyparsing>=3.1.0). Pinned to conda's 3.2.0; verified
 # with pip install --dry-run against the conda layer (resolves) and pip check after install.
+# Correction 2026-09-14: removed pygraphviz==1.11 (user-site package; source-only on PyPI,
+# needs Graphviz C headers that Delta does not install). No IOSage code imports it and no
+# pinned package depends on it.
 absl-py==2.3.1
 alembic==1.14.0
 annotated-types==0.7.0
@@ -125,7 +128,6 @@ pydantic_core==2.41.5
 pydftracer==1.0.2
 pydot==4.0.1
 Pygments==2.19.2
-pygraphviz==1.11
 PyMuPDF==1.26.5
 pyparsing==3.2.0
 pypdf==6.10.2
