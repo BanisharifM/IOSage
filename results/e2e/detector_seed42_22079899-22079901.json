@@ -1,0 +1,158 @@
+{
+  "model": "results/boost_experiment/new_models/xgboost_biquality_w100_seed42.pkl",
+  "threshold": 0.3,
+  "results": [
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_id22079899-3529471_9-14-76155-4894005163723727584_1.darshan",
+      "detected": [
+        "parallelism_efficiency"
+      ],
+      "probabilities": {
+        "parallelism_efficiency": 0.995,
+        "file_strategy": 0.191,
+        "access_granularity": 0.111,
+        "throughput_utilization": 0.104,
+        "interface_choice": 0.0,
+        "healthy": 0.0,
+        "metadata_intensity": 0.0,
+        "access_pattern": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_id22079899-3529584_9-14-76162-9784696444097548782_1.darshan",
+      "detected": [
+        "parallelism_efficiency"
+      ],
+      "probabilities": {
+        "parallelism_efficiency": 0.996,
+        "file_strategy": 0.245,
+        "throughput_utilization": 0.097,
+        "access_granularity": 0.092,
+        "interface_choice": 0.0,
+        "healthy": 0.0,
+        "metadata_intensity": 0.0,
+        "access_pattern": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_id22079899-3529714_9-14-76167-10892881798732879766_1.darshan",
+      "detected": [
+        "parallelism_efficiency"
+      ],
+      "probabilities": {
+        "parallelism_efficiency": 0.996,
+        "file_strategy": 0.245,
+        "throughput_utilization": 0.103,
+        "access_granularity": 0.102,
+        "interface_choice": 0.0,
+        "healthy": 0.0,
+        "metadata_intensity": 0.0,
+        "access_pattern": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_pathological_id22079900-1574207_9-14-76155-9265941728755329731_1.darshan",
+      "detected": [
+        "access_granularity",
+        "interface_choice",
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "access_granularity": 0.994,
+        "throughput_utilization": 0.907,
+        "interface_choice": 0.342,
+        "parallelism_efficiency": 0.007,
+        "file_strategy": 0.005,
+        "access_pattern": 0.0,
+        "metadata_intensity": 0.0,
+        "healthy": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_pathological_id22079900-1574362_9-14-76189-17976072391329563499_1.darshan",
+      "detected": [
+        "access_granularity",
+        "parallelism_efficiency",
+        "interface_choice",
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "access_granularity": 0.994,
+        "parallelism_efficiency": 0.959,
+        "throughput_utilization": 0.862,
+        "interface_choice": 0.407,
+        "file_strategy": 0.005,
+        "access_pattern": 0.0,
+        "metadata_intensity": 0.0,
+        "healthy": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_pathological_id22079900-1575128_9-14-76226-4502124947524269361_1.darshan",
+      "detected": [
+        "access_granularity",
+        "interface_choice",
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "access_granularity": 0.995,
+        "throughput_utilization": 0.891,
+        "interface_choice": 0.348,
+        "parallelism_efficiency": 0.065,
+        "file_strategy": 0.005,
+        "access_pattern": 0.0,
+        "metadata_intensity": 0.0,
+        "healthy": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_ultra_optimized_id22079901-1576155_9-14-76310-4697480385610507709_1.darshan",
+      "detected": [
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "throughput_utilization": 0.717,
+        "interface_choice": 0.221,
+        "file_strategy": 0.005,
+        "healthy": 0.004,
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_ultra_optimized_id22079901-1576284_9-14-76312-6699527867725445333_1.darshan",
+      "detected": [
+        "interface_choice",
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "throughput_utilization": 0.676,
+        "interface_choice": 0.349,
+        "healthy": 0.005,
+        "file_strategy": 0.005,
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0
+      }
+    },
+    {
+      "log": "data/benchmark_logs/e2e/mbanisha_write_3d_nc4_ultra_optimized_id22079901-1576398_9-14-76315-11422852649319448950_1.darshan",
+      "detected": [
+        "throughput_utilization"
+      ],
+      "probabilities": {
+        "throughput_utilization": 0.667,
+        "interface_choice": 0.253,
+        "healthy": 0.005,
+        "file_strategy": 0.003,
+        "access_granularity": 0.0,
+        "metadata_intensity": 0.0,
+        "parallelism_efficiency": 0.0,
+        "access_pattern": 0.0
+      }
+    }
+  ]
+}
