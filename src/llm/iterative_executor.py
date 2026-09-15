@@ -47,6 +47,9 @@ class IterativeExecutor:
             "/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so",
         )
         self.results_dir = str(PROJECT_DIR / "results" / "iterative")
+        # A3: one Darshan runtime config (record caps raised) for every template
+        self.darshan_config = slurm_cfg.get(
+            "darshan_config", str(PROJECT_DIR / "configs" / "darshan_runtime.conf"))
 
         os.makedirs(self.scratch_dir, exist_ok=True)
         os.makedirs(self.darshan_log_dir, exist_ok=True)
@@ -113,6 +116,7 @@ class IterativeExecutor:
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix SLURM env var conflicts on Delta
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
@@ -188,6 +192,7 @@ module load PrgEnv-gnu/8.6.0 2>/dev/null || true
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # ROMIO collective buffering control
 {hints_line}
@@ -255,6 +260,7 @@ export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 export DARSHAN_ENABLE_NONMPI=1
 export DARSHAN_MODMEM=4
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix SLURM env var conflicts on Delta
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
@@ -333,6 +339,7 @@ module load PrgEnv-gnu/8.6.0 cray-hdf5-parallel/1.14.3.5 2>/dev/null || true
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # HDF5 parallel library path
 export LD_LIBRARY_PATH="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2/lib:${{LD_LIBRARY_PATH:-}}"
@@ -455,6 +462,7 @@ export DARSHAN_ENABLE_NONMPI=1
 # before DLIO reads any actual data files, making the Darshan log useless.
 export DARSHAN_CONFIG_PATH="{PROJECT_DIR}/configs/darshan_dlio.conf"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix PyTorch CUDA library conflict on Delta.
 # The system anaconda3 ships libnvJitLink.so.12.1.105 (CUDA 12.1) which only
@@ -614,22 +622,29 @@ exit $EXIT_CODE
         subprocess.run(["scancel", job_id], capture_output=True)
         return None
 
-    def find_darshan_log(self, job_id):
-        """Find the Darshan log file for a completed SLURM job.
+    def find_darshan_logs(self, job_id):
+        """All Darshan logs of a completed SLURM job (A2).
 
-        Args:
-            job_id: SLURM job ID string
-
-        Returns:
-            path to .darshan file or None
+        Multi-phase jobs (h5bench write then read, DLIO datagen then training,
+        DLIO per-rank NONMPI logs) produce several logs; the wall time and the
+        work of the job need all of them.  Sorted by name (phase order is
+        recovered from the logs' start times in closed_loop_metrics).
         """
         pattern = os.path.join(self.darshan_log_dir, f"*id{job_id}*")
-        logs = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
-        if logs:
-            logger.info("  Darshan log: %s", Path(logs[0]).name)
-            return logs[0]
-        logger.warning("  No Darshan log found for job %s", job_id)
-        return None
+        logs = sorted(glob.glob(pattern))
+        if not logs:
+            logger.warning("  No Darshan log found for job %s", job_id)
+        return logs
+
+    def find_darshan_log(self, job_id):
+        """Newest Darshan log of a job (kept for callers that need one path).
+
+        Do not use it to pick the log for a multi-phase job: for h5bench the
+        newest log is the read phase.  ``execute_benchmark`` uses
+        ``find_darshan_logs`` plus ``closed_loop_metrics.select_primary_log``.
+        """
+        logs = sorted(self.find_darshan_logs(job_id), key=os.path.getmtime, reverse=True)
+        return logs[0] if logs else None
 
     def extract_features(self, darshan_path):
         """Parse Darshan log and extract full feature vector + key metrics.
@@ -809,7 +824,8 @@ exit $EXIT_CODE
         return result if result else None
 
     def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior",
-                          hacc_config=None, h5bench_config=None, dlio_config=None):
+                          hacc_config=None, h5bench_config=None, dlio_config=None,
+                          workload=None, work_config=None):
         """Full execution cycle: generate script -> submit -> wait -> parse.
 
         Args:
@@ -840,6 +856,8 @@ exit $EXIT_CODE
             "features": None,
             "ior_output": None,
             "darshan_path": None,
+            "darshan_paths": [],
+            "measurement": None,   # wall time + work over all logs (A1/A2)
             "elapsed_s": 0,
         }
 
@@ -865,12 +883,28 @@ exit $EXIT_CODE
 
         result["job_id"] = job_id
 
-        # Find and parse Darshan log
-        darshan_path = self.find_darshan_log(job_id)
-        if darshan_path:
+        # Every Darshan log of the job: wall time and work come from all of
+        # them, classifier features from the phase-appropriate primary log.
+        import sys
+        sys.path.insert(0, str(PROJECT_DIR))
+        from src.llm.closed_loop_metrics import job_measurement
+        darshan_paths = self.find_darshan_logs(job_id)
+        result["darshan_paths"] = darshan_paths
+        if darshan_paths:
+            measurement = job_measurement(darshan_paths, benchmark_type=benchmark_type,
+                                          workload=workload, config=work_config)
+            result["measurement"] = measurement
+            darshan_path = measurement["primary_log"] if measurement else darshan_paths[0]
             result["darshan_path"] = darshan_path
+            logger.info("  Darshan logs: %d, primary %s, wall %.2f s over %d phase(s)",
+                        len(darshan_paths), Path(darshan_path).name,
+                        measurement["walltime_s"] if measurement else -1,
+                        measurement["n_phases"] if measurement else 0)
             metrics, features = self.extract_features(darshan_path)
             if metrics:
+                if measurement:
+                    metrics["walltime_s"] = measurement["walltime_s"]
+                    metrics["bytes_total"] = measurement["bytes_total"]
                 result["metrics"] = metrics
                 result["features"] = features
                 result["success"] = True

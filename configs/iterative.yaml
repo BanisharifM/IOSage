@@ -12,6 +12,11 @@ iteration:
   plateau_threshold: 0.05    # <5% speedup improvement between iterations = plateau
   max_parse_retries: 3       # Retry LLM if response is not valid JSON
   temperature: 0.0           # Deterministic (PerfCodeGen protocol)
+  # A1 (closed-loop objective): wall time, not Darshan bandwidth. See src/llm/closed_loop_metrics.py.
+  repeats: 3                 # runs per configuration; median wall time is the estimate (Hoefler & Belli Rules 5-8)
+  work_tolerance: 0.25       # bytes/configured work may differ from the baseline by at most this fraction
+  regression_factor: 0.9     # wall-time speedup below this = regression -> rollback
+  min_gain: 0.05             # minimum gain over the baseline's spread before accepting a new best
 
 # --- LLM Models ---
 models:
