@@ -29,8 +29,8 @@
 set -euo pipefail
 
 # --- Configuration ---
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
-HACC_BUILD="/work/hdd/bdau/mbanisharifdehkordi/hacc-io"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
+HACC_BUILD="/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/tools/hacc-io"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 BOTTLENECK_DIR="${BENCH_SCRATCH}/bottleneck"
 HEALTHY_DIR="${BENCH_SCRATCH}/healthy"

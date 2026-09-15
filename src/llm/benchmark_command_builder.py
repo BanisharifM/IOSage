@@ -225,7 +225,7 @@ class BenchmarkCommandBuilder:
     # =========================================================================
 
     HACC_EXECUTABLES = {"posix_shared", "mpiio_shared", "fpp"}
-    HACC_IO_DIR = "/work/hdd/bdau/mbanisharifdehkordi/hacc-io"
+    HACC_IO_DIR = "/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/tools/hacc-io"
 
     def validate_hacc_params(self, params):
         """Validate LLM-proposed HACC-IO parameters.
@@ -290,7 +290,7 @@ class BenchmarkCommandBuilder:
     # =========================================================================
 
     CUSTOM_SCRIPT = (
-        "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/benchmarks/custom/load_imbalance.py"
+        "/work/hdd/bdau/mbanisharifdehkordi/IOSage/benchmarks/custom/load_imbalance.py"
     )
     CUSTOM_PYTHON = "/projects/bdau/envs/sc2026/bin/python"
 
