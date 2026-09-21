@@ -1,7 +1,7 @@
 """Run one baseline job for every benchmark type and fail if any does not complete.
 
-Files of passing runs are removed afterwards (use --keep to retain them); a failing type
-keeps its job script, stdout/stderr and Darshan logs for diagnosis.
+Files of passing runs are moved to `.codex-trash/smoke/` afterwards (use --keep to leave them
+in place); a failing type keeps its job script, stdout/stderr and Darshan logs for diagnosis.
 
 Meant to be run from a batch driver (scripts/measurement_study/run_study.slurm): that is the
 situation in which a job template inherits the driver's SLURM_* variables, so it checks the
@@ -60,8 +60,8 @@ def main():
     parser.add_argument("--types", nargs="+", default=list(REPRESENTATIVE))
     parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "iterative.yaml"))
     parser.add_argument("--keep", action="store_true",
-                        help="Keep job scripts, stdout/stderr and Darshan logs of passing types "
-                             "(default: removed; a failing type always keeps its files)")
+                        help="Leave job scripts, stdout/stderr and Darshan logs of passing types in place "
+                             "(default: moved to .codex-trash/smoke/; a failing type always keeps its files)")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -82,17 +82,20 @@ def main():
         if not ok:
             failed.append(t)
         elif not args.keep:
-            # A passing smoke run is not evidence of anything later; leave no files behind.
-            purge = [Path(p) for p in logs]
-            purge += list(Path(executor.results_dir).glob(f"smoke_{t}_{job_id}.*"))
-            purge += [Path(executor.results_dir) / f"smoke_{t}.slurm",
+            # A passing smoke run is not evidence of anything later, so it leaves nothing in the
+            # working tree. Files are moved to the trash folder, never deleted (no-delete policy).
+            stale = [Path(p) for p in logs]
+            stale += list(Path(executor.results_dir).glob(f"smoke_{t}_{job_id}.*"))
+            stale += [Path(executor.results_dir) / f"smoke_{t}.slurm",
                       Path(executor.results_dir) / f"smoke_{t}_config.json"]
-            removed = 0
-            for f in purge:
+            trash = PROJECT_DIR / ".codex-trash" / "smoke" / f"{t}_{job_id}"
+            moved = 0
+            for f in stale:
                 if f.is_file():
-                    f.unlink()
-                    removed += 1
-            logger.info("%-8s removed %d files of the passing run", t, removed)
+                    trash.mkdir(parents=True, exist_ok=True)
+                    f.rename(trash / f.name)
+                    moved += 1
+            logger.info("%-8s moved %d files of the passing run to %s", t, moved, trash)
     if failed:
         logger.error("failed benchmark types: %s", failed)
         sys.exit(1)
