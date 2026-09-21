@@ -1,5 +1,8 @@
 """Run one baseline job for every benchmark type and fail if any does not complete.
 
+Files of passing runs are removed afterwards (use --keep to retain them); a failing type
+keeps its job script, stdout/stderr and Darshan logs for diagnosis.
+
 Meant to be run from a batch driver (scripts/measurement_study/run_study.slurm): that is the
 situation in which a job template inherits the driver's SLURM_* variables, so it checks the
 templates under the same conditions as the sweep.
@@ -56,6 +59,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--types", nargs="+", default=list(REPRESENTATIVE))
     parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "iterative.yaml"))
+    parser.add_argument("--keep", action="store_true",
+                        help="Keep job scripts, stdout/stderr and Darshan logs of passing types "
+                             "(default: removed; a failing type always keeps its files)")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -75,6 +81,18 @@ def main():
         logger.info("%-8s job %s  darshan logs %d  -> %s", t, job_id, len(logs), "PASS" if ok else "FAIL")
         if not ok:
             failed.append(t)
+        elif not args.keep:
+            # A passing smoke run is not evidence of anything later; leave no files behind.
+            purge = [Path(p) for p in logs]
+            purge += list(Path(executor.results_dir).glob(f"smoke_{t}_{job_id}.*"))
+            purge += [Path(executor.results_dir) / f"smoke_{t}.slurm",
+                      Path(executor.results_dir) / f"smoke_{t}_config.json"]
+            removed = 0
+            for f in purge:
+                if f.is_file():
+                    f.unlink()
+                    removed += 1
+            logger.info("%-8s removed %d files of the passing run", t, removed)
     if failed:
         logger.error("failed benchmark types: %s", failed)
         sys.exit(1)
