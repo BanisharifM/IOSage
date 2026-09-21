@@ -23,7 +23,7 @@
 set -euo pipefail
 
 # --- Configuration ---
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 BOTTLENECK_DIR="${BENCH_SCRATCH}/bottleneck"
 HEALTHY_DIR="${BENCH_SCRATCH}/healthy"

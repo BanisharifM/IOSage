@@ -39,13 +39,13 @@ echo "============================================================"
 source /projects/bdau/envs/sc2026/bin/activate 2>/dev/null || true
 export PATH=/projects/bdau/envs/sc2026/bin:$PATH
 
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 
 # Configuration
 ACCOUNT="bdau-delta-cpu"
 PARTITION="cpu"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ioprescriber"
+DARSHAN_LOGPATH="/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_logs/ioprescriber"
 SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/ioprescriber"
 RESULTS_DIR="results/closed_loop"
 WALLTIME="00:30:00"

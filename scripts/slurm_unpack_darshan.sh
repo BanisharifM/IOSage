@@ -30,7 +30,7 @@ echo "CPUs:      ${SLURM_CPUS_PER_TASK}"
 echo "Start:     $(date)"
 echo ""
 
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 
 # Unpack all tarballs with 32 parallel workers
 bash scripts/unpack_darshan_logs.sh --workers 32

@@ -18,7 +18,7 @@ cluster:
 # --- Filesystem ---
 filesystem:
   type: lustre
-  work_dir: /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+  work_dir: /work/hdd/bdau/mbanisharifdehkordi/IOSage
   # PFL on /work/hdd: 0-16MB=1 OST, 16MB-4GB=4 OSTs, 4GB+=12 OSTs
   # We OVERRIDE PFL with lfs setstripe on benchmark directories
   benchmark_scratch: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch

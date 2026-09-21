@@ -29,7 +29,7 @@ set -euo pipefail
 
 # --- Configuration ---
 PYTHON=/projects/bdau/envs/sc2026/bin/python
-PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/SC_2026
+PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
 INPUT_DIR="${PROJECT_DIR}/Darshan_Logs"
 OUTPUT_DIR="${PROJECT_DIR}/data/processed"
 CHUNK_DIR="${OUTPUT_DIR}/chunks"

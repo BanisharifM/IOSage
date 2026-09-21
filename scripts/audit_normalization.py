@@ -14,7 +14,7 @@ from scipy import stats as sp_stats
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-BASE = "/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+BASE = "/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 
 # ── Load data ────────────────────────────────────────────────────────────
 print("=" * 80)

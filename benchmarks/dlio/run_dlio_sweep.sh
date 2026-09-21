@@ -16,7 +16,7 @@
 # =============================================================================
 set -euo pipefail
 
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 DLIO_DIR="${BENCH_SCRATCH}/dlio"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/dlio"

@@ -7,14 +7,14 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --time=12:00:00
 #SBATCH --mem=0
-#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_results/ior/large_scale_%j.out
-#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_results/ior/large_scale_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_results/ior/large_scale_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_results/ior/large_scale_%j.err
 
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 module load ior/3.3.0-gcc13.3.1
 
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-LOG_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/data/benchmark_logs/ior"
+LOG_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_logs/ior"
 SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 
 mkdir -p "$LOG_DIR" "$SCRATCH/bottleneck" "$SCRATCH/healthy"

@@ -497,7 +497,7 @@ def main():
     )
     parser.add_argument(
         "--project-dir",
-        default="/work/hdd/bdau/mbanisharifdehkordi/SC_2026",
+        default="/work/hdd/bdau/mbanisharifdehkordi/IOSage",
     )
     parser.add_argument(
         "--bench-type",

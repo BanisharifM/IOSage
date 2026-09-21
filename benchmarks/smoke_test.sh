@@ -28,7 +28,7 @@
 set -euo pipefail
 
 # --- Configuration ---
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"

@@ -38,7 +38,7 @@ echo "============================================================"
 # --- Environment ---
 module load gcc-native/13.2 cray-mpich/8.1.32 cray-hdf5-parallel/1.14.3.5 cray-netcdf-hdf5parallel/4.9.0.17
 
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/SC_2026"
+PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 E2E_DIR="${PROJECT_DIR}/benchmarks/e2e"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 DARSHAN_LOGPATH="${PROJECT_DIR}/data/benchmark_logs/e2e"
