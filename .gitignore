@@ -200,3 +200,18 @@ Darshan_Logs/.last_collection
 
 # Large model files (> 100MB GitHub limit)
 results/boost_experiment/new_models/*.pkl
+
+# Core dumps from crashed benchmark runs
+core
+core.*
+
+# Run outputs of work in progress. Only final, curated results are added, by explicit path.
+results/resubmission/
+results/measurement_study/
+results/e2e/
+results/apps/
+data/benchmark_logs/resubmission/
+# results/iterative holds published files (they stay tracked); new files there are run output
+results/iterative/*
+# editor and patch leftovers
+*.pre_A1
