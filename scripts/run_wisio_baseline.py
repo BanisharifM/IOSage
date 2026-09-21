@@ -20,7 +20,7 @@ We map these to our 8-dimension taxonomy:
   - healthy                 <- none of the above detected
 
 Usage:
-    PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/.local_pkgs:$PYTHONPATH \
+    PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/python_pkgs:$PYTHONPATH \
     /projects/bdau/envs/sc2026/bin/python scripts/run_wisio_baseline.py
 """
 

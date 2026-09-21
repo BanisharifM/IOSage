@@ -32,7 +32,7 @@ set -euo pipefail
 # --- Configuration ---
 SOURCE_EP="f3b540be-4761-4e95-9703-8a4de7574036"  # ALCF Polaris Darshan Collection
 DEST_EP="7e936164-de58-4e3d-85da-21aa23c07169"    # ACCESS Delta
-DEST_BASE="/work/hdd/bdau/mbanisharifdehkordi/SC_2026/Darshan_Logs"
+DEST_BASE="/work/hdd/bdau/mbanisharifdehkordi/IOSage/Darshan_Logs"
 
 # --- Parse Arguments ---
 YEAR=""

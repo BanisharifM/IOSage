@@ -7,33 +7,40 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=04:00:00
-#SBATCH --output=results/iterative/orchestrator_%j.out
-#SBATCH --error=results/iterative/orchestrator_%j.err
-
+#SBATCH --export=NONE
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/orchestrator_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/orchestrator_%j.err
 # =============================================================================
-# Iterative: Single workload iterative optimization test
-# Usage: sbatch scripts/run_iterative_single.slurm
-# Or with args: sbatch scripts/run_iterative_single.slurm --workload ior_small_posix --model claude-sonnet
+# Iterative: single-workload closed-loop optimization, driver runs as a batch job
+# Usage: sbatch scripts/run_iterative_single.slurm [workload] [model] [max_iter] [n_runs]
+#   e.g. sbatch scripts/run_iterative_single.slurm ior_small_posix claude-sonnet 5
+# Environment: self-contained env on /work (conda explicit spec + pip freeze in configs/).
+#   Override with: sbatch --export=NONE,IOSAGE_ENV=/path/to/env scripts/run_iterative_single.slurm
+#   --export=NONE keeps the submitting shell out of the job; SLURM_EXPORT_ENV=ALL lets the
+#   benchmark jobs this driver submits inherit the driver's (clean) environment.
 # =============================================================================
+export SLURM_EXPORT_ENV=ALL
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
 
 echo "============================================================"
 echo "Iterative: Iterative LLM Code Optimization"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"
+echo "Env: $IOSAGE_ENV"
 echo "============================================================"
 
-# Environment
-source /projects/bdau/envs/sc2026/bin/activate 2>/dev/null || true
-export PATH=/projects/bdau/envs/sc2026/bin:$PATH
-# Do NOT add .local_pkgs — numpy 1.24.3 breaks TensorFlow/DLIO imports
+# Environment: hermetic. PYTHONNOUSERSITE keeps ~/.local/lib/python3.9/site-packages out of
+# the import path (the old /projects env silently depended on user-site xgboost/shap/lightgbm).
+export PATH="$IOSAGE_ENV/bin:$PATH"
+export PYTHONNOUSERSITE=1
 unset PYTHONPATH
 
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage || exit 1
 
 # API key (set in environment or .env file)
 if [ -f .env ]; then
-    source .env
+    set -a; source .env; set +a
 fi
 
 # Default args, can be overridden via command line
@@ -46,15 +53,16 @@ echo "Workload: $WORKLOAD"
 echo "Model: $MODEL"
 echo "Max iterations: $MAX_ITER"
 echo "Runs: $N_RUNS"
+"$IOSAGE_ENV/bin/python" -c "import xgboost, shap, darshan, pandas; print('env check ok: xgboost', xgboost.__version__)" || exit 1
 echo ""
 
 # Run
-/projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
+"$IOSAGE_ENV/bin/python" -m src.llm.iterative_optimizer \
     --workload "$WORKLOAD" \
     --model "$MODEL" \
     --max-iterations "$MAX_ITER" \
     --n-runs "$N_RUNS" \
-    --output "results/iterative/iter_${WORKLOAD}_${MODEL}_$(date +%s).json"
+    --output "results/resubmission/iterative/iter_${WORKLOAD}_${MODEL}_$(date +%s).json"
 
 echo ""
 echo "Completed: $(date)"

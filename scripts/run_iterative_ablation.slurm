@@ -22,8 +22,8 @@ echo "============================================================"
 
 source /projects/bdau/envs/sc2026/bin/activate 2>/dev/null || true
 export PATH=/projects/bdau/envs/sc2026/bin:$PATH
-export PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/.local_pkgs:$PYTHONPATH
-cd /work/hdd/bdau/mbanisharifdehkordi/SC_2026
+export PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/python_pkgs:$PYTHONPATH
+cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 
 if [ -f .env ]; then
     source .env

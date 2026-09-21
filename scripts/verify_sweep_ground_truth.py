@@ -176,7 +176,7 @@ def verify_benchmark_type(bench_type, log_dir, sample_size=10, seed=42):
 
 def main():
     parser = argparse.ArgumentParser(description="Verify benchmark ground-truth labels")
-    parser.add_argument("--project-dir", default="/work/hdd/bdau/mbanisharifdehkordi/SC_2026")
+    parser.add_argument("--project-dir", default="/work/hdd/bdau/mbanisharifdehkordi/IOSage")
     parser.add_argument("--sample-size", type=int, default=10,
                         help="Number of logs to sample per benchmark type")
     parser.add_argument("--bench-type", default="all",
