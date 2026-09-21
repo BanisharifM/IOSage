@@ -32,6 +32,12 @@ class BenchmarkCommandBuilder:
             config = yaml.safe_load(f)
 
         self.allowlist = config.get("ior_allowlist", {})
+        # External binaries come from configs/iterative.yaml:paths (class attributes below
+        # remain the defaults), so rebuilding the environment does not need a code change.
+        paths = config.get("paths", {})
+        self.CUSTOM_PYTHON = paths.get("python_bin", self.CUSTOM_PYTHON)
+        self.DLIO_BIN = paths.get("dlio_bin", self.DLIO_BIN)
+        self.HACC_IO_DIR = paths.get("hacc_io_dir", self.HACC_IO_DIR)
         self.scratch_dir = scratch_dir or config["slurm"]["scratch_dir"]
 
         # Valid IOR APIs
@@ -225,7 +231,7 @@ class BenchmarkCommandBuilder:
     # =========================================================================
 
     HACC_EXECUTABLES = {"posix_shared", "mpiio_shared", "fpp"}
-    HACC_IO_DIR = "/work/hdd/bdau/mbanisharifdehkordi/hacc-io"
+    HACC_IO_DIR = "/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/tools/hacc-io"
 
     def validate_hacc_params(self, params):
         """Validate LLM-proposed HACC-IO parameters.
@@ -290,9 +296,9 @@ class BenchmarkCommandBuilder:
     # =========================================================================
 
     CUSTOM_SCRIPT = (
-        "/work/hdd/bdau/mbanisharifdehkordi/SC_2026/benchmarks/custom/load_imbalance.py"
+        "/work/hdd/bdau/mbanisharifdehkordi/IOSage/benchmarks/custom/load_imbalance.py"
     )
-    CUSTOM_PYTHON = "/projects/bdau/envs/sc2026/bin/python"
+    CUSTOM_PYTHON = "/work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/python"
 
     def validate_custom_params(self, params):
         """Validate LLM-proposed custom load_imbalance parameters.
@@ -526,7 +532,7 @@ class BenchmarkCommandBuilder:
     # DLIO Validation and Command Building
     # =========================================================================
 
-    DLIO_BIN = "/projects/bdau/envs/sc2026/bin/dlio_benchmark"
+    DLIO_BIN = "/work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/dlio_benchmark"
 
     VALID_DLIO_FORMATS = {"npz", "hdf5", "csv", "tfrecord"}
     VALID_DLIO_SHUFFLES = {"off", "random", "seed"}

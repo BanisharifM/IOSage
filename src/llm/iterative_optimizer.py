@@ -51,9 +51,6 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-LOCAL_PKGS = Path(__file__).resolve().parent.parent.parent / ".local_pkgs"
-if LOCAL_PKGS.exists():
-    sys.path.insert(0, str(LOCAL_PKGS))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 logging.basicConfig(
@@ -310,7 +307,8 @@ class IterativeOptimizer:
 
     def build_prompt(self, iteration, workload_config, detected_dims, predictions,
                      shap_features, kb_matches, darshan_before, darshan_after=None,
-                     current_config=None, best_speedup=None, rollback=False):
+                     current_config=None, best_speedup=None, rollback=False,
+                     work_changed=False):
         """Build structured prompt for current iteration.
 
         Key differences from single-shot recommendation:
@@ -472,6 +470,12 @@ RULES:
             if rollback:
                 user_prompt += """
 ## WARNING: Previous iteration caused REGRESSION. Try a DIFFERENT strategy.
+"""
+            if work_changed:
+                user_prompt += """
+## WARNING: Previous proposal CHANGED THE WORKLOAD (bytes or items moved differ from the
+## baseline by more than the tolerance). It was rejected. Keep the amount of data, the
+## number of items/files and the number of steps identical; change only how the I/O is done.
 """
 
         benchmark_type = workload_config.get("benchmark", "ior")
@@ -691,6 +695,61 @@ Respond in JSON:
     # Core Optimization Loop
     # =========================================================================
 
+    def _execute_repeated(self, cmd, exec_kwargs, repeats):
+        """Run one configuration ``repeats`` times; median wall time decides.
+
+        Returns (first successful executor result, aggregated measurement,
+        list of per-run measurements).  A single run keeps the old behaviour
+        except that the objective is wall time (closed_loop_metrics).
+        """
+        from .closed_loop_metrics import aggregate_repeats
+        first, measurements = None, []
+        for k in range(max(1, int(repeats))):
+            # The job name must stay identical across repeats: the executor derives the
+            # per-job scratch directory from it, and that directory has to match the output
+            # path already baked into ``cmd``. Renaming a repeat made the job create (and
+            # delete) a different directory while the benchmark still wrote into the first
+            # job's, which failed with ENOENT. Repeats run sequentially, so one directory is
+            # enough; SLURM job ids keep the logs and Darshan files apart.
+            kw = dict(exec_kwargs)
+            res = self.executor.execute_benchmark(cmd, **kw)
+            if res.get("success") and res.get("measurement"):
+                measurements.append(res["measurement"])
+                if first is None:
+                    first = res
+            else:
+                logger.warning("  repeat %d failed (job %s)", k, res.get("job_id"))
+        confidence = float(self.iter_config.get("iteration", {}).get("confidence", 0.90))
+        return first, aggregate_repeats(measurements, confidence), measurements
+
+    def _execute_interleaved(self, control_cmd, control_kwargs, cand_cmd, cand_kwargs, repeats):
+        """Run control and candidate alternately: control, candidate, control, candidate, ...
+
+        The median wall time of an unchanged configuration drifts with cluster load over hours
+        (measured on Delta: 13.6 s, 20.3 s and 17.0 s for the same IOR run at different times
+        of one night), far more than the gain threshold. A baseline measured once at the start
+        is therefore not a valid reference for a candidate measured later. Interleaving gives
+        both configurations the same time window, so slow drift affects them equally, while
+        the order-statistic interval of each median absorbs the short bursts.
+
+        Returns (first successful candidate result, candidate aggregate, control aggregate).
+        """
+        from .closed_loop_metrics import aggregate_repeats
+        confidence = float(self.iter_config.get("iteration", {}).get("confidence", 0.90))
+        cand_first, cand_meas, ctrl_meas = None, [], []
+        for k in range(max(1, int(repeats))):
+            for label, cmd, kw, sink in (("control", control_cmd, control_kwargs, ctrl_meas),
+                                         ("candidate", cand_cmd, cand_kwargs, cand_meas)):
+                res = self.executor.execute_benchmark(cmd, **dict(kw))
+                if res.get("success") and res.get("measurement"):
+                    sink.append(res["measurement"])
+                    if label == "candidate" and cand_first is None:
+                        cand_first = res
+                else:
+                    logger.warning("  %s run %d failed (job %s)", label, k, res.get("job_id"))
+        return (cand_first, aggregate_repeats(cand_meas, confidence),
+                aggregate_repeats(ctrl_meas, confidence))
+
     def run_optimization(self, workload_name, run_id=0):
         """Run the full iterative optimization loop for one workload.
 
@@ -714,6 +773,7 @@ Respond in JSON:
         self.total_tokens_input = 0
         self.total_tokens_output = 0
 
+        repeats = int(self.iter_config.get("iteration", {}).get("repeats", 8)) if not self.dry_run else 1
         history = {
             "workload": workload_name,
             "run_id": run_id,
@@ -785,22 +845,33 @@ Respond in JSON:
                 exec_kwargs["h5bench_config"] = sanitized
             elif benchmark_type == "dlio":
                 exec_kwargs["dlio_config"] = sanitized
-            baseline_result = self.executor.execute_benchmark(
-                baseline_cmd,
-                **exec_kwargs,
-            )
+            exec_kwargs.update({"workload": workload_name, "work_config": sanitized})
+            baseline_exec_kwargs = dict(exec_kwargs)
+            baseline_result, baseline_meas, baseline_runs = self._execute_repeated(
+                baseline_cmd, exec_kwargs, repeats)
 
-            if not baseline_result["success"]:
+            if baseline_result is None or baseline_meas is None:
                 logger.error("  Baseline execution failed!")
                 history["final_status"] = "baseline_failed"
                 return history
 
             baseline_features = baseline_result["features"]
             baseline_metrics = baseline_result["metrics"]
-            baseline_bw = baseline_metrics.get("write_bw_mb_s", 0) or baseline_metrics.get("total_bw_mb_s", 0.001)
+            baseline_bw = baseline_meas.get("write_bw_mb_s") or baseline_metrics.get("total_bw_mb_s", 0.001)
             history["baseline_bw"] = baseline_bw
             history["baseline_metrics"] = baseline_metrics
-            logger.info("  Baseline BW: %.2f MB/s", baseline_bw)
+            history["baseline_walltime_s"] = baseline_meas["walltime_s"]
+            history["baseline_measurement"] = baseline_meas
+            history["baseline_darshan_paths"] = baseline_result.get("darshan_paths", [])
+            logger.info("  Baseline wall time: %.2f s (median of %d, %.0f%% CI [%.2f, %.2f], relMAD %.1f%%, "
+                        "range %.0f%%), BW %.2f MB/s",
+                        baseline_meas["walltime_s"], baseline_meas["n_repeats"],
+                        100 * baseline_meas["ci_coverage"], baseline_meas["ci_lower_s"],
+                        baseline_meas["ci_upper_s"], 100 * baseline_meas["rel_mad"],
+                        100 * baseline_meas["spread_rel"], baseline_bw)
+            if not baseline_meas["ci_valid"]:
+                logger.warning("  Only %d usable baseline runs: no valid confidence interval, so no "
+                               "candidate can be accepted on timing", baseline_meas["n_repeats"])
         else:
             # Dry run: use features from test data
             baseline_features = self._load_test_features(workload_name)
@@ -812,6 +883,13 @@ Respond in JSON:
             baseline_bw = baseline_metrics.get("write_bw_mb_s", 0.001) or 0.001
             history["baseline_bw"] = baseline_bw
             history["baseline_metrics"] = baseline_metrics
+            baseline_meas = {
+                "walltime_s": float(baseline_features.get("runtime_seconds", 0) or 1.0),
+                "write_bw_mb_s": baseline_bw,
+                "bytes_total": float(baseline_features.get("POSIX_BYTES_WRITTEN", 0) or 0),
+                "spread_rel": 0.0, "n_repeats": 1,
+            }
+            history["baseline_walltime_s"] = baseline_meas["walltime_s"]
             logger.info("  [DRY RUN] Baseline features loaded")
 
         # Initial ML detection
@@ -839,6 +917,18 @@ Respond in JSON:
         rollback = False
 
         plateau_threshold = self.iter_config.get("iteration", {}).get("plateau_threshold", 0.05)
+        it_cfg = self.iter_config.get("iteration", {})
+        work_tolerance = it_cfg.get("work_tolerance", 0.25)
+        regression_factor = it_cfg.get("regression_factor", 0.9)
+        min_gain = it_cfg.get("min_gain", 0.05)
+        history["objective"] = {"metric": "walltime_s (phase-summed Darshan run_time, median of repeats)",
+                                "decision": "candidate accepted only if the order-statistic confidence "
+                                            "interval of its median lies entirely below the baseline's",
+                                "confidence": float(it_cfg.get("confidence", 0.90)),
+                                "repeats": repeats, "work_tolerance": work_tolerance,
+                                "regression_factor": regression_factor, "min_gain": min_gain}
+        best_measurement = baseline_meas
+        last_work_changed = False
         convergence_threshold = self.iter_config.get("iteration", {}).get("convergence_threshold", 0.3)
 
         for iteration in range(self.max_iterations):
@@ -858,6 +948,7 @@ Respond in JSON:
                 current_config=current_config,
                 best_speedup=best_speedup if iteration > 0 else None,
                 rollback=rollback,
+                work_changed=last_work_changed,
             )
 
             # Call LLM (with retries for parse failures)
@@ -941,6 +1032,24 @@ Respond in JSON:
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
 
+            # Pre-run work guard (A1): a proposal that changes a work-defining
+            # parameter is rejected without spending a job on it.
+            from .closed_loop_metrics import work_params_changed
+            changed_work = work_params_changed(benchmark_type, workload_config.get("bad_config"), sanitized)
+            if changed_work:
+                logger.warning("  REJECTED before execution: proposal changes work parameters %s", changed_work)
+                iteration_record["executed"] = False
+                iteration_record["rejected_work_changed"] = True
+                iteration_record["changed_work_params"] = changed_work
+                iteration_record["rollback"] = True
+                last_work_changed = True
+                rollback = True
+                current_config = dict(best_config)
+                current_features = best_features.copy()
+                history["iterations"].append(iteration_record)
+                history["total_llm_latency_ms"] += metadata.get("latency_ms", 0)
+                continue
+
             # Execute
             if not self.dry_run:
                 iter_job = f"iter_{workload_name}_r{run_id}_{model_short}_i{iteration}"
@@ -971,52 +1080,96 @@ Respond in JSON:
                 else:
                     logger.info("  Executing: %s", cmd[:120])
 
-                exec_kwargs = {"job_name": iter_job, "benchmark_type": benchmark_type}
+                exec_kwargs = {"job_name": iter_job, "benchmark_type": benchmark_type,
+                               "workload": workload_name, "work_config": sanitized}
                 if benchmark_type == "hacc_io":
                     exec_kwargs["hacc_config"] = sanitized
                 elif benchmark_type == "h5bench":
                     exec_kwargs["h5bench_config"] = sanitized
                 elif benchmark_type == "dlio":
                     exec_kwargs["dlio_config"] = sanitized
-                exec_result = self.executor.execute_benchmark(
-                    cmd,
-                    **exec_kwargs,
-                )
+                control_meas = None
+                if it_cfg.get("contemporaneous_control", True) and not self.dry_run:
+                    exec_first, new_meas, control_meas = self._execute_interleaved(
+                        baseline_cmd, baseline_exec_kwargs, cmd, exec_kwargs, repeats)
+                else:
+                    exec_first, new_meas, _ = self._execute_repeated(cmd, exec_kwargs, repeats)
+                exec_result = exec_first or {"success": False, "elapsed_s": 0, "job_id": None}
+                exec_result["success"] = bool(exec_first) and new_meas is not None
 
                 iteration_record["executed"] = exec_result["success"]
                 iteration_record["execution_time_s"] = exec_result["elapsed_s"]
                 history["total_execution_time_s"] += exec_result["elapsed_s"]
 
                 if exec_result["success"]:
+                    from .closed_loop_metrics import evaluate_candidate
                     new_features = exec_result["features"]
                     new_metrics = exec_result["metrics"]
-                    new_bw = new_metrics.get("write_bw_mb_s", 0) or new_metrics.get("total_bw_mb_s", 0.001)
-                    speedup = round(new_bw / baseline_bw, 2)
+                    new_bw = new_meas.get("write_bw_mb_s") or new_metrics.get("total_bw_mb_s", 0.001)
+                    reference_meas = control_meas or baseline_meas
+                    iteration_record["reference"] = "contemporaneous_control" if control_meas else "initial_baseline"
+                    if control_meas:
+                        iteration_record["control_walltime_s"] = control_meas["walltime_s"]
+                        iteration_record["control_walltime_runs_s"] = control_meas["walltime_runs_s"]
+                        iteration_record["control_walltime_ci_s"] = [control_meas["ci_lower_s"],
+                                                                     control_meas["ci_upper_s"]]
+                        logger.info("  Control (baseline re-run alongside): %.2f s (median of %d, CI [%.2f, %.2f])",
+                                    control_meas["walltime_s"], control_meas["n_repeats"],
+                                    control_meas["ci_lower_s"], control_meas["ci_upper_s"])
+                    decision = evaluate_candidate(
+                        reference_meas, new_meas, best_speedup,
+                        work_tolerance=work_tolerance, regression_factor=regression_factor,
+                        min_gain=min_gain)
+                    speedup = decision["speedup"]
+                    last_work_changed = decision["rejected_work_changed"]
 
-                    logger.info("  Result: BW=%.2f MB/s, speedup=%.2fx", new_bw, speedup)
+                    logger.info("  Result: wall %.2f s (median of %d, CI [%.2f, %.2f]) -> speedup %.2fx "
+                                "(CI %s), verdict %s; BW %.2f MB/s (%.2fx); work ratio %s (%s)%s",
+                                new_meas["walltime_s"], new_meas["n_repeats"],
+                                new_meas["ci_lower_s"], new_meas["ci_upper_s"],
+                                speedup, decision["speedup_ci"], decision["verdict"],
+                                new_bw, decision["bw_speedup"] or 0.0,
+                                decision["work_ratio"], decision["work_source"],
+                                "  REJECTED: workload changed" if last_work_changed else "")
 
                     # Re-detect
                     new_predictions, new_detected = self.detect_bottlenecks(new_features)
                     iteration_record["new_predictions"] = new_predictions
                     iteration_record["new_detected"] = new_detected
                     iteration_record["speedup"] = speedup
+                    iteration_record["bw_speedup"] = decision["bw_speedup"]
                     iteration_record["new_bw"] = new_bw
+                    iteration_record["walltime_s"] = new_meas["walltime_s"]
+                    iteration_record["walltime_runs_s"] = new_meas["walltime_runs_s"]
+                    iteration_record["n_phases"] = new_meas.get("n_phases")
+                    iteration_record["work_ratio"] = decision["work_ratio"]
+                    iteration_record["work_source"] = decision["work_source"]
+                    iteration_record["noise_margin"] = decision["noise_margin"]
+                    iteration_record["verdict"] = decision["verdict"]
+                    iteration_record["accepted"] = decision["accepted"]
+                    iteration_record["regression"] = decision["regression"]
+                    iteration_record["decision_basis"] = decision["decision_basis"]
+                    iteration_record["speedup_ci"] = decision["speedup_ci"]
+                    iteration_record["walltime_ci_s"] = [new_meas["ci_lower_s"], new_meas["ci_upper_s"]]
+                    iteration_record["rel_mad"] = new_meas["rel_mad"]
+                    iteration_record["rejected_work_changed"] = last_work_changed
+                    iteration_record["darshan_paths"] = exec_result.get("darshan_paths", [])
+                    iteration_record["darshan_record_cap_hit"] = new_meas.get("darshan_record_cap_hit", False)
 
-                    # Check for regression
-                    if speedup > best_speedup:
+                    if decision["accepted"]:
                         best_speedup = speedup
                         best_config = dict(sanitized)
                         best_features = new_features.copy()
                         best_bw = new_bw
+                        best_measurement = new_meas
                         history["best_iteration"] = iteration
                         rollback = False
                         logger.info("  NEW BEST: %.2fx at iteration %d", speedup, iteration)
-                    elif new_bw < baseline_bw * 0.9:
-                        # Regression: new is worse than baseline
-                        logger.warning("  REGRESSION: %.2fx -- rolling back", speedup)
+                    elif decision["regression"]:
+                        logger.warning("  REGRESSION%s: %.2fx -- rolling back",
+                                       " (workload changed)" if last_work_changed else "", speedup)
                         iteration_record["rollback"] = True
                         rollback = True
-                        # Rollback: use best config as starting point for next iteration
                         current_config = dict(best_config)
                         current_features = best_features.copy()
                     else:

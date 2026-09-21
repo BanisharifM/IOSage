@@ -35,9 +35,17 @@ class IterativeExecutor:
         self.nodes = slurm_cfg.get("nodes", 1)
         self.ntasks = slurm_cfg.get("ntasks", 16)
         self.walltime = slurm_cfg.get("walltime", "00:10:00")
+        paths_cfg = config.get("paths", {})
+        self.nvidia_lib_base = paths_cfg.get(
+            "nvidia_lib_base",
+            "/work/nvme/bdau/mbanisharifdehkordi/envs/iosage/lib/python3.9/site-packages/nvidia")
+        self.h5bench_modules = paths_cfg.get(
+            "h5bench_modules", "cray-hdf5-parallel/1.14.3.9")
+        self.python_mpi_modules = paths_cfg.get(
+            "python_mpi_modules", "cray-mpich-abi")
         self.scratch_dir = slurm_cfg.get(
             "scratch_dir",
-            "/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative",
+            "/work/nvme/bdau/mbanisharifdehkordi/bench_scratch/iterative",
         )
         self.darshan_log_dir = str(
             PROJECT_DIR / slurm_cfg.get("darshan_log_dir", "data/benchmark_logs/iterative")
@@ -46,7 +54,13 @@ class IterativeExecutor:
             "darshan_lib",
             "/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so",
         )
-        self.results_dir = str(PROJECT_DIR / "results" / "iterative")
+        # New runs write beside, never into, results/iterative: that directory holds the
+        # published artifact's files, and generated job scripts reuse their names.
+        results_dir = slurm_cfg.get("results_dir", "results/resubmission/iterative")
+        self.results_dir = str(results_dir if os.path.isabs(results_dir) else PROJECT_DIR / results_dir)
+        # A3: one Darshan runtime config (record caps raised) for every template
+        self.darshan_config = slurm_cfg.get(
+            "darshan_config", str(PROJECT_DIR / "configs" / "darshan_runtime.conf"))
 
         os.makedirs(self.scratch_dir, exist_ok=True)
         os.makedirs(self.darshan_log_dir, exist_ok=True)
@@ -97,7 +111,17 @@ class IterativeExecutor:
             )
         else:
             # IOR / mdtest
-            module_load = "module load ior/3.3.0-gcc13.3.1"
+            module_load = (
+                "# Initialize the module system from the system profile: a batch script must not\n"
+                "# rely on the \"module\" function or MODULEPATH being inherited from the submitting\n"
+                "# shell. Only /etc/profile sets Delta's default module tree (the spack Core tree\n"
+                "# that provides ior); modules.sh alone leaves that module unknown. No user dotfile\n"
+                "# is read, so nothing is inherited from the submitting account.\n"
+                "source /etc/profile >/dev/null 2>&1 || "
+                "source /etc/profile.d/modules.sh >/dev/null 2>&1 || true\n"
+                "module load ior/3.3.0-gcc13.3.1 || "
+                "{ echo \"ERROR: module load ior/3.3.0-gcc13.3.1 failed\"; exit 1; }"
+            )
             script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={self.partition}
@@ -111,11 +135,23 @@ class IterativeExecutor:
 
 {module_load}
 
+# Fail loudly if the benchmark binary is missing instead of letting every rank
+# die with "execve(): No such file or directory".
+BENCH_BIN=$(echo "{benchmark_command}" | awk '{{print $1}}')
+command -v "$BENCH_BIN" >/dev/null 2>&1 || {{ echo "ERROR: $BENCH_BIN not on PATH after module load"; exit 127; }}
+
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+# Drop step-level requests inherited from whoever submitted this job. sbatch exports the
+# submitter's environment, and srun reads these as its own options: a driver job's
+# SLURM_MEM_PER_NODE=16384 made every step of a 16 x 1000 MB allocation wait forever with
+# 'step creation temporarily disabled (Requested nodes are busy)'.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_MEM_PER_NODE SLURM_TRES_PER_TASK \
+      SLURM_CPUS_PER_TASK SLURM_CPU_BIND SLURM_CPU_BIND_LIST SLURM_CPU_BIND_TYPE \
+      SLURM_CPU_BIND_VERBOSE SLURM_DISTRIBUTION 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
@@ -184,17 +220,30 @@ exit $EXIT_CODE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
-module load PrgEnv-gnu/8.6.0 2>/dev/null || true
+# Initialize the module system from the system profile: a batch script must not rely on
+# the "module" function or MODULEPATH being inherited from the submitting shell. Only
+# /etc/profile sets Delta's default module tree (the spack Core tree that provides ior
+# and the Cray PrgEnv defaults); modules.sh alone leaves those modules unknown. No user
+# dotfile is read, so nothing is inherited from the submitting account.
+source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+# No extra module: /etc/profile loads the site default PrgEnv-gnu and cray-mpich.
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # ROMIO collective buffering control
 {hints_line}
 export MPICH_MPIIO_HINTS_DISPLAY=1
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+# Drop step-level requests inherited from whoever submitted this job. sbatch exports the
+# submitter's environment, and srun reads these as its own options: a driver job's
+# SLURM_MEM_PER_NODE=16384 made every step of a 16 x 1000 MB allocation wait forever with
+# 'step creation temporarily disabled (Requested nodes are busy)'.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_MEM_PER_NODE SLURM_TRES_PER_TASK \
+      SLURM_CPUS_PER_TASK SLURM_CPU_BIND SLURM_CPU_BIND_LIST SLURM_CPU_BIND_TYPE \
+      SLURM_CPU_BIND_VERBOSE SLURM_DISTRIBUTION 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
@@ -251,13 +300,25 @@ exit $EXIT_CODE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
+source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+# mpi4py here is a pip build linked against the MPICH ABI; cray-mpich-abi supplies
+# libmpi.so.12 on top of Cray MPICH, without which every rank fails to import MPI.
+module load {self.python_mpi_modules} || {{ echo "ERROR: module load {self.python_mpi_modules} failed"; exit 1; }}
+
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 export DARSHAN_ENABLE_NONMPI=1
 export DARSHAN_MODMEM=4
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+# Drop step-level requests inherited from whoever submitted this job. sbatch exports the
+# submitter's environment, and srun reads these as its own options: a driver job's
+# SLURM_MEM_PER_NODE=16384 made every step of a 16 x 1000 MB allocation wait forever with
+# 'step creation temporarily disabled (Requested nodes are busy)'.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_MEM_PER_NODE SLURM_TRES_PER_TASK \
+      SLURM_CPUS_PER_TASK SLURM_CPU_BIND SLURM_CPU_BIND_LIST SLURM_CPU_BIND_TYPE \
+      SLURM_CPU_BIND_VERBOSE SLURM_DISTRIBUTION 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
@@ -329,10 +390,17 @@ exit $EXIT_CODE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
-module load PrgEnv-gnu/8.6.0 cray-hdf5-parallel/1.14.3.5 2>/dev/null || true
+# Initialize the module system from the system profile: a batch script must not rely on
+# the "module" function or MODULEPATH being inherited from the submitting shell. Only
+# /etc/profile sets Delta's default module tree (the spack Core tree that provides ior
+# and the Cray PrgEnv defaults); modules.sh alone leaves those modules unknown. No user
+# dotfile is read, so nothing is inherited from the submitting account.
+source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+module load {self.h5bench_modules} || {{ echo "ERROR: module load {self.h5bench_modules} failed"; exit 1; }}
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # HDF5 parallel library path
 export LD_LIBRARY_PATH="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2/lib:${{LD_LIBRARY_PATH:-}}"
@@ -342,7 +410,13 @@ export LD_LIBRARY_PATH="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2/lib:${{LD_L
 export MPICH_MPIIO_HINTS_DISPLAY=1
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+# Drop step-level requests inherited from whoever submitted this job. sbatch exports the
+# submitter's environment, and srun reads these as its own options: a driver job's
+# SLURM_MEM_PER_NODE=16384 made every step of a 16 x 1000 MB allocation wait forever with
+# 'step creation temporarily disabled (Requested nodes are busy)'.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_MEM_PER_NODE SLURM_TRES_PER_TASK \
+      SLURM_CPUS_PER_TASK SLURM_CPU_BIND SLURM_CPU_BIND_LIST SLURM_CPU_BIND_TYPE \
+      SLURM_CPU_BIND_VERBOSE SLURM_DISTRIBUTION 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
 
 # Per-job scratch to avoid file conflicts between concurrent runs
@@ -447,14 +521,19 @@ exit $WRITE_RC
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
+source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+# mpi4py here is a pip build linked against the MPICH ABI; cray-mpich-abi supplies
+# libmpi.so.12 on top of Cray MPICH, without which every rank fails to import MPI.
+module load {self.python_mpi_modules} || {{ echo "ERROR: module load {self.python_mpi_modules} failed"; exit 1; }}
+
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 export DARSHAN_MODMEM=16
 export DARSHAN_ENABLE_NONMPI=1
-# Darshan config: exclude Python library paths, increase record limit to 8192
-# Without this, Python's 500+ .so/.pyc imports fill all 1024 POSIX record slots
-# before DLIO reads any actual data files, making the Darshan log useless.
-export DARSHAN_CONFIG_PATH="{PROJECT_DIR}/configs/darshan_dlio.conf"
 mkdir -p "${{DARSHAN_LOGPATH}}"
+# Python imports hundreds of .so/.pyc files before DLIO touches a data file, so the record
+# limit must be well above the 1024 default; configs/darshan_runtime.conf sets 65536 POSIX
+# and STDIO records (it supersedes the older configs/darshan_dlio.conf, which set 8192).
+export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix PyTorch CUDA library conflict on Delta.
 # The system anaconda3 ships libnvJitLink.so.12.1.105 (CUDA 12.1) which only
@@ -465,7 +544,7 @@ mkdir -p "${{DARSHAN_LOGPATH}}"
 # first and the import fails with "undefined symbol __nvJitLinkCreate_12_8".
 # Prepending the pip-installed NVIDIA lib paths ensures the correct versions
 # are found before the stale system copies.
-NVIDIA_LIB_BASE="/projects/bdau/envs/sc2026/lib/python3.9/site-packages/nvidia"
+NVIDIA_LIB_BASE="{self.nvidia_lib_base}"
 NVIDIA_LIBS=""
 for subdir in "$NVIDIA_LIB_BASE"/*/lib; do
     [ -d "$subdir" ] && NVIDIA_LIBS="${{NVIDIA_LIBS:+$NVIDIA_LIBS:}}$subdir"
@@ -473,7 +552,13 @@ done
 export LD_LIBRARY_PATH="${{NVIDIA_LIBS:+$NVIDIA_LIBS:}}${{LD_LIBRARY_PATH:-}}"
 
 # Fix SLURM env var conflicts on Delta
-unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
+# Drop step-level requests inherited from whoever submitted this job. sbatch exports the
+# submitter's environment, and srun reads these as its own options: a driver job's
+# SLURM_MEM_PER_NODE=16384 made every step of a 16 x 1000 MB allocation wait forever with
+# 'step creation temporarily disabled (Requested nodes are busy)'.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_MEM_PER_NODE SLURM_TRES_PER_TASK \
+      SLURM_CPUS_PER_TASK SLURM_CPU_BIND SLURM_CPU_BIND_LIST SLURM_CPU_BIND_TYPE \
+      SLURM_CPU_BIND_VERBOSE SLURM_DISTRIBUTION 2>/dev/null
 export SLURM_CPUS_PER_TASK=4
 
 # Per-job scratch to avoid file conflicts between concurrent runs
@@ -614,22 +699,29 @@ exit $EXIT_CODE
         subprocess.run(["scancel", job_id], capture_output=True)
         return None
 
-    def find_darshan_log(self, job_id):
-        """Find the Darshan log file for a completed SLURM job.
+    def find_darshan_logs(self, job_id):
+        """All Darshan logs of a completed SLURM job (A2).
 
-        Args:
-            job_id: SLURM job ID string
-
-        Returns:
-            path to .darshan file or None
+        Multi-phase jobs (h5bench write then read, DLIO datagen then training,
+        DLIO per-rank NONMPI logs) produce several logs; the wall time and the
+        work of the job need all of them.  Sorted by name (phase order is
+        recovered from the logs' start times in closed_loop_metrics).
         """
         pattern = os.path.join(self.darshan_log_dir, f"*id{job_id}*")
-        logs = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
-        if logs:
-            logger.info("  Darshan log: %s", Path(logs[0]).name)
-            return logs[0]
-        logger.warning("  No Darshan log found for job %s", job_id)
-        return None
+        logs = sorted(glob.glob(pattern))
+        if not logs:
+            logger.warning("  No Darshan log found for job %s", job_id)
+        return logs
+
+    def find_darshan_log(self, job_id):
+        """Newest Darshan log of a job (kept for callers that need one path).
+
+        Do not use it to pick the log for a multi-phase job: for h5bench the
+        newest log is the read phase.  ``execute_benchmark`` uses
+        ``find_darshan_logs`` plus ``closed_loop_metrics.select_primary_log``.
+        """
+        logs = sorted(self.find_darshan_logs(job_id), key=os.path.getmtime, reverse=True)
+        return logs[0] if logs else None
 
     def extract_features(self, darshan_path):
         """Parse Darshan log and extract full feature vector + key metrics.
@@ -809,7 +901,8 @@ exit $EXIT_CODE
         return result if result else None
 
     def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior",
-                          hacc_config=None, h5bench_config=None, dlio_config=None):
+                          hacc_config=None, h5bench_config=None, dlio_config=None,
+                          workload=None, work_config=None):
         """Full execution cycle: generate script -> submit -> wait -> parse.
 
         Args:
@@ -840,6 +933,8 @@ exit $EXIT_CODE
             "features": None,
             "ior_output": None,
             "darshan_path": None,
+            "darshan_paths": [],
+            "measurement": None,   # wall time + work over all logs (A1/A2)
             "elapsed_s": 0,
         }
 
@@ -865,12 +960,28 @@ exit $EXIT_CODE
 
         result["job_id"] = job_id
 
-        # Find and parse Darshan log
-        darshan_path = self.find_darshan_log(job_id)
-        if darshan_path:
+        # Every Darshan log of the job: wall time and work come from all of
+        # them, classifier features from the phase-appropriate primary log.
+        import sys
+        sys.path.insert(0, str(PROJECT_DIR))
+        from src.llm.closed_loop_metrics import job_measurement
+        darshan_paths = self.find_darshan_logs(job_id)
+        result["darshan_paths"] = darshan_paths
+        if darshan_paths:
+            measurement = job_measurement(darshan_paths, benchmark_type=benchmark_type,
+                                          workload=workload, config=work_config)
+            result["measurement"] = measurement
+            darshan_path = measurement["primary_log"] if measurement else darshan_paths[0]
             result["darshan_path"] = darshan_path
+            logger.info("  Darshan logs: %d, primary %s, wall %.2f s over %d phase(s)",
+                        len(darshan_paths), Path(darshan_path).name,
+                        measurement["walltime_s"] if measurement else -1,
+                        measurement["n_phases"] if measurement else 0)
             metrics, features = self.extract_features(darshan_path)
             if metrics:
+                if measurement:
+                    metrics["walltime_s"] = measurement["walltime_s"]
+                    metrics["bytes_total"] = measurement["bytes_total"]
                 result["metrics"] = metrics
                 result["features"] = features
                 result["success"] = True

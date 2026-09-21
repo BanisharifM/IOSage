@@ -12,6 +12,15 @@ iteration:
   plateau_threshold: 0.05    # <5% speedup improvement between iterations = plateau
   max_parse_retries: 3       # Retry LLM if response is not valid JSON
   temperature: 0.0           # Deterministic (PerfCodeGen protocol)
+  # A1 (closed-loop objective): wall time, not Darshan bandwidth. See src/llm/closed_loop_metrics.py.
+  repeats: 8                 # runs per configuration. 8 runs give a 93% order-statistic CI of the
+                             # median from the 2nd and 7th run, so one burst on either side is ignored
+  confidence: 0.90           # required coverage of that interval (Hoefler & Belli SC'15, Rules 5-7)
+  contemporaneous_control: true  # re-run the baseline interleaved with every candidate; the median of an
+                             # unchanged run drifts by tens of percent over hours on a shared filesystem
+  work_tolerance: 0.25       # bytes/configured work may differ from the baseline by at most this fraction
+  regression_factor: 0.9     # wall-time speedup below this = regression -> rollback
+  min_gain: 0.05             # minimum gain over the baseline's spread before accepting a new best
 
 # --- LLM Models ---
 models:
@@ -438,9 +447,30 @@ slurm:
   ntasks: 16
   walltime: "00:10:00"
   orchestrator_walltime: "12:00:00"
-  scratch_dir: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/iterative
-  darshan_log_dir: data/benchmark_logs/iterative
+  # Benchmark target: /work/nvme (96 flash OSTs, ~800 GB/s). Measured 2026-09-21 on the same IOR
+  # run: relMAD 4.0% and range 21% here versus 7.4% and 40% on /work/hdd (12 disk OSTs), where
+  # daytime bursts reached 6x. See results/measurement_study/.
+  scratch_dir: /work/nvme/bdau/mbanisharifdehkordi/bench_scratch/iterative
+  # Resubmission runs are kept apart from the published artifact's results/iterative and
+  # data/benchmark_logs/iterative, whose file names new runs would otherwise reuse.
+  results_dir: results/resubmission/iterative
+  darshan_log_dir: data/benchmark_logs/resubmission/iterative
   darshan_lib: /work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so
+
+# External binaries and interpreters used by the benchmark job templates. Kept here so a
+# rebuilt environment or a moved tool is a one-line change instead of edits in source files.
+paths:
+  python_bin: /work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/python
+  dlio_bin: /work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/dlio_benchmark
+  nvidia_lib_base: /work/nvme/bdau/mbanisharifdehkordi/envs/iosage/lib/python3.9/site-packages/nvidia
+  hacc_io_dir: /work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/tools/hacc-io
+  # Extra modules only: /etc/profile already loads the site default PrgEnv-gnu and
+  # cray-mpich. Pinning PrgEnv-gnu/8.6.0 here silently broke every job once the site
+  # default moved to 8.7.0, because Lmod aborts the whole load line on an unknown module.
+  h5bench_modules: cray-hdf5-parallel/1.14.3.9
+  # mpi4py in the environment is a pip build expecting the MPICH ABI (libmpi.so.12);
+  # cray-mpich-abi provides it on top of Cray MPICH. Used by the custom and DLIO jobs.
+  python_mpi_modules: cray-mpich-abi
 
 # --- IOR Parameter Allowlists (for BenchmarkCommandBuilder safety) ---
 ior_allowlist:
@@ -508,3 +538,10 @@ ablations:
     kb: true
     max_iterations: 5
     no_feedback: true
+
+# Storage targets for scripts/measurement_study (run-to-run variance of one configuration).
+measurement_study:
+  targets:
+    work_hdd: /work/hdd/bdau/mbanisharifdehkordi/bench_scratch/measurement_study
+    work_nvme: /work/nvme/bdau/mbanisharifdehkordi/bench_scratch/measurement_study
+    node_tmp: /tmp/mbanisharifdehkordi_measurement_study
