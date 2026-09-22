@@ -1,412 +1,293 @@
-"""Verify that benchmark Darshan logs exhibit intended I/O patterns.
+"""Verify that a benchmark sample shows the I/O pattern its label claims.
 
-Every benchmark log must pass verification before ground-truth label assignment.
-If verification fails, the log is relabeled based on what Darshan actually shows
-(the ML model sees features at inference, so labels must match features).
+One rule per label dimension, each an observable condition on the engineered
+features (or, for Lustre striping, on the log itself). A sample labeled with a
+dimension must satisfy that dimension's rule; a sample labeled healthy must
+satisfy none of the bottleneck rules and move data at a minimum rate. A label
+set without any rule to check is an error, not a pass.
 
-Usage:
-    python -m src.data.benchmark_verify \
-        --log-dir data/benchmark_logs/ior \
-        --output data/benchmark_logs/verification_report.csv
-
-    python -m src.data.benchmark_verify \
-        --log-file data/benchmark_logs/ior/some_log.darshan \
-        --expected-label access_granularity=1
+Thresholds: Drishti's boundaries (small request under 1 MB, straggler share
+0.15, size imbalance 0.3) and the verification table of
+``docs/1_strategy/paper_materials.md`` (metadata share 10 percent,
+sequential share 80 percent, fsync count, files per rank).
 """
 
-import argparse
-import csv
 import logging
-import os
-import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
+from src.data.preprocessing import load_preprocessing_config
+
 logger = logging.getLogger(__name__)
 
-# Dimension names (must match drishti_labeling.py and groundtruth_labeling.py)
+# Dimension names (must match drishti_labeling.py)
 DIMENSION_NAMES = [
     'access_granularity', 'metadata_intensity', 'parallelism_efficiency',
     'access_pattern', 'interface_choice', 'file_strategy',
     'throughput_utilization', 'healthy',
 ]
+BOTTLENECK_DIMENSIONS = DIMENSION_NAMES[:7]
 
-# Verification patterns: what Darshan features SHOULD show for each dimension
-# Each check: (feature_name, min_expected, max_expected)
-VERIFICATION_CHECKS = {
-    'access_granularity': [
-        ('small_io_ratio', 0.3, 1.0),
-    ],
-    'metadata_intensity': [
-        ('metadata_time_ratio', 0.05, 1.0),
-    ],
-    'parallelism_efficiency': [
-        ('rank_bytes_cv', 0.2, 100.0),
-    ],
-    'access_pattern': [
-        # Random access means NOT sequential
-        ('seq_write_ratio', 0.0, 0.7),
-    ],
-    'interface_choice': [
-        # No collective MPI-IO (or no MPI-IO at all)
-        # Checked separately: either MPIIO_COLL_WRITES == 0 or no MPI-IO module
-    ],
-    'file_strategy': [
-        # Many files relative to ranks
-    ],
-    'throughput_utilization': [
-        # Low bandwidth or high write time
-    ],
-    'healthy': [
-        ('small_io_ratio', 0.0, 0.3),
-    ],
-}
+# Cleaning rule of the production data (configs/preprocessing.yaml). A
+# benchmark sample below it is reported, not failed: the constructed corpus
+# holds sub-second runs and zero-byte metadata runs on purpose, and whether
+# they belong in the training set is a dataset decision, not a verification
+# outcome.
+_CLEANING = load_preprocessing_config()['cleaning']
+MIN_RUNTIME_SECONDS = float(_CLEANING['min_duration_seconds'])
+MIN_TOTAL_BYTES = float(_CLEANING['min_total_bytes'])
+MIN_IO_OPS = float(_CLEANING['min_io_ops'])
 
-# Minimum thresholds for log inclusion
-MIN_RUNTIME_SECONDS = 5.0
-MIN_TOTAL_BYTES = 10240  # 10 KB
-MIN_IO_OPS = 100
+# Drishti thresholds (drishti/includes/config.py): a request under 1 MB is
+# small (P05/P06 fire when small requests exceed 10 percent of the requests
+# and 1000 in number), M02/M03 fire when a job with over 1000 MPI-IO
+# operations makes fewer than half of them collective
+SMALL_REQUEST_SHARE = 0.10
+SMALL_REQUEST_COUNT = 1000
+COLLECTIVE_MIN_OPS = 1000
+COLLECTIVE_SHARE = 0.5
+METADATA_TIME_SHARE = 0.10          # paper_materials: meta time over 10 percent
+SEQUENTIAL_SHARE = 0.80             # paper_materials: random when under 80 percent
+FSYNC_PER_WRITE = 0.5               # construction: a sync after (nearly) every write
+HEALTHY_MIN_BYTES_PER_S = 1024.0    # paper_materials: healthy moves over 1 KB/s
+LARGE_FILE_BYTES = 16 * 1048576     # Delta PFL: files above 16 MiB span several OSTs
+
+# Rank imbalance: Drishti's size-imbalance threshold (imbalance_size, 0.3:
+# bytes of the busiest rank minus bytes of the idlest rank, over the busiest
+# rank) applied to the per-rank totals of the whole job, or Drishti's
+# straggler threshold (imbalance_stragglers, 0.15) on a shared record. Bytes
+# rather than time, because the time of a balanced run varies by tens of
+# percent between ranks on a shared file system while its bytes do not.
+RANK_IMBALANCE_RANGE_RATIO = 0.3
+SHARED_STRAGGLER_SHARE = 0.15
 
 
-def verify_benchmark_log(features, intended_labels, tolerance=0.2):
-    """Check that extracted features match intended benchmark pattern.
+def rank_imbalance_present(features):
+    """True when the I/O bytes of a job are spread unevenly over its ranks.
 
-    Args:
-        features: dict of extracted Darshan features for this log
-        intended_labels: dict mapping dimension names to expected values (0 or 1)
-        tolerance: fraction of checks that can fail and still pass
-
-    Returns:
-        (passed: bool, report: dict with per-check details)
+    ``rank_byte_range_ratio`` covers file-per-process layouts,
+    ``SHARED_BYTE_IMBALANCE`` a file opened by all ranks. A single process
+    job is never imbalanced.
     """
-    report = {
-        'checks': {},
-        'passed_checks': 0,
-        'total_checks': 0,
-        'inclusion_passed': True,
-        'inclusion_reason': '',
+    if features['nprocs'] <= 1:
+        return False
+    return (features['rank_byte_range_ratio'] > RANK_IMBALANCE_RANGE_RATIO
+            or features['SHARED_BYTE_IMBALANCE'] > SHARED_STRAGGLER_SHARE)
+
+
+# ---------------------------------------------------------------------------
+# Lustre striping (verification only: production logs carry no LUSTRE module)
+# ---------------------------------------------------------------------------
+
+def _darshan_parser():
+    exe = shutil.which('darshan-parser') or str(Path(sys.prefix) / 'bin' / 'darshan-parser')
+    if not Path(exe).exists():
+        raise FileNotFoundError("darshan-parser not found (needed to read LUSTRE records)")
+    return exe
+
+
+def lustre_stripe_counts(log_paths):
+    """``{record id: stripe count}`` from the LUSTRE records of the logs.
+
+    PyDarshan 3.5.0 cannot decode LUSTRE records, so this reads the
+    ``LUSTRE_COMP*_STRIPE_COUNT`` lines of ``darshan-parser``; the smallest
+    component count of a file is kept.
+    """
+    counts = {}
+    exe = _darshan_parser()
+    for path in log_paths:
+        out = subprocess.run([exe, str(path)], capture_output=True, text=True, timeout=300)
+        if out.returncode != 0:
+            raise RuntimeError(f"darshan-parser failed on {path}: {out.stderr[:200]}")
+        for line in out.stdout.splitlines():
+            if not line.startswith('LUSTRE\t'):
+                continue
+            parts = line.split('\t')
+            if len(parts) > 4 and parts[3].endswith('_STRIPE_COUNT'):
+                rec = int(parts[2])
+                counts[rec] = min(counts.get(rec, 1 << 30), int(parts[4]))
+    return counts
+
+
+def single_stripe_large_file(log_paths, offsets_by_id):
+    """True when a file accessed past ``LARGE_FILE_BYTES`` sits on one OST.
+
+    ``offsets_by_id`` maps record id to the highest offset read or written.
+    Delta's PFL layout puts files above 16 MiB on several OSTs, so a large
+    file with stripe count 1 was striped on purpose.
+    """
+    large = {rid for rid, offset in offsets_by_id.items() if offset >= LARGE_FILE_BYTES}
+    if not large:
+        return False
+    counts = lustre_stripe_counts(log_paths)
+    return any(counts.get(rid, 0) == 1 for rid in large)
+
+
+# ---------------------------------------------------------------------------
+# Dimension rules, evaluated at the layer the application used: when a job
+# issues MPI-IO requests, its request sizes are the MPI-IO aggregate
+# histograms and its interface use is judged by Drishti's collective rule;
+# otherwise the POSIX counters describe the application directly.
+# ---------------------------------------------------------------------------
+
+_POSIX_SMALL = {
+    'READ': ['POSIX_SIZE_READ_0_100', 'POSIX_SIZE_READ_100_1K', 'POSIX_SIZE_READ_1K_10K',
+             'POSIX_SIZE_READ_10K_100K', 'POSIX_SIZE_READ_100K_1M'],
+    'WRITE': ['POSIX_SIZE_WRITE_0_100', 'POSIX_SIZE_WRITE_100_1K', 'POSIX_SIZE_WRITE_1K_10K',
+              'POSIX_SIZE_WRITE_10K_100K', 'POSIX_SIZE_WRITE_100K_1M'],
+}
+_MPIIO_SMALL = {d: [c.replace('POSIX_SIZE_', 'MPIIO_SIZE_').replace(f'{d}_', f'{d}_AGG_', 1)
+                    for c in cols] for d, cols in _POSIX_SMALL.items()}
+
+
+def _mpiio_ops(f):
+    return (f['MPIIO_INDEP_READS'] + f['MPIIO_INDEP_WRITES'] + f['MPIIO_COLL_READS']
+            + f['MPIIO_COLL_WRITES'] + f['MPIIO_NB_READS'] + f['MPIIO_NB_WRITES'])
+
+
+def small_requests(f):
+    """Drishti P05/P06 at the application layer: (present, detail)."""
+    if _mpiio_ops(f) > 0:
+        counts = {'READ': f['MPIIO_INDEP_READS'] + f['MPIIO_COLL_READS'] + f['MPIIO_NB_READS'],
+                  'WRITE': f['MPIIO_INDEP_WRITES'] + f['MPIIO_COLL_WRITES'] + f['MPIIO_NB_WRITES']}
+        small = {d: sum(f[c] for c in cols) for d, cols in _MPIIO_SMALL.items()}
+        layer = 'mpiio'
+    else:
+        counts = {'READ': f['POSIX_READS'], 'WRITE': f['POSIX_WRITES']}
+        small = {d: sum(f[c] for c in cols) for d, cols in _POSIX_SMALL.items()}
+        layer = 'posix'
+    present = any(small[d] > SMALL_REQUEST_COUNT and small[d] / max(counts[d], 1) > SMALL_REQUEST_SHARE
+                  for d in ('READ', 'WRITE'))
+    detail = ' '.join(f"{d.lower()}_small={small[d]:.0f}/{counts[d]:.0f}" for d in ('READ', 'WRITE'))
+    return present, f"{layer} {detail}"
+
+
+def _sequential_share(f):
+    ops = f['POSIX_READS'] + f['POSIX_WRITES']
+    return (f['POSIX_SEQ_READS'] + f['POSIX_SEQ_WRITES']) / max(ops, 1)
+
+
+def interface_problem(f):
+    """Drishti M02/M03 (independent MPI-IO at scale), or POSIX alone on a
+    file that all ranks share: (present, detail)."""
+    ops = _mpiio_ops(f)
+    coll = f['MPIIO_COLL_READS'] + f['MPIIO_COLL_WRITES']
+    if ops > 0:
+        present = ops > COLLECTIVE_MIN_OPS and coll / ops < COLLECTIVE_SHARE
+        return present, f"mpiio_ops={ops:.0f} collective={coll:.0f}"
+    present = bool(f['is_shared_file']) and f['nprocs'] > 1
+    return present, f"posix_only shared={int(f['is_shared_file'])} nprocs={f['nprocs']}"
+
+
+def _bytes_per_second(f):
+    total = f['POSIX_BYTES_READ'] + f['POSIX_BYTES_WRITTEN']
+    return total / max(f['runtime_seconds'], 1e-9)
+
+
+def bottleneck_rules(features, context):
+    """``{dimension: (present, detail)}`` for the seven bottleneck dimensions.
+
+    ``context`` carries what the features cannot: ``log_paths`` and
+    ``offsets`` for the striping check (throughput) and ``data_files`` (files
+    with bytes moved, standard streams excluded) for the file-per-process rule.
+    """
+    f = features
+    seq = _sequential_share(f)
+    fsync_per_write = f['POSIX_FSYNCS'] / max(f['POSIX_WRITES'], 1)
+    syncing = fsync_per_write >= FSYNC_PER_WRITE
+    striped = (not syncing
+               and single_stripe_large_file(context['log_paths'], context['offsets']))
+    small_present, small_detail = small_requests(f)
+    iface_present, iface_detail = interface_problem(f)
+    return {
+        'access_granularity': (small_present, small_detail),
+        'metadata_intensity': (
+            f['metadata_time_ratio'] > METADATA_TIME_SHARE
+            or f['POSIX_BYTES_WRITTEN'] + f['POSIX_BYTES_READ'] == 0,
+            f"metadata_time_ratio={f['metadata_time_ratio']:.3f} "
+            f"bytes={f['POSIX_BYTES_WRITTEN'] + f['POSIX_BYTES_READ']:.0f}"),
+        'parallelism_efficiency': (
+            rank_imbalance_present(f),
+            f"range_ratio={f['rank_byte_range_ratio']:.3f} shared_imb={f['SHARED_BYTE_IMBALANCE']:.3f} nprocs={f['nprocs']}"),
+        'access_pattern': (seq < SEQUENTIAL_SHARE, f"sequential_share={seq:.3f}"),
+        'interface_choice': (iface_present, iface_detail),
+        'file_strategy': (
+            f['nprocs'] > 1 and context['data_files'] >= f['nprocs'],
+            f"data_files={context['data_files']} nprocs={f['nprocs']}"),
+        'throughput_utilization': (
+            syncing or striped,
+            f"fsync_per_write={fsync_per_write:.3f} single_stripe_large_file={striped}"),
     }
 
-    # Step 1: Check minimum inclusion thresholds
-    runtime = features.get('runtime_seconds', 0)
-    total_bytes = features.get('POSIX_BYTES_READ', 0) + features.get('POSIX_BYTES_WRITTEN', 0)
-    total_ops = features.get('POSIX_READS', 0) + features.get('POSIX_WRITES', 0)
 
-    if runtime < MIN_RUNTIME_SECONDS:
-        report['inclusion_passed'] = False
-        report['inclusion_reason'] = f'runtime={runtime:.1f}s < {MIN_RUNTIME_SECONDS}s'
-        return False, report
+def cleaning_rule(features):
+    """(passes, reason) of the production cleaning rule for this sample."""
+    runtime = features['runtime_seconds']
+    total_bytes = features['POSIX_BYTES_READ'] + features['POSIX_BYTES_WRITTEN']
+    total_ops = features['POSIX_READS'] + features['POSIX_WRITES']
+    for ok, reason in ((runtime >= MIN_RUNTIME_SECONDS, f'runtime={runtime:.1f}s < {MIN_RUNTIME_SECONDS}s'),
+                       (total_bytes >= MIN_TOTAL_BYTES, f'total_bytes={total_bytes:.0f} < {MIN_TOTAL_BYTES}'),
+                       (total_ops >= MIN_IO_OPS, f'total_ops={total_ops:.0f} < {MIN_IO_OPS}')):
+        if not ok:
+            return False, reason
+    return True, ''
 
-    if total_bytes < MIN_TOTAL_BYTES:
-        report['inclusion_passed'] = False
-        report['inclusion_reason'] = f'total_bytes={total_bytes} < {MIN_TOTAL_BYTES}'
-        return False, report
 
-    if total_ops < MIN_IO_OPS:
-        report['inclusion_passed'] = False
-        report['inclusion_reason'] = f'total_ops={total_ops} < {MIN_IO_OPS}'
-        return False, report
+def verify_benchmark_log(features, intended_labels, context):
+    """Check that a sample's features match its intended labels.
 
-    # Step 2: Check dimension-specific patterns
-    for dim_name, expected_val in intended_labels.items():
-        if dim_name not in DIMENSION_NAMES:
-            continue
-        if expected_val != 1:
-            continue  # Only verify dimensions marked as bottleneck
+    Parameters
+    ----------
+    features : dict
+        Engineered features of the sample (``preprocessing.engineer_one``).
+    intended_labels : dict
+        ``{dimension: 0 or 1}`` for the eight dimensions; at least one must
+        be 1 and healthy excludes the bottleneck dimensions.
+    context : dict
+        ``log_paths`` (the sample's Darshan files), ``offsets`` (record id to
+        highest offset) and ``data_files``, from ``benchmark_logs.posix_file_facts``.
 
-        checks = VERIFICATION_CHECKS.get(dim_name, [])
-        for feat_name, lo, hi in checks:
-            report['total_checks'] += 1
-            val = features.get(feat_name, None)
+    Returns
+    -------
+    (passed, report)
+        ``report['checks']`` holds every rule evaluated with its value;
+        ``report['cleaning_rule']`` says whether the production cleaning rule
+        would keep the sample (informational).
+    """
+    report = {'checks': {}, 'passed_checks': 0, 'total_checks': 0}
 
-            if val is None:
-                report['checks'][f'{dim_name}/{feat_name}'] = {
-                    'status': 'missing',
-                    'expected': (lo, hi),
-                    'value': None,
-                }
-            elif lo <= val <= hi:
-                report['checks'][f'{dim_name}/{feat_name}'] = {
-                    'status': 'pass',
-                    'expected': (lo, hi),
-                    'value': val,
-                }
-                report['passed_checks'] += 1
-            else:
-                report['checks'][f'{dim_name}/{feat_name}'] = {
-                    'status': 'fail',
-                    'expected': (lo, hi),
-                    'value': val,
-                }
+    positives = [d for d in DIMENSION_NAMES if intended_labels.get(d, 0) == 1]
+    if not positives:
+        raise ValueError("intended labels name no dimension")
+    if 'healthy' in positives and len(positives) > 1:
+        raise ValueError(f"healthy cannot be combined with {positives}")
 
-        # Special checks for specific dimensions
-        if dim_name == 'interface_choice':
-            report['total_checks'] += 1
-            coll_writes = features.get('MPIIO_COLL_WRITES', 0)
-            has_mpiio = features.get('has_mpiio', 0)
-            if has_mpiio == 0 or coll_writes == 0:
-                report['checks']['interface_choice/no_collective'] = {
-                    'status': 'pass',
-                    'value': f'has_mpiio={has_mpiio}, coll_writes={coll_writes}',
-                }
-                report['passed_checks'] += 1
-            else:
-                report['checks']['interface_choice/no_collective'] = {
-                    'status': 'fail',
-                    'value': f'has_mpiio={has_mpiio}, coll_writes={coll_writes}',
-                }
+    report['cleaning_rule'], report['cleaning_reason'] = cleaning_rule(features)
 
-        if dim_name == 'file_strategy':
-            report['total_checks'] += 1
-            num_files = features.get('num_files', 0)
-            nprocs = features.get('nprocs', 1)
-            files_per_rank = num_files / max(nprocs, 1)
-            if files_per_rank >= 1.0 and num_files >= 50:
-                report['checks']['file_strategy/many_files'] = {
-                    'status': 'pass',
-                    'value': f'num_files={num_files}, nprocs={nprocs}, ratio={files_per_rank:.1f}',
-                }
-                report['passed_checks'] += 1
-            else:
-                report['checks']['file_strategy/many_files'] = {
-                    'status': 'fail',
-                    'value': f'num_files={num_files}, nprocs={nprocs}, ratio={files_per_rank:.1f}',
-                }
+    rules = bottleneck_rules(features, context)
 
-    # Compute pass/fail
+    def record(name, passed, detail):
+        report['total_checks'] += 1
+        report['checks'][name] = {'status': 'pass' if passed else 'fail', 'value': detail}
+        if passed:
+            report['passed_checks'] += 1
+
+    if 'healthy' in positives:
+        rate = _bytes_per_second(features)
+        record('healthy/data_rate', rate >= HEALTHY_MIN_BYTES_PER_S, f"bytes_per_s={rate:.0f}")
+        for dim, (present, detail) in rules.items():
+            record(f'healthy/no_{dim}', not present, detail)
+    else:
+        for dim in positives:
+            present, detail = rules[dim]
+            record(f'{dim}/rule', present, detail)
+
     if report['total_checks'] == 0:
-        # No specific checks for this dimension — pass by default
-        passed = True
-    else:
-        pass_rate = report['passed_checks'] / report['total_checks']
-        passed = pass_rate >= (1.0 - tolerance)
-
+        raise AssertionError("no rule evaluated")
+    passed = report['passed_checks'] == report['total_checks']
     if not passed:
-        fails = {k: v for k, v in report['checks'].items() if v['status'] != 'pass'}
+        fails = {k: v['value'] for k, v in report['checks'].items() if v['status'] != 'pass'}
         logger.warning("Benchmark FAILED verification: %s", fails)
-
     return passed, report
-
-
-def verify_log_file(log_path, intended_labels):
-    """Parse a single Darshan log and verify it.
-
-    Returns:
-        (features, passed, report) or (None, False, error_report) on parse failure
-    """
-    try:
-        # Import here to avoid circular imports
-        from src.data.parse_darshan import parse_darshan_log
-        from src.data.feature_extraction import extract_raw_features
-
-        report_obj = parse_darshan_log(str(log_path))
-        features = extract_raw_features(report_obj)
-        passed, report = verify_benchmark_log(features, intended_labels)
-        return features, passed, report
-    except Exception as e:
-        logger.error("Failed to parse %s: %s", log_path, e)
-        return None, False, {'error': str(e)}
-
-
-def parse_label_string(label_str):
-    """Parse 'access_granularity=1,access_pattern=1' into dict."""
-    labels = {dim: 0 for dim in DIMENSION_NAMES}
-    if not label_str:
-        return labels
-    for pair in label_str.split(','):
-        pair = pair.strip()
-        if '=' in pair:
-            key, val = pair.split('=', 1)
-            key = key.strip()
-            if key in DIMENSION_NAMES:
-                labels[key] = int(val.strip())
-    return labels
-
-
-def infer_labels_from_filename(filename):
-    """Infer intended labels from benchmark output filename.
-
-    Naming convention: {benchmark}_{scenario}_{params}.darshan
-    Examples:
-        ior_small_posix_t512_n16_r1_*.darshan → access_granularity=1
-        mdtest_meta_shared_n5000_*.darshan → metadata_intensity=1
-    """
-    name = os.path.basename(filename).lower()
-
-    labels = {dim: 0 for dim in DIMENSION_NAMES}
-
-    # IOR scenarios
-    if 'small_posix' in name or 'small_direct' in name or 'misaligned' in name:
-        labels['access_granularity'] = 1
-    elif 'random_posix' in name or 'random_small' in name:
-        labels['access_pattern'] = 1
-        if 'random_small' in name:
-            labels['access_granularity'] = 1
-    elif 'interface_posix_shared' in name or 'interface_mpiio_indep' in name:
-        labels['interface_choice'] = 1
-    elif 'file_explosion' in name:
-        labels['file_strategy'] = 1
-    elif 'fsync_per_write' in name:
-        labels['throughput_utilization'] = 1
-    elif 'healthy' in name:
-        labels['healthy'] = 1
-
-    # mdtest scenarios
-    elif 'meta_shared' in name or 'meta_unique' in name or 'meta_cross' in name or 'deep_tree' in name:
-        labels['metadata_intensity'] = 1
-    elif 'fpp_explosion' in name:
-        labels['file_strategy'] = 1
-
-    # DLIO scenarios
-    elif 'dlio_small' in name:
-        labels['access_granularity'] = 1
-    elif 'dlio_ckpt' in name or 'checkpoint' in name:
-        labels['throughput_utilization'] = 1
-    elif 'shuffle' in name:
-        labels['access_pattern'] = 1
-
-    # Custom scenarios
-    elif 'imbalance' in name:
-        labels['parallelism_efficiency'] = 1
-    elif 'balanced' in name:
-        labels['healthy'] = 1
-
-    return labels
-
-
-def batch_verify(log_dir, output_csv=None, label_str=None):
-    """Verify all Darshan logs in a directory.
-
-    Args:
-        log_dir: Directory containing .darshan files
-        output_csv: Path for verification report CSV
-        label_str: Override label for all logs (if None, infer from filename)
-
-    Returns:
-        (total, passed, failed, skipped) counts
-    """
-    log_dir = Path(log_dir)
-    darshan_files = sorted(log_dir.glob('**/*.darshan'))
-
-    if not darshan_files:
-        logger.warning("No .darshan files found in %s", log_dir)
-        return 0, 0, 0, 0
-
-    logger.info("Verifying %d Darshan logs in %s", len(darshan_files), log_dir)
-
-    results = []
-    total = passed = failed = skipped = 0
-
-    for log_path in darshan_files:
-        total += 1
-
-        # Determine intended labels
-        if label_str:
-            intended = parse_label_string(label_str)
-        else:
-            intended = infer_labels_from_filename(log_path.name)
-
-        # Verify
-        features, ok, report = verify_log_file(log_path, intended)
-
-        if features is None:
-            skipped += 1
-            status = 'parse_error'
-        elif ok:
-            passed += 1
-            status = 'pass'
-        else:
-            failed += 1
-            status = 'fail'
-
-        row = {
-            'filename': log_path.name,
-            'path': str(log_path),
-            'status': status,
-            'inclusion_passed': report.get('inclusion_passed', False),
-            'passed_checks': report.get('passed_checks', 0),
-            'total_checks': report.get('total_checks', 0),
-        }
-        # Add intended labels
-        for dim in DIMENSION_NAMES:
-            row[f'intended_{dim}'] = intended.get(dim, 0)
-        # Add key features
-        if features:
-            for key in ['nprocs', 'runtime_seconds', 'small_io_ratio',
-                        'metadata_time_ratio', 'seq_write_ratio', 'rank_bytes_cv',
-                        'write_bw_mb_s', 'num_files']:
-                row[key] = features.get(key, '')
-
-        results.append(row)
-
-        log_fn = logger.info if ok else logger.warning
-        log_fn(
-            "%s: %s (%d/%d checks)",
-            log_path.name, status,
-            report.get('passed_checks', 0),
-            report.get('total_checks', 0)
-        )
-
-    # Write CSV report
-    if output_csv and results:
-        output_path = Path(output_csv)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=results[0].keys())
-            writer.writeheader()
-            writer.writerows(results)
-        logger.info("Verification report written to %s", output_path)
-
-    logger.info(
-        "Verification complete: %d total, %d passed, %d failed, %d skipped",
-        total, passed, failed, skipped
-    )
-    return total, passed, failed, skipped
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Verify benchmark Darshan logs match intended I/O patterns"
-    )
-    parser.add_argument(
-        '--log-dir', type=str,
-        help='Directory containing .darshan files to verify'
-    )
-    parser.add_argument(
-        '--log-file', type=str,
-        help='Single .darshan file to verify'
-    )
-    parser.add_argument(
-        '--expected-label', type=str, default=None,
-        help='Expected label (e.g., "access_granularity=1,access_pattern=1")'
-    )
-    parser.add_argument(
-        '--output', type=str, default=None,
-        help='Output CSV path for verification report'
-    )
-    args = parser.parse_args()
-
-    if args.log_file:
-        intended = parse_label_string(args.expected_label) if args.expected_label \
-            else infer_labels_from_filename(args.log_file)
-        features, passed, report = verify_log_file(args.log_file, intended)
-        print(f"File: {args.log_file}")
-        print(f"Intended: {intended}")
-        print(f"Passed: {passed}")
-        for check_name, check_info in report.get('checks', {}).items():
-            print(f"  {check_name}: {check_info['status']} "
-                  f"(value={check_info.get('value')}, "
-                  f"expected={check_info.get('expected')})")
-    elif args.log_dir:
-        batch_verify(args.log_dir, args.output, args.expected_label)
-    else:
-        parser.print_help()
-        sys.exit(1)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(name)s %(levelname)s: %(message)s'
-    )
-    main()

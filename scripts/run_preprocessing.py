@@ -95,8 +95,12 @@ def setup_logging(output_dir, level=logging.INFO):
     return log_file
 
 
-def validate_dataframe(df, stage_name, expected_min_rows=1000):
-    """Run basic validation checks on a DataFrame after a stage."""
+def validate_dataframe(df, stage_name, expected_min_rows):
+    """Check a stage's output for NaN, infinity and a minimum row count.
+
+    Raises ``ValueError`` on any issue, so a stage never publishes an invalid
+    frame and the process ends with a nonzero status.
+    """
     issues = []
     feature_cols = [c for c in df.columns if not c.startswith('_')]
     numeric_cols = df[feature_cols].select_dtypes(include=[np.number]).columns
@@ -124,17 +128,13 @@ def validate_dataframe(df, stage_name, expected_min_rows=1000):
     n_all_zero = all_zero.sum()
 
     if issues:
-        for issue in issues:
-            logger.warning("[%s] VALIDATION: %s", stage_name, issue)
-    else:
-        logger.info("[%s] VALIDATION PASSED: %d rows, %d columns, "
-                    "%d all-zero features, no NaN/Inf",
-                    stage_name, len(df), len(df.columns), n_all_zero)
-
-    return len(issues) == 0
+        raise ValueError(f"[{stage_name}] validation failed: " + "; ".join(issues))
+    logger.info("[%s] VALIDATION PASSED: %d rows, %d columns, "
+                "%d all-zero features, no NaN/Inf",
+                stage_name, len(df), len(df.columns), n_all_zero)
 
 
-def run_stage2(input_path, output_dir, config):
+def run_stage2(input_path, output_dir, config, min_rows):
     """Stage 2: Cleaning."""
     logger.info("=" * 60)
     logger.info("STAGE 2: CLEANING")
@@ -146,6 +146,7 @@ def run_stage2(input_path, output_dir, config):
                 len(df), len(df.columns), input_path)
 
     df_clean, report = stage2_clean(df, config)
+    validate_dataframe(df_clean, "Stage 2", expected_min_rows=min_rows)
 
     # Save
     out_path = output_dir / 'cleaned_features.parquet'
@@ -162,11 +163,10 @@ def run_stage2(input_path, output_dir, config):
     for key, val in report.items():
         logger.info("  %s: %s", key, val)
 
-    validate_dataframe(df_clean, "Stage 2", expected_min_rows=100000)
     return df_clean, report
 
 
-def run_stage3(df_or_path, output_dir):
+def run_stage3(df_or_path, output_dir, min_rows):
     """Stage 3: Feature Engineering."""
     logger.info("=" * 60)
     logger.info("STAGE 3: FEATURE ENGINEERING")
@@ -182,6 +182,7 @@ def run_stage3(df_or_path, output_dir):
     n_before = len(df.columns)
     df_eng = stage3_engineer(df)
     n_after = len(df_eng.columns)
+    validate_dataframe(df_eng, "Stage 3", expected_min_rows=min_rows)
 
     # Save
     out_path = output_dir / 'engineered_features.parquet'
@@ -193,7 +194,6 @@ def run_stage3(df_or_path, output_dir):
     logger.info("Saved: %s (%.1f MB)",
                 out_path, out_path.stat().st_size / 1e6)
 
-    validate_dataframe(df_eng, "Stage 3", expected_min_rows=100000)
     return df_eng
 
 
@@ -289,8 +289,8 @@ def run_stage4(df_or_path, output_dir, config):
     return stats, eda_report
 
 
-def run_stage5(df_or_path, output_dir, config):
-    """Stage 5: Normalization + Splits."""
+def run_stage5(df_or_path, output_dir, config, min_rows):
+    """Stage 5: Normalization + Splits (split arrays are row positions)."""
     logger.info("=" * 60)
     logger.info("STAGE 5: NORMALIZATION + SPLITS")
     logger.info("=" * 60)
@@ -314,7 +314,7 @@ def run_stage5(df_or_path, output_dir, config):
 
     # Drop excluded features (constant + manually listed in config)
     # Use train set as reference for detecting constant features
-    df_train_ref = df.loc[train_idx]
+    df_train_ref = df.iloc[train_idx]
     n_before = len([c for c in df.columns if not c.startswith('_')])
     df, dropped_features = drop_excluded_features(
         df, config, train_df=df_train_ref)
@@ -334,17 +334,23 @@ def run_stage5(df_or_path, output_dir, config):
 
     # Normalize TRAINING set (fit scalers)
     logger.info("Normalizing training set (fitting scalers)...")
-    df_train = df.loc[train_idx].copy()
+    df_train = df.iloc[train_idx].copy()
     df_train_norm, scalers = stage5_normalize(df_train, config, fit=True)
 
     # Normalize VAL and TEST with pre-fitted scalers
     logger.info("Normalizing validation set (transform only)...")
-    df_val = df.loc[val_idx].copy()
+    df_val = df.iloc[val_idx].copy()
     df_val_norm, _ = stage5_normalize(df_val, config, fit=False, scalers=scalers)
 
     logger.info("Normalizing test set (transform only)...")
-    df_test = df.loc[test_idx].copy()
+    df_test = df.iloc[test_idx].copy()
     df_test_norm, _ = stage5_normalize(df_test, config, fit=False, scalers=scalers)
+
+    # Validate before anything is written
+    for name, df_norm in [('train', df_train_norm), ('val', df_val_norm),
+                          ('test', df_test_norm)]:
+        validate_dataframe(df_norm, f"Stage 5 ({name})",
+                          expected_min_rows=min(min_rows, len(df_norm)))
 
     # Save splits
     splits_dir = output_dir / 'splits'
@@ -373,12 +379,6 @@ def run_stage5(df_or_path, output_dir, config):
 
     elapsed = time.time() - t0
     logger.info("Stage 5 complete in %.1fs", elapsed)
-
-    # Validation
-    for name, df_norm in [('train', df_train_norm), ('val', df_val_norm),
-                          ('test', df_test_norm)]:
-        validate_dataframe(df_norm, f"Stage 5 ({name})",
-                          expected_min_rows=1000)
 
     # Summary statistics of normalized features
     feature_cols = [c for c in df_train_norm.columns if not c.startswith('_')]
@@ -418,6 +418,8 @@ def main():
                         help='Stop after this stage (2-5)')
     parser.add_argument('--sample', type=int, default=None,
                         help='Sample N rows for testing')
+    parser.add_argument('--min-rows', type=int, default=100000,
+                        help='Rows every stage output must keep (validation)')
     args = parser.parse_args()
 
     # Setup
@@ -446,7 +448,7 @@ def main():
     # --- Stage 2: Cleaning ---
     if args.start_stage <= 2 <= args.end_stage:
         df_clean, clean_report = run_stage2(
-            Path(args.input), output_dir, config)
+            Path(args.input), output_dir, config, args.min_rows)
         if args.sample and len(df_clean) > args.sample:
             rng = np.random.RandomState(config.get('random_seed', 42))
             idx = rng.choice(len(df_clean), args.sample, replace=False)
@@ -468,10 +470,10 @@ def main():
     # --- Stage 3: Feature Engineering ---
     if args.start_stage <= 3 <= args.end_stage:
         if df is not None:
-            df = run_stage3(df, output_dir)
+            df = run_stage3(df, output_dir, args.min_rows)
         else:
             df = run_stage3(output_dir / 'cleaned_features.parquet',
-                           output_dir)
+                           output_dir, args.min_rows)
     elif args.start_stage > 3:
         eng_path = output_dir / 'engineered_features.parquet'
         if eng_path.exists():
@@ -489,10 +491,10 @@ def main():
     # --- Stage 5: Normalization + Splits ---
     if args.start_stage <= 5 <= args.end_stage:
         if df is not None:
-            run_stage5(df, output_dir, config)
+            run_stage5(df, output_dir, config, args.min_rows)
         else:
             run_stage5(output_dir / 'engineered_features.parquet',
-                      output_dir, config)
+                      output_dir, config, args.min_rows)
 
     total_elapsed = time.time() - t_total
     logger.info("=" * 60)

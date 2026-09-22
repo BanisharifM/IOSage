@@ -112,7 +112,7 @@ sys.path.insert(0, "{PROJECT_ROOT}")
 from src.data.parse_darshan import parse_darshan_log
 from src.data.feature_extraction import extract_raw_features
 
-parsed = parse_darshan_log("{darshan_path}", backend="cli")
+parsed = parse_darshan_log("{darshan_path}")
 if parsed is None:
     print("PARSE_FAILED")
     sys.exit(0)

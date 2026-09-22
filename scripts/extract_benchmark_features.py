@@ -2,464 +2,125 @@
 """
 Extract features and labels from benchmark Darshan logs.
 
-Produces ground-truth feature vectors and labels consistent with the
-production pipeline (same extract_raw_features, same column order).
+Produces ground-truth feature vectors and labels with the production
+pipeline's columns (``extract_raw_features`` then ``stage3_engineer``).
 
-For IOR/mdtest (compiled MPI): one aggregated .darshan per job → parse directly.
-For DLIO/custom (Python + LD_PRELOAD): per-rank .darshan files → aggregate via
-parse_benchmark_job() using the same 7 Darshan aggregation rules as MPI_Finalize.
+Samples come from ``src.data.benchmark_logs.iter_benchmark_samples``: one log
+for the compiled MPI benchmarks (IOR, mdtest, h5bench, HACC-IO), the merged
+per-process logs of one job for DLIO and the custom mpi4py runs. Labels come
+from the manifest (``scripts/build_label_manifest.py``); a sample without a
+manifest row is an error, a sample whose row says ``source=none`` is left
+out and counted, a sample that cannot be parsed is left out and counted.
 
 Output:
-    data/processed/benchmark/features.parquet  — same columns as production/features.parquet
-    data/processed/benchmark/labels.parquet     — 8 binary label dimensions + metadata
+    <output-dir>/features.parquet   same columns as production/features.parquet
+    <output-dir>/labels.parquet     8 binary label dimensions + metadata
+
+Exit status: 0 when every listed sample was extracted, 3 when some were left
+out (counts in the log), 1 on a manifest or pipeline error.
 
 Usage:
-    python scripts/extract_benchmark_features.py
-    python scripts/extract_benchmark_features.py --output-dir data/processed
-    python scripts/extract_benchmark_features.py --bench-type ior  # single benchmark
+    python scripts/extract_benchmark_features.py --output-dir data/processed/resubmission/benchmark
+    python scripts/extract_benchmark_features.py --bench-type ior
 """
 
 import argparse
-import glob
 import logging
-import os
-import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+from src.data.benchmark_logs import (  # noqa: E402
+    AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, PER_RANK_BENCHMARKS, iter_benchmark_samples,
+    load_manifest, manifest_row)
+from src.data.benchmark_verify import DIMENSION_NAMES  # noqa: E402
+from src.data.feature_extraction import extract_raw_features, get_info_columns  # noqa: E402
+from src.data.preprocessing import stage3_engineer  # noqa: E402
 
-from src.data.parse_darshan import parse_darshan_log, parse_benchmark_job
-from src.data.feature_extraction import (
-    extract_raw_features,
-    get_raw_feature_names,
-    get_info_columns,
-)
-from src.data.preprocessing import stage3_engineer
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-
-PROJECT_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_LOG_DIR = PROJECT_DIR / "data" / "benchmark_logs"
-DEFAULT_RESULTS_DIR = PROJECT_DIR / "data" / "benchmark_results"
 DEFAULT_OUTPUT_DIR = PROJECT_DIR / "data" / "processed" / "benchmark"
-
-DIMENSION_NAMES = [
-    "access_granularity",
-    "metadata_intensity",
-    "parallelism_efficiency",
-    "access_pattern",
-    "interface_choice",
-    "file_strategy",
-    "throughput_utilization",
-    "healthy",
-]
-
-# Benchmark types that produce per-rank logs (Python + LD_PRELOAD)
-PER_RANK_BENCHMARKS = {"dlio", "custom"}
-
-# Benchmark types that produce aggregated logs (compiled MPI)
-AGGREGATED_BENCHMARKS = {"ior", "mdtest", "h5bench", "hacc_io"}
+BENCHMARKS = sorted(AGGREGATED_BENCHMARKS | PER_RANK_BENCHMARKS)
+EXTRA_COLUMNS = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
+LABEL_META = ["job_id", "benchmark", "scenario", "n_ranks", "n_darshan_files", "label_source"]
 
 
-# ---------------------------------------------------------------------------
-# Label extraction from SLURM output
-# ---------------------------------------------------------------------------
-
-def find_job_label(job_id, results_dir):
-    """Find the expected label string from SLURM stdout by matching job ID."""
-    for out_file in glob.glob(os.path.join(results_dir, f"*_{job_id}.out")):
-        with open(out_file) as f:
-            for line in f:
-                if line.strip().startswith("Label:"):
-                    return line.strip().split("Label:")[-1].strip()
-    return None
-
-
-def find_job_scenario(job_id, results_dir):
-    """Extract scenario name from SLURM output filename."""
-    for out_file in glob.glob(os.path.join(results_dir, f"*_{job_id}.out")):
-        basename = os.path.basename(out_file)
-        # Remove _JOBID.out suffix to get scenario name
-        scenario = re.sub(r"_\d+\.out$", "", basename)
-        return scenario
-    return None
-
-
-def parse_label_string(label_str):
-    """Parse 'access_granularity=1,interface_choice=1' into label dict."""
-    labels = {dim: 0 for dim in DIMENSION_NAMES}
-    if not label_str:
-        return labels
-    for part in label_str.split(","):
-        if "=" in part:
-            key, val = part.strip().split("=", 1)
-            key = key.strip()
-            if key in labels:
-                labels[key] = int(val)
-    # Set healthy: 1 if no bottleneck dimensions active
-    bottleneck_sum = sum(v for k, v in labels.items() if k != "healthy")
-    if bottleneck_sum == 0:
-        labels["healthy"] = 1
-    else:
-        labels["healthy"] = 0
-    return labels
-
-
-# ---------------------------------------------------------------------------
-# Per-rank log grouping
-# ---------------------------------------------------------------------------
-
-def group_logs_by_job(log_dir, bench_type):
-    """Group per-rank .darshan files by PBS/SLURM job ID.
-
-    Returns dict: {job_id: [list of .darshan file paths]}
-    Filters out probe logs (lscpu, uname) for DLIO.
-    """
-    darshan_files = sorted(glob.glob(os.path.join(log_dir, "*.darshan")))
-    jobs = defaultdict(list)
-
-    for fpath in darshan_files:
-        basename = os.path.basename(fpath)
-
-        # Skip DLIO probe logs
-        if bench_type == "dlio" and ("_lscpu_" in basename or "_uname_" in basename):
+def extract_benchmark(bench_type, log_dir, manifest):
+    """Feature and label rows of one benchmark; returns (features, labels, counts)."""
+    feature_rows, label_rows = [], []
+    counts = {"extracted": 0, "unlabeled": 0, "unparsed": 0}
+    for job_id, files, parsed in iter_benchmark_samples(bench_type, str(log_dir)):
+        row = manifest_row(manifest, bench_type, job_id, files)
+        if row is None:
+            counts["unlabeled"] += 1
             continue
-
-        # Extract job ID: pattern is _id{JOBID}-{RANK}_
-        match = re.search(r"_id(\d+)-", basename)
-        if match:
-            jobs[match.group(1)].append(fpath)
-        else:
-            # Fallback: treat as single-file job
-            jobs[basename].append(fpath)
-
-    return dict(jobs)
-
-
-# ---------------------------------------------------------------------------
-# Feature extraction
-# ---------------------------------------------------------------------------
-
-def extract_aggregated_benchmark(bench_type, log_dir, results_dir):
-    """Extract features from aggregated benchmark logs (IOR, mdtest).
-
-    Each .darshan file is one job → parse directly.
-    """
-    darshan_files = sorted(glob.glob(os.path.join(log_dir, "*.darshan")))
-    if not darshan_files:
-        logger.warning("No logs found in %s", log_dir)
-        return [], []
-
-    logger.info("Processing %d %s logs (aggregated)...", len(darshan_files), bench_type)
-
-    feature_rows = []
-    label_rows = []
-    n_ok = 0
-    n_fail = 0
-
-    for fpath in darshan_files:
-        basename = os.path.basename(fpath)
-
-        # Extract job ID for label lookup
-        match = re.search(r"_id(\d+)", basename)
-        job_id = match.group(1) if match else None
-
-        # Parse log
-        parsed = parse_darshan_log(fpath)
         if parsed is None:
-            logger.warning("  Failed to parse: %s", basename)
-            n_fail += 1
+            counts["unparsed"] += 1
             continue
-
-        # Extract features
         features = extract_raw_features(parsed)
-
-        # Find label from SLURM output
-        label_str = find_job_label(job_id, results_dir) if job_id else None
-        labels = parse_label_string(label_str)
-        scenario = find_job_scenario(job_id, results_dir) if job_id else None
-
-        # Add source path for traceability
-        features["_source_path"] = fpath
-        features["_benchmark"] = bench_type
-        features["_scenario"] = scenario or ""
-        features["_ground_truth_job_id"] = job_id or ""
-
+        features.update(_source_path=files[0], _benchmark=bench_type,
+                        _scenario=row["scenario"], _ground_truth_job_id=job_id)
         feature_rows.append(features)
+        labels = {"job_id": job_id, "benchmark": bench_type, "scenario": row["scenario"],
+                  "n_ranks": features["nprocs"], "n_darshan_files": len(files),
+                  "label_source": row["source"]}
+        labels.update({d: int(row[d]) for d in DIMENSION_NAMES})
+        label_rows.append(labels)
+        counts["extracted"] += 1
+    logger.info("  %s: %d extracted, %d unlabeled (left out), %d unparsed (left out)",
+                bench_type, counts["extracted"], counts["unlabeled"], counts["unparsed"])
+    return feature_rows, label_rows, counts
 
-        label_row = {
-            "job_id": job_id or "",
-            "benchmark": bench_type,
-            "scenario": scenario or "",
-            "n_ranks": features.get("nprocs", 1),
-            "n_darshan_files": 1,
-            "label_source": "construction" if label_str else "unknown",
-        }
-        label_row.update(labels)
-        label_rows.append(label_row)
-        n_ok += 1
-
-    logger.info("  %s: %d extracted, %d failed", bench_type, n_ok, n_fail)
-    return feature_rows, label_rows
-
-
-def extract_perrank_benchmark(bench_type, log_dir, results_dir):
-    """Extract features from per-rank benchmark logs (DLIO, custom).
-
-    Groups per-rank .darshan files by job ID, aggregates via
-    parse_benchmark_job(), then extracts features.
-    """
-    job_groups = group_logs_by_job(log_dir, bench_type)
-    if not job_groups:
-        logger.warning("No jobs found in %s", log_dir)
-        return [], []
-
-    n_jobs = len(job_groups)
-    n_files = sum(len(v) for v in job_groups.values())
-    logger.info(
-        "Processing %d %s jobs (%d per-rank files, aggregating)...",
-        n_jobs, bench_type, n_files,
-    )
-
-    feature_rows = []
-    label_rows = []
-    n_ok = 0
-    n_fail = 0
-
-    for job_id, rank_files in sorted(job_groups.items()):
-        # Aggregate per-rank logs into one job-level result
-        parsed = parse_benchmark_job(rank_files)
-        if parsed is None:
-            logger.warning("  Failed to aggregate job %s (%d files)", job_id, len(rank_files))
-            n_fail += 1
-            continue
-
-        # Extract features (identical pipeline as production)
-        features = extract_raw_features(parsed)
-
-        # Find label from SLURM output
-        label_str = find_job_label(job_id, results_dir)
-        labels = parse_label_string(label_str)
-        scenario = find_job_scenario(job_id, results_dir)
-
-        # Add source metadata
-        features["_source_path"] = rank_files[0]  # first rank file as reference
-        features["_benchmark"] = bench_type
-        features["_scenario"] = scenario or ""
-        features["_ground_truth_job_id"] = job_id
-
-        feature_rows.append(features)
-
-        label_row = {
-            "job_id": job_id,
-            "benchmark": bench_type,
-            "scenario": scenario or "",
-            "n_ranks": len(rank_files),
-            "n_darshan_files": len(rank_files),
-            "label_source": "construction" if label_str else "unknown",
-        }
-        label_row.update(labels)
-        label_rows.append(label_row)
-        n_ok += 1
-
-    logger.info("  %s: %d jobs extracted, %d failed", bench_type, n_ok, n_fail)
-    return feature_rows, label_rows
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract features and labels from benchmark Darshan logs"
-    )
-    parser.add_argument(
-        "--log-dir",
-        type=str,
-        default=str(DEFAULT_LOG_DIR),
-        help="Root directory with benchmark_logs/{ior,mdtest,dlio,custom}/",
-    )
-    parser.add_argument(
-        "--results-dir",
-        type=str,
-        default=str(DEFAULT_RESULTS_DIR),
-        help="Root directory with benchmark_results/{ior,mdtest,dlio,custom}/",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default=str(DEFAULT_OUTPUT_DIR),
-        help="Output directory for parquet files",
-    )
-    parser.add_argument(
-        "--bench-type",
-        type=str,
-        choices=["all", "ior", "mdtest", "dlio", "custom", "h5bench", "hacc_io"],
-        default="all",
-        help="Which benchmark type to process",
-    )
+    parser = argparse.ArgumentParser(description="Extract features and labels from benchmark Darshan logs")
+    parser.add_argument("--log-dir", default=str(DEFAULT_LOG_DIR),
+                        help="Root directory with benchmark_logs/<benchmark>/")
+    parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
+    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
+    parser.add_argument("--bench-type", choices=["all"] + BENCHMARKS, default="all")
     args = parser.parse_args()
 
-    log_dir = Path(args.log_dir)
-    results_dir = Path(args.results_dir)
+    manifest = load_manifest(args.manifest)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    bench_types = BENCHMARKS if args.bench_type == "all" else [args.bench_type]
 
-    bench_types = (
-        ["ior", "mdtest", "dlio", "custom", "h5bench", "hacc_io"]
-        if args.bench_type == "all"
-        else [args.bench_type]
-    )
-
-    all_features = []
-    all_labels = []
-
-    for bt in bench_types:
-        bt_log_dir = log_dir / bt
-        bt_results_dir = results_dir / bt
-
-        if not bt_log_dir.exists():
-            logger.warning("Log directory not found: %s", bt_log_dir)
-            continue
-
-        if bt in AGGREGATED_BENCHMARKS:
-            feats, labs = extract_aggregated_benchmark(
-                bt, str(bt_log_dir), str(bt_results_dir)
-            )
-        elif bt in PER_RANK_BENCHMARKS:
-            feats, labs = extract_perrank_benchmark(
-                bt, str(bt_log_dir), str(bt_results_dir)
-            )
-        else:
-            logger.warning("Unknown benchmark type: %s", bt)
-            continue
-
+    all_features, all_labels = [], []
+    left_out = 0
+    for bench in bench_types:
+        log_dir = Path(args.log_dir) / bench
+        if not log_dir.is_dir():
+            raise FileNotFoundError(f"log directory not found: {log_dir}")
+        feats, labs, counts = extract_benchmark(bench, log_dir, manifest)
         all_features.extend(feats)
         all_labels.extend(labs)
-
+        left_out += counts["unlabeled"] + counts["unparsed"]
     if not all_features:
-        logger.error("No features extracted. Check log directories.")
-        sys.exit(1)
+        raise RuntimeError("no sample extracted")
 
-    # Build DataFrames
-    features_df = pd.DataFrame(all_features)
-    labels_df = pd.DataFrame(all_labels)
-
-    # Apply feature engineering (same 39 derived features as production pipeline)
-    # This is critical: the ML model trains on engineered features (195 cols),
-    # so the GT test set must have the same derived features.
-    extra_cols_list = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
-    extra_data = {col: features_df[col] for col in extra_cols_list if col in features_df.columns}
-    try:
-        features_df = stage3_engineer(features_df)
-        logger.info("Applied feature engineering: %d columns", len(features_df.columns))
-    except Exception as e:
-        logger.warning("Feature engineering failed (%s), using raw features only", e)
-    # Restore extra columns if they were dropped
-    for col, data in extra_data.items():
-        if col not in features_df.columns:
-            features_df[col] = data.values
-
-    # Ensure consistent column order matching production pipeline
-    raw_feature_cols = get_raw_feature_names()
+    # Same derived features as the production pipeline; the extra columns
+    # are carried through untouched (stage 3 leaves _-prefixed columns alone)
+    features_df = stage3_engineer(pd.DataFrame(all_features))
     info_cols = get_info_columns()
-    extra_cols = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
+    feature_cols = [c for c in features_df.columns if c not in info_cols and c not in EXTRA_COLUMNS]
+    features_df = features_df[feature_cols + info_cols + EXTRA_COLUMNS]
+    labels_df = pd.DataFrame(all_labels)[LABEL_META + DIMENSION_NAMES]
 
-    # Reorder: all feature columns (raw + derived) + info + extras
-    ordered_cols = []
-    for col in features_df.columns:
-        if col not in extra_cols and col not in info_cols:
-            ordered_cols.append(col)
-    for col in info_cols:
-        if col in features_df.columns:
-            ordered_cols.append(col)
-    for col in extra_cols:
-        if col in features_df.columns:
-            ordered_cols.append(col)
-
-    features_df = features_df[ordered_cols]
-
-    # Ensure label column order
-    label_meta_cols = ["job_id", "benchmark", "scenario", "n_ranks", "n_darshan_files", "label_source"]
-    label_ordered = label_meta_cols + DIMENSION_NAMES
-    labels_df = labels_df[label_ordered]
-
-    # Save
     feat_path = output_dir / "features.parquet"
     label_path = output_dir / "labels.parquet"
     features_df.to_parquet(feat_path, index=False)
     labels_df.to_parquet(label_path, index=False)
-
-    # Summary
-    logger.info("")
-    logger.info("=" * 60)
-    logger.info("GROUND-TRUTH EXTRACTION SUMMARY")
-    logger.info("=" * 60)
-    logger.info("Total jobs: %d", len(features_df))
-    logger.info("Features shape: %s", features_df.shape)
-    logger.info("Labels shape: %s", labels_df.shape)
-    logger.info("")
-
-    # Per-benchmark breakdown
-    for bt in bench_types:
-        bt_mask = labels_df["benchmark"] == bt
-        n = bt_mask.sum()
-        if n > 0:
-            label_dist = {
-                dim: int(labels_df.loc[bt_mask, dim].sum())
-                for dim in DIMENSION_NAMES
-            }
-            active = {k: v for k, v in label_dist.items() if v > 0}
-            logger.info("  %s: %d jobs, labels: %s", bt, n, active)
-
-    logger.info("")
-    logger.info("Label distribution (all benchmarks):")
-    for dim in DIMENSION_NAMES:
-        n_pos = int(labels_df[dim].sum())
-        pct = n_pos / len(labels_df) * 100
-        logger.info("  %-25s %4d (%5.1f%%)", dim, n_pos, pct)
-
-    n_unknown = (labels_df["label_source"] == "unknown").sum()
-    if n_unknown > 0:
-        logger.warning(
-            "%d jobs have unknown labels (no SLURM .out match)", n_unknown
-        )
-
-    logger.info("")
-    logger.info("Saved: %s", feat_path)
-    logger.info("Saved: %s", label_path)
-
-    # Consistency check: verify column overlap with production raw_features
-    prod_path = PROJECT_DIR / "data" / "processed" / "production" / "raw_features.parquet"
-    if prod_path.exists():
-        prod_cols = set(pd.read_parquet(prod_path, columns=[]).columns)
-        gt_cols = set(features_df.columns) - {"_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"}
-        missing = prod_cols - gt_cols
-        extra = gt_cols - prod_cols
-        if missing:
-            logger.warning("Columns in production but missing in ground-truth: %s", missing)
-        if extra:
-            logger.info("Extra columns in ground-truth (metadata): %s", extra)
-        overlap = prod_cols & gt_cols
-        logger.info("Column overlap with production: %d/%d", len(overlap), len(prod_cols))
-    else:
-        logger.info("Production raw_features.parquet not found; skipping consistency check")
-
-    logger.info("=" * 60)
+    logger.info("Features: %s, labels: %s", features_df.shape, labels_df.shape)
+    logger.info("Label positives: %s", labels_df[DIMENSION_NAMES].sum().to_dict())
+    logger.info("Saved: %s and %s", feat_path, label_path)
+    return 3 if left_out else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

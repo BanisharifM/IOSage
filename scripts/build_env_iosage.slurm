@@ -19,7 +19,8 @@ set -u
 REPO=/work/hdd/bdau/mbanisharifdehkordi/IOSage
 ENVS="${ENVS:-/work/nvme/bdau/mbanisharifdehkordi/envs}"   # /work/nvme: small-file creates ~50x faster than /work/hdd
 PREFIX=$ENVS/iosage
-mkdir -p "$ENVS"
+DARSHAN_SRC_DIR="${DARSHAN_SRC_DIR:-/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/tools/src}"
+mkdir -p "$ENVS" "$DARSHAN_SRC_DIR"
 export CONDARC=$ENVS/condarc
 [ -f "$CONDARC" ] || printf "solver: libmamba\nauto_activate_base: false\nenvs_dirs:\n  - %s\npkgs_dirs:\n  - %s/.conda_pkgs\n" "$ENVS" "$ENVS" > "$CONDARC"
 export CONDA_PKGS_DIRS=$ENVS/.conda_pkgs
@@ -38,12 +39,33 @@ else
     $CONDA create -y -p "$PREFIX" --file "$REPO/configs/sc2026_explicit_spec.txt"
     rc=$?; echo "conda create rc=$rc"; [ $rc -ne 0 ] && { echo "ENV BUILD rc=$rc"; exit $rc; }
 fi
+# darshan-util 3.5.0 with bzip2 into the env prefix (the Polaris logs are bzip2 compressed; the
+# PyDarshan wheel's bundled library has no bzip2, so the freeze installs PyDarshan from source and
+# it loads this library through the RPATH of _cffi_backend, $ORIGIN/../.. = $PREFIX/lib).
+DARSHAN_SRC=$DARSHAN_SRC_DIR/darshan-3.5.0
+if [ ! -f "$DARSHAN_SRC.tar.gz" ]; then
+    curl -sSL -o "$DARSHAN_SRC.tar.gz" https://github.com/darshan-hpc/darshan/releases/download/3.5.0/darshan-3.5.0.tar.gz
+fi
+echo "5299ae5407ef55f4503bfaa038cf8b01128d19238b10e3e20d980411c2e8b97c  $DARSHAN_SRC.tar.gz" | sha256sum -c - || { echo "ENV BUILD: darshan tarball checksum mismatch"; exit 3; }
+[ -d "$DARSHAN_SRC" ] || tar xzf "$DARSHAN_SRC.tar.gz" -C "$DARSHAN_SRC_DIR"
+mkdir -p "$DARSHAN_SRC/darshan-util/build" && cd "$DARSHAN_SRC/darshan-util/build" || exit 3
+../configure --prefix="$PREFIX" --with-zlib=/usr --with-bzlib=/usr CC=gcc > configure.log 2>&1 && make -j4 > make.log 2>&1 && make install > install.log 2>&1
+rc=$?; echo "darshan-util build rc=$rc"; [ $rc -ne 0 ] && { echo "ENV BUILD rc=$rc"; exit $rc; }
+grep -q "HAVE_LIBBZ2 1" darshan-util-config.h || { echo "ENV BUILD: darshan-util configured without bzip2"; exit 3; }
+cd "$REPO" || exit 3
 "$PREFIX/bin/python" -m pip install -r "$REPO/configs/sc2026_pip_freeze.txt"
 rc=$?; echo "pip install rc=$rc"
 "$PREFIX/bin/python" -m pip check; rc3=$?; echo "pip check rc=$rc3"; rc=$((rc + rc3))
 "$PREFIX/bin/python" "$REPO/scripts/check_shared_library_owners.py"; rc4=$?; echo "shared-library owner check rc=$rc4"; rc=$((rc + rc4))
 "$PREFIX/bin/python" -c "import xgboost, shap, lightgbm, pandas, darshan, sklearn, numpy, openai, anthropic; print('imports ok: xgboost', xgboost.__version__, 'shap', shap.__version__, 'numpy', numpy.__version__, 'openai', openai.__version__); import xgboost, os; print('xgboost from', os.path.dirname(xgboost.__file__))"
 rc2=$?
+"$PREFIX/bin/python" -c "
+import darshan
+from darshan.backend.cffi_backend import libdutil, ffi
+lib = [l.split()[-1] for l in open('/proc/self/maps') if 'libdarshan-util' in l][0]
+assert lib.startswith('$PREFIX/lib/'), lib
+print('libdarshan-util', ffi.string(libdutil.darshan_log_get_lib_version()).decode(), 'from', lib)"
+rc5=$?; echo "darshan library check rc=$rc5"; rc2=$((rc2 + rc5))
 echo "files: $(find "$PREFIX" -type f | wc -l)  size: $(du -sh "$PREFIX" | cut -f1)"
 echo "end $(date)"
 echo "ENV BUILD rc=$((rc + rc2))"

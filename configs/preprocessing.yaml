@@ -19,18 +19,19 @@ cleaning:
   # in the 1-10s window with zero NaN/Inf and comparable feature variance.
   min_duration_seconds: 1
 
-  # Minimum total I/O bytes (POSIX_BYTES_READ + POSIX_BYTES_WRITTEN).
+  # Minimum total I/O bytes (POSIX + STDIO bytes read and written).
   # 1024 = at least one meaningful read or write operation.
   # Evidence: sharp cliff at 0->512 bytes (332K zero-byte metadata-only
   # jobs drop out); stable from 512 to 65K (only 11K difference).
   min_total_bytes: 1024
 
-  # Minimum total I/O operations (POSIX_READS + POSIX_WRITES).
+  # Minimum total I/O operations (POSIX + STDIO reads and writes).
   # 1 = at least one actual read or write (not just opens).
   min_io_ops: 1
 
-  # Require POSIX module to be present.  POSIX is the foundation layer;
-  # logs without it have no meaningful I/O data for our analysis.
+  # Require the POSIX module, except for jobs whose I/O went through stdio
+  # alone (fwrite, fprintf, C++ streams do not reach POSIX): those are kept
+  # when their STDIO bytes reach min_total_bytes.
   require_posix: true
 
 # --- Sentinel Value Handling ---
@@ -59,6 +60,7 @@ normalization:
   timestamp_counters: "none"    # absolute timestamps; used for derived features only
   categorical_counters: "none"  # MODE, ALIGNMENT — categorical, not continuous
   rank_id_counters: "none"      # integer rank IDs — not performance metrics
+  rank_stat_counters: "log1p"   # per-rank max, variance, count (heavy-tailed)
   conditional_size_counters: "log1p"
   indicator_features: "none"    # binary 0/1 — no normalization needed
   ratio_features: "none"        # bounded [0,1] ratios — no normalization

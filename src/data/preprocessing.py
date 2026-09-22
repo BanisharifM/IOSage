@@ -18,7 +18,10 @@ Design principles:
     types (volume, count, histogram, timing, ratio, indicator).
   - Save intermediate stages: Stage 1 is immutable ground truth; Stage 2 is
     the cleaned baseline for alternative normalization experiments.
-  - Fit normalizers on training data only to prevent data leakage.
+  - Fit normalizers on training data only; validation and test rows are
+    transformed with the fitted scalers.
+  - Every stage checks the schema version and the required columns of its
+    input; a missing column is an error, never a zero.
 """
 
 import logging
@@ -30,13 +33,38 @@ import yaml
 
 from src.data.feature_extraction import (
     FEATURE_GROUPS,
+    FEATURE_SCHEMA_VERSION,
     _EPS,
     _SENTINEL,
-    _compute_derived_features,
-    get_info_columns,
+    compute_layer_and_rank_features,
+    extract_raw_features,
+    get_raw_feature_names,
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Input contracts
+# ---------------------------------------------------------------------------
+
+def require_raw_schema(df, stage):
+    """Refuse a frame that was not written by the current extractor.
+
+    Checks the ``_schema_version`` column and every raw feature name, so a
+    parquet from an older extraction cannot be engineered into false zeros.
+    """
+    if '_schema_version' not in df.columns:
+        raise ValueError(f"{stage}: input has no _schema_version column; "
+                         f"re-extract with feature schema {FEATURE_SCHEMA_VERSION}")
+    versions = set(pd.unique(df['_schema_version']))
+    if versions != {FEATURE_SCHEMA_VERSION}:
+        raise ValueError(f"{stage}: input schema version(s) {sorted(versions)}, "
+                         f"code expects {FEATURE_SCHEMA_VERSION}; re-extract")
+    missing = [c for c in get_raw_feature_names() if c not in df.columns]
+    if missing:
+        raise ValueError(f"{stage}: input lacks {len(missing)} raw columns, "
+                         f"first: {missing[:5]}")
 
 
 # ---------------------------------------------------------------------------
@@ -60,62 +88,68 @@ def stage2_clean(df, config):
     dict
         Cleaning report (counts of removed/modified rows).
     """
-    cleaning = config.get('cleaning', {})
+    require_raw_schema(df, 'stage2_clean')
+    cleaning = config['cleaning']
     report = {'initial_rows': len(df)}
 
-    # --- Filter: require POSIX module ---
-    if cleaning.get('require_posix', True) and 'has_posix' in df.columns:
-        mask = df['has_posix'] == 1
+    min_bytes = cleaning['min_total_bytes']
+    min_ops = cleaning['min_io_ops']
+
+    # --- Filter: require POSIX module, unless the job's I/O went through
+    # stdio alone (fwrite, fprintf, C++ streams never reach POSIX) ---
+    if cleaning['require_posix']:
+        stdio_bytes = df['STDIO_BYTES_READ'] + df['STDIO_BYTES_WRITTEN']
+        mask = (df['has_posix'] == 1) | (stdio_bytes >= min_bytes)
         n_dropped = (~mask).sum()
         if n_dropped > 0:
-            logger.info("Removed %d jobs without POSIX module", n_dropped)
+            logger.info("Removed %d jobs without POSIX module and with less "
+                        "than %d STDIO bytes", n_dropped, min_bytes)
             df = df[mask].copy()
     report['after_require_posix'] = len(df)
 
     # --- Filter: minimum duration ---
-    min_duration = cleaning.get('min_duration_seconds', 10)
-    if 'runtime_seconds' in df.columns:
-        mask = df['runtime_seconds'] >= min_duration
-        n_dropped = (~mask).sum()
-        logger.info("Removed %d jobs with runtime < %d seconds",
-                     n_dropped, min_duration)
-        df = df[mask].copy()
+    min_duration = cleaning['min_duration_seconds']
+    mask = df['runtime_seconds'] >= min_duration
+    n_dropped = (~mask).sum()
+    logger.info("Removed %d jobs with runtime < %d seconds",
+                 n_dropped, min_duration)
+    df = df[mask].copy()
     report['after_min_duration'] = len(df)
 
-    # --- Filter: minimum total bytes ---
-    min_bytes = cleaning.get('min_total_bytes', 4096)
-    if 'POSIX_BYTES_READ' in df.columns and 'POSIX_BYTES_WRITTEN' in df.columns:
-        total_bytes = df['POSIX_BYTES_READ'] + df['POSIX_BYTES_WRITTEN']
-        mask = total_bytes >= min_bytes
-        n_dropped = (~mask).sum()
-        logger.info("Removed %d jobs with total bytes < %d", n_dropped, min_bytes)
-        df = df[mask].copy()
+    # --- Filter: minimum total bytes (POSIX + STDIO) ---
+    total_bytes = (df['POSIX_BYTES_READ'] + df['POSIX_BYTES_WRITTEN']
+                   + df['STDIO_BYTES_READ'] + df['STDIO_BYTES_WRITTEN'])
+    mask = total_bytes >= min_bytes
+    n_dropped = (~mask).sum()
+    logger.info("Removed %d jobs with total bytes < %d", n_dropped, min_bytes)
+    df = df[mask].copy()
     report['after_min_bytes'] = len(df)
 
-    # --- Filter: minimum I/O operations ---
-    min_ops = cleaning.get('min_io_ops', 2)
-    if 'POSIX_READS' in df.columns and 'POSIX_WRITES' in df.columns:
-        total_ops = df['POSIX_READS'] + df['POSIX_WRITES']
-        mask = total_ops >= min_ops
-        n_dropped = (~mask).sum()
-        logger.info("Removed %d jobs with total ops < %d", n_dropped, min_ops)
-        df = df[mask].copy()
+    # --- Filter: minimum I/O operations (POSIX + STDIO) ---
+    total_ops = (df['POSIX_READS'] + df['POSIX_WRITES']
+                 + df['STDIO_READS'] + df['STDIO_WRITES'])
+    mask = total_ops >= min_ops
+    n_dropped = (~mask).sum()
+    logger.info("Removed %d jobs with total ops < %d", n_dropped, min_ops)
+    df = df[mask].copy()
     report['after_min_ops'] = len(df)
 
     # --- Filter: non-negative timing ---
     for col in ['POSIX_F_READ_TIME', 'POSIX_F_WRITE_TIME', 'POSIX_F_META_TIME']:
-        if col in df.columns:
-            mask = df[col] >= 0
-            n_dropped = (~mask).sum()
-            if n_dropped > 0:
-                logger.info("Removed %d jobs with negative %s", n_dropped, col)
-                df = df[mask].copy()
+        mask = df[col] >= 0
+        n_dropped = (~mask).sum()
+        if n_dropped > 0:
+            logger.info("Removed %d jobs with negative %s", n_dropped, col)
+            df = df[mask].copy()
 
     report['after_timing_filter'] = len(df)
 
+    # Rows are positions from here on: the split indices of stage 5 index
+    # this frame and the parquet written from it by position.
+    df = df.reset_index(drop=True)
+
     # --- Handle sentinel values ---
-    sentinel_cfg = config.get('sentinel_handling', {})
-    rank_replacement = sentinel_cfg.get('replace_negative_rank_with', 0)
+    rank_replacement = config['sentinel_handling']['replace_negative_rank_with']
 
     # Integer sentinel -1 replacement for rank-related counters
     rank_int_cols = [
@@ -123,18 +157,16 @@ def stage2_clean(df, config):
         'POSIX_SLOWEST_RANK', 'POSIX_SLOWEST_RANK_BYTES',
     ]
     for col in rank_int_cols:
-        if col in df.columns:
-            mask = df[col] == _SENTINEL
-            if mask.any():
-                df.loc[mask, col] = rank_replacement
+        mask = df[col] == _SENTINEL
+        if mask.any():
+            df.loc[mask, col] = rank_replacement
 
     # Float sentinel 0.0 for rank timing (already 0 for non-shared, keep as is)
 
     # MMAPS sentinel -1 (overflow clamp)
-    if 'POSIX_MMAPS' in df.columns:
-        mask = df['POSIX_MMAPS'] == _SENTINEL
-        if mask.any():
-            df.loc[mask, 'POSIX_MMAPS'] = 0
+    mask = df['POSIX_MMAPS'] == _SENTINEL
+    if mask.any():
+        df.loc[mask, 'POSIX_MMAPS'] = 0
 
     report['final_rows'] = len(df)
     report['rows_removed'] = report['initial_rows'] - report['final_rows']
@@ -169,6 +201,7 @@ def stage3_engineer(df):
     """
     logger.info("Computing derived features for %d rows (vectorized)...",
                 len(df))
+    require_raw_schema(df, 'stage3_engineer')
     df = df.copy()
 
     # Replace sentinel -1 with 0 in feature columns for safe computation
@@ -179,9 +212,9 @@ def stage3_engineer(df):
             if mask.any():
                 df.loc[mask, col] = 0.0
 
-    # Helper: safe column access (0 if missing)
     def g(col):
-        return df[col] if col in df.columns else 0.0
+        # every raw column exists (require_raw_schema); a typo must not become 0
+        return df[col]
 
     # Precompute reusable aggregates
     total_reads = g('POSIX_READS')
@@ -194,8 +227,8 @@ def stage3_engineer(df):
     write_time = g('POSIX_F_WRITE_TIME')
     meta_time = g('POSIX_F_META_TIME')
     total_time = read_time + write_time + meta_time
-    nprocs = df['nprocs'] if 'nprocs' in df.columns else 1
-    runtime = df['runtime_seconds'] if 'runtime_seconds' in df.columns else 0
+    nprocs = df['nprocs']
+    runtime = df['runtime_seconds']
 
     # --- Read/write balance ---
     df['read_ratio'] = bytes_read / np.maximum(total_bytes, 1)
@@ -289,10 +322,24 @@ def stage3_engineer(df):
     df['access_size_concentration'] = g('POSIX_ACCESS1_COUNT') / np.maximum(total_ops, 1)
     df['dominant_access_size'] = g('POSIX_ACCESS1_ACCESS')
 
+    # --- Layer-agnostic totals and per-rank distribution ---
+    for name, values in compute_layer_and_rank_features(g, nprocs).items():
+        df[name] = values
+
     n_derived = len(FEATURE_GROUPS.get('ratio', [])) + len(FEATURE_GROUPS.get('derived_absolute', []))
     logger.info("Added %d derived features (total: %d columns)",
                 n_derived, len(df.columns))
     return df
+
+
+def engineer_one(parsed_log):
+    """Raw plus derived features of one parsed log, as a dict.
+
+    The same two steps the batch pipeline runs (``extract_raw_features``,
+    then ``stage3_engineer``), for callers that handle single logs.
+    """
+    df = stage3_engineer(pd.DataFrame([extract_raw_features(parsed_log)]))
+    return df.iloc[0].to_dict()
 
 
 # ---------------------------------------------------------------------------
@@ -509,6 +556,8 @@ def stage5_normalize(df, config, fit=True, scalers=None):
         'timestamp': norm_config.get('timestamp_counters', 'none'),
         'categorical': norm_config.get('categorical_counters', 'none'),
         'rank_id': norm_config.get('rank_id_counters', 'none'),
+        'rank_stat': norm_config.get('rank_stat_counters', 'log1p'),
+        'rank_stat_bounded': 'none',
         'conditional_size': norm_config.get('conditional_size_counters', 'log1p'),
         'indicator': norm_config.get('indicator_features', 'none'),
         'ratio': norm_config.get('ratio_features', 'none'),
@@ -539,11 +588,10 @@ def stage5_normalize(df, config, fit=True, scalers=None):
                 logger.info("Fitted RobustScaler for %s (%d features)",
                             group_name, len(cols))
             else:
-                scaler = scalers.get(group_name)
-                if scaler is not None:
-                    df[cols] = scaler.transform(df[cols])
-                else:
-                    logger.warning("No pre-fitted scaler for %s", group_name)
+                if group_name not in scalers:
+                    raise ValueError(f"no fitted scaler for group {group_name}; "
+                                     "fit on the training split first")
+                df[cols] = scalers[group_name].transform(df[cols])
 
         elif method == 'log10p1':
             # Legacy: log10(x+1) for backward compatibility
@@ -557,71 +605,57 @@ def stage5_normalize(df, config, fit=True, scalers=None):
 # Data Splits
 # ---------------------------------------------------------------------------
 
-def create_splits(df, config, labels_df=None):
-    """Create train/val/test splits.
+def create_splits(df, config):
+    """Create train/val/test splits as row positions of ``df``.
 
-    Supports both random and temporal splits.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Feature dataframe.
-    config : dict
-        Preprocessing configuration with split settings.
-    labels_df : pd.DataFrame, optional
-        Label dataframe for stratification.
+    ``splits.method`` is ``temporal`` (sort by ``_start_time``, the oldest
+    rows train and the newest test) or ``random`` (seeded shuffle). Both
+    return positions, so consumers index the frame, or a parquet written
+    from it, with ``iloc``. The three partitions are checked to be disjoint,
+    to cover every row, and to be non-empty.
 
     Returns
     -------
     dict
-        Split indices: ``{'train_idx': array, 'val_idx': array,
-        'test_idx': array}`` for simple split, or includes ``'folds'``
-        for cross-validation.
+        ``{'train_idx': array, 'val_idx': array, 'test_idx': array}``
     """
-    split_config = config.get('splits', {})
-    method = split_config.get('method', 'temporal')
-    test_fraction = split_config.get('test_fraction', 0.15)
-    val_fraction = split_config.get('val_fraction', 0.15)
-    seed = config.get('random_seed', 42)
+    split_config = config['splits']
+    method = split_config['method']
+    test_fraction = split_config['test_fraction']
+    val_fraction = split_config['val_fraction']
+    seed = config['random_seed']
 
+    if not (0 < test_fraction < 1 and 0 < val_fraction < 1
+            and test_fraction + val_fraction < 1):
+        raise ValueError(f"split fractions must be in (0, 1) and sum below 1: "
+                         f"test={test_fraction}, val={val_fraction}")
     n = len(df)
+    n_test = int(n * test_fraction)
+    n_val = int(n * val_fraction)
+    if n_test == 0 or n_val == 0 or n - n_test - n_val == 0:
+        raise ValueError(f"{n} rows give an empty partition at fractions "
+                         f"test={test_fraction}, val={val_fraction}")
 
-    if method == 'temporal' and '_start_time' in df.columns:
-        # Sort by start time, split chronologically
-        sorted_idx = df['_start_time'].sort_values().index
-        n_test = int(n * test_fraction)
-        n_val = int(n * val_fraction)
-
-        test_idx = sorted_idx[-n_test:].values
-        val_idx = sorted_idx[-(n_test + n_val):-n_test].values
-        train_idx = sorted_idx[:-(n_test + n_val)].values
-
-        logger.info(
-            "Temporal split: train=%d, val=%d, test=%d",
-            len(train_idx), len(val_idx), len(test_idx)
-        )
+    if method == 'temporal':
+        order = np.argsort(df['_start_time'].to_numpy(), kind='stable')
+        logger.info("Temporal split: train=%d, val=%d, test=%d",
+                    n - n_test - n_val, n_val, n_test)
+    elif method == 'random':
+        order = np.random.RandomState(seed).permutation(n)
+        logger.info("Random split (seed=%d): train=%d, val=%d, test=%d",
+                    seed, n - n_test - n_val, n_val, n_test)
     else:
-        # Random split
-        rng = np.random.RandomState(seed)
-        indices = np.arange(n)
-        rng.shuffle(indices)
+        raise ValueError(f"unknown split method {method!r}")
 
-        n_test = int(n * test_fraction)
-        n_val = int(n * val_fraction)
-        test_idx = indices[:n_test]
-        val_idx = indices[n_test:n_test + n_val]
-        train_idx = indices[n_test + n_val:]
-
-        logger.info(
-            "Random split (seed=%d): train=%d, val=%d, test=%d",
-            seed, len(train_idx), len(val_idx), len(test_idx)
-        )
-
-    return {
-        'train_idx': train_idx,
-        'val_idx': val_idx,
-        'test_idx': test_idx,
+    splits = {
+        'train_idx': order[:n - n_test - n_val],
+        'val_idx': order[n - n_test - n_val:n - n_test],
+        'test_idx': order[n - n_test:],
     }
+    parts = np.concatenate(list(splits.values()))
+    if len(np.unique(parts)) != n or parts.min() != 0 or parts.max() != n - 1:
+        raise AssertionError("split partitions must be disjoint and cover every row")
+    return splits
 
 
 # ---------------------------------------------------------------------------
@@ -673,7 +707,8 @@ def load_preprocessing_config(config_path=None):
     Returns
     -------
     dict
-        Configuration dictionary.
+        Configuration dictionary. A missing file is an error: the thresholds
+        decide which jobs enter the dataset, so there is no built-in default.
     """
     if config_path is None:
         config_path = (
@@ -682,48 +717,6 @@ def load_preprocessing_config(config_path=None):
         )
     config_path = Path(config_path)
     if not config_path.exists():
-        logger.warning("Config not found: %s, using defaults", config_path)
-        return _default_config()
+        raise FileNotFoundError(f"preprocessing config not found: {config_path}")
     with open(config_path) as fh:
         return yaml.safe_load(fh)
-
-
-def _default_config():
-    """Return default preprocessing configuration."""
-    return {
-        'cleaning': {
-            'min_duration_seconds': 10,
-            'min_total_bytes': 4096,
-            'min_io_ops': 2,
-            'require_posix': True,
-        },
-        'sentinel_handling': {
-            'replace_negative_rank_with': 0,
-        },
-        'normalization': {
-            'volume_counters': 'log1p_robust',
-            'count_counters': 'log1p_robust',
-            'histogram_counters': 'log1p',
-            'top4_counters': 'log1p',
-            'timing_counters': 'log1p_robust',
-            'timestamp_counters': 'none',
-            'categorical_counters': 'none',
-            'rank_id_counters': 'none',
-            'conditional_size_counters': 'log1p',
-            'indicator_features': 'none',
-            'ratio_features': 'none',
-            'ratio_unbounded_features': 'log1p',
-            'derived_absolute': 'log1p',
-            'metadata_features': 'log1p',
-        },
-        'splits': {
-            'method': 'temporal',
-            'test_fraction': 0.15,
-            'val_fraction': 0.15,
-        },
-        'feature_selection': {
-            'correlation_threshold': 0.90,
-            'min_nonzero_fraction': 0.01,
-        },
-        'random_seed': 42,
-    }

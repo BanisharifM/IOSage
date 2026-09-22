@@ -12,6 +12,12 @@
 # same path as the CUDA 12 wheel (libnccl.so.2, libcusolver.so.11, libcurand.so.10, CUPTI, NVTX),
 # and pip keeps whichever is installed last: NCCL 2.14.3 replaced 2.27.3 and torch 2.8 failed with
 # 'undefined symbol: ncclCommWindowRegister'. Kept: nvidia-nvimgcodec-cu11 (required by DALI).
+# Correction 2026-09-21: darshan (PyDarshan) is installed from source, not from the wheel. The
+# wheel bundles a libdarshan-util built without bzip2, and the Polaris production logs are bzip2
+# compressed ("invalid compression type" on open). scripts/build_env_iosage.slurm builds
+# darshan-util 3.5.0 (official release tarball, --with-bzlib) into the env prefix first; PyDarshan
+# then finds it through the RPATH of _cffi_backend ($ORIGIN/../.. = the env's lib/).
+--no-binary darshan
 # scripts/check_shared_library_owners.py fails the environment build on any such collision.
 absl-py==2.3.1
 alembic==1.14.0

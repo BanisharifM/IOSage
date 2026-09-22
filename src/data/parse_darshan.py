@@ -1,19 +1,15 @@
 """
 Darshan Log Parser
 ==================
-Parses .darshan files into structured dictionaries of raw counters + job metadata.
-
-Supports two backends:
-  1. PyDarshan (preferred, faster): ``import darshan``
-  2. darshan-parser CLI (fallback): ``darshan-parser --total <file>``
+Parses .darshan files into structured dictionaries of raw counters + job metadata
+with PyDarshan (``import darshan``). PyDarshan must load a libdarshan-util that
+can read the log's compression (the Polaris logs are bzip2): see
+``scripts/build_env_iosage.slurm``.
 
 The parser extracts:
   - Job metadata (jobid, uid, nprocs, runtime, timestamps, modules)
-  - POSIX module counters (always present)
-  - MPI-IO module counters (present for MPI-parallel jobs)
-  - STDIO module counters (present for C stdio usage)
-  - Performance summary (aggregate bandwidth)
-  - Mount point information (Eagle/Grand filesystem detection)
+  - POSIX, MPI-IO and STDIO module counters, aggregated per job
+  - Per-rank statistics from the file records (``_rank_statistics``)
 
 Usage::
 
@@ -24,58 +20,50 @@ Usage::
     #     'job': { 'jobid': ..., 'nprocs': ..., 'runtime': ..., ... },
     #     'counters': { 'POSIX_READS': ..., 'POSIX_WRITES': ..., ... },
     #     'modules': ['POSIX', 'STDIO', ...],
+    #     'shared_file_flags': {'POSIX': False, ...},
     # }
 """
 
 import logging
-import re
-import subprocess
-from pathlib import Path
+
+import darshan
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Backend detection
-# ---------------------------------------------------------------------------
-_HAS_PYDARSHAN = False
-try:
-    import darshan
-    _HAS_PYDARSHAN = True
-except ImportError:
-    pass
+# Modules whose records become features. A log that declares one of them but
+# whose records cannot be read is a failed sample, not a job with zero I/O.
+FEATURE_MODULES = (('POSIX', None), ('MPI-IO', 'MPIIO'), ('STDIO', None))
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def parse_darshan_log(darshan_path, backend=None):
+def parse_darshan_log(darshan_path, strict=False):
     """Parse a single .darshan file and return structured data.
 
     Parameters
     ----------
     darshan_path : str or Path
         Path to a ``.darshan`` file.
-    backend : str, optional
-        ``'pydarshan'`` or ``'cli'``.  Auto-detected if not specified.
+    strict : bool
+        If True, a parse failure raises; otherwise it is logged and None is
+        returned (callers that must record the cause use ``strict=True``).
 
     Returns
     -------
     dict or None
-        Dictionary with keys ``'job'``, ``'counters'``, ``'modules'``.
-        Returns ``None`` if the file cannot be parsed.
+        Dictionary with keys ``'job'``, ``'counters'``, ``'modules'``,
+        ``'shared_file_flags'``. None if the file cannot be parsed.
     """
     darshan_path = str(darshan_path)
-
-    if backend is None:
-        backend = 'pydarshan' if _HAS_PYDARSHAN else 'cli'
-
     try:
-        if backend == 'pydarshan':
-            return _parse_with_pydarshan(darshan_path)
-        return _parse_with_cli(darshan_path)
+        return _parse_with_pydarshan(darshan_path)
     except Exception:
-        logger.debug("Failed to parse %s", darshan_path, exc_info=True)
+        if strict:
+            raise
+        logger.warning("Failed to parse %s", darshan_path, exc_info=True)
         return None
 
 
@@ -91,71 +79,54 @@ def list_available_modules(darshan_path):
 # PyDarshan backend
 # ---------------------------------------------------------------------------
 
-def _parse_with_pydarshan(path):
-    """Parse using the PyDarshan library.
-
-    Uses read_all=False to avoid segfault on APMPI/HEATMAP generic records
-    (PyDarshan does not support these modules' record format), then reads
-    only the modules we need (POSIX, MPI-IO, STDIO).
-    """
-    report = darshan.DarshanReport(path, read_all=False)
-
-    # Read only the modules we need for feature extraction
-    _FEATURE_MODULES = ['POSIX', 'MPI-IO', 'STDIO']
-    for mod in _FEATURE_MODULES:
-        if mod in report.modules:
-            try:
-                report.mod_read_all_records(mod)
-            except Exception:
-                logger.debug("Could not read module %s from %s", mod, path)
-
-    # --- Job metadata ---
+def _job_metadata(report, nprocs=None):
+    """Job dictionary from a report's metadata; ``nprocs`` overrides the log's."""
     job_meta = report.metadata.get('job', {})
-    job = {
+    return {
         'jobid': job_meta.get('jobid', 0),
         'uid': job_meta.get('uid', 0),
-        'nprocs': job_meta.get('nprocs', 1),
+        'nprocs': job_meta.get('nprocs', 1) if nprocs is None else nprocs,
         'start_time': job_meta.get('start_time_sec', 0),
         'end_time': job_meta.get('end_time_sec', 0),
         'runtime': job_meta.get('run_time', 0.0),
         'log_version': job_meta.get('log_ver', ''),
     }
 
+
+def _read_module_frames(report, module_name, path):
+    """``to_df()`` of one declared module; a read failure is an error."""
+    try:
+        report.mod_read_all_records(module_name)
+        return report.records[module_name].to_df()
+    except Exception as exc:
+        raise ValueError(f"cannot read module {module_name} of {path}: {exc}") from exc
+
+
+def _parse_with_pydarshan(path):
+    """Parse using the PyDarshan library.
+
+    Opens with read_all=False (PyDarshan cannot decode APMPI/HEATMAP records)
+    and reads only the feature modules.
+    """
+    report = darshan.DarshanReport(path, read_all=False)
+    job = _job_metadata(report)
     modules = list(report.modules.keys())
     job['modules'] = modules
 
-    # Detect filesystem from mount points
-    job['uses_lustre'] = False
-    job['lustre_mount'] = ''
-    for mount_info in report.metadata.get('mounts', []):
-        mount_point = mount_info[0] if isinstance(mount_info, (list, tuple)) else str(mount_info)
-        fs_type = mount_info[1] if isinstance(mount_info, (list, tuple)) and len(mount_info) > 1 else ''
-        if 'lustre' in str(fs_type).lower() or '/lus/' in str(mount_point):
-            job['uses_lustre'] = True
-            job['lustre_mount'] = str(mount_point)
-            break
-
-    # --- Extract counters from read modules ---
     counters = {}
     shared_file_flags = {}
+    module_dfs = {}
+    for mod, prefix in FEATURE_MODULES:
+        if mod not in report.modules:
+            continue
+        dfs = _read_module_frames(report, mod, path)
+        module_dfs[mod] = dfs
+        shared_file_flags[mod] = _extract_pydarshan_module(
+            dfs, mod, counters, job['nprocs'], prefix=prefix)
 
-    # POSIX
-    if 'POSIX' in report.records:
-        sf = _extract_pydarshan_module(report, 'POSIX', counters)
-        shared_file_flags['POSIX'] = sf
-
-    # MPI-IO
-    if 'MPI-IO' in report.records:
-        sf = _extract_pydarshan_module(report, 'MPI-IO', counters, prefix='MPIIO')
-        shared_file_flags['MPI-IO'] = sf
-
-    # STDIO
-    if 'STDIO' in report.records:
-        sf = _extract_pydarshan_module(report, 'STDIO', counters)
-        shared_file_flags['STDIO'] = sf
-
-    # Count unique files
-    counters['num_files'] = len(report.name_records) if hasattr(report, 'name_records') else 0
+    name_records = getattr(report, 'name_records', {}) or {}
+    counters.update(_rank_statistics(module_dfs, job['nprocs'], name_records))
+    counters['num_files'] = len(name_records)
 
     return {
         'job': job,
@@ -185,12 +156,57 @@ def _top4_merge(agg, new):
     return entries[:4]
 
 
-def _extract_pydarshan_module(report, module_name, counters, prefix=None):
+def _shared_file_flag(df_int, nprocs):
+    """True when the module's records describe one file that all ranks used.
+
+    Darshan marks such a file with one reduced record of rank -1. The merged
+    per-process logs of ``parse_benchmark_job`` carry one record per rank
+    instead, so the file counts as shared when every one of the ``nprocs``
+    ranks has a record for it. One record from one rank is a private file.
+    """
+    if df_int is None or 'id' not in df_int.columns or df_int.empty:
+        return False
+    if df_int['id'].nunique() != 1:
+        return False
+    if (df_int['rank'] == -1).any():
+        return True
+    return nprocs > 1 and df_int['rank'].nunique() == nprocs
+
+
+def _shared_reduction(df_int, df_float, pfx):
+    """Darshan's shared-record reduction over per-rank records of one file.
+
+    Mirrors what the runtime computes at MPI_Finalize for a file opened by all
+    ranks (darshan-posix.c, ``posix_shared_record_variance`` and the fastest
+    and slowest rank fields): the rank with the least and the most cumulative
+    I/O time, the bytes those two ranks moved, and the population variance of
+    time and bytes over the ranks.
+    """
+    time_cols = [f'{pfx}_F_READ_TIME', f'{pfx}_F_WRITE_TIME', f'{pfx}_F_META_TIME']
+    byte_cols = [f'{pfx}_BYTES_READ', f'{pfx}_BYTES_WRITTEN']
+    times = df_float[[c for c in time_cols if c in df_float.columns]].sum(axis=1).to_numpy()
+    byts = df_int[[c for c in byte_cols if c in df_int.columns]].sum(axis=1).to_numpy(dtype=float)
+    ranks = df_int['rank'].to_numpy()
+    fastest = int(np.argmin(times))
+    slowest = int(np.argmax(times))
+    return {
+        f'{pfx}_FASTEST_RANK': float(ranks[fastest]),
+        f'{pfx}_FASTEST_RANK_BYTES': float(byts[fastest]),
+        f'{pfx}_SLOWEST_RANK': float(ranks[slowest]),
+        f'{pfx}_SLOWEST_RANK_BYTES': float(byts[slowest]),
+        f'{pfx}_F_FASTEST_RANK_TIME': float(times[fastest]),
+        f'{pfx}_F_SLOWEST_RANK_TIME': float(times[slowest]),
+        f'{pfx}_F_VARIANCE_RANK_TIME': float(times.var()),
+        f'{pfx}_F_VARIANCE_RANK_BYTES': float(byts.var()),
+    }
+
+
+def _extract_pydarshan_module(dfs, module_name, counters, nprocs, prefix=None):
     """Extract counters from a PyDarshan module, aggregated across files.
 
-    Replicates darshan-parser --total aggregation semantics exactly using
-    the 7 rules derived from Darshan 3.5.0 C source code analysis.
-    See docs/darshan_counter_aggregation.md for full documentation.
+    Replicates darshan-parser --total aggregation semantics using the rules
+    derived from the Darshan 3.5.0 C source. See
+    docs/3_guides/darshan_counter_aggregation.md for full documentation.
 
     Rules:
       SUM:          operation counts, byte totals, histograms, cumulative times
@@ -198,29 +214,58 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
       MIN_NONZERO:  *_START_TIMESTAMP (ignores 0 = "not set")
       LAST_VALUE:   MODE, MEM_ALIGNMENT, FILE_ALIGNMENT, RENAMED_FROM
       TOP-4 MERGE:  ACCESS1-4, STRIDE1-4 (sorted merge keeping 4 most frequent)
-      CONDITIONAL:  FASTEST/SLOWEST rank (-1/0.0 if not shared), MAX_*_TIME_SIZE
-      ZEROED:       F_VARIANCE_RANK_TIME, F_VARIANCE_RANK_BYTES (always 0)
+      SHARED:       FASTEST/SLOWEST rank and bytes, F_FASTEST/SLOWEST_RANK_TIME,
+                    F_VARIANCE_RANK_*: taken from the reduced record when the
+                    whole log is one file used by all ranks (``_shared_file_flag``),
+                    computed by ``_shared_reduction`` when that file appears as
+                    per-rank records (merged per-process logs), else -1 / 0.0
+      CONDITIONAL:  MAX_*_TIME_SIZE from the record that holds F_MAX_*_TIME
+
+    Darshan fills the SHARED counters only for shared records (rank -1), and
+    ``darshan-parser --total`` zeroes the variances because they cannot be
+    summed across records. Rank-level imbalance for every other layout comes
+    from ``_rank_statistics``.
+
+    Parameters
+    ----------
+    dfs : dict
+        ``to_df()`` output of the module (``'counters'`` and ``'fcounters'``).
+    module_name : str
+    counters : dict
+        Filled in place.
+    nprocs : int
+        Processes of the job (for the shared-file test).
+    prefix : str, optional
+        Counter prefix when it differs from the module name (``MPIIO``).
+
+    Returns
+    -------
+    bool
+        The shared-file flag of this module.
     """
-    try:
-        rec = report.records[module_name]
-        dfs = rec.to_df()
-    except Exception:
-        logger.debug("Cannot read module %s", module_name, exc_info=True)
-        return False
-
     pfx = prefix or module_name
+    df_int = dfs.get('counters')
+    df_float = dfs.get('fcounters')
 
-    # Determine shared_file_flag: True only if ALL records reference the same file
-    shared_file_flag = False
-    if 'counters' in dfs:
-        df_int = dfs['counters']
-        if 'id' in df_int.columns and len(df_int) > 0:
-            shared_file_flag = (df_int['id'].nunique() == 1)
+    shared_file_flag = _shared_file_flag(df_int, nprocs)
+    shared_values = {}
+    if shared_file_flag:
+        reduced = df_int['rank'] == -1
+        if reduced.any():
+            pos = int(np.flatnonzero(reduced.to_numpy())[-1])
+            for frame in (df_int, df_float):
+                if frame is not None:
+                    row = frame.iloc[pos]
+                    for col in frame.columns:
+                        if 'RANK' in col:
+                            shared_values[col] = float(row[col])
+        else:
+            shared_values = _shared_reduction(df_int, df_float, pfx)
 
     # --- Integer counter rules (keyed by suffix after prefix stripping) ---
     _MAX_INT = {'MAX_BYTE_READ', 'MAX_BYTE_WRITTEN'}
     _LAST_VALUE_INT = {'MODE', 'MEM_ALIGNMENT', 'FILE_ALIGNMENT', 'RENAMED_FROM'}
-    _SENTINEL_INT = {
+    _SHARED_INT = {
         'FASTEST_RANK', 'FASTEST_RANK_BYTES',
         'SLOWEST_RANK', 'SLOWEST_RANK_BYTES',
     }
@@ -228,8 +273,8 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
 
     # --- Float counter rules ---
     _MAX_FLOAT = {'F_MAX_READ_TIME', 'F_MAX_WRITE_TIME'}
-    _ZEROED_FLOAT = {'F_VARIANCE_RANK_TIME', 'F_VARIANCE_RANK_BYTES'}
-    _SENTINEL_FLOAT = {'F_FASTEST_RANK_TIME', 'F_SLOWEST_RANK_TIME'}
+    _SHARED_FLOAT = {'F_VARIANCE_RANK_TIME', 'F_VARIANCE_RANK_BYTES',
+                     'F_FASTEST_RANK_TIME', 'F_SLOWEST_RANK_TIME'}
 
     # --- TOP-4 MERGE groups: (group_prefix, value_suffix, count_suffix) ---
     _TOP4_GROUPS = []
@@ -246,9 +291,7 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
             top4_cols.add(f'{pfx}_{grp}{i}_{cnt_sfx}')
 
     # --- Integer counters ---
-    if 'counters' in dfs:
-        df_int = dfs['counters']
-
+    if df_int is not None:
         for col in df_int.columns:
             if col in ('id', 'rank') or col in top4_cols:
                 continue
@@ -259,11 +302,8 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
                 counters[key] = float(df_int[col].max())
             elif cname in _LAST_VALUE_INT:
                 counters[key] = float(df_int[col].iloc[-1])
-            elif cname in _SENTINEL_INT:
-                if shared_file_flag:
-                    counters[key] = float(df_int[col].iloc[-1])
-                else:
-                    counters[key] = -1.0
+            elif cname in _SHARED_INT:
+                counters[key] = shared_values.get(key, -1.0)
             elif cname in _CONDITIONAL_INT:
                 # Deferred: set after float pass using F_MAX_*_TIME winner index
                 counters[key] = 0.0
@@ -304,15 +344,13 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
                     counters[cc] = 0.0
 
     # --- Float counters ---
-    max_time_winner = {}  # 'READ' -> row_idx, 'WRITE' -> row_idx
-    if 'fcounters' in dfs:
-        df_float = dfs['fcounters']
-
-        # Pre-compute which record wins F_MAX_READ_TIME and F_MAX_WRITE_TIME
+    max_time_winner = {}  # 'READ' -> row position, 'WRITE' -> row position
+    if df_float is not None:
+        # Which record (by position, not index label) wins F_MAX_*_TIME
         for direction in ('READ', 'WRITE'):
             col_name = f'{pfx}_F_MAX_{direction}_TIME'
             if col_name in df_float.columns and len(df_float) > 0:
-                max_time_winner[direction] = int(df_float[col_name].idxmax())
+                max_time_winner[direction] = int(np.argmax(df_float[col_name].to_numpy()))
 
         for col in df_float.columns:
             if col in ('id', 'rank'):
@@ -320,18 +358,10 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
             key = col if col.startswith(pfx) else f"{pfx}_{col}"
             cname = col.replace(f'{pfx}_', '') if col.startswith(pfx) else col
 
-            if cname in _ZEROED_FLOAT:
-                counters[key] = 0.0
+            if cname in _SHARED_FLOAT:
+                counters[key] = shared_values.get(key, 0.0)
             elif cname in _MAX_FLOAT:
                 counters[key] = float(df_float[col].max())
-            elif cname in _SENTINEL_FLOAT:
-                if shared_file_flag:
-                    if 'FASTEST' in cname:
-                        counters[key] = float(df_float[col].min())
-                    else:
-                        counters[key] = float(df_float[col].max())
-                else:
-                    counters[key] = 0.0
             elif 'START_TIMESTAMP' in cname:
                 vals = df_float[col][df_float[col] > 0]
                 counters[key] = float(vals.min()) if len(vals) > 0 else 0.0
@@ -341,207 +371,214 @@ def _extract_pydarshan_module(report, module_name, counters, prefix=None):
                 # Default: SUM (cumulative times)
                 counters[key] = float(df_float[col].sum())
 
-    # Set CONDITIONAL integer counters using F_MAX_*_TIME winner indices
-    if 'counters' in dfs:
-        df_int = dfs['counters']
-        for direction, idx in max_time_winner.items():
+    # Set CONDITIONAL integer counters using F_MAX_*_TIME winner positions
+    if df_int is not None:
+        for direction, pos in max_time_winner.items():
             size_key = f'{pfx}_MAX_{direction}_TIME_SIZE'
             if size_key in df_int.columns:
-                counters[size_key] = float(df_int[size_key].iloc[idx])
+                counters[size_key] = float(df_int[size_key].iloc[pos])
 
     return shared_file_flag
 
 
 # ---------------------------------------------------------------------------
-# CLI backend (darshan-parser --total)
+# Per-rank statistics (computed from the file records before aggregation)
 # ---------------------------------------------------------------------------
 
-def _parse_with_cli(path):
-    """Parse using darshan-parser CLI tool."""
-    # Find darshan-parser: prefer sc2026 conda env build (has bzip2), then PATH
-    import shutil
-    parser_paths = [
-        '/projects/bdau/envs/sc2026/bin/darshan-parser',
-        shutil.which('darshan-parser'),
-    ]
-    parser_bin = next((p for p in parser_paths if p and Path(p).exists()), None)
-    if parser_bin is None:
-        logger.error("darshan-parser not found")
-        return None
+# Layers whose records are summed per rank. MPI-IO is left out because its
+# bytes reach POSIX as well and would be counted twice.
+_RANK_LAYERS = ('POSIX', 'STDIO')
 
-    # Run darshan-parser --total --perf
-    try:
-        result = subprocess.run(
-            [parser_bin, '--total', '--perf', str(path)],
-            capture_output=True, text=True, timeout=60,
-        )
-    except subprocess.TimeoutExpired:
-        logger.warning("darshan-parser timed out on %s", path)
-        return None
+# Darshan's names for the standard streams. They are not data files: their
+# bytes are log messages, so they are left out of every rank statistic.
+_STANDARD_STREAMS = {'<STDIN>', '<STDOUT>', '<STDERR>'}
 
-    if result.returncode != 0:
-        logger.debug("darshan-parser failed on %s: %s", path, result.stderr[:200])
-        return None
-
-    output = result.stdout
-    job = _parse_cli_header(output)
-    counters = _parse_cli_counters(output)
-    modules = _detect_cli_modules(output)
-
-    job['modules'] = modules
-
-    # Detect filesystem
-    job['uses_lustre'] = '/lus/' in output
-    for line in output.splitlines():
-        if 'mount entry' in line and 'lustre' in line.lower():
-            parts = line.split('\t')
-            if len(parts) >= 2:
-                job['lustre_mount'] = parts[1].strip()
-                break
-
-    # Count files from --total output is not directly available,
-    # but we can get it from the record table note or set to 0
-    counters.setdefault('num_files', 0)
-
-    # Try to get file count from a separate --base run
-    try:
-        base_result = subprocess.run(
-            ['darshan-parser', '--base', str(path)],
-            capture_output=True, text=True, timeout=60,
-        )
-        if base_result.returncode == 0:
-            # Count unique file IDs
-            file_ids = set()
-            for line in base_result.stdout.splitlines():
-                if line.startswith('#') or not line.strip():
-                    continue
-                parts = line.split('\t')
-                if len(parts) >= 3:
-                    file_ids.add(parts[2].strip())
-            counters['num_files'] = len(file_ids)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-
-    # CLI --total cannot determine shared_file_flag reliably; default to False
-    return {
-        'job': job,
-        'counters': counters,
-        'modules': modules,
-        'shared_file_flags': {},
-    }
+RANK_STAT_KEYS = (
+    'RANK_IO_COUNT', 'RANK_BYTES_MAX', 'RANK_BYTES_MIN', 'RANK_BYTES_VAR',
+    'RANK_BYTES_GINI', 'RANK_TIME_MAX', 'RANK_TIME_MIN', 'RANK_TIME_VAR',
+    'RANK_SHARED_BYTES', 'SHARED_BYTE_IMBALANCE', 'SHARED_TIME_IMBALANCE',
+    'FILE_WRITE_IMBALANCE', 'FILE_READ_IMBALANCE',
+)
 
 
-def _parse_cli_header(output):
-    """Extract job metadata from darshan-parser header comments."""
-    job = {
-        'jobid': 0,
-        'uid': 0,
-        'nprocs': 1,
-        'start_time': 0,
-        'end_time': 0,
-        'runtime': 0.0,
-        'log_version': '',
-        'uses_lustre': False,
-        'lustre_mount': '',
-    }
-
-    for line in output.splitlines():
-        line = line.strip()
-        if not line.startswith('#'):
-            continue
-
-        if '# jobid:' in line:
-            job['jobid'] = _safe_int(line.split(':')[-1])
-        elif '# uid:' in line:
-            job['uid'] = _safe_int(line.split(':')[-1])
-        elif '# nprocs:' in line:
-            job['nprocs'] = _safe_int(line.split(':')[-1])
-        elif '# start_time:' in line and 'asci' not in line:
-            job['start_time'] = _safe_int(line.split(':')[-1])
-        elif '# end_time:' in line and 'asci' not in line:
-            job['end_time'] = _safe_int(line.split(':')[-1])
-        elif '# run time:' in line:
-            job['runtime'] = _safe_float(line.split(':')[-1])
-        elif '# darshan log version:' in line:
-            job['log_version'] = line.split(':')[-1].strip()
-        elif '# start_time_asci:' in line:
-            job['start_time_str'] = line.split(':', 1)[-1].strip()
-
-    return job
-
-
-def _parse_cli_counters(output):
-    """Extract total_* counter lines from darshan-parser --total output."""
-    counters = {}
-    perf_section = False
-
-    for line in output.splitlines():
-        line = line.strip()
-
-        # Parse total_MODULE_COUNTER: value lines
-        if line.startswith('total_'):
-            match = re.match(r'^total_(\w+):\s+(-?\d+\.?\d*(?:e[+-]?\d+)?)', line)
-            if match:
-                key = match.group(1)
-                val = _safe_float(match.group(2))
-                counters[key] = val
-
-        # Parse performance section
-        if 'agg_perf_by_slowest:' in line:
-            match = re.search(r'agg_perf_by_slowest:\s+(-?\d+\.?\d*)', line)
-            if match:
-                counters['agg_perf_mib_s'] = _safe_float(match.group(1))
-
-    return counters
-
-
-def _detect_cli_modules(output):
-    """Detect which modules are present from darshan-parser output."""
-    modules = []
-    module_patterns = {
-        'POSIX': r'POSIX module.*ver=',
-        'MPI-IO': r'MPI-IO module.*ver=',
-        'STDIO': r'STDIO module.*ver=',
-        'H5F': r'H5F module.*ver=',
-        'H5D': r'H5D module.*ver=',
-        'LUSTRE': r'LUSTRE module.*ver=',
-        'PNETCDF': r'PNETCDF module.*ver=',
-        'APMPI': r'APMPI module.*ver=',
-        'HEATMAP': r'HEATMAP module.*ver=',
-    }
-
-    for mod_name, pattern in module_patterns.items():
-        if re.search(pattern, output):
-            modules.append(mod_name)
-
-    # Also check for module data sections
-    for mod_name in ['POSIX', 'STDIO']:
-        if f'{mod_name} module data' in output and mod_name not in modules:
-            modules.append(mod_name)
-    if 'MPI-IO module data' in output and 'MPI-IO' not in modules:
-        modules.append('MPI-IO')
-
-    return modules
-
-
-# ---------------------------------------------------------------------------
-# Utilities
-# ---------------------------------------------------------------------------
-
-def _safe_int(s):
-    """Safely parse an integer from a string."""
-    try:
-        return int(str(s).strip())
-    except (ValueError, TypeError):
-        return 0
-
-
-def _safe_float(s):
-    """Safely parse a float from a string."""
-    try:
-        return float(str(s).strip())
-    except (ValueError, TypeError):
+def _gini(values):
+    """Gini coefficient of a non-negative array (0 = equal, 1 = one holder)."""
+    total = float(values.sum())
+    if total <= 0 or len(values) < 2:
         return 0.0
+    sorted_vals = sorted(float(v) for v in values)
+    n = len(sorted_vals)
+    weighted = sum((i + 1) * v for i, v in enumerate(sorted_vals))
+    return (2.0 * weighted) / (n * total) - (n + 1.0) / n
+
+
+def _stream_ids(name_records):
+    return {i for i, name in name_records.items() if name in _STANDARD_STREAMS}
+
+
+def _per_file_imbalance(df_int, column):
+    """Drishti's individual-file rule: (max - min) / max of ``column`` over the
+    ranks that accessed the same file id, for records with rank != -1; returns
+    the largest value over all such files (0.0 if none is used by 2+ ranks)."""
+    if column not in df_int.columns:
+        return 0.0
+    own = df_int[df_int['rank'] != -1]
+    if own.empty:
+        return 0.0
+    grouped = own.groupby('id')[column].agg(['max', 'min', 'count'])
+    grouped = grouped[(grouped['count'] > 1) & (grouped['max'] > 0)]
+    if grouped.empty:
+        return 0.0
+    return float(((grouped['max'] - grouped['min']) / grouped['max']).max())
+
+
+def _shared_record_imbalance(df_int, df_float, pfx):
+    """Drishti's shared-file straggler measures, largest over the reduced
+    (rank -1) records: |SLOWEST_RANK_BYTES - FASTEST_RANK_BYTES| / record bytes
+    (P18) and |F_SLOWEST_RANK_TIME - F_FASTEST_RANK_TIME| / record time (P19).
+
+    Returns (byte_imbalance, time_imbalance); 0.0 when there is no reduced
+    record. Rank -1 records are the only place Darshan keeps per-rank evidence
+    for a file opened by all ranks, so this survives the per-file aggregation.
+    """
+    byte_imb = 0.0
+    time_imb = 0.0
+    shared = df_int['rank'] == -1
+    if not shared.any():
+        return byte_imb, time_imb
+    fast_b, slow_b = f'{pfx}_FASTEST_RANK_BYTES', f'{pfx}_SLOWEST_RANK_BYTES'
+    if fast_b in df_int.columns and slow_b in df_int.columns:
+        rec = df_int[shared]
+        total = rec[[f'{pfx}_BYTES_READ', f'{pfx}_BYTES_WRITTEN']].clip(lower=0).sum(axis=1)
+        ok = total > 0
+        if ok.any():
+            byte_imb = float(((rec[slow_b] - rec[fast_b]).abs()[ok] / total[ok]).max())
+    fast_t, slow_t = f'{pfx}_F_FASTEST_RANK_TIME', f'{pfx}_F_SLOWEST_RANK_TIME'
+    if df_float is not None and fast_t in df_float.columns and slow_t in df_float.columns:
+        rec = df_float[df_float['rank'] == -1]
+        time_cols = [c for c in (f'{pfx}_F_READ_TIME', f'{pfx}_F_WRITE_TIME',
+                                 f'{pfx}_F_META_TIME') if c in rec.columns]
+        total = rec[time_cols].clip(lower=0).sum(axis=1)
+        ok = total > 0
+        if ok.any():
+            time_imb = float(((rec[slow_t] - rec[fast_t]).abs()[ok] / total[ok]).max())
+    return byte_imb, time_imb
+
+
+def _rank_statistics(module_dfs, nprocs, name_records):
+    """Distribution of I/O bytes and time over the ranks of a job.
+
+    Darshan writes one record per (file, rank); files opened by all ranks are
+    reduced to one record with rank -1. Summing the records per rank gives the
+    per-process totals that ``darshan-parser --perf`` uses for its "unique
+    files: slowest_rank" figures and that AIIO's "time of the slowest process"
+    refers to. This is the only place where imbalance of a file-per-process
+    job is visible, because Darshan's FASTEST/SLOWEST/VARIANCE counters exist
+    for shared records alone.
+
+    Shared (rank -1) records are spread evenly over ``nprocs`` for the rank
+    totals; the imbalance inside them is kept separately as
+    ``SHARED_BYTE_IMBALANCE`` and ``SHARED_TIME_IMBALANCE`` (Drishti's P18 and
+    P19 measures, largest over the reduced records). Those two come from the
+    MPI-IO records when the job has any, because collective buffering makes
+    a few aggregator ranks do the POSIX writes for everyone and the POSIX
+    view of a balanced collective write is then maximally uneven; otherwise
+    from POSIX. Ranks without records count as zero, so a single writer in a
+    32-rank job gets ``RANK_BYTES_GINI`` near 1 and ``RANK_IO_COUNT`` = 1.
+    The standard streams are excluded.
+
+    Parameters
+    ----------
+    module_dfs : dict
+        ``{module: {'counters': df, 'fcounters': df}}`` as returned by
+        ``to_df()``; only POSIX and STDIO are used.
+    nprocs : int
+        Number of processes of the job.
+    name_records : dict
+        Darshan record id to file name, used to recognize the standard streams.
+
+    Returns
+    -------
+    dict
+        Keys listed in ``RANK_STAT_KEYS``.
+    """
+    n = max(int(nprocs), 1)
+    rank_bytes = np.zeros(n, dtype=np.float64)
+    rank_time = np.zeros(n, dtype=np.float64)
+    shared_bytes = 0.0
+    file_write_imb = 0.0
+    file_read_imb = 0.0
+    streams = _stream_ids(name_records)
+
+    # Straggler evidence from the layer the application used
+    mpiio = module_dfs.get('MPI-IO')
+    if mpiio and mpiio.get('counters') is not None and not mpiio['counters'].empty:
+        shared_byte_imb, shared_time_imb = _shared_record_imbalance(
+            mpiio['counters'], mpiio.get('fcounters'), 'MPIIO')
+    else:
+        shared_byte_imb, shared_time_imb = 0.0, 0.0
+        posix = module_dfs.get('POSIX')
+        if posix and posix.get('counters') is not None and not posix['counters'].empty:
+            keep = ~posix['counters']['id'].isin(streams).to_numpy()
+            fl = posix.get('fcounters')
+            shared_byte_imb, shared_time_imb = _shared_record_imbalance(
+                posix['counters'][keep], fl[keep] if fl is not None else None, 'POSIX')
+
+    def _accumulate(df, columns, target):
+        """Add the row sums of ``columns`` to ``target`` by rank; shared rows
+        (rank -1) are spread evenly. Returns the shared part."""
+        per_rec = df[columns].clip(lower=0).sum(axis=1)
+        shared_mask = df['rank'] == -1
+        shared_part = float(per_rec[shared_mask].sum())
+        target += shared_part / n
+        own = per_rec[~shared_mask].groupby(df.loc[~shared_mask, 'rank']).sum()
+        if len(own) and int(own.index.max()) >= n:
+            raise ValueError(
+                f"record for rank {int(own.index.max())} in a job with nprocs={n}")
+        for rank, value in own.items():
+            target[int(rank)] += float(value)
+        return shared_part
+
+    for mod in _RANK_LAYERS:
+        dfs = module_dfs.get(mod)
+        if not dfs or dfs.get('counters') is None:
+            continue
+        keep = ~dfs['counters']['id'].isin(streams).to_numpy()
+        df_int = dfs['counters'][keep]
+        df_float = dfs.get('fcounters')
+        if df_float is not None:
+            df_float = df_float[keep]
+
+        byte_cols = [c for c in (f'{mod}_BYTES_READ', f'{mod}_BYTES_WRITTEN')
+                     if c in df_int.columns]
+        if byte_cols and not df_int.empty:
+            shared_bytes += _accumulate(df_int, byte_cols, rank_bytes)
+        if mod == 'POSIX' and not df_int.empty:
+            file_write_imb = _per_file_imbalance(df_int, 'POSIX_BYTES_WRITTEN')
+            file_read_imb = _per_file_imbalance(df_int, 'POSIX_BYTES_READ')
+
+        if df_float is not None and not df_float.empty:
+            time_cols = [c for c in (f'{mod}_F_READ_TIME', f'{mod}_F_WRITE_TIME',
+                                     f'{mod}_F_META_TIME') if c in df_float.columns]
+            if time_cols:
+                _accumulate(df_float, time_cols, rank_time)
+
+    active = (rank_bytes > 0) | (rank_time > 0)
+    return {
+        'RANK_IO_COUNT': float(active.sum()),
+        'RANK_BYTES_MAX': float(rank_bytes.max()),
+        'RANK_BYTES_MIN': float(rank_bytes.min()),
+        'RANK_BYTES_VAR': float(rank_bytes.var()),
+        'RANK_BYTES_GINI': _gini(rank_bytes),
+        'RANK_TIME_MAX': float(rank_time.max()),
+        'RANK_TIME_MIN': float(rank_time.min()),
+        'RANK_TIME_VAR': float(rank_time.var()),
+        'RANK_SHARED_BYTES': shared_bytes,
+        'SHARED_BYTE_IMBALANCE': shared_byte_imb,
+        'SHARED_TIME_IMBALANCE': shared_time_imb,
+        'FILE_WRITE_IMBALANCE': file_write_imb,
+        'FILE_READ_IMBALANCE': file_read_imb,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -553,9 +590,15 @@ def parse_benchmark_job(rank_files):
 
     When Python/mpi4py programs run with LD_PRELOAD + DARSHAN_ENABLE_NONMPI=1,
     each MPI rank creates its own .darshan file (nprocs=1). This function
-    groups them by job and applies the same 7 aggregation rules that Darshan's
-    MPI_Finalize uses for compiled MPI applications, producing output identical
-    in format to ``parse_darshan_log()`` on a standard aggregated log.
+    merges the records of one launch into one job record and applies the same
+    aggregation rules as ``parse_darshan_log()`` on a native MPI-mode log
+    (the operation ``darshan-merge --shared-redux`` performs). Before the
+    aggregation the per-process records feed ``_rank_statistics``, so the
+    distribution of I/O over the processes is kept.
+
+    Each file is one process. Its position in the sorted file list is used as
+    the rank id (the file name carries the pid, not the MPI rank), which is
+    enough for distribution statistics but does not identify rank 0.
 
     Parameters
     ----------
@@ -566,24 +609,24 @@ def parse_benchmark_job(rank_files):
 
     Returns
     -------
-    dict or None
+    dict
         Same structure as ``parse_darshan_log()``:
         ``{'job': {...}, 'counters': {...}, 'modules': [...], 'shared_file_flags': {...}}``
-        Returns None if no files can be parsed.
+
+    Raises
+    ------
+    ValueError
+        If ``rank_files`` is empty, or a file cannot be opened or one of its
+        modules cannot be read. A partial merge would look like a complete
+        job with fewer processes, so it is refused.
     """
     if not rank_files:
-        return None
+        raise ValueError("parse_benchmark_job needs at least one per-rank log")
 
     import pandas as pd
 
     nprocs = len(rank_files)
-    all_posix_int = []
-    all_posix_float = []
-    all_mpiio_int = []
-    all_mpiio_float = []
-    all_stdio_int = []
-    all_stdio_float = []
-
+    frames = {mod: {'counters': [], 'fcounters': []} for mod, _ in FEATURE_MODULES}
     job_meta = None
     all_modules = set()
     all_name_records = {}
@@ -593,159 +636,55 @@ def parse_benchmark_job(rank_files):
     for rank_idx, fpath in enumerate(sorted(rank_files)):
         try:
             report = darshan.DarshanReport(str(fpath), read_all=False)
-        except Exception:
-            logger.debug("Cannot open per-rank log %s", fpath)
-            continue
+        except Exception as exc:
+            raise ValueError(f"cannot open per-rank log {fpath}: {exc}") from exc
 
-        # Collect job metadata from first parseable file
-        jm = report.metadata.get('job', {})
         if job_meta is None:
-            job_meta = {
-                'jobid': jm.get('jobid', 0),
-                'uid': jm.get('uid', 0),
-                'nprocs': nprocs,
-                'start_time': jm.get('start_time_sec', 0),
-                'end_time': jm.get('end_time_sec', 0),
-                'runtime': jm.get('run_time', 0.0),
-                'log_version': jm.get('log_ver', ''),
-                'uses_lustre': False,
-                'lustre_mount': '',
-            }
-            for mount_info in report.metadata.get('mounts', []):
-                mp = mount_info[0] if isinstance(mount_info, (list, tuple)) else str(mount_info)
-                fs = mount_info[1] if isinstance(mount_info, (list, tuple)) and len(mount_info) > 1 else ''
-                if 'lustre' in str(fs).lower() or '/lus/' in str(mp):
-                    job_meta['uses_lustre'] = True
-                    job_meta['lustre_mount'] = str(mp)
-                    break
+            job_meta = _job_metadata(report, nprocs=nprocs)
+        jm = report.metadata.get('job', {})
+        if jm.get('start_time_sec', 0) > 0:
+            start_times.append(jm['start_time_sec'])
+        if jm.get('end_time_sec', 0) > 0:
+            end_times.append(jm['end_time_sec'])
 
-        # Track start/end across ranks for accurate runtime
-        st = jm.get('start_time_sec', 0)
-        et = jm.get('end_time_sec', 0)
-        if st > 0:
-            start_times.append(st)
-        if et > 0:
-            end_times.append(et)
+        # Every record of this file belongs to this process
+        for mod, _ in FEATURE_MODULES:
+            if mod not in report.modules:
+                continue
+            all_modules.add(mod)
+            dfs = _read_module_frames(report, mod, fpath)
+            for kind in ('counters', 'fcounters'):
+                if kind in dfs:
+                    df = dfs[kind].copy()
+                    df['rank'] = rank_idx
+                    frames[mod][kind].append(df)
 
-        # Read modules
-        _MODULES = ['POSIX', 'MPI-IO', 'STDIO']
-        for mod in _MODULES:
-            if mod in report.modules:
-                all_modules.add(mod)
-                try:
-                    report.mod_read_all_records(mod)
-                except Exception:
-                    pass
-
-        # Collect name records for file count
-        if hasattr(report, 'name_records'):
-            all_name_records.update(report.name_records)
-
-        # Extract per-rank DataFrames with rank reassignment
-        if 'POSIX' in report.records:
-            try:
-                dfs = report.records['POSIX'].to_df()
-                if 'counters' in dfs:
-                    df = dfs['counters'].copy()
-                    df['rank'] = rank_idx
-                    all_posix_int.append(df)
-                if 'fcounters' in dfs:
-                    df = dfs['fcounters'].copy()
-                    df['rank'] = rank_idx
-                    all_posix_float.append(df)
-            except Exception:
-                pass
-
-        if 'MPI-IO' in report.records:
-            try:
-                dfs = report.records['MPI-IO'].to_df()
-                if 'counters' in dfs:
-                    df = dfs['counters'].copy()
-                    df['rank'] = rank_idx
-                    all_mpiio_int.append(df)
-                if 'fcounters' in dfs:
-                    df = dfs['fcounters'].copy()
-                    df['rank'] = rank_idx
-                    all_mpiio_float.append(df)
-            except Exception:
-                pass
-
-        if 'STDIO' in report.records:
-            try:
-                dfs = report.records['STDIO'].to_df()
-                if 'counters' in dfs:
-                    df = dfs['counters'].copy()
-                    df['rank'] = rank_idx
-                    all_stdio_int.append(df)
-                if 'fcounters' in dfs:
-                    df = dfs['fcounters'].copy()
-                    df['rank'] = rank_idx
-                    all_stdio_float.append(df)
-            except Exception:
-                pass
+        all_name_records.update(getattr(report, 'name_records', {}) or {})
 
     if job_meta is None:
-        return None
+        raise ValueError("no job metadata in any per-rank log")
 
-    # Fix runtime from cross-rank start/end times
+    # Runtime of the launch: first start to last end over the processes
     if start_times and end_times:
         job_meta['start_time'] = min(start_times)
         job_meta['end_time'] = max(end_times)
         job_meta['runtime'] = max(end_times) - min(start_times)
-
-    job_meta['nprocs'] = nprocs
     job_meta['modules'] = sorted(all_modules)
 
-    # Build a synthetic report-like object to feed into _extract_pydarshan_module
     counters = {}
     shared_file_flags = {}
+    module_dfs = {}
+    for mod, prefix in FEATURE_MODULES:
+        if not frames[mod]['counters']:
+            continue
+        dfs = {'counters': pd.concat(frames[mod]['counters'], ignore_index=True)}
+        if frames[mod]['fcounters']:
+            dfs['fcounters'] = pd.concat(frames[mod]['fcounters'], ignore_index=True)
+        module_dfs[mod] = dfs
+        shared_file_flags[mod] = _extract_pydarshan_module(
+            dfs, mod, counters, nprocs, prefix=prefix)
 
-    class _SyntheticReport:
-        """Mimics darshan.DarshanReport enough for _extract_pydarshan_module."""
-        def __init__(self):
-            self.records = {}
-            self.name_records = all_name_records
-
-    class _SyntheticRecords:
-        """Mimics DarshanRecordCollection.to_df() return value."""
-        def __init__(self, int_df, float_df):
-            self._int = int_df
-            self._float = float_df
-
-        def to_df(self):
-            result = {}
-            if self._int is not None:
-                result['counters'] = self._int
-            if self._float is not None:
-                result['fcounters'] = self._float
-            return result
-
-    synth = _SyntheticReport()
-
-    if all_posix_int:
-        synth.records['POSIX'] = _SyntheticRecords(
-            pd.concat(all_posix_int, ignore_index=True),
-            pd.concat(all_posix_float, ignore_index=True) if all_posix_float else None,
-        )
-        sf = _extract_pydarshan_module(synth, 'POSIX', counters)
-        shared_file_flags['POSIX'] = sf
-
-    if all_mpiio_int:
-        synth.records['MPI-IO'] = _SyntheticRecords(
-            pd.concat(all_mpiio_int, ignore_index=True),
-            pd.concat(all_mpiio_float, ignore_index=True) if all_mpiio_float else None,
-        )
-        sf = _extract_pydarshan_module(synth, 'MPI-IO', counters, prefix='MPIIO')
-        shared_file_flags['MPI-IO'] = sf
-
-    if all_stdio_int:
-        synth.records['STDIO'] = _SyntheticRecords(
-            pd.concat(all_stdio_int, ignore_index=True),
-            pd.concat(all_stdio_float, ignore_index=True) if all_stdio_float else None,
-        )
-        sf = _extract_pydarshan_module(synth, 'STDIO', counters)
-        shared_file_flags['STDIO'] = sf
-
+    counters.update(_rank_statistics(module_dfs, nprocs, all_name_records))
     counters['num_files'] = len(all_name_records)
 
     return {

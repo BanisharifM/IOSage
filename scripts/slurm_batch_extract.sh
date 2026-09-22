@@ -4,8 +4,8 @@
 # =============================================================================
 # Architecture:
 #   Step 1: Discover and split files into N chunks (one per array task)
-#   Step 2: SLURM array job — each task processes its chunk with 100 workers
-#   Step 3: Merge job (afterany) — combines all chunk parquets into one file
+#   Step 2: SLURM array job: each task processes its chunk with 100 workers
+#   Step 3: Merge job (afterany): combines all chunk parquets into one file
 #
 # Each array task runs batch_extract.py which:
 #   - Uses multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
@@ -16,26 +16,34 @@
 #   - Logs errors to CSV for post-hoc diagnosis
 #
 # Submit:
-#   bash scripts/slurm_batch_extract.sh
+#   bash scripts/slurm_batch_extract.sh            # writes under data/processed/resubmission/production
+#   OUTPUT_DIR=<dir> bash scripts/slurm_batch_extract.sh
+#   DEPENDENCY=afterany:<jobid> bash scripts/slurm_batch_extract.sh   # start after timed runs end
 #
 # Monitor:
 #   squeue -u $USER
-#   ls -la data/processed/chunks/
-#   tail -f logs/slurm/extract_JOBID_0.out
-#   wc -l data/processed/chunks/*_errors.csv
+#   ls -la $OUTPUT_DIR/chunks/
+#   tail -f $OUTPUT_DIR/logs/extract_JOBID_0.out
+#   wc -l $OUTPUT_DIR/chunks/*_errors.csv
+#
+# The output directory must not hold an earlier run (refused rather than overwritten).
 # =============================================================================
 
 set -euo pipefail
 
 # --- Configuration ---
-PYTHON=/projects/bdau/envs/sc2026/bin/python
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+PYTHON="${IOSAGE_ENV}/bin/python"
 PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
-INPUT_DIR="${PROJECT_DIR}/Darshan_Logs"
-OUTPUT_DIR="${PROJECT_DIR}/data/processed"
+INPUT_DIR="${INPUT_DIR:-${PROJECT_DIR}/Darshan_Logs}"
+OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_DIR}/data/processed/resubmission/production}"
 CHUNK_DIR="${OUTPUT_DIR}/chunks"
-FILELIST_DIR="${PROJECT_DIR}/data/filelists"
+FILELIST_DIR="${OUTPUT_DIR}/filelists"
 FINAL_OUTPUT="${OUTPUT_DIR}/raw_features.parquet"
-LOG_DIR="${PROJECT_DIR}/logs/slurm"
+LOG_DIR="${OUTPUT_DIR}/logs"
+# Reading 1.4M small files from 20 nodes loads the metadata servers of the shared file
+# system; never run this next to timed benchmark or application runs.
+DEPENDENCY="${DEPENDENCY:-}"
 
 N_CHUNKS=20              # Number of array tasks (one per node)
 WORKERS_PER_TASK=100     # Workers per node (128 CPUs, leave 28 for OS/IO)
@@ -43,7 +51,7 @@ TIMEOUT_PER_FILE=120     # Seconds before killing a stuck file
 CHUNK_SIZE=10000         # Rows per internal sub-chunk file
 
 echo "================================================================="
-echo "  Batch Feature Extraction — $(date)"
+echo "  Batch Feature Extraction $(date)"
 echo "================================================================="
 echo "Input:       ${INPUT_DIR}"
 echo "Output:      ${FINAL_OUTPUT}"
@@ -53,6 +61,10 @@ echo "Timeout:     ${TIMEOUT_PER_FILE}s per file"
 echo ""
 
 # --- Step 1: Create file lists ---
+if [ -e "${FINAL_OUTPUT}" ] || ls "${FILELIST_DIR}"/chunk_*.txt >/dev/null 2>&1; then
+    echo "ERROR: ${OUTPUT_DIR} already holds a run (raw_features.parquet or file lists); choose another OUTPUT_DIR"
+    exit 1
+fi
 mkdir -p "${FILELIST_DIR}" "${CHUNK_DIR}" "${OUTPUT_DIR}" "${LOG_DIR}"
 
 echo "[Step 1] Discovering .darshan files..."
@@ -81,9 +93,6 @@ fi
 LINES_PER_CHUNK=$(( (TOTAL + N_CHUNKS - 1) / N_CHUNKS ))
 echo "  Splitting into ${N_CHUNKS} chunks of ~${LINES_PER_CHUNK} files each"
 
-# Clean old file lists
-rm -f "${FILELIST_DIR}"/chunk_*.txt
-
 split -l "${LINES_PER_CHUNK}" -d -a 3 "${ALLFILES}" "${FILELIST_DIR}/chunk_"
 
 # Rename split output to .txt
@@ -94,7 +103,7 @@ for f in "${FILELIST_DIR}"/chunk_*; do
 done
 
 # Shuffle each chunk for Lustre MDT load balancing
-# (Files are organized by date/user — sequential access hammers same MDT)
+# (Files are organized by date/user; sequential access hammers the same MDT)
 for f in "${FILELIST_DIR}"/chunk_*.txt; do
     shuf "$f" -o "$f"
 done
@@ -113,7 +122,7 @@ done
 echo ""
 echo "[Step 2] Submitting SLURM array job (0-$((ACTUAL_CHUNKS - 1)))..."
 
-ARRAY_JOBID=$(sbatch --parsable <<SBATCH
+ARRAY_JOBID=$(sbatch --parsable ${DEPENDENCY:+--dependency=$DEPENDENCY} <<SBATCH
 #!/bin/bash
 #SBATCH --job-name=darshan_extract
 #SBATCH --account=bdau-delta-cpu
@@ -124,8 +133,10 @@ ARRAY_JOBID=$(sbatch --parsable <<SBATCH
 #SBATCH --cpus-per-task=128
 #SBATCH --mem=240g
 #SBATCH --time=2-00:00:00
+#SBATCH --export=NONE
 #SBATCH --output=${LOG_DIR}/extract_%A_%a.out
 #SBATCH --error=${LOG_DIR}/extract_%A_%a.err
+export PYTHONNOUSERSITE=1
 
 # ---- Per-task header ----
 echo "================================================================="
@@ -157,15 +168,14 @@ echo "Processing \${N_FILES} files from \${FILELIST}"
 echo "Output: \${CHUNK_OUTPUT}"
 echo ""
 
-# Run extraction
-# --no-shuffle because we pre-shuffled the file lists above
+# Run extraction (exit 0: all files, 3: some files failed with complete
+# accounting, 1: nothing published). --no-shuffle: the lists are pre-shuffled.
 ${PYTHON} -m src.data.batch_extract \
     --file-list "\${FILELIST}" \
     --output "\${CHUNK_OUTPUT}" \
     --workers ${WORKERS_PER_TASK} \
     --chunk-size ${CHUNK_SIZE} \
     --timeout ${TIMEOUT_PER_FILE} \
-    --raw \
     --no-shuffle \
     --log-level INFO
 
@@ -204,8 +214,10 @@ MERGE_JOBID=$(sbatch --parsable --dependency=afterany:${ARRAY_JOBID} <<SBATCH
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128g
 #SBATCH --time=04:00:00
+#SBATCH --export=NONE
 #SBATCH --output=${LOG_DIR}/merge_%j.out
 #SBATCH --error=${LOG_DIR}/merge_%j.err
+export PYTHONNOUSERSITE=1
 
 echo "================================================================="
 echo "  Merge Feature Chunks"
@@ -218,113 +230,80 @@ echo ""
 
 cd ${PROJECT_DIR}
 
-${PYTHON} -c "
-import pandas as pd
-from pathlib import Path
+${PYTHON} - <<PYEOF
+import os
 import sys
 import time
+from pathlib import Path
+
+import pandas as pd
 
 chunk_dir = Path('${CHUNK_DIR}')
+filelist_dir = Path('${FILELIST_DIR}')
 output_path = Path('${FINAL_OUTPUT}')
 expected_chunks = ${ACTUAL_CHUNKS}
 
-# Find all chunk parquets (not _part_ files, not _errors files)
+# Every chunk must be published and every requested path must have one
+# terminal record (a row or an error) before the final file is written.
 chunks = sorted(chunk_dir.glob('chunk_[0-9][0-9][0-9].parquet'))
-found = len(chunks)
-
-print(f'Expected chunks: {expected_chunks}')
-print(f'Found chunks:    {found}')
-
-# Report missing chunks
-if found < expected_chunks:
-    found_ids = {int(c.stem.split('_')[1]) for c in chunks}
-    missing = [i for i in range(expected_chunks) if i not in found_ids]
-    print(f'WARNING: Missing {len(missing)} chunks: {missing}')
-    print('Check error logs for these tasks.')
-
-if found == 0:
-    print('ERROR: No chunk files found! All tasks may have failed.')
+found_ids = {int(c.stem.split('_')[1]) for c in chunks}
+missing = [i for i in range(expected_chunks) if i not in found_ids]
+if missing:
+    print(f'ERROR: {len(missing)} of {expected_chunks} chunks were not published: {missing}')
+    print('Resubmit those array tasks (resume skips the parts already written).')
     sys.exit(1)
 
-# Read and merge
-print()
+requested = set()
+for lst in sorted(filelist_dir.glob('chunk_*.txt')):
+    requested.update(line.strip() for line in open(lst) if line.strip())
+
 t0 = time.time()
-dfs = []
-total_rows = 0
+frames = []
 for cp in chunks:
     df = pd.read_parquet(cp)
-    total_rows += len(df)
-    dfs.append(df)
-    size_mb = cp.stat().st_size / 1e6
-    print(f'  {cp.name}: {len(df):>8,} rows  ({size_mb:.1f} MB)')
+    frames.append(df)
+    print(f'  {cp.name}: {len(df):>8,} rows  ({cp.stat().st_size / 1e6:.1f} MB)')
+merged = pd.concat(frames, ignore_index=True)
 
-merged = pd.concat(dfs, ignore_index=True)
+failed = set()
+for ef in sorted(chunk_dir.glob('chunk_*_errors.csv')):
+    failed.update(pd.read_csv(ef)['file_path'])
+done = set(merged['_source_path'])
+problems = []
+if merged['_source_path'].duplicated().any():
+    problems.append(f"{int(merged['_source_path'].duplicated().sum())} duplicate paths")
+if done - requested:
+    problems.append(f'{len(done - requested)} rows for paths that were not requested')
+unaccounted = requested - done - failed
+if unaccounted:
+    problems.append(f'{len(unaccounted)} requested paths with no row and no error')
+if problems:
+    print('ERROR: accounting failed: ' + '; '.join(problems))
+    sys.exit(1)
 
-# Atomic write
 tmp_path = output_path.with_suffix('.parquet.tmp')
 merged.to_parquet(tmp_path, index=False, engine='pyarrow')
-import os
 os.rename(tmp_path, output_path)
-elapsed = time.time() - t0
 
 print()
 print('=' * 60)
 print(f'Merged: {len(merged):,} rows x {len(merged.columns)} columns')
+print(f'Requested paths: {len(requested):,}; failed (see errors CSVs): {len(failed - done):,}')
 print(f'Output: {output_path}')
 print(f'Size:   {output_path.stat().st_size / 1e9:.2f} GB')
-print(f'Time:   {elapsed:.1f}s')
-print()
-
-# Feature/info column summary
-feat_cols = [c for c in merged.columns if not c.startswith('_')]
-info_cols = [c for c in merged.columns if c.startswith('_')]
-print(f'Feature columns: {len(feat_cols)}')
-print(f'Info columns:    {len(info_cols)}')
-
-# Module combinations
-if '_modules' in merged.columns:
-    print()
-    print('Module combinations (top 10):')
-    for mod, cnt in merged['_modules'].value_counts().head(10).items():
-        print(f'  {mod}: {cnt:,}')
-
-# Duplicate check
-if '_jobid' in merged.columns:
-    n_unique = merged['_jobid'].nunique()
-    n_total = len(merged)
-    if n_unique < n_total:
-        n_dup = n_total - n_unique
-        print(f'WARNING: {n_dup:,} duplicate job IDs ({n_dup/n_total*100:.2f}%)')
-    else:
-        print(f'OK: All {n_unique:,} job IDs are unique')
-
-# NaN check
-nan_cols = merged.columns[merged.isna().all()].tolist()
-if nan_cols:
-    print(f'WARNING: {len(nan_cols)} all-NaN columns: {nan_cols[:10]}')
-else:
-    print('OK: No all-NaN columns')
-
-# Error file summary
-error_files = sorted(chunk_dir.glob('chunk_*_errors.csv'))
-total_errors = 0
-for ef in error_files:
-    n = sum(1 for _ in open(ef)) - 1  # minus header
-    if n > 0:
-        total_errors += n
-if total_errors > 0:
-    print(f'Total extraction errors across all tasks: {total_errors:,}')
-
-# Success rate
-print()
-success_rate = len(merged) / (len(merged) + total_errors) * 100 if (len(merged) + total_errors) > 0 else 0
-print(f'Overall success rate: {success_rate:.1f}%')
-print(f'Chunks processed: {found}/{expected_chunks}')
-"
+print(f'Time:   {time.time() - t0:.1f}s')
+print(f'Schema version: {sorted(merged["_schema_version"].unique().tolist())}')
+print('Module combinations (top 10):')
+for mod, cnt in merged['_modules'].value_counts().head(10).items():
+    print(f'  {mod}: {cnt:,}')
+PYEOF
+MERGE_RC=\$?
+echo "merge rc=\${MERGE_RC}"
+[ "\${MERGE_RC}" -ne 0 ] && exit "\${MERGE_RC}"
 
 echo ""
 echo "================================================================="
-echo "  Merge Done — \$(date)"
+echo "  Merge Done \$(date)"
 echo "================================================================="
 SBATCH
 )
@@ -338,7 +317,7 @@ echo "  Submission Summary"
 echo "================================================================="
 echo "Total files:  ${TOTAL}"
 echo "Array job:    ${ARRAY_JOBID} (${ACTUAL_CHUNKS} tasks, 128 CPUs + 240GB each)"
-echo "Merge job:    ${MERGE_JOBID} (afterany — runs even if some tasks fail)"
+echo "Merge job:    ${MERGE_JOBID} (afterany: runs even if some tasks fail)"
 echo "Output:       ${FINAL_OUTPUT}"
 echo ""
 echo "Monitor:"

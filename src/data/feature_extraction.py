@@ -4,11 +4,11 @@ Feature Extraction from Darshan Counters
 Converts raw Darshan counter dictionaries into a structured feature vector
 for ML classification.
 
-Two modes of operation:
-  1. **Raw extraction** (``extract_raw_features``): All counters + metadata +
-     indicators, NO transforms.  Used for Stage 1 (immutable parquet).
-  2. **Full extraction** (``extract_features``): Raw + derived ratios +
-     optional log10(x+1) transform.  Backward-compatible API.
+``extract_raw_features`` returns all counters, metadata and indicators with no
+transform (Stage 1, the immutable parquet). Derived features are computed once,
+vectorized, in ``src.data.preprocessing.stage3_engineer`` (also for single logs
+through ``engineer_one``); ``compute_layer_and_rank_features`` here holds the
+part of that computation that this module defines.
 
 Feature groups (~150 total):
   - Job metadata (2): nprocs, runtime
@@ -26,9 +26,9 @@ and driven by statistical analysis, not hardcoded here.
 """
 
 import logging
-import math
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,14 @@ _EPS = 1e-9  # Avoid division by zero
 
 # Sentinel value in Darshan for "not available"
 _SENTINEL = -1
+
+# Bumped whenever the set or meaning of raw columns changes. Stored in every
+# raw row as ``_schema_version`` and checked by the preprocessing stages, so a
+# parquet written by older code cannot be engineered into false zeros.
+# 1: SC 2026 dataset (156 columns). 2: per-rank and shared-record statistics,
+# variance counters kept for one shared file, MPI-IO request-size histograms,
+# Lustre info columns removed.
+FEATURE_SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Feature definition lists — ALL counters, no exclusions
@@ -125,6 +133,18 @@ MPIIO_INT_COUNTERS = [
     'MPIIO_SYNCS', 'MPIIO_HINTS', 'MPIIO_VIEWS',
     'MPIIO_BYTES_READ', 'MPIIO_BYTES_WRITTEN',
     'MPIIO_RW_SWITCHES',
+    # Aggregate request-size histograms (SUM), the application's view of its
+    # request sizes when it uses MPI-IO (POSIX sees ROMIO's chunks)
+    'MPIIO_SIZE_READ_AGG_0_100', 'MPIIO_SIZE_READ_AGG_100_1K',
+    'MPIIO_SIZE_READ_AGG_1K_10K', 'MPIIO_SIZE_READ_AGG_10K_100K',
+    'MPIIO_SIZE_READ_AGG_100K_1M', 'MPIIO_SIZE_READ_AGG_1M_4M',
+    'MPIIO_SIZE_READ_AGG_4M_10M', 'MPIIO_SIZE_READ_AGG_10M_100M',
+    'MPIIO_SIZE_READ_AGG_100M_1G', 'MPIIO_SIZE_READ_AGG_1G_PLUS',
+    'MPIIO_SIZE_WRITE_AGG_0_100', 'MPIIO_SIZE_WRITE_AGG_100_1K',
+    'MPIIO_SIZE_WRITE_AGG_1K_10K', 'MPIIO_SIZE_WRITE_AGG_10K_100K',
+    'MPIIO_SIZE_WRITE_AGG_100K_1M', 'MPIIO_SIZE_WRITE_AGG_1M_4M',
+    'MPIIO_SIZE_WRITE_AGG_4M_10M', 'MPIIO_SIZE_WRITE_AGG_10M_100M',
+    'MPIIO_SIZE_WRITE_AGG_100M_1G', 'MPIIO_SIZE_WRITE_AGG_1G_PLUS',
     # Top-4 access sizes (TOP-4 MERGE)
     'MPIIO_ACCESS1_ACCESS', 'MPIIO_ACCESS2_ACCESS',
     'MPIIO_ACCESS3_ACCESS', 'MPIIO_ACCESS4_ACCESS',
@@ -155,11 +175,31 @@ STDIO_FLOAT_COUNTERS = [
     'STDIO_F_VARIANCE_RANK_TIME', 'STDIO_F_VARIANCE_RANK_BYTES',
 ]
 
+# Per-rank statistics computed from the file records before aggregation
+# (parse_darshan._rank_statistics). Bytes and time are POSIX + STDIO.
+RANK_STAT_COUNTERS = [
+    'RANK_IO_COUNT',       # ranks with any I/O bytes or time
+    'RANK_BYTES_MAX',      # bytes of the rank that moved the most
+    'RANK_BYTES_MIN',      # bytes of the rank that moved the least (0 if idle)
+    'RANK_BYTES_VAR',      # population variance of bytes over all ranks
+    'RANK_BYTES_GINI',     # Gini coefficient of bytes over all ranks
+    'RANK_TIME_MAX',       # I/O time of the slowest rank
+    'RANK_TIME_MIN',       # I/O time of the fastest rank
+    'RANK_TIME_VAR',       # population variance of I/O time over all ranks
+    'RANK_SHARED_BYTES',   # bytes in shared (rank -1) records
+    'SHARED_BYTE_IMBALANCE',  # Drishti P18 over reduced records: |slowest - fastest bytes| / bytes,
+    'SHARED_TIME_IMBALANCE',  # and P19 on time; from the MPI-IO records when the job
+                              # has them (collective buffering makes POSIX uneven), else POSIX
+    'FILE_WRITE_IMBALANCE',  # Drishti per-file (max - min) / max, written bytes
+    'FILE_READ_IMBALANCE',   # same for read bytes
+]
+
 # All raw counter names
 ALL_RAW_COUNTERS = (
     POSIX_INT_COUNTERS + POSIX_FLOAT_COUNTERS
     + MPIIO_INT_COUNTERS + MPIIO_FLOAT_COUNTERS
     + STDIO_INT_COUNTERS + STDIO_FLOAT_COUNTERS
+    + RANK_STAT_COUNTERS
 )
 
 # ---------------------------------------------------------------------------
@@ -211,6 +251,16 @@ FEATURE_GROUPS = {
         'POSIX_SIZE_WRITE_100K_1M', 'POSIX_SIZE_WRITE_1M_4M',
         'POSIX_SIZE_WRITE_4M_10M', 'POSIX_SIZE_WRITE_10M_100M',
         'POSIX_SIZE_WRITE_100M_1G', 'POSIX_SIZE_WRITE_1G_PLUS',
+        'MPIIO_SIZE_READ_AGG_0_100', 'MPIIO_SIZE_READ_AGG_100_1K',
+        'MPIIO_SIZE_READ_AGG_1K_10K', 'MPIIO_SIZE_READ_AGG_10K_100K',
+        'MPIIO_SIZE_READ_AGG_100K_1M', 'MPIIO_SIZE_READ_AGG_1M_4M',
+        'MPIIO_SIZE_READ_AGG_4M_10M', 'MPIIO_SIZE_READ_AGG_10M_100M',
+        'MPIIO_SIZE_READ_AGG_100M_1G', 'MPIIO_SIZE_READ_AGG_1G_PLUS',
+        'MPIIO_SIZE_WRITE_AGG_0_100', 'MPIIO_SIZE_WRITE_AGG_100_1K',
+        'MPIIO_SIZE_WRITE_AGG_1K_10K', 'MPIIO_SIZE_WRITE_AGG_10K_100K',
+        'MPIIO_SIZE_WRITE_AGG_100K_1M', 'MPIIO_SIZE_WRITE_AGG_1M_4M',
+        'MPIIO_SIZE_WRITE_AGG_4M_10M', 'MPIIO_SIZE_WRITE_AGG_10M_100M',
+        'MPIIO_SIZE_WRITE_AGG_100M_1G', 'MPIIO_SIZE_WRITE_AGG_1G_PLUS',
     ],
     # Top-4 access/stride values and counts
     'top4': [
@@ -267,7 +317,17 @@ FEATURE_GROUPS = {
         'has_hdf5', 'has_pnetcdf', 'has_apmpi', 'has_heatmap',
         'is_shared_file',
     ],
-    # Derived ratios: bounded [0, 1] — no normalization needed
+    # Per-rank statistics (unbounded, heavy-tailed): log1p
+    'rank_stat': [
+        'RANK_IO_COUNT', 'RANK_BYTES_MAX', 'RANK_BYTES_MIN', 'RANK_BYTES_VAR',
+        'RANK_TIME_MAX', 'RANK_TIME_MIN', 'RANK_TIME_VAR', 'RANK_SHARED_BYTES',
+    ],
+    # Per-rank statistics bounded in [0, 1]: no normalization
+    'rank_stat_bounded': [
+        'RANK_BYTES_GINI', 'SHARED_BYTE_IMBALANCE', 'SHARED_TIME_IMBALANCE',
+        'FILE_WRITE_IMBALANCE', 'FILE_READ_IMBALANCE',
+    ],
+    # Derived ratios: bounded [0, 1], no normalization needed
     'ratio': [
         'read_ratio',
         'small_read_ratio', 'small_write_ratio', 'small_io_ratio',
@@ -281,6 +341,11 @@ FEATURE_GROUPS = {
         'byte_imbalance', 'time_imbalance',
         'collective_ratio', 'nonblocking_ratio',
         'access_size_concentration',
+        # per-rank distribution (POSIX + STDIO records, all ranks)
+        'io_rank_fraction', 'top_rank_byte_share', 'top_rank_time_share',
+        'rank_byte_range_ratio', 'rank_time_range_ratio', 'shared_record_byte_share',
+        # layer-agnostic (POSIX + STDIO) fractions
+        'stdio_byte_share', 'metadata_time_ratio_all', 'write_time_fraction_all',
     ],
     # Derived unbounded: computed ratios/values with no fixed upper bound
     # These need log1p to compress their dynamic range
@@ -291,11 +356,14 @@ FEATURE_GROUPS = {
         'opens_per_op', 'stats_per_op', 'seeks_per_op',
         'fsync_ratio', 'opens_per_mb',
         'rank_bytes_cv', 'rank_time_cv',
+        'rank_bytes_cv_all', 'rank_time_cv_all',
+        'avg_read_size_all', 'avg_write_size_all',
         'io_active_fraction',
     ],
     # Derived absolute: unbounded derived values
     'derived_absolute': [
         'io_duration', 'dominant_access_size', 'num_files',
+        'io_bytes_all', 'io_ops_all',
     ],
     # Job metadata
     'metadata': [
@@ -303,18 +371,19 @@ FEATURE_GROUPS = {
     ],
 }
 
-# Counters that receive log10(x+1) in legacy mode (backward compat)
-LOG_TRANSFORM_COUNTERS = set(
-    FEATURE_GROUPS['volume'] + FEATURE_GROUPS['count']
-    + FEATURE_GROUPS['histogram'] + FEATURE_GROUPS['top4']
-)
+# Info columns: carried for identification, never features
+INFO_COLUMNS = [
+    '_schema_version', '_jobid', '_uid', '_start_time', '_end_time',
+    '_modules', '_log_version',
+]
 
-# Derived feature names (all)
-DERIVED_FEATURE_NAMES = (
-    FEATURE_GROUPS['indicator']
-    + FEATURE_GROUPS['ratio']
-    + FEATURE_GROUPS['derived_absolute']
-)
+# Names produced by stage 3 on top of the raw columns (every derived group;
+# num_files is emitted raw and therefore left out here)
+DERIVED_FEATURE_NAMES = [
+    name for name in (FEATURE_GROUPS['ratio'] + FEATURE_GROUPS['ratio_unbounded']
+                      + FEATURE_GROUPS['derived_absolute'])
+    if name != 'num_files'
+]
 
 
 # ---------------------------------------------------------------------------
@@ -370,216 +439,94 @@ def extract_raw_features(parsed_log):
     features['num_files'] = raw.get('num_files', 0)
 
     # --- Job info columns (not features, carried for identification) ---
+    features['_schema_version'] = FEATURE_SCHEMA_VERSION
     features['_jobid'] = job.get('jobid', 0)
     features['_uid'] = job.get('uid', 0)
     features['_start_time'] = job.get('start_time', 0)
     features['_end_time'] = job.get('end_time', 0)
     features['_modules'] = ','.join(modules)
-    features['_uses_lustre'] = 1 if job.get('uses_lustre', False) else 0
     features['_log_version'] = job.get('log_version', '')
-    features['_lustre_mount'] = job.get('lustre_mount', '')
 
     return features
-
-
-def extract_features(parsed_log, apply_log_transform=True):
-    """Extract full feature vector from a parsed Darshan log.
-
-    This combines raw extraction + derived feature computation + optional
-    log10(x+1) transform.  Backward-compatible with existing pipeline.
-
-    Parameters
-    ----------
-    parsed_log : dict
-        Output of ``parse_darshan_log()``.
-    apply_log_transform : bool
-        If True, apply log10(x+1) to count/byte features.
-
-    Returns
-    -------
-    dict
-        Feature dictionary with ~150 keys.
-    """
-    features = extract_raw_features(parsed_log)
-    modules = parsed_log['modules']
-
-    # Replace sentinels with 0 for derived feature computation
-    for key in list(features.keys()):
-        if not key.startswith('_') and features[key] == _SENTINEL:
-            features[key] = 0.0
-
-    # Compute derived features
-    _compute_derived_features(features, modules)
-
-    # Apply log10(x+1) transform on heavy-tailed counters
-    if apply_log_transform:
-        for key in LOG_TRANSFORM_COUNTERS:
-            if key in features:
-                features[key] = math.log10(max(features[key], 0) + 1)
-        # Also transform job metadata
-        features['nprocs'] = math.log10(features['nprocs'] + 1)
-        features['runtime_seconds'] = math.log10(
-            max(features['runtime_seconds'], 0) + 1
-        )
-
-    return features
-
-
-def get_feature_names(include_derived=True, include_metadata=True):
-    """Return ordered list of feature column names (excluding _* info)."""
-    names = []
-    if include_metadata:
-        names.extend(['nprocs', 'runtime_seconds'])
-    names.extend(ALL_RAW_COUNTERS)
-    if include_derived:
-        names.extend(DERIVED_FEATURE_NAMES)
-    return names
-
-
-def get_info_columns():
-    """Return list of _* info column names (not used as features)."""
-    return [
-        '_jobid', '_uid', '_start_time', '_end_time',
-        '_modules', '_uses_lustre', '_log_version', '_lustre_mount',
-    ]
 
 
 def get_raw_feature_names():
-    """Return ordered list of raw feature names (counters + indicators)."""
-    names = ['nprocs', 'runtime_seconds']
-    names.extend(ALL_RAW_COUNTERS)
-    names.extend(FEATURE_GROUPS['indicator'])
-    names.append('num_files')
-    return names
+    """Ordered raw feature names: what ``extract_raw_features`` emits without
+    the info columns."""
+    return ['nprocs', 'runtime_seconds'] + ALL_RAW_COUNTERS + FEATURE_GROUPS['indicator'] + ['num_files']
+
+
+def get_feature_names():
+    """Ordered feature names after stage 3 (raw plus derived), without the
+    info columns. ``tests/test_rank_statistics.py`` asserts that this equals
+    the columns a real extraction produces."""
+    return get_raw_feature_names() + DERIVED_FEATURE_NAMES
+
+
+def get_info_columns():
+    """The ``_*`` identification columns (not features)."""
+    return list(INFO_COLUMNS)
 
 
 # ---------------------------------------------------------------------------
 # Derived feature computation
 # ---------------------------------------------------------------------------
 
-def _compute_derived_features(f, modules):
-    """Compute derived features in-place from raw counters.
+def compute_layer_and_rank_features(g, nprocs):
+    """Derived features over POSIX + STDIO and over the per-rank statistics.
 
-    Parameters
-    ----------
-    f : dict
-        Feature dictionary (modified in-place).  Contains raw counter values
-        with sentinels already replaced by 0.
-    modules : list
-        List of modules present in this log.
+    ``g(name)`` returns a counter as a float (one job) or as a column (many
+    jobs); every expression below works on both, so the dict path and the
+    vectorized path share this one implementation.
+
+    Layer-agnostic totals exist because writers that use stdio (fwrite,
+    fprintf, C++ streams) never reach the POSIX module, so the POSIX-only
+    ratios are zero for them. Pattern ratios stay POSIX-only: STDIO has no
+    size histogram or sequential counters.
+
+    The per-rank features come from ``parse_darshan._rank_statistics``:
+    ``top_rank_byte_share`` is 1.0 when one rank does all the I/O,
+    ``io_rank_fraction`` is the share of ranks that did any I/O,
+    ``rank_byte_range_ratio`` is Drishti's size-imbalance measure, (busiest
+    rank minus idlest rank) / busiest rank, taken over all ranks of the job
+    instead of the ranks of one file, and the ``*_cv_all`` values are the coefficients of variation over all
+    ranks (ranks without I/O count as zero). The older ``byte_imbalance``,
+    ``time_imbalance``, ``rank_bytes_cv`` and ``rank_time_cv`` describe a
+    single shared file only.
     """
-    # Helper: safe get (0 if missing or sentinel)
-    def g(key, default=0.0):
-        val = f.get(key, default)
-        return val if val != _SENTINEL else 0.0
+    bytes_read_all = g('POSIX_BYTES_READ') + g('STDIO_BYTES_READ')
+    bytes_written_all = g('POSIX_BYTES_WRITTEN') + g('STDIO_BYTES_WRITTEN')
+    bytes_all = bytes_read_all + bytes_written_all
+    reads_all = g('POSIX_READS') + g('STDIO_READS')
+    writes_all = g('POSIX_WRITES') + g('STDIO_WRITES')
+    ops_all = reads_all + writes_all
+    write_time_all = g('POSIX_F_WRITE_TIME') + g('STDIO_F_WRITE_TIME')
+    meta_time_all = g('POSIX_F_META_TIME') + g('STDIO_F_META_TIME')
+    time_all = g('POSIX_F_READ_TIME') + g('STDIO_F_READ_TIME') + write_time_all + meta_time_all
+    n = np.maximum(nprocs, 1)
 
-    total_reads = g('POSIX_READS')
-    total_writes = g('POSIX_WRITES')
-    total_ops = total_reads + total_writes
-    bytes_read = g('POSIX_BYTES_READ')
-    bytes_written = g('POSIX_BYTES_WRITTEN')
-    total_bytes = bytes_read + bytes_written
-    read_time = g('POSIX_F_READ_TIME')
-    write_time = g('POSIX_F_WRITE_TIME')
-    meta_time = g('POSIX_F_META_TIME')
-    total_time = read_time + write_time + meta_time
-    nprocs = f.get('nprocs', 1)
-    runtime = f.get('runtime_seconds', 0)
-
-    # --- Read/write balance ---
-    f['read_ratio'] = bytes_read / max(total_bytes, 1)
-
-    # --- Bandwidth ---
-    f['read_bw_mb_s'] = bytes_read / max(read_time, _EPS) / 1e6
-    f['write_bw_mb_s'] = bytes_written / max(write_time, _EPS) / 1e6
-    io_time = read_time + write_time
-    f['total_bw_mb_s'] = total_bytes / max(io_time, _EPS) / 1e6
-
-    # --- Average sizes ---
-    f['avg_read_size'] = bytes_read / max(total_reads, 1)
-    f['avg_write_size'] = bytes_written / max(total_writes, 1)
-
-    # --- Size distribution ratios ---
-    # Small I/O: < 1 KB
-    small_r = g('POSIX_SIZE_READ_0_100') + g('POSIX_SIZE_READ_100_1K')
-    small_w = g('POSIX_SIZE_WRITE_0_100') + g('POSIX_SIZE_WRITE_100_1K')
-    f['small_read_ratio'] = small_r / max(total_reads, 1)
-    f['small_write_ratio'] = small_w / max(total_writes, 1)
-    f['small_io_ratio'] = (small_r + small_w) / max(total_ops, 1)
-
-    # Medium I/O: 1 KB to 1 MB
-    medium_r = (g('POSIX_SIZE_READ_1K_10K') + g('POSIX_SIZE_READ_10K_100K')
-                + g('POSIX_SIZE_READ_100K_1M'))
-    medium_w = (g('POSIX_SIZE_WRITE_1K_10K') + g('POSIX_SIZE_WRITE_10K_100K')
-                + g('POSIX_SIZE_WRITE_100K_1M'))
-    f['medium_read_ratio'] = medium_r / max(total_reads, 1)
-    f['medium_write_ratio'] = medium_w / max(total_writes, 1)
-
-    # Large I/O: >= 1 MB
-    large_r = (g('POSIX_SIZE_READ_1M_4M') + g('POSIX_SIZE_READ_4M_10M')
-               + g('POSIX_SIZE_READ_10M_100M') + g('POSIX_SIZE_READ_100M_1G')
-               + g('POSIX_SIZE_READ_1G_PLUS'))
-    large_w = (g('POSIX_SIZE_WRITE_1M_4M') + g('POSIX_SIZE_WRITE_4M_10M')
-               + g('POSIX_SIZE_WRITE_10M_100M') + g('POSIX_SIZE_WRITE_100M_1G')
-               + g('POSIX_SIZE_WRITE_1G_PLUS'))
-    f['large_read_ratio'] = large_r / max(total_reads, 1)
-    f['large_write_ratio'] = large_w / max(total_writes, 1)
-
-    # --- Pattern ratios ---
-    f['seq_read_ratio'] = g('POSIX_SEQ_READS') / max(total_reads, 1)
-    f['seq_write_ratio'] = g('POSIX_SEQ_WRITES') / max(total_writes, 1)
-    f['consec_read_ratio'] = g('POSIX_CONSEC_READS') / max(total_reads, 1)
-    f['consec_write_ratio'] = g('POSIX_CONSEC_WRITES') / max(total_writes, 1)
-    f['rw_ratio'] = total_reads / max(total_writes, 1)
-    f['rw_switch_ratio'] = g('POSIX_RW_SWITCHES') / max(total_ops, 1)
-
-    # --- Alignment ratios ---
-    f['mem_misalign_ratio'] = g('POSIX_MEM_NOT_ALIGNED') / max(total_ops, 1)
-    f['file_misalign_ratio'] = g('POSIX_FILE_NOT_ALIGNED') / max(total_ops, 1)
-
-    # --- Metadata ratios ---
-    f['metadata_time_ratio'] = meta_time / max(total_time, _EPS)
-    f['read_time_fraction'] = read_time / max(total_time, _EPS)
-    f['write_time_fraction'] = write_time / max(total_time, _EPS)
-    f['opens_per_op'] = g('POSIX_OPENS') / max(total_ops, 1)
-    f['stats_per_op'] = g('POSIX_STATS') / max(total_ops, 1)
-    f['seeks_per_op'] = g('POSIX_SEEKS') / max(total_ops, 1)
-    f['fsync_ratio'] = g('POSIX_FSYNCS') / max(total_writes, 1)
-    f['opens_per_mb'] = g('POSIX_OPENS') / max(total_bytes / 1e6, _EPS)
-
-    # --- Imbalance ratios ---
-    var_bytes = max(g('POSIX_F_VARIANCE_RANK_BYTES'), 0)
-    var_time = max(g('POSIX_F_VARIANCE_RANK_TIME'), 0)
-    mean_bytes_per_rank = total_bytes / max(nprocs, 1)
-    mean_time_per_rank = total_time / max(nprocs, 1)
-    f['rank_bytes_cv'] = math.sqrt(var_bytes) / max(mean_bytes_per_rank, _EPS)
-    f['rank_time_cv'] = math.sqrt(var_time) / max(mean_time_per_rank, _EPS)
-
-    fastest_bytes = g('POSIX_FASTEST_RANK_BYTES')
-    slowest_bytes = g('POSIX_SLOWEST_RANK_BYTES')
-    f['byte_imbalance'] = (slowest_bytes - fastest_bytes) / max(total_bytes, _EPS)
-
-    fastest_time = g('POSIX_F_FASTEST_RANK_TIME')
-    slowest_time = g('POSIX_F_SLOWEST_RANK_TIME')
-    f['time_imbalance'] = (slowest_time - fastest_time) / max(total_time, _EPS)
-
-    # --- MPI-IO ratios ---
-    coll = g('MPIIO_COLL_READS') + g('MPIIO_COLL_WRITES')
-    indep = g('MPIIO_INDEP_READS') + g('MPIIO_INDEP_WRITES')
-    nb = g('MPIIO_NB_READS') + g('MPIIO_NB_WRITES')
-    total_mpiio = coll + indep + nb
-    f['collective_ratio'] = coll / max(total_mpiio, 1)
-    f['nonblocking_ratio'] = nb / max(total_mpiio, 1)
-
-    # --- Temporal ---
-    open_start = g('POSIX_F_OPEN_START_TIMESTAMP')
-    close_end = g('POSIX_F_CLOSE_END_TIMESTAMP')
-    f['io_duration'] = max(close_end - open_start, 0)
-    f['io_active_fraction'] = total_time / max(runtime, _EPS)
-
-    # --- Access concentration ---
-    f['access_size_concentration'] = g('POSIX_ACCESS1_COUNT') / max(total_ops, 1)
-    f['dominant_access_size'] = g('POSIX_ACCESS1_ACCESS')
+    return {
+        'io_bytes_all': bytes_all,
+        'io_ops_all': ops_all,
+        'avg_read_size_all': bytes_read_all / np.maximum(reads_all, 1),
+        'avg_write_size_all': bytes_written_all / np.maximum(writes_all, 1),
+        'stdio_byte_share': (g('STDIO_BYTES_READ') + g('STDIO_BYTES_WRITTEN'))
+        / np.maximum(bytes_all, _EPS),
+        'metadata_time_ratio_all': meta_time_all / np.maximum(time_all, _EPS),
+        'write_time_fraction_all': write_time_all / np.maximum(time_all, _EPS),
+        'io_rank_fraction': g('RANK_IO_COUNT') / n,
+        'top_rank_byte_share': g('RANK_BYTES_MAX') / np.maximum(bytes_all, _EPS),
+        'top_rank_time_share': g('RANK_TIME_MAX') / np.maximum(time_all, _EPS),
+        'rank_byte_range_ratio': (g('RANK_BYTES_MAX') - g('RANK_BYTES_MIN'))
+        / np.maximum(g('RANK_BYTES_MAX'), _EPS),
+        'rank_time_range_ratio': (g('RANK_TIME_MAX') - g('RANK_TIME_MIN'))
+        / np.maximum(g('RANK_TIME_MAX'), _EPS),
+        'shared_record_byte_share': g('RANK_SHARED_BYTES') / np.maximum(bytes_all, _EPS),
+        'rank_bytes_cv_all': np.sqrt(np.maximum(g('RANK_BYTES_VAR'), 0))
+        / np.maximum(bytes_all / n, _EPS),
+        'rank_time_cv_all': np.sqrt(np.maximum(g('RANK_TIME_VAR'), 0))
+        / np.maximum(time_all / n, _EPS),
+    }
 
 
 # ---------------------------------------------------------------------------

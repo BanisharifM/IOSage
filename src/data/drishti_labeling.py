@@ -253,22 +253,24 @@ def compute_drishti_codes(df):
 
     # -----------------------------------------------------------------------
     # P18/P19: Shared-file data/time imbalance (HIGH)
-    # Drishti: per-file (SLOWEST_BYTES - FASTEST_BYTES) / total > 0.15
-    # Our byte_imbalance is the aggregate version of this
-    # Only meaningful for shared files (nprocs > 1)
+    # Drishti: per shared record, |SLOWEST_RANK_BYTES - FASTEST_RANK_BYTES| /
+    # record bytes > 0.15 (P18) and the same on time (P19).
+    # SHARED_BYTE_IMBALANCE / SHARED_TIME_IMBALANCE hold the largest such
+    # value over the job's shared records (parse_darshan._shared_record_imbalance).
     # -----------------------------------------------------------------------
     multi_rank = df['nprocs'] > 1
-    codes['P18'] = multi_rank & (df['byte_imbalance'] > t['imbalance_stragglers'])
-    codes['P19'] = multi_rank & (df['time_imbalance'] > t['imbalance_stragglers'])
+    codes['P18'] = multi_rank & (df['SHARED_BYTE_IMBALANCE'] > t['imbalance_stragglers'])
+    codes['P19'] = multi_rank & (df['SHARED_TIME_IMBALANCE'] > t['imbalance_stragglers'])
 
     # -----------------------------------------------------------------------
     # P21/P22: Individual write/read size imbalance (HIGH)
-    # Drishti: per-file (max_rank_bytes - min_rank_bytes) / max > 0.3
-    # Proxy: rank_bytes_cv > sqrt(0.3) ~ 0.55, or byte_imbalance > 0.3
-    # Use the stricter threshold from Drishti's imbalance_size
+    # Drishti: per file, (max_rank_bytes - min_rank_bytes) / max > 0.3 over
+    # the ranks that accessed that file (records with rank != -1).
+    # FILE_WRITE_IMBALANCE / FILE_READ_IMBALANCE hold the largest such value
+    # of the job (parse_darshan._per_file_imbalance).
     # -----------------------------------------------------------------------
-    codes['P21'] = multi_rank & (df['byte_imbalance'] > t['imbalance_size'])
-    codes['P22'] = multi_rank & (df['byte_imbalance'] > t['imbalance_size'])
+    codes['P21'] = multi_rank & (df['FILE_WRITE_IMBALANCE'] > t['imbalance_size'])
+    codes['P22'] = multi_rank & (df['FILE_READ_IMBALANCE'] > t['imbalance_size'])
 
     # -----------------------------------------------------------------------
     # M01: No MPI-IO usage (WARN)
@@ -314,17 +316,19 @@ def compute_drishti_codes(df):
 def codes_to_labels(codes):
     """Map Drishti insight codes to 8-dimensional taxonomy labels.
 
-    Only HIGH-severity codes trigger dimension labels. WARN-level codes
-    (M01, M06, M07, P09, P10) are recorded as individual Drishti codes
-    but do NOT activate dimension labels, because:
+    HIGH-severity codes trigger dimension labels. Of the WARN-level codes,
+    M01, M06 and M07 are recorded as individual Drishti codes but do NOT
+    activate dimension labels, because:
 
     1. M01 (no MPI-IO): Many legitimate serial/Python jobs don't need
        MPI-IO. Flagging all of them as "interface_choice" makes the label
        uninformative (72.6% of jobs).
     2. M06/M07 (blocking I/O): Most MPI-IO usage on Polaris is blocking.
        This is normal, not a bottleneck.
-    3. P09/P10 (redundant traffic): The MAX_BYTE > total_bytes heuristic
-       has high false-positive rate from multi-file aggregation artifacts.
+
+    P09/P10 (redundant traffic, WARN) are the only source of the
+    throughput_utilization label and are applied exactly as Drishti defines
+    them (max offset above the bytes moved); see the block below.
 
     For access_granularity, P08 (file misalignment) alone triggers 93.8%
     of jobs because most applications don't set explicit Lustre alignment.
@@ -342,8 +346,9 @@ def codes_to_labels(codes):
     pd.DataFrame
         Columns: DIMENSION_NAMES (8 binary columns), one row per job.
     """
-    n = len(next(iter(codes.values())))
-    labels = pd.DataFrame(0, index=range(n), columns=DIMENSION_NAMES)
+    # Same index as the code Series, so assignment aligns row by row
+    index = next(iter(codes.values())).index
+    labels = pd.DataFrame(0, index=index, columns=DIMENSION_NAMES)
 
     # Dimension 0: access_granularity
     # Small operations only (P05, P06). Misalignment (P07, P08) excluded
@@ -388,11 +393,10 @@ def codes_to_labels(codes):
     ).astype(int)
 
     # Dimension 6: throughput_utilization
-    # Redundant traffic (P09, P10) — these are WARN level but kept
-    # because they represent genuine throughput waste, not just
-    # missing features. However, we tighten the condition: only flag
-    # when redundant traffic is substantial (read > 2x the max offset,
-    # i.e., significant re-reading, not just minor overlap).
+    # Redundant traffic, P09 or P10, as Drishti computes them (WARN level,
+    # kept because no HIGH code describes throughput). Not tightened: the
+    # rule in force is Drishti's, and the label counts in the paper come
+    # from it.
     labels['throughput_utilization'] = (
         codes['P09'] | codes['P10']
     ).astype(int)
@@ -402,6 +406,8 @@ def codes_to_labels(codes):
     any_issue = labels[DIMENSION_NAMES[:7]].any(axis=1)
     labels['healthy'] = (~any_issue).astype(int)
 
+    if labels.isna().any().any() or not labels.isin([0, 1]).all().all():
+        raise AssertionError("labels must be binary and complete")
     return labels
 
 
@@ -489,6 +495,8 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
         Heuristic labels DataFrame with _jobid, 8 dimension columns,
         drishti_confidence, label_source, and all 30 Drishti code columns.
     """
+    if not 0.0 <= min_confidence <= 1.0:
+        raise ValueError(f"min_confidence must be in [0, 1], got {min_confidence}")
     features_path = Path(features_path)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -508,8 +516,12 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     # Compute confidence scores
     confidence = compute_confidence(codes, labels)
 
-    # Build output DataFrame
+    # Build output DataFrame; _source_path is the unique sample id that the
+    # trainer joins on (_jobid repeats: one SLURM job holds many launches)
+    if '_source_path' not in df.columns:
+        raise ValueError("features lack _source_path; labels could not be joined back")
     result = pd.DataFrame()
+    result['_source_path'] = df['_source_path'].values
     result['_jobid'] = df['_jobid'].values
 
     # 8 dimension labels
@@ -531,6 +543,9 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
         logger.info("Confidence filter (>= %.2f): %d -> %d rows (%.1f%% kept)",
                      min_confidence, before, len(result),
                      100 * len(result) / max(before, 1))
+        if result.empty:
+            raise ValueError(f"confidence filter >= {min_confidence} left no rows; "
+                             "nothing written")
 
     # Write output
     result.to_parquet(output_path, index=False, engine='pyarrow')
@@ -583,103 +598,6 @@ def _log_summary(result):
 # Use generate_heuristic_labels() directly.
 
 
-def validate_against_drishti_cli(heuristic_labels_path, sample_logs_dir,
-                                 n_samples=50, seed=42):
-    """Validate vectorized labels against actual Drishti CLI output.
-
-    Runs Drishti on a random sample of logs and compares the triggered
-    insight codes with our vectorized reimplementation.
-
-    Parameters
-    ----------
-    heuristic_labels_path : str or Path
-        Path to heuristic labels parquet (to look up our predictions).
-    sample_logs_dir : str or Path
-        Directory containing sample .darshan files.
-    n_samples : int
-        Number of samples to validate.
-    seed : int
-        Random seed for reproducibility.
-
-    Returns
-    -------
-    dict
-        Validation results with agreement rates per code.
-    """
-    import subprocess
-    import re
-
-    heuristic_df = pd.read_parquet(heuristic_labels_path)
-    sample_dir = Path(sample_logs_dir)
-    logs = sorted(sample_dir.rglob('*.darshan'))
-
-    if not logs:
-        logger.warning("No .darshan files found in %s", sample_dir)
-        return {}
-
-    rng = np.random.RandomState(seed)
-    sample_idx = rng.choice(len(logs), size=min(n_samples, len(logs)),
-                            replace=False)
-    sample_logs = [logs[i] for i in sample_idx]
-
-    agreements = {}
-    total_compared = 0
-
-    for log_path in sample_logs:
-        try:
-            result = subprocess.run(
-                ['drishti', str(log_path), '--export-csv'],
-                capture_output=True, text=True, timeout=60
-            )
-            if result.returncode != 0:
-                continue
-
-            # Parse Drishti CSV output to get triggered codes
-            # CSV format: code,True/False per line
-            drishti_codes = set()
-            for line in result.stdout.strip().split('\n'):
-                parts = line.strip().split(',')
-                if len(parts) >= 2 and parts[1].strip().lower() == 'true':
-                    drishti_codes.add(parts[0].strip())
-
-            # Find matching jobid in our labels
-            jobid = log_path.stem.split('_')[0]  # Extract jobid from filename
-            our_row = heuristic_df[heuristic_df['_jobid'].astype(str).str.contains(jobid)]
-            if our_row.empty:
-                continue
-
-            our_codes = set()
-            for col in heuristic_df.columns:
-                if col.startswith('drishti_') and col != 'drishti_confidence':
-                    code = col.replace('drishti_', '')
-                    if our_row.iloc[0][col] == 1:
-                        our_codes.add(code)
-
-            # Compare
-            for code in set(list(drishti_codes) + list(our_codes)):
-                if code not in agreements:
-                    agreements[code] = {'match': 0, 'mismatch': 0}
-                if (code in drishti_codes) == (code in our_codes):
-                    agreements[code]['match'] += 1
-                else:
-                    agreements[code]['mismatch'] += 1
-
-            total_compared += 1
-
-        except (subprocess.TimeoutExpired, Exception) as e:
-            logger.debug("Drishti failed on %s: %s", log_path, e)
-            continue
-
-    logger.info("Validated %d samples against Drishti CLI", total_compared)
-    for code, stats in sorted(agreements.items()):
-        total = stats['match'] + stats['mismatch']
-        rate = stats['match'] / max(total, 1)
-        logger.info("  %s: %.1f%% agreement (%d/%d)",
-                     code, 100 * rate, stats['match'], total)
-
-    return agreements
-
-
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
@@ -702,14 +620,6 @@ def main():
         help='Minimum confidence threshold (default: 0.0 = keep all)'
     )
     parser.add_argument(
-        '--validate-dir', default=None,
-        help='Directory with .darshan files for CLI validation'
-    )
-    parser.add_argument(
-        '--validate-samples', type=int, default=50,
-        help='Number of samples for CLI validation (default: 50)'
-    )
-    parser.add_argument(
         '--log-level', default='INFO',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR']
     )
@@ -721,18 +631,11 @@ def main():
         stream=sys.stdout,
     )
 
-    result = generate_heuristic_labels(
+    generate_heuristic_labels(
         features_path=args.features,
         output_path=args.output,
         min_confidence=args.min_confidence,
     )
-
-    if args.validate_dir:
-        validate_against_drishti_cli(
-            heuristic_labels_path=args.output,
-            sample_logs_dir=args.validate_dir,
-            n_samples=args.validate_samples,
-        )
 
 
 if __name__ == '__main__':
