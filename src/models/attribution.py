@@ -6,22 +6,28 @@ Computes TreeSHAP values per label dimension and generates paper figures:
 2. Per-label beeswarm plots (SHAP value distribution)
 3. Global bar chart (stacked by label contribution)
 
+The model is a bundle from ``scripts/train_biquality.py``; the samples are
+the benchmark test rows of that bundle's run (``splits.npz`` next to it), so
+attribution never sees a row the model was fitted on. Healthy is derived from
+the seven decisions and has no model, so it has no SHAP values.
+
 Usage:
-    python -m src.models.attribution
-    python -m src.models.attribution --model-path models/phase2/xgboost_biquality_w100.pkl
-    python -m src.models.attribution --top-k 20 --output-dir paper/figures/shap
+    python -m src.models.attribution --bundle results/resubmission/training/<run>/xgboost_w100_seed42.pkl \
+        --output-dir results/resubmission/shap/<run>
 """
 
 import argparse
+import json
 import logging
-import os
 import pickle
 import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import shap
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from src.models.biquality import BOTTLENECK_DIMENSIONS, BUNDLE_FORMAT, load_benchmark, load_config  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,11 +37,8 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+# The seven modeled labels; healthy is derived and has no attribution
+DIMENSIONS = list(BOTTLENECK_DIMENSIONS)
 
 # Short display names for figures
 DIM_SHORT = {
@@ -46,46 +49,27 @@ DIM_SHORT = {
     "interface_choice": "Interface",
     "file_strategy": "File Strategy",
     "throughput_utilization": "Throughput",
-    "healthy": "Healthy",
 }
 
 
-def load_model_and_data(model_path, config_path=None):
-    """Load trained models and test data."""
-    import yaml
-
-    with open(model_path, "rb") as f:
-        models = pickle.load(f)
-
-    config_path = config_path or PROJECT_DIR / "configs" / "training.yaml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    # Load production features for feature column names
-    paths = config["paths"]
-    prod_feat = pd.read_parquet(PROJECT_DIR / paths["production_features"])
-    exclude = set(config.get("exclude_features", []))
-    for col in prod_feat.columns:
-        if col.startswith("_") or col.startswith("drishti_"):
-            exclude.add(col)
-    feature_cols = [c for c in prod_feat.columns if c not in exclude]
-
-    # Load benchmark test set
-    bench_dir = PROJECT_DIR / "data" / "processed" / "benchmark"
-    test_feat = pd.read_parquet(bench_dir / "test_features.parquet")
-    test_labels = pd.read_parquet(bench_dir / "test_labels.parquet")
-
-    # Align features
-    X_test = []
-    for col in feature_cols:
-        if col in test_feat.columns:
-            X_test.append(test_feat[col].values)
-        else:
-            X_test.append(np.zeros(len(test_feat)))
-    X_test = np.column_stack(X_test).astype(np.float32)
-    y_test = test_labels[DIMENSIONS].values.astype(np.float32)
-
-    return models, X_test, y_test, feature_cols, test_labels
+def load_bundle_and_test_rows(bundle_path):
+    """The bundle's models and feature names, and the benchmark test rows of
+    its run (from ``splits.npz`` in the same directory)."""
+    bundle_path = Path(bundle_path)
+    with open(bundle_path, "rb") as f:
+        bundle = pickle.load(f)
+    if not isinstance(bundle, dict) or bundle.get("bundle_format") != BUNDLE_FORMAT:
+        raise ValueError(f"{bundle_path} is not a model bundle; train with scripts/train_biquality.py")
+    splits_path = bundle_path.parent / "splits.npz"
+    if not splits_path.exists():
+        raise FileNotFoundError(f"{splits_path} missing: the bundle must stay in its run directory")
+    splits = np.load(splits_path, allow_pickle=True)
+    config = load_config(bundle["config_path"])
+    bench = load_benchmark(config, bundle["feature_names"])
+    if not np.array_equal(bench.ids, splits["bench_ids"]):
+        raise ValueError("benchmark data changed since the run; ids differ from splits.npz")
+    test_idx = splits["bench_test"]
+    return bundle, bench.X[test_idx], bench.y[test_idx], list(bundle["feature_names"])
 
 
 def compute_shap_values(models, X, feature_names, max_samples=500):
@@ -94,9 +78,7 @@ def compute_shap_values(models, X, feature_names, max_samples=500):
     X_sample = X[:n_samples]
 
     shap_dict = {}
-    for dim in DIMENSIONS:
-        if dim not in models:
-            continue
+    for dim in BOTTLENECK_DIMENSIONS:
         logger.info("  Computing SHAP for '%s' (%d samples)...", dim, n_samples)
         explainer = shap.TreeExplainer(models[dim])
         sv = explainer.shap_values(X_sample)
@@ -248,110 +230,92 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
     logger.info("Saved global bar: %s", output_path)
 
 
-def validate_shap_against_domain(shap_dict, feature_names, y_test):
-    """Check if SHAP top features match known domain expectations."""
-    logger.info("")
-    logger.info("=" * 60)
-    logger.info("SHAP DOMAIN VALIDATION")
-    logger.info("=" * 60)
+# Features a domain expert expects to drive each label, from the label's
+# definition (docs/4_reference/IO_Bottleneck_Detection_Guide.md and the
+# verification rules in src/data/benchmark_verify.py)
+EXPECTED_FEATURES = {
+    "access_granularity": ["small_io_ratio", "small_write_ratio", "small_read_ratio", "avg_write_size",
+                           "avg_read_size", "POSIX_SIZE_WRITE_0_100", "POSIX_SIZE_WRITE_100_1K",
+                           "POSIX_SIZE_READ_0_100", "POSIX_SIZE_READ_100_1K", "medium_write_ratio"],
+    "metadata_intensity": ["metadata_time_ratio", "metadata_time_ratio_all", "POSIX_F_META_TIME",
+                           "opens_per_op", "POSIX_OPENS", "stats_per_op", "POSIX_STATS"],
+    "parallelism_efficiency": ["rank_byte_range_ratio", "top_rank_byte_share", "RANK_BYTES_GINI",
+                               "SHARED_BYTE_IMBALANCE", "rank_bytes_cv_all", "io_rank_fraction",
+                               "byte_imbalance", "time_imbalance"],
+    "access_pattern": ["seq_read_ratio", "seq_write_ratio", "POSIX_SEQ_READS", "POSIX_SEQ_WRITES",
+                       "consec_read_ratio", "consec_write_ratio"],
+    "interface_choice": ["collective_ratio", "MPIIO_COLL_WRITES", "MPIIO_COLL_READS", "MPIIO_INDEP_WRITES",
+                         "MPIIO_INDEP_READS", "has_mpiio", "is_shared_file"],
+    "file_strategy": ["num_files", "POSIX_FILENOS", "nprocs", "POSIX_OPENS", "opens_per_mb"],
+    "throughput_utilization": ["fsync_ratio", "POSIX_FSYNCS", "total_bw_mb_s", "write_bw_mb_s",
+                               "POSIX_MAX_BYTE_READ", "POSIX_MAX_BYTE_WRITTEN"],
+}
 
-    expected = {
-        "access_granularity": ["small_io_ratio", "small_write_ratio", "avg_write_size",
-                                "POSIX_SIZE_WRITE_0_100", "POSIX_SIZE_WRITE_100_1K"],
-        "metadata_intensity": ["metadata_time_ratio", "POSIX_F_META_TIME", "opens_per_op",
-                                "POSIX_OPENS", "stats_per_op"],
-        "access_pattern": ["seq_read_ratio", "seq_write_ratio", "POSIX_SEQ_READS",
-                            "POSIX_SEQ_WRITES"],
-        "interface_choice": ["collective_ratio", "MPIIO_COLL_WRITES", "MPIIO_INDEP_WRITES",
-                              "has_mpiio"],
-        "file_strategy": ["num_files", "POSIX_FILENOS", "nprocs"],
-        "throughput_utilization": ["total_bw_mb_s", "fsync_ratio", "POSIX_FSYNCS",
-                                    "write_bw_mb_s"],
-        "healthy": ["total_bw_mb_s", "seq_write_ratio", "small_io_ratio"],
-    }
 
-    for dim in DIMENSIONS:
-        if dim not in shap_dict:
-            continue
-        mean_abs = np.abs(shap_dict[dim]).mean(axis=0)
-        top_10_idx = np.argsort(mean_abs)[-10:][::-1]
-        top_10_names = [feature_names[i] for i in top_10_idx]
+def validate_shap_against_domain(shap_dict, feature_names, y_test, top_k=10):
+    """Per label, on the test samples that carry the label, does the
+    attribution point at the features the label is defined by?
 
-        expected_feats = expected.get(dim, [])
-        matched = [f for f in expected_feats if f in top_10_names]
-        match_rate = len(matched) / max(len(expected_feats), 1)
-
-        logger.info("")
-        logger.info("  %s (%.0f%% domain match):", dim, 100 * match_rate)
-        logger.info("    Top SHAP:  %s", ", ".join(top_10_names[:5]))
-        logger.info("    Expected:  %s", ", ".join(expected_feats[:5]))
-        logger.info("    Matched:   %s", ", ".join(matched) if matched else "NONE")
-
-    logger.info("=" * 60)
+    Returns ``{dimension: {...}}`` with the top features over the positive
+    samples, the matches with ``EXPECTED_FEATURES``, the sample count, and
+    ``status``: ``assessed``, ``no_positive_samples`` or ``not_assessed``
+    (no expectation defined). Healthy has no model and is never assessed.
+    """
+    result = {}
+    for i, dim in enumerate(BOTTLENECK_DIMENSIONS):
+        positives = np.flatnonzero(y_test[:, i] == 1)
+        entry = {"n_positive": int(len(positives))}
+        if dim not in EXPECTED_FEATURES:
+            entry["status"] = "not_assessed"
+        elif len(positives) == 0:
+            entry["status"] = "no_positive_samples"
+        else:
+            mean_abs = np.abs(shap_dict[dim][positives]).mean(axis=0)
+            top = [feature_names[j] for j in np.argsort(mean_abs)[-top_k:][::-1]]
+            matched = [f for f in EXPECTED_FEATURES[dim] if f in top]
+            entry.update(status="assessed", top_features=top, expected=EXPECTED_FEATURES[dim],
+                         matched=matched, match_rate=len(matched) / len(EXPECTED_FEATURES[dim]))
+        result[dim] = entry
+        logger.info("  %-24s %s%s", dim, entry["status"],
+                    f" match {entry['match_rate']:.0%} top: {', '.join(entry['top_features'][:5])}"
+                    if entry["status"] == "assessed" else "")
+    return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="SHAP analysis for multi-label I/O classifiers")
-    parser.add_argument("--model-path", default="models/phase2/xgboost_biquality_w100.pkl")
-    parser.add_argument("--output-dir", default="paper/figures/shap")
+    parser = argparse.ArgumentParser(description="SHAP analysis for the biquality detector")
+    parser.add_argument("--bundle", required=True, help="model bundle inside its run directory")
+    parser.add_argument("--output-dir", required=True,
+                        help="figures and values go here (never a paper repository)")
     parser.add_argument("--top-k", type=int, default=20)
-    parser.add_argument("--max-samples", type=int, default=436)
+    parser.add_argument("--max-samples", type=int, default=500)
     args = parser.parse_args()
 
-    output_dir = PROJECT_DIR / args.output_dir
+    output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Loading model and data...")
-    models, X_test, y_test, feature_cols, test_labels = load_model_and_data(
-        PROJECT_DIR / args.model_path
-    )
-    logger.info("Model: %d labels, Test: %d samples, Features: %d",
-                len(models), len(X_test), len(feature_cols))
+    bundle, X_test, y_test, feature_cols = load_bundle_and_test_rows(args.bundle)
+    logger.info("Bundle %s seed %s: %d test samples, %d features",
+                bundle["model_type"], bundle["seed"], len(X_test), len(feature_cols))
 
-    logger.info("")
-    logger.info("Computing SHAP values (TreeSHAP)...")
-    shap_dict, X_sample = compute_shap_values(
-        models, X_test, feature_cols, max_samples=args.max_samples
-    )
+    shap_dict, X_sample = compute_shap_values(bundle["models"], X_test, feature_cols,
+                                              max_samples=args.max_samples)
+    y_sample = y_test[:len(X_sample)]
 
-    logger.info("")
-    logger.info("Generating figures...")
+    plot_feature_label_heatmap(shap_dict, feature_cols, output_dir / "fig_shap_heatmap.pdf", top_k=args.top_k)
+    plot_per_label_beeswarm(shap_dict, X_sample, feature_cols, output_dir, top_k=15)
+    plot_global_bar(shap_dict, feature_cols, output_dir / "fig_shap_global_bar.pdf", top_k=args.top_k)
 
-    # 1. Feature-label heatmap (MAIN paper figure)
-    plot_feature_label_heatmap(
-        shap_dict, feature_cols,
-        output_dir / "fig_shap_heatmap.pdf",
-        top_k=args.top_k,
-    )
+    validation = validate_shap_against_domain(shap_dict, feature_cols, y_sample)
+    with open(output_dir / "domain_validation.json", "w") as f:
+        json.dump({"bundle": str(args.bundle), "n_samples": int(len(X_sample)), "validation": validation}, f, indent=2)
 
-    # 2. Per-label beeswarm (supplementary)
-    plot_per_label_beeswarm(
-        shap_dict, X_sample, feature_cols,
-        output_dir, top_k=15,
-    )
-
-    # 3. Global bar chart
-    plot_global_bar(
-        shap_dict, feature_cols,
-        output_dir / "fig_shap_global_bar.pdf",
-        top_k=args.top_k,
-    )
-
-    # 4. Domain validation
-    validate_shap_against_domain(shap_dict, feature_cols, y_test)
-
-    # Save raw SHAP values for LLM grounding
-    shap_path = output_dir / "shap_values.pkl"
-    with open(shap_path, "wb") as f:
-        pickle.dump({
-            "shap_dict": shap_dict,
-            "feature_names": feature_cols,
-            "X_sample": X_sample,
-        }, f)
-    logger.info("")
-    logger.info("SHAP values saved to %s", shap_path)
-    logger.info("All figures saved to %s", output_dir)
+    with open(output_dir / "shap_values.pkl", "wb") as f:
+        pickle.dump({"shap_dict": shap_dict, "feature_names": feature_cols, "X_sample": X_sample,
+                     "y_sample": y_sample, "bundle": str(args.bundle)}, f)
+    logger.info("SHAP values, figures and domain_validation.json saved to %s", output_dir)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

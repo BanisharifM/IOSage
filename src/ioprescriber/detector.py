@@ -1,8 +1,10 @@
 """
 IOPrescriber Step 1: ML Bottleneck Detection.
 
-Wraps the Phase 2 biquality XGBoost model to detect 8 I/O bottleneck
-dimensions from Darshan features.
+Loads a model bundle written by ``src.models.biquality`` (seven bottleneck
+classifiers with their ordered feature contract and decision threshold) and
+predicts the eight dimensions of a Darshan log; healthy is derived from the
+seven decisions.
 
 Input: Darshan log path OR pre-extracted feature dict
 Output: {dimension: confidence} for all 8 dimensions + detected list
@@ -14,73 +16,58 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+from src.models.biquality import BOTTLENECK_DIMENSIONS, BUNDLE_FORMAT, DIMENSION_NAMES, predict  # noqa: E402
+
 logger = logging.getLogger(__name__)
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
-
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 
 class Detector:
     """ML-based multi-label I/O bottleneck detector."""
 
-    def __init__(self, model_path=None, config_path=None, threshold=0.3):
-        config_path = config_path or PROJECT_DIR / "configs" / "training.yaml"
-        with open(config_path) as f:
-            self.config = yaml.safe_load(f)
-
-        model_path = model_path or PROJECT_DIR / "models" / "phase2" / "xgboost_biquality_w100.pkl"
+    def __init__(self, model_path, threshold=None):
+        """``model_path``: a bundle pickle from ``scripts/train_biquality.py``.
+        ``threshold`` overrides the bundle's decision threshold (for studies
+        that vary it; the bundle's value is the trained protocol's)."""
         with open(model_path, "rb") as f:
-            self.models = pickle.load(f)
+            bundle = pickle.load(f)
+        if not isinstance(bundle, dict) or bundle.get("bundle_format") != BUNDLE_FORMAT:
+            raise ValueError(f"{model_path} is not a model bundle of format {BUNDLE_FORMAT}; "
+                             "train with scripts/train_biquality.py")
+        if threshold is not None:
+            bundle = dict(bundle, decision_threshold=float(threshold))
+        self.bundle = bundle
+        self.models = bundle["models"]
+        self.feature_cols = list(bundle["feature_names"])
+        self.threshold = bundle["decision_threshold"]
+        logger.info("Detector loaded: %s seed %s, %d features, threshold=%.2f",
+                    bundle["model_type"], bundle["seed"], len(self.feature_cols), self.threshold)
 
-        self.threshold = threshold
-        self.feature_cols = self._get_feature_cols()
-        logger.info("Detector loaded: %d models, %d features, threshold=%.2f",
-                    len(self.models), len(self.feature_cols), threshold)
-
-    def _get_feature_cols(self):
-        prod_feat = pd.read_parquet(
-            PROJECT_DIR / self.config["paths"]["production_features"],
-        )
-        exclude = set(self.config.get("exclude_features", []))
-        for col in prod_feat.columns:
-            if col.startswith("_") or col.startswith("drishti_"):
-                exclude.add(col)
-        return [c for c in prod_feat.columns if c not in exclude]
+    def feature_vector(self, features_dict):
+        """The bundle's feature order as one row; a missing feature is an error."""
+        missing = [c for c in self.feature_cols if c not in features_dict]
+        if missing:
+            raise KeyError(f"{len(missing)} features missing from the input, first: {missing[:5]}")
+        return np.array([[features_dict[col] for col in self.feature_cols]], dtype=np.float32)
 
     def detect_from_features(self, features_dict):
         """Detect bottlenecks from a feature dictionary.
 
-        Args:
-            features_dict: dict of {feature_name: value}
-
         Returns:
-            predictions: dict of {dimension: confidence}
-            detected: list of dimension names with confidence > threshold
+            predictions: dict of {dimension: confidence}; healthy's value is
+                1 minus the highest bottleneck probability
+            detected: bottleneck dimensions at or above the threshold, or
+                ["healthy"]
         """
-        X = np.array([[features_dict.get(col, 0) for col in self.feature_cols]],
-                      dtype=np.float32)
-
-        predictions = {}
-        for dim in DIMENSIONS:
-            if dim in self.models:
-                predictions[dim] = round(float(self.models[dim].predict_proba(X)[0][1]), 4)
-
-        detected = [d for d in DIMENSIONS
-                     if predictions.get(d, 0) > self.threshold and d != "healthy"]
-        if not detected:
-            detected = ["healthy"]
-
-        return predictions, detected
+        proba, decisions = predict(self.bundle, self.feature_vector(features_dict))
+        predictions = {dim: round(float(proba[0, i]), 4) for i, dim in enumerate(BOTTLENECK_DIMENSIONS)}
+        predictions["healthy"] = round(float(1.0 - proba[0].max()), 4)
+        detected = [dim for i, dim in enumerate(BOTTLENECK_DIMENSIONS) if decisions[0, i]]
+        return predictions, detected or ["healthy"]
 
     def detect_from_darshan(self, darshan_path):
         """Detect bottlenecks directly from a Darshan log file.
@@ -92,17 +79,9 @@ class Detector:
             predictions, detected, features_dict
         """
         from src.data.parse_darshan import parse_darshan_log
-        from src.data.feature_extraction import extract_raw_features
-        from src.data.preprocessing import stage3_engineer
+        from src.data.preprocessing import engineer_one
 
-        parsed = parse_darshan_log(str(darshan_path))
-        if parsed is None:
-            raise ValueError(f"Failed to parse Darshan log: {darshan_path}")
-
-        raw_features = extract_raw_features(parsed)
-        df = pd.DataFrame([raw_features])
-        df = stage3_engineer(df)
-        features_dict = df.iloc[0].to_dict()
+        features_dict = engineer_one(parse_darshan_log(str(darshan_path), strict=True))
 
         predictions, detected = self.detect_from_features(features_dict)
         return predictions, detected, features_dict

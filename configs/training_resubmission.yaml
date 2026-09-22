@@ -1,0 +1,93 @@
+# Training configuration for the IPDPS 2027 resubmission (src/models/biquality.py).
+# Every key here is read; a missing key is an error. Paths are relative to the repo.
+
+paths:
+  production_features: data/processed/resubmission/production/features.parquet
+  production_labels: data/processed/resubmission/production/labels.parquet
+  production_splits: data/processed/resubmission/production/split_indices.pkl
+  benchmark_features: data/processed/resubmission/benchmark/features.parquet
+  benchmark_labels: data/processed/resubmission/benchmark/labels.parquet
+  runs_dir: results/resubmission/training
+
+# Columns of the production features that do not enter the model. Info (_*)
+# and heuristic (drishti_*) columns are always excluded. Decided after the
+# EDA of the re-extracted data; an empty list keeps every feature.
+exclude_features:
+  # absolute timestamps (redundant with io_duration, extreme scale)
+  - POSIX_F_OPEN_START_TIMESTAMP
+  - POSIX_F_OPEN_END_TIMESTAMP
+  - POSIX_F_READ_START_TIMESTAMP
+  - POSIX_F_READ_END_TIMESTAMP
+  - POSIX_F_WRITE_START_TIMESTAMP
+  - POSIX_F_WRITE_END_TIMESTAMP
+  - POSIX_F_CLOSE_START_TIMESTAMP
+  - POSIX_F_CLOSE_END_TIMESTAMP
+  # system constants, not performance (LAST_VALUE aggregation)
+  - POSIX_MODE
+  - POSIX_MEM_ALIGNMENT
+  - POSIX_FILE_ALIGNMENT
+  - POSIX_RENAMED_FROM
+
+# Benchmark development / test split: whole jobs on one side, iterative
+# stratification over jobs (same 30 / 70 ratio and seed as the SC 2026 protocol)
+benchmark_split:
+  test_ratio: 0.7
+  seed: 42
+
+# Biquality weighting: production rows weight 1, benchmark development rows this weight
+biquality:
+  clean_weight: 100.0
+  seeds: [42, 123, 456, 789, 1024]
+
+# Probability at which a bottleneck label is decided; healthy is derived
+# (no bottleneck above the threshold). The SC 2026 detector used 0.3; any
+# change must be chosen on the benchmark development rows, never on test.
+decision_threshold: 0.3
+
+imbalance:
+  max_weight: 100.0        # cap of the per-label negative/positive ratio (scale_pos_weight)
+
+early_stopping:
+  rounds: 50               # on the production validation partition, tree boosters only
+
+models:
+  xgboost:
+    params:
+      objective: binary:logistic
+      tree_method: hist
+      eval_metric: logloss
+      n_estimators: 500
+      max_depth: 6
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      reg_alpha: 0.1
+      reg_lambda: 1.0
+      min_child_weight: 5
+      gamma: 0.1
+  lightgbm:
+    params:
+      objective: binary
+      metric: binary_logloss
+      n_estimators: 500
+      num_leaves: 63
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      reg_alpha: 0.1
+      reg_lambda: 1.0
+      min_child_samples: 20
+  random_forest:
+    params:
+      n_estimators: 500
+      max_depth: 15
+      min_samples_leaf: 5
+      max_features: sqrt
+      class_weight: balanced
+      n_jobs: -1
+
+evaluation:
+  bootstrap:
+    n_resamples: 10000     # resamples whole benchmark jobs
+    confidence_level: 0.95
+    seed: 42

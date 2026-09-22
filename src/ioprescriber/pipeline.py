@@ -39,7 +39,8 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 class IOPrescriber:
     """Full pipeline: detect → retrieve → recommend → validate."""
 
-    def __init__(self, llm_model="claude-sonnet", cache_dir=None, use_shap=False):
+    def __init__(self, model_path, llm_model="claude-sonnet", cache_dir=None, use_shap=False):
+        """``model_path``: a model bundle from ``scripts/train_biquality.py``."""
         from src.ioprescriber.detector import Detector
         from src.ioprescriber.retriever import Retriever
         from src.ioprescriber.recommender import Recommender
@@ -47,7 +48,7 @@ class IOPrescriber:
         logger.info("Initializing IOPrescriber pipeline...")
 
         self.use_shap = use_shap
-        self.detector = Detector()
+        self.detector = Detector(model_path)
         self.explainer = None
         if self.use_shap:
             try:
