@@ -27,8 +27,6 @@ import time
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 LOCAL_PKGS = PROJECT_DIR / ".local_pkgs"
 if LOCAL_PKGS.exists():
@@ -37,6 +35,9 @@ sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+from src.ioprescriber.contracts import validate_pipeline_result  # noqa: E402
+from src.models.biquality import load_final_benchmark_test_frames  # noqa: E402
 
 MODELS = ["claude-sonnet", "gpt-4o", "llama-70b"]
 
@@ -88,16 +89,18 @@ def select_diverse_workloads(test_feat, test_labels, n_workloads=12):
     return selected[:n_workloads]
 
 
-def run_evaluation(models_to_test, n_workloads, n_runs):
+def run_evaluation(models_to_test, n_workloads, n_runs, model_bundle, knowledge_base):
     """Run full evaluation across models, workloads, and runs."""
     from src.ioprescriber.pipeline import IOPrescriber
 
-    # Load test data
-    test_feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_features.parquet")
-    test_labels = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_labels.parquet")
+    _, test_feat, test_labels, test_sample_ids = load_final_benchmark_test_frames(
+        model_bundle)
 
     # Select diverse workloads
     workload_indices = select_diverse_workloads(test_feat, test_labels, n_workloads)
+    if len(workload_indices) != n_workloads:
+        raise ValueError(
+            f"requested {n_workloads} workloads but selected {len(workload_indices)}")
     logger.info("Selected %d diverse workloads", len(workload_indices))
 
     for idx in workload_indices:
@@ -114,12 +117,9 @@ def run_evaluation(models_to_test, n_workloads, n_runs):
         logger.info("MODEL: %s", model)
         logger.info("=" * 70)
 
-        # Initialize pipeline for this model
-        try:
-            pipeline = IOPrescriber(llm_model=model)
-        except Exception as e:
-            logger.error("Failed to initialize %s: %s", model, e)
-            continue
+        pipeline = IOPrescriber(
+            model_path=model_bundle, kb_path=knowledge_base,
+            llm_model=model, use_shap=True)
 
         model_results = []
 
@@ -128,31 +128,42 @@ def run_evaluation(models_to_test, n_workloads, n_runs):
             label_row = test_labels.iloc[idx]
             workload_name = f"{label_row.get('benchmark', '?')}_{label_row.get('scenario', '?')}"
             gt_labels = {d: int(label_row.get(d, 0)) for d in DIMENSIONS}
+            identity_fields = {"_benchmark", "_ground_truth_job_id", "_source_path"}
+            missing_identity = identity_fields - set(features)
+            if missing_identity:
+                raise ValueError(
+                    f"benchmark evaluation row lacks identity fields {sorted(missing_identity)}")
+            job_group = f"{features['_benchmark']}/{features['_ground_truth_job_id']}"
+            sample_id = f"{job_group}/{Path(str(features['_source_path'])).name}"
 
             for run in range(n_runs):
                 logger.info("")
                 logger.info("Workload %d/%d, Run %d/%d: %s",
                             w_idx + 1, len(workload_indices), run + 1, n_runs, workload_name)
 
-                try:
-                    result = pipeline.analyze(features, workload_name=f"{workload_name}_run{run}")
-                    result["ground_truth_labels"] = gt_labels
-                    result["workload_index"] = int(idx)
-                    result["run"] = run
-                    result["model"] = model
-                    model_results.append(result)
-                except Exception as e:
-                    logger.error("  FAILED: %s", e)
-                    model_results.append({
-                        "workload": workload_name,
-                        "model": model,
-                        "run": run,
-                        "error": str(e),
-                    })
+                result = pipeline.analyze(
+                    features, workload_name=f"{workload_name}_run{run}",
+                    sample_id=sample_id, job_group=job_group,
+                    cache_namespace=f"{model}:{sample_id}:run:{run}",
+                    bypass_cache=True)
+                validate_pipeline_result(result)
+                detected = result["detection"]["detected"]
+                parsed = result["recommendation"]["parsed"]
+                if detected == ["healthy"] and parsed is not None:
+                    raise ValueError(
+                        f"{model} recommended a change for healthy detection {sample_id}")
+                if detected != ["healthy"] and parsed is None:
+                    raise ValueError(
+                        f"{model} produced no parsed recommendation for {sample_id}")
+                result["ground_truth_labels"] = gt_labels
+                result["workload_index"] = int(idx)
+                result["run"] = run
+                result["model"] = model
+                model_results.append(result)
 
         all_results[model] = model_results
 
-    return all_results, workload_indices
+    return all_results, [test_sample_ids[index] for index in workload_indices]
 
 
 def compute_summary(all_results):
@@ -160,25 +171,33 @@ def compute_summary(all_results):
     summary = {}
 
     for model, results in all_results.items():
-        valid = [r for r in results if "error" not in r]
+        valid = results
         if not valid:
-            continue
+            raise ValueError(f"model {model} has no evaluation results")
 
         groundedness_scores = []
         latencies = []
         token_counts = []
         n_recommendations = []
         parse_errors = 0
+        healthy_detections = 0
 
         for r in valid:
-            rec = r.get("step4_recommendation", {})
+            rec = r["recommendation"]
             g = rec.get("groundedness", {})
             m = rec.get("metadata", {})
 
+            if r["detection"]["detected"] == ["healthy"]:
+                healthy_detections += 1
+                if any(value is not None for value in rec.values()):
+                    raise ValueError(
+                        f"model {model} recorded recommendation work for a healthy detection")
+                continue
+
             if g and g.get("groundedness_score") is not None:
                 groundedness_scores.append(g["groundedness_score"])
-            if m and m.get("latency_ms"):
-                latencies.append(m["latency_ms"])
+            if m and m.get("api_latency_ms"):
+                latencies.append(m["api_latency_ms"])
             if m:
                 tokens = m.get("tokens_input", 0) + m.get("tokens_output", 0)
                 if tokens > 0:
@@ -188,10 +207,26 @@ def compute_summary(all_results):
             else:
                 parse_errors += 1
 
+        expected_recommendations = len(valid) - healthy_detections
+        counts = {
+            "groundedness": len(groundedness_scores),
+            "latencies": len(latencies),
+            "tokens": len(token_counts),
+            "recommendations": len(n_recommendations),
+        }
+        if parse_errors or expected_recommendations < 1 or any(
+                count != expected_recommendations for count in counts.values()):
+            raise ValueError(
+                f"model {model} has incomplete recommendation metrics: "
+                f"parse_errors={parse_errors}, expected={expected_recommendations}, "
+                f"counts={counts}")
+
         summary[model] = {
             "n_valid": len(valid),
             "n_errors": len(results) - len(valid),
             "n_parse_errors": parse_errors,
+            "n_healthy_detections": healthy_detections,
+            "n_recommendation_calls": expected_recommendations,
             "groundedness_mean": np.mean(groundedness_scores) if groundedness_scores else 0,
             "groundedness_std": np.std(groundedness_scores) if groundedness_scores else 0,
             "latency_mean_ms": np.mean(latencies) if latencies else 0,
@@ -229,7 +264,12 @@ def main():
     parser.add_argument("--model", default="all", choices=["all"] + MODELS)
     parser.add_argument("--n-workloads", type=int, default=12)
     parser.add_argument("--n-runs", type=int, default=1, help="Runs per workload (5 for paper)")
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base", required=True)
+    parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
+    if args.n_workloads < 1 or args.n_runs < 1:
+        parser.error("--n-workloads and --n-runs must be positive")
 
     # Load env
     env_path = PROJECT_DIR / ".env"
@@ -248,15 +288,19 @@ def main():
                 len(models), args.n_workloads, args.n_runs,
                 len(models) * args.n_workloads * args.n_runs)
 
-    all_results, workload_indices = run_evaluation(models, args.n_workloads, args.n_runs)
+    all_results, workload_sample_ids = run_evaluation(
+        models, args.n_workloads, args.n_runs,
+        args.model_bundle, args.knowledge_base)
 
     # Compute summary
     summary = compute_summary(all_results)
     print_table3(summary)
 
     # Save everything
-    results_dir = PROJECT_DIR / "results" / "llm_evaluation"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    results_dir = Path(args.output_dir).resolve()
+    if results_dir.exists():
+        raise FileExistsError(f"evaluation output directory already exists: {results_dir}")
+    results_dir.mkdir(parents=True)
 
     # Full results
     results_path = results_dir / f"evaluation_results_{int(time.time())}.json"
@@ -268,10 +312,27 @@ def main():
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
 
+    manifest_path = results_dir / "evaluation_manifest.json"
+    import hashlib
+    with manifest_path.open("x") as handle:
+        json.dump({
+            "schema_version": 1,
+            "model_bundle": {"path": str(Path(args.model_bundle).resolve()),
+                             "sha256": hashlib.sha256(Path(args.model_bundle).read_bytes()).hexdigest()},
+            "knowledge_base": {"path": str(Path(args.knowledge_base).resolve()),
+                               "sha256": hashlib.sha256(Path(args.knowledge_base).read_bytes()).hexdigest()},
+            "sample_ids": workload_sample_ids,
+            "models": models,
+            "n_runs": args.n_runs,
+            "results_sha256": hashlib.sha256(results_path.read_bytes()).hexdigest(),
+            "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+        }, handle, indent=2)
+
     logger.info("")
     logger.info("Results saved: %s", results_path)
     logger.info("Summary saved: %s", summary_path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -22,9 +22,19 @@ import os
 import time
 from pathlib import Path
 
+from src.ioprescriber.contracts import (
+    QUALITATIVE_SCHEMA_VERSION,
+    RECOMMENDATION_SCHEMA_VERSION,
+    score_grounding,
+    validate_qualitative_response,
+    validate_recommendation,
+)
+
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+CACHE_SCHEMA_VERSION = 2
+OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1"
 
 
 # OpenRouter model IDs
@@ -78,7 +88,7 @@ RULES:
 1. Every recommendation MUST be grounded in the benchmark evidence provided.
 2. Include specific before/after code snippets showing the exact change.
 3. Cite the KB entry ID for each recommendation.
-4. Quantify expected improvement using benchmark measurements only.
+4. Copy the numeric measured speedup from the cited fix exactly.
 5. Do NOT fabricate performance numbers or API calls that don't exist.
 6. Prioritize recommendations by expected impact (highest speedup first).
 7. Use standard HPC I/O APIs: POSIX (read/write), MPI-IO (MPI_File_*), HDF5 (H5D*).
@@ -112,20 +122,20 @@ RULES:
 
             # Source code reference
             src = e.get("source_code", {})
-            if src.get("repo"):
-                kb_str += f"  Source: {src['repo']} ({src.get('language', '?')})\n"
-            if src.get("io_functions"):
-                for api, code in list(src["io_functions"].items())[:2]:
-                    kb_str += f"  Code ({api}): {code}\n"
+            kb_str += (f"  Source: {src['repository']} at {src['revision']}\n"
+                       f"  Path: {src['path']}\n")
 
-            # Fix patterns
+            # Measured fixes
             for fix in e.get("fixes", [])[:1]:
-                kb_str += f"  Cause: {fix.get('cause', 'N/A')}\n"
-                kb_str += f"  Fix: {fix.get('fix', 'N/A')}\n"
-                if fix.get("code_before"):
-                    kb_str += f"  Code BEFORE:\n    {fix['code_before']}\n"
-                if fix.get("code_after"):
-                    kb_str += f"  Code AFTER:\n    {fix['code_after']}\n"
+                measurement = fix["measurement"]
+                kb_str += f"  Fix ID: {fix['fix_id']}\n"
+                kb_str += f"  Fix: {fix['description']}\n"
+                kb_str += f"  API change: {fix['api_change']}\n"
+                kb_str += f"  Code BEFORE:\n    {fix['code_before']}\n"
+                kb_str += f"  Code AFTER:\n    {fix['code_after']}\n"
+                kb_str += f"  Measured wall-time speedup: {measurement['speedup']}\n"
+                kb_str += f"  Before jobs: {measurement['before_job_ids']}\n"
+                kb_str += f"  After jobs: {measurement['after_job_ids']}\n"
 
         # Darshan summary
         summary_str = "\n".join(
@@ -134,7 +144,7 @@ RULES:
 
         user_prompt = f"""Analyze this HPC job's I/O behavior and provide code-level optimization recommendations.
 
-## Detected Bottlenecks (ML classifier, Micro-F1=0.923):
+## Detected Bottlenecks (ML classifier):
 {detection_str}
 
 ## Key Contributing Features (SHAP per-label attribution):
@@ -149,11 +159,12 @@ RULES:
 ## Task:
 1. Explain what I/O problems this job has (grounded in Darshan values).
 2. For each detected bottleneck, provide a specific code-level fix with before/after code.
-3. Estimate expected improvement based ONLY on benchmark evidence (cite KB entry IDs).
+3. Copy `expected_speedup`, code, API change, entry ID, and fix ID from one measured fix.
 4. Prioritize by expected impact.
 
 Respond in JSON:
 {{
+  "schema_version": {RECOMMENDATION_SCHEMA_VERSION},
   "diagnosis": "plain language explanation of I/O problems",
   "recommendations": [
     {{
@@ -162,35 +173,71 @@ Respond in JSON:
       "explanation": "what is wrong and why",
       "code_before": "the problematic I/O code pattern",
       "code_after": "the optimized I/O code",
-      "expected_speedup": "Nx based on KB evidence",
+      "expected_speedup": 1.25,
       "kb_citation": "entry_id from KB",
+      "evidence_fix_id": "fix_id from the cited entry",
       "confidence": "high/medium/low",
       "api_change": "e.g., POSIX write -> MPI_File_write_all"
     }}
-  ],
-  "overall_expected_improvement": "estimated total speedup range"
+  ]
 }}
 """
         return system_prompt, user_prompt
 
-    def call_llm(self, system_prompt, user_prompt):
+    def _cache_request(self, system_prompt, user_prompt, cache_namespace,
+                       response_contract="measured-v1"):
+        return {
+            "schema_version": CACHE_SCHEMA_VERSION,
+            "response_schema_version": RECOMMENDATION_SCHEMA_VERSION,
+            "response_contract": response_contract,
+            "system_prompt_sha256": hashlib.sha256(system_prompt.encode()).hexdigest(),
+            "user_prompt_sha256": hashlib.sha256(user_prompt.encode()).hexdigest(),
+            "model": self.model_id,
+            "resolved_model": self.model_id,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "endpoint": OPENROUTER_ENDPOINT,
+            "code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "namespace": cache_namespace,
+        }
+
+    def call_llm(self, system_prompt, user_prompt, cache_namespace=None,
+                 bypass_cache=False, validator=validate_recommendation,
+                 response_contract="measured-v1"):
         """Call LLM via OpenRouter with caching."""
-        # Cache check
-        cache_key = hashlib.md5(
-            (system_prompt + user_prompt + self.model_id).encode()
+        request_contract = self._cache_request(
+            system_prompt, user_prompt, cache_namespace, response_contract)
+        cache_key = hashlib.sha256(
+            json.dumps(request_contract, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         cache_path = Path(self.cache_dir) / f"{cache_key}.json"
 
-        if cache_path.exists():
+        if cache_path.exists() and not bypass_cache:
             with open(cache_path) as f:
                 cached = json.load(f)
+            if cached.get("request") != request_contract:
+                raise ValueError(f"cache request contract mismatch: {cache_path}")
+            parsed, error = self.parse_response(cached.get("response", ""), validator=validator)
+            if error:
+                raise ValueError(f"cached response violates the schema: {error}")
             logger.info("  Cache hit: %s", cache_path.name[:16])
-            return cached["response"], cached.get("metadata", {})
+            source = cached.get("metadata", {})
+            metadata = {
+                "model": source.get("model", self.model_id),
+                "resolved_model": source.get("resolved_model"),
+                "cache_hit": True,
+                "api_latency_ms": 0.0,
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "request_id": None,
+                "cache_source_request_id": source.get("request_id"),
+            }
+            return cached["response"], metadata
 
         # API call
         from openai import OpenAI
         client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
+            base_url=OPENROUTER_ENDPOINT,
             api_key=self.api_key,
         )
 
@@ -207,11 +254,21 @@ Respond in JSON:
         latency_ms = (time.perf_counter() - t0) * 1000
 
         text = response.choices[0].message.content
+        parsed, error = self.parse_response(text, validator=validator)
+        if error:
+            raise ValueError(f"LLM response violates the recommendation schema: {error}")
+        resolved_model = getattr(response, "model", None)
+        if resolved_model != self.model_id:
+            raise ValueError(
+                f"provider resolved {self.model_id} to {resolved_model}; use an exact model ID")
         metadata = {
             "model": self.model_id,
-            "latency_ms": round(latency_ms, 1),
+            "resolved_model": resolved_model,
+            "cache_hit": False,
+            "api_latency_ms": round(latency_ms, 1),
             "tokens_input": getattr(response.usage, "prompt_tokens", 0),
             "tokens_output": getattr(response.usage, "completion_tokens", 0),
+            "request_id": getattr(response, "id", None),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
@@ -219,10 +276,10 @@ Respond in JSON:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_path, "w") as f:
             json.dump({
+                "cache_schema_version": CACHE_SCHEMA_VERSION,
+                "request": request_contract,
                 "response": text,
                 "metadata": metadata,
-                "system_prompt": system_prompt,
-                "user_prompt": user_prompt,
             }, f, indent=2)
         logger.info("  LLM response: %d chars, %d tokens, %.0fms",
                     len(text), metadata["tokens_input"] + metadata["tokens_output"],
@@ -230,7 +287,7 @@ Respond in JSON:
 
         return text, metadata
 
-    def parse_response(self, response_text):
+    def parse_response(self, response_text, validator=validate_recommendation):
         """Parse LLM JSON response, handle malformed output gracefully."""
         text = response_text.strip()
 
@@ -243,44 +300,20 @@ Respond in JSON:
                 text = parts[1].strip()
 
         try:
-            return json.loads(text), None
-        except json.JSONDecodeError as e:
+            parsed = json.loads(text)
+            validator(parsed)
+            return parsed, None
+        except (json.JSONDecodeError, ValueError) as e:
             logger.warning("  JSON parse failed: %s", str(e)[:100])
             return None, str(e)
 
     def check_groundedness(self, parsed_response, kb_entries):
-        """Check how many recommendations cite valid KB entries.
-
-        Handles: exact match, comma-separated citations, partial ID match.
-        """
-        if not parsed_response or "recommendations" not in parsed_response:
-            return {"groundedness_score": 0.0, "n_recommendations": 0, "n_grounded": 0}
-
-        kb_ids = {m["entry"]["entry_id"] for m in kb_entries}
-        recs = parsed_response["recommendations"]
-        grounded = 0
-
-        for r in recs:
-            citation = r.get("kb_citation", "")
-            if not citation:
-                continue
-            # Handle comma-separated citations
-            parts = [c.strip() for c in citation.split(",")]
-            if any(p in kb_ids for p in parts):
-                grounded += 1
-            # Also check if any KB ID is a substring of the citation
-            elif any(kb_id in citation for kb_id in kb_ids):
-                grounded += 1
-
-        return {
-            "groundedness_score": grounded / max(len(recs), 1),
-            "n_recommendations": len(recs),
-            "n_grounded": grounded,
-            "n_ungrounded": len(recs) - grounded,
-        }
+        """Score diagnosis, action, API, and numeric support independently."""
+        return score_grounding(parsed_response, kb_entries)
 
     def recommend(self, predictions, detected_dims, shap_features,
-                   kb_entries, darshan_summary):
+                   kb_entries, darshan_summary, cache_namespace=None,
+                   bypass_cache=False):
         """Generate recommendation and check groundedness.
 
         Returns:
@@ -294,7 +327,9 @@ Respond in JSON:
             kb_entries, darshan_summary,
         )
 
-        raw_response, metadata = self.call_llm(sys_p, usr_p)
+        raw_response, metadata = self.call_llm(
+            sys_p, usr_p, cache_namespace=cache_namespace,
+            bypass_cache=bypass_cache)
         parsed, parse_error = self.parse_response(raw_response)
         groundedness = self.check_groundedness(parsed, kb_entries)
 
@@ -307,3 +342,40 @@ Respond in JSON:
                         groundedness["n_recommendations"])
 
         return parsed, groundedness, metadata, raw_response
+
+    def recommend_without_evidence(self, detected_dims, darshan_summary,
+                                   shap_features=None,
+                                   cache_namespace=None, bypass_cache=False):
+        """Generate qualitative ablation output without numeric or KB claims."""
+        system_prompt = """You analyze HPC I/O counters without benchmark evidence.
+Do not state an expected speedup, benchmark measurement, or citation. Return
+only the requested JSON object."""
+        user_prompt = f"""Detected dimensions: {json.dumps(detected_dims)}
+Darshan summary: {json.dumps(darshan_summary, sort_keys=True)}
+SHAP attribution: {json.dumps(shap_features or {}, sort_keys=True)}
+
+Respond as:
+{{
+  "schema_version": {QUALITATIVE_SCHEMA_VERSION},
+  "diagnosis": "nonempty explanation",
+  "recommendations": [
+    {{
+      "priority": 1,
+      "bottleneck_dimension": "one detected bottleneck dimension",
+      "explanation": "qualitative explanation",
+      "code_before": "problematic pattern",
+      "code_after": "proposed pattern",
+      "confidence": "high, medium, or low",
+      "api_change": "qualitative API change"
+    }}
+  ]
+}}
+"""
+        raw, metadata = self.call_llm(
+            system_prompt, user_prompt, cache_namespace=cache_namespace,
+            bypass_cache=bypass_cache, validator=validate_qualitative_response,
+            response_contract="qualitative-v1")
+        parsed, error = self.parse_response(raw, validator=validate_qualitative_response)
+        if error:
+            raise ValueError(error)
+        return parsed, metadata, raw

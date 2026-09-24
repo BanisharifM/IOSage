@@ -28,9 +28,11 @@ class _FakeExecutor:
         job_scratch = f"{self.scratch_dir}/{kwargs['job_name']}"
         # The benchmark writes where cmd says; the job only creates its own scratch dir.
         if job_scratch not in cmd:
-            return {"success": False, "job_id": None, "error": "ENOENT"}
+            return {"success": False, "job_id": "failed-job", "error": "ENOENT",
+                    "elapsed_s": 2.0}
         return {"success": True, "job_id": f"job{len(self.calls)}", "features": {},
                 "metrics": {"total_bw_mb_s": 100.0}, "darshan_paths": [],
+                "elapsed_s": 2.0,
                 "measurement": {"walltime_s": 10.0 + len(self.calls), "nprocs": 16,
                                 "write_bw_mb_s": 100.0, "bytes_total": 1, "n_phases": 1,
                                 "configured_bytes": 1}}
@@ -49,14 +51,15 @@ def test_repeats_reuse_the_job_name_and_scratch_directory():
     assert agg["walltime_s"] == 12.0, agg["walltime_s"]
 
 
-def test_failed_repeats_are_skipped_not_counted():
+def test_failed_repeat_rejects_the_complete_measurement():
     mod = _load_optimizer()
     opt = mod.IterativeOptimizer.__new__(mod.IterativeOptimizer)
     opt.executor = _FakeExecutor()
     opt.iter_config = {"iteration": {"confidence": 0.90}}
     first, agg, runs = opt._execute_repeated("ior -o /elsewhere/ior_test_file",
                                              {"job_name": "wl_baseline"}, 3)
-    assert first is None and runs == [] and not agg
+    assert first is None and runs == [] and agg is None
+    assert opt._last_execution_allocation_s == 2.0
 
 
 def test_interleaved_runs_alternate_control_and_candidate():
@@ -70,10 +73,12 @@ def test_interleaved_runs_alternate_control_and_candidate():
     assert opt.executor.calls == ["wl_baseline", "wl_i0"] * 8, opt.executor.calls
     assert cand["n_repeats"] == 8 and ctrl["n_repeats"] == 8
     assert cand["ci_valid"] and ctrl["ci_valid"] and first is not None
+    assert cand["allocation_elapsed_s"] == 16.0
+    assert ctrl["allocation_elapsed_s"] == 16.0
 
 
 if __name__ == "__main__":
     test_repeats_reuse_the_job_name_and_scratch_directory()
-    test_failed_repeats_are_skipped_not_counted()
+    test_failed_repeat_rejects_the_complete_measurement()
     test_interleaved_runs_alternate_control_and_candidate()
     print("3/3 repeated-execution tests pass")

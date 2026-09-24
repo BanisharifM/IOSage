@@ -1,20 +1,10 @@
 """
 IOPrescriber: End-to-End Pipeline.
 
-Full pipeline: ML detect → SHAP explain → RAG retrieve → LLM recommend → validate speedup
+Full pipeline: ML detection, SHAP attribution, evidence retrieval, and LLM recommendation.
 
-Usage:
-    # Analyze a Darshan log (no SLURM, uses cached KB)
-    python -m src.ioprescriber.pipeline --darshan-log path/to/file.darshan
-
-    # Run closed-loop on known benchmark pairs (submits SLURM jobs)
-    python -m src.ioprescriber.pipeline --closed-loop --submit
-
-    # Dry run (no SLURM, no LLM API)
-    python -m src.ioprescriber.pipeline --closed-loop --dry-run
-
-    # Run on GT test set samples
-    python -m src.ioprescriber.pipeline --test-samples 5
+Use ``python -m src.ioprescriber.pipeline --help`` for the required model and
+measured-evidence inputs. The fixed-pair validation command is retired.
 """
 
 import argparse
@@ -25,9 +15,6 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -37,9 +24,10 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class IOPrescriber:
-    """Full pipeline: detect → retrieve → recommend → validate."""
+    """Full detection, attribution, retrieval, and recommendation pipeline."""
 
-    def __init__(self, model_path, llm_model="claude-sonnet", cache_dir=None, use_shap=False):
+    def __init__(self, model_path, kb_path, llm_model="claude-sonnet",
+                 cache_dir=None, use_shap=True):
         """``model_path``: a model bundle from ``scripts/train_biquality.py``."""
         from src.ioprescriber.detector import Detector
         from src.ioprescriber.retriever import Retriever
@@ -51,16 +39,12 @@ class IOPrescriber:
         self.detector = Detector(model_path)
         self.explainer = None
         if self.use_shap:
-            try:
-                from src.ioprescriber.explainer import Explainer
-                self.explainer = Explainer(
-                    self.detector.models, self.detector.feature_cols, top_k=10
-                )
-                logger.info("SHAP explainer loaded (optional)")
-            except ImportError:
-                logger.warning("SHAP not available; continuing without attribution")
-                self.use_shap = False
-        self.retriever = Retriever()
+            from src.ioprescriber.explainer import Explainer
+            self.explainer = Explainer(
+                self.detector.models, self.detector.feature_cols, top_k=10
+            )
+            logger.info("SHAP explainer loaded")
+        self.retriever = Retriever(kb_path=kb_path)
         self.recommender = Recommender(
             model=llm_model,
             cache_dir=cache_dir or str(PROJECT_DIR / "data" / "llm_cache" / "ioprescriber"),
@@ -70,11 +54,18 @@ class IOPrescriber:
                     len(self.detector.models), len(self.retriever.kb),
                     self.recommender.model_id, self.use_shap)
 
-    def analyze(self, darshan_features, workload_name="unknown"):
+    def analyze(self, darshan_features, workload_name="unknown", sample_id=None,
+                job_group=None, cache_namespace=None, bypass_cache=False):
         """Run full analysis pipeline on a feature dict.
 
         Returns complete analysis result with all pipeline outputs.
         """
+        if sample_id is None and {
+                "_benchmark", "_ground_truth_job_id", "_source_path"} <= set(darshan_features):
+            job_group = (f"{darshan_features['_benchmark']}/"
+                         f"{darshan_features['_ground_truth_job_id']}")
+            sample_id = f"{job_group}/{Path(str(darshan_features['_source_path'])).name}"
+
         logger.info("")
         logger.info("=" * 60)
         logger.info("IOPrescriber Analysis: %s", workload_name)
@@ -90,8 +81,7 @@ class IOPrescriber:
         shap_features = {}
         if self.use_shap and self.explainer:
             logger.info("Step 2: SHAP Attribution (optional)...")
-            X = np.array([[darshan_features.get(col, 0) for col in self.detector.feature_cols]],
-                          dtype=np.float32)
+            X = self.detector.feature_vector(darshan_features)
             shap_features = self.explainer.explain(X, detected_dims=detected)
             for dim in detected:
                 if dim in shap_features and shap_features[dim]:
@@ -101,16 +91,20 @@ class IOPrescriber:
 
         # Step 2: Retrieve
         logger.info("Step 2: KB Retrieval...")
-        kb_entries = self.retriever.retrieve(detected, darshan_features)
+        kb_entries = self.retriever.retrieve(
+            detected, darshan_features, query_sample_id=sample_id,
+            query_job_group=job_group)
         logger.info("  Retrieved %d KB entries", len(kb_entries))
 
         # Step 3: Recommend (if API key available)
         recommendation = None
         groundedness = None
         metadata = None
-        raw_response = None
 
-        if self.recommender.api_key:
+        needs_recommendation = detected != ["healthy"]
+        if needs_recommendation and not kb_entries:
+            raise ValueError("no measured KB evidence matches the detected bottlenecks")
+        if self.recommender.api_key and needs_recommendation:
             logger.info("Step 3: LLM Recommendation...")
             # Build darshan summary
             summary_keys = ["nprocs", "runtime_seconds", "POSIX_BYTES_WRITTEN",
@@ -120,8 +114,9 @@ class IOPrescriber:
                                for k in summary_keys
                                if darshan_features.get(k, 0) != 0}
 
-            recommendation, groundedness, metadata, raw_response = self.recommender.recommend(
-                predictions, detected, shap_features, kb_entries, darshan_summary
+            recommendation, groundedness, metadata, _ = self.recommender.recommend(
+                predictions, detected, shap_features, kb_entries, darshan_summary,
+                cache_namespace=cache_namespace, bypass_cache=bypass_cache,
             )
 
             if recommendation:
@@ -131,27 +126,30 @@ class IOPrescriber:
                             groundedness.get("groundedness_score", 0))
             else:
                 logger.warning("  LLM response could not be parsed")
+        elif not needs_recommendation:
+            logger.info("Step 3: SKIPPED (healthy detection)")
         else:
             logger.info("Step 3: SKIPPED (no API key set)")
 
         total_ms = (time.perf_counter() - t0) * 1000
 
         result = {
+            "schema_version": 1,
             "workload": workload_name,
             "pipeline_latency_ms": round(total_ms, 1),
-            "step1_detection": {
+            "detection": {
                 "predictions": predictions,
                 "detected": detected,
             },
-            "shap_analysis": {dim: feats[:3] for dim, feats in shap_features.items()} if shap_features else {},
-            "step2_retrieval": {
+            "attribution": {dim: feats[:3] for dim, feats in shap_features.items()} if shap_features else {},
+            "retrieval": {
                 "n_entries": len(kb_entries),
                 "entries": [{"entry_id": e["entry"]["entry_id"],
                              "similarity": e["similarity"],
                              "matched_dims": e["matched_dims"]}
                             for e in kb_entries],
             },
-            "step3_recommendation": {
+            "recommendation": {
                 "parsed": recommendation,
                 "groundedness": groundedness,
                 "metadata": metadata,
@@ -162,7 +160,8 @@ class IOPrescriber:
         logger.info("Pipeline completed in %.0fms", total_ms)
         logger.info("=" * 60)
 
-        return result
+        from src.ioprescriber.contracts import validate_pipeline_result
+        return validate_pipeline_result(result)
 
     def analyze_darshan_log(self, darshan_path):
         """Analyze directly from a Darshan log file."""
@@ -172,18 +171,31 @@ class IOPrescriber:
 
 def main():
     parser = argparse.ArgumentParser(description="IOPrescriber: ML+LLM I/O Bottleneck Diagnosis")
+    parser.add_argument("--model-bundle", required=True,
+                        help="Final-evaluation bundle from train_biquality.py")
+    parser.add_argument("--knowledge-base", required=True,
+                        help="Schema 2 measured-evidence knowledge base")
     parser.add_argument("--darshan-log", help="Path to Darshan log file")
     parser.add_argument("--test-samples", type=int, default=0,
                         help="Run on N benchmark test samples")
+    parser.add_argument("--output-dir", required=True)
     parser.add_argument("--closed-loop", action="store_true",
                         help="Run closed-loop validation on known pairs")
     parser.add_argument("--submit", action="store_true",
                         help="Submit SLURM jobs (requires --closed-loop)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Don't call LLM API or submit SLURM")
+    parser.add_argument("--no-shap", action="store_true",
+                        help="Explicit ablation: omit SHAP attribution")
     parser.add_argument("--llm-model", default="claude-sonnet",
                         choices=["claude-sonnet", "gpt-4o", "llama-70b"])
     args = parser.parse_args()
+    if args.closed_loop:
+        parser.error("the fixed-pair validator is retired; use the source-aware validation path once configured")
+    if args.submit and not args.closed_loop:
+        parser.error("--submit requires --closed-loop")
+    if args.dry_run and args.submit:
+        parser.error("--dry-run cannot be combined with --submit")
 
     # Load env
     env_path = PROJECT_DIR / ".env"
@@ -199,7 +211,12 @@ def main():
     if args.dry_run:
         os.environ.pop("OPENROUTER_API_KEY", None)
 
-    pipeline = IOPrescriber(llm_model=args.llm_model)
+    pipeline = IOPrescriber(
+        model_path=args.model_bundle,
+        kb_path=args.knowledge_base,
+        llm_model=args.llm_model,
+        use_shap=not args.no_shap,
+    )
 
     results = []
 
@@ -208,8 +225,9 @@ def main():
         results.append(result)
 
     elif args.test_samples > 0:
-        test_feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_features.parquet")
-        test_labels = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_labels.parquet")
+        from src.models.biquality import load_final_benchmark_test_frames
+        _, test_feat, test_labels, _ = load_final_benchmark_test_frames(
+            args.model_bundle)
 
         # Pick samples with bottlenecks (not healthy)
         bottleneck_mask = test_labels["healthy"] == 0
@@ -223,21 +241,17 @@ def main():
             result = pipeline.analyze(features, workload_name=name)
             results.append(result)
 
-    elif args.closed_loop:
-        from src.ioprescriber.validator import Validator
-        validator = Validator()
-        cl_results = validator.validate_all(submit_jobs=args.submit)
-        results.append({"closed_loop": cl_results})
-
     else:
         parser.print_help()
         return
 
     # Save results
-    results_dir = PROJECT_DIR / "results" / "ioprescriber"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    results_path = results_dir / f"pipeline_results_{int(time.time())}.json"
-    with open(results_path, "w") as f:
+    results_dir = Path(args.output_dir).resolve()
+    if results_dir.exists():
+        raise FileExistsError(f"pipeline output directory already exists: {results_dir}")
+    results_dir.mkdir(parents=True)
+    results_path = results_dir / "pipeline_results.json"
+    with results_path.open("x") as f:
         json.dump(results, f, indent=2, default=str)
     logger.info("Results saved: %s", results_path)
 

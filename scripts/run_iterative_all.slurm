@@ -10,57 +10,65 @@
 #SBATCH --export=NONE
 #SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/iter_all_%j.out
 #SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/iter_all_%j.err
-# =============================================================================
-# Run the closed loop over several workloads, one after another.
-# Sequential on purpose: the objective is wall time, so two benchmark jobs must not
-# share the filesystem while either is being timed.
-# Usage: sbatch scripts/run_iterative_all.slurm [model] [max_iter] [workload ...]
-#   default model claude-sonnet, 5 iterations, every workload in configs/iterative.yaml
-#   except ones already measured (pass workload names explicitly to override).
-# =============================================================================
+
+set -euo pipefail
+source /etc/profile
 export SLURM_EXPORT_ENV=ALL
+
+PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
 IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+PYTHON="$IOSAGE_ENV/bin/python"
+RESULTS_ROOT="$PROJECT_DIR/results/resubmission/iterative"
 export PATH="$IOSAGE_ENV/bin:$PATH" PYTHONNOUSERSITE=1
 unset PYTHONPATH
-cd /work/hdd/bdau/mbanisharifdehkordi/IOSage || exit 1
-[ -f .env ] && { set -a; source .env; set +a; }
-
-MODEL="${1:-claude-sonnet}"; MAX_ITER="${2:-5}"; shift 2 2>/dev/null
-WORKLOADS="$*"
-if [ -z "$WORKLOADS" ]; then
-    WORKLOADS=$("$IOSAGE_ENV/bin/python" -c "
-import yaml
-done = {'ior_small_posix'}
-print(' '.join(k for k in yaml.safe_load(open('configs/iterative.yaml'))['workloads'] if k not in done))")
+cd "$PROJECT_DIR"
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
 fi
 
-echo "host $(hostname)  model $MODEL  iterations $MAX_ITER"
-echo "workloads: $WORKLOADS"
-"$IOSAGE_ENV/bin/python" -c "import xgboost, shap, openai; print('env check ok')" || exit 1
+: "${MODEL_BUNDLE:?set MODEL_BUNDLE to a final-evaluation bundle}"
+: "${KNOWLEDGE_BASE:?set KNOWLEDGE_BASE to a schema 2 measured-evidence KB}"
+[ -s "$MODEL_BUNDLE" ] || { echo "ERROR: model bundle missing or empty: $MODEL_BUNDLE" >&2; exit 1; }
+[ -s "$KNOWLEDGE_BASE" ] || { echo "ERROR: knowledge base missing or empty: $KNOWLEDGE_BASE" >&2; exit 1; }
+"$PYTHON" -c "import darshan, pandas, shap, xgboost; print('environment check passed')"
 
-STAMP=$(date +%Y%m%d_%H%M%S)
-SUMMARY="results/resubmission/iterative/sweep_${MODEL}_${STAMP}_summary.tsv"
-printf "workload\tbest_speedup\tstatus\tcost_usd\tlog\n" > "$SUMMARY"
-
-for W in $WORKLOADS; do
-    LOG="results/resubmission/iterative/sweep_${STAMP}_${W}_${MODEL}.log"
-    echo "=== $(date +%H:%M:%S)  $W"
-    OUT="results/resubmission/iterative/iter_${W}_${MODEL}_$(date +%s).json"
-    "$IOSAGE_ENV/bin/python" -m src.llm.iterative_optimizer \
-        --workload "$W" --model "$MODEL" --max-iterations "$MAX_ITER" \
-        --n-runs 1 --output "$OUT" > "$LOG" 2>&1
-    rc=$?
-    "$IOSAGE_ENV/bin/python" - "$W" "$OUT" "$rc" "$LOG" >> "$SUMMARY" <<'PY'
-import json, sys
-w, out, rc, log = sys.argv[1:5]
-try:
-    d = json.load(open(out)); h = d[0] if isinstance(d, list) else d
-    print(f"{w}\t{h.get('best_speedup')}\t{h.get('final_status')}\t{h.get('total_cost_usd')}\t{log}")
-except Exception as e:
-    print(f"{w}\tNA\tdriver_rc={rc} ({type(e).__name__})\tNA\t{log}")
+MODEL="${1:-claude-sonnet}"
+MAX_ITER="${2:-5}"
+if [ "$#" -ge 2 ]; then shift 2; else set --; fi
+case "$MAX_ITER" in
+    ''|*[!0-9]*|0) echo "ERROR: max iterations must be a positive integer" >&2; exit 2 ;;
+esac
+if [ "$#" -gt 0 ]; then
+    WORKLOADS=("$@")
+else
+    mapfile -t WORKLOADS < <("$PYTHON" - <<'PY'
+import yaml
+with open("configs/iterative.yaml") as handle:
+    print("\n".join(yaml.safe_load(handle)["workloads"]))
 PY
-    echo "    -> $(tail -1 "$SUMMARY")"
+)
+fi
+[ "${#WORKLOADS[@]}" -gt 0 ] || { echo "ERROR: no workloads selected" >&2; exit 2; }
+
+RUN_TAG="${RUN_TAG:-sweep_${SLURM_JOB_ID:?SLURM_JOB_ID is required}}"
+RUN_DIR="$RESULTS_ROOT/$RUN_TAG"
+[ ! -e "$RUN_DIR" ] || { echo "ERROR: run directory already exists: $RUN_DIR" >&2; exit 1; }
+mkdir -p "$RUN_DIR"
+
+for WORKLOAD in "${WORKLOADS[@]}"; do
+    OUTPUT="$RUN_DIR/sweep_${WORKLOAD}_${MODEL}.json"
+    LOG="$RUN_DIR/sweep_${WORKLOAD}_${MODEL}.log"
+    if ! "$PYTHON" -m src.llm.iterative_optimizer \
+        --workload "$WORKLOAD" --model "$MODEL" --max-iterations "$MAX_ITER" \
+        --n-runs 1 --model-bundle "$MODEL_BUNDLE" \
+        --knowledge-base "$KNOWLEDGE_BASE" --output "$OUTPUT" >"$LOG" 2>&1; then
+        tail -100 "$LOG" >&2
+        exit 1
+    fi
 done
 
-echo "=== finished $(date)"
-column -t -s $'\t' "$SUMMARY"
+"$PYTHON" scripts/aggregate_trackc_results.py \
+    --results-dir "$RUN_DIR" --output "$RUN_DIR/summary.json"
+echo "Validated sweep: $RUN_DIR"

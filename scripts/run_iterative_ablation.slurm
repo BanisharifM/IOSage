@@ -6,90 +6,74 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=12:00:00
-#SBATCH --output=results/iterative/ablation_%j.out
-#SBATCH --error=results/iterative/ablation_%j.err
+#SBATCH --time=48:00:00
+#SBATCH --export=NONE
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/ablation_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/iterative/ablation_%j.err
 
-# =============================================================================
-# Iterative: Ablation study (6 conditions x 4 representative workloads x Claude)
-# =============================================================================
+set -euo pipefail
+source /etc/profile
+export SLURM_EXPORT_ENV=ALL
 
-echo "============================================================"
-echo "Iterative: ABLATION STUDY"
-echo "Date: $(date)"
-echo "Host: $(hostname)"
-echo "============================================================"
-
-source /projects/bdau/envs/sc2026/bin/activate 2>/dev/null || true
-export PATH=/projects/bdau/envs/sc2026/bin:$PATH
-export PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/python_pkgs:$PYTHONPATH
-cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
-
+PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+PYTHON="$IOSAGE_ENV/bin/python"
+RESULTS_ROOT="$PROJECT_DIR/results/resubmission/iterative"
+export PATH="$IOSAGE_ENV/bin:$PATH" PYTHONNOUSERSITE=1
+unset PYTHONPATH
+cd "$PROJECT_DIR"
 if [ -f .env ]; then
+    set -a
     source .env
+    set +a
 fi
 
-TIMESTAMP=$(date +%s)
-MODEL=claude-sonnet
-N_RUNS=3
-MAX_ITER=5
+: "${MODEL_BUNDLE:?set MODEL_BUNDLE to a final-evaluation bundle}"
+: "${KNOWLEDGE_BASE:?set KNOWLEDGE_BASE to a schema 2 measured-evidence KB}"
+[ -s "$MODEL_BUNDLE" ] || { echo "ERROR: model bundle missing or empty: $MODEL_BUNDLE" >&2; exit 1; }
+[ -s "$KNOWLEDGE_BASE" ] || { echo "ERROR: knowledge base missing or empty: $KNOWLEDGE_BASE" >&2; exit 1; }
+"$PYTHON" -c "import darshan, pandas, shap, xgboost; print('environment check passed')"
 
-# Representative workloads (1 per bottleneck type)
-WORKLOADS="ior_small_posix ior_fsync_heavy ior_random_access mdtest_metadata_storm"
+MODEL="${1:-claude-sonnet}"
+if [ "$#" -ge 1 ]; then shift; fi
+if [ "$#" -gt 0 ]; then
+    WORKLOADS=("$@")
+else
+    WORKLOADS=(ior_small_posix ior_fsync_heavy ior_small_direct)
+fi
+N_RUNS="${N_RUNS:-3}"
+case "$N_RUNS" in
+    ''|*[!0-9]*|0) echo "ERROR: N_RUNS must be a positive integer" >&2; exit 2 ;;
+esac
+CONDITIONS=(full no_ml no_kb no_shap single_shot no_feedback)
+RUN_TAG="${RUN_TAG:-ablation_${SLURM_JOB_ID:?SLURM_JOB_ID is required}}"
+RUN_DIR="$RESULTS_ROOT/$RUN_TAG"
+[ ! -e "$RUN_DIR" ] || { echo "ERROR: run directory already exists: $RUN_DIR" >&2; exit 1; }
+mkdir -p "$RUN_DIR"
 
-# A0: Full system (already in sweep, skip here)
-echo "A0: Full system -- see sweep results"
-
-# A1: No ML
-echo ""
-echo "========== ABLATION A1: No ML =========="
-for W in $WORKLOADS; do
-    /projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
-        --workload "$W" --model $MODEL --max-iterations $MAX_ITER --n-runs $N_RUNS \
-        --no-ml \
-        --output "results/iterative/ablation_no_ml_${W}_${TIMESTAMP}.json"
+for CONDITION in "${CONDITIONS[@]}"; do
+    case "$CONDITION" in
+        full) EXTRA_ARGS=(); MAX_ITER=5; PREFIX=sweep ;;
+        no_ml) EXTRA_ARGS=(--no-ml); MAX_ITER=5; PREFIX=ablation ;;
+        no_kb) EXTRA_ARGS=(--no-kb); MAX_ITER=5; PREFIX=ablation ;;
+        no_shap) EXTRA_ARGS=(--no-shap); MAX_ITER=5; PREFIX=ablation ;;
+        single_shot) EXTRA_ARGS=(); MAX_ITER=1; PREFIX=ablation ;;
+        no_feedback) EXTRA_ARGS=(--no-feedback); MAX_ITER=5; PREFIX=ablation ;;
+    esac
+    for WORKLOAD in "${WORKLOADS[@]}"; do
+        OUTPUT="$RUN_DIR/${PREFIX}_${CONDITION}_${WORKLOAD}_${MODEL}.json"
+        LOG="$RUN_DIR/${PREFIX}_${CONDITION}_${WORKLOAD}_${MODEL}.log"
+        if ! "$PYTHON" -m src.llm.iterative_optimizer \
+            --workload "$WORKLOAD" --model "$MODEL" --max-iterations "$MAX_ITER" \
+            --n-runs "$N_RUNS" --model-bundle "$MODEL_BUNDLE" \
+            --knowledge-base "$KNOWLEDGE_BASE" "${EXTRA_ARGS[@]}" \
+            --output "$OUTPUT" >"$LOG" 2>&1; then
+            tail -100 "$LOG" >&2
+            exit 1
+        fi
+    done
 done
 
-# A2: No KB
-echo ""
-echo "========== ABLATION A2: No KB =========="
-for W in $WORKLOADS; do
-    /projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
-        --workload "$W" --model $MODEL --max-iterations $MAX_ITER --n-runs $N_RUNS \
-        --no-kb \
-        --output "results/iterative/ablation_no_kb_${W}_${TIMESTAMP}.json"
-done
-
-# A3: No SHAP
-echo ""
-echo "========== ABLATION A3: No SHAP =========="
-for W in $WORKLOADS; do
-    /projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
-        --workload "$W" --model $MODEL --max-iterations $MAX_ITER --n-runs $N_RUNS \
-        --no-shap \
-        --output "results/iterative/ablation_no_shap_${W}_${TIMESTAMP}.json"
-done
-
-# A4: Single-shot (1 iteration = Single-shot equivalent)
-echo ""
-echo "========== ABLATION A4: Single-shot =========="
-for W in $WORKLOADS; do
-    /projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
-        --workload "$W" --model $MODEL --max-iterations 1 --n-runs $N_RUNS \
-        --output "results/iterative/ablation_single_shot_${W}_${TIMESTAMP}.json"
-done
-
-# A5: No feedback
-echo ""
-echo "========== ABLATION A5: No feedback =========="
-for W in $WORKLOADS; do
-    /projects/bdau/envs/sc2026/bin/python -m src.llm.iterative_optimizer \
-        --workload "$W" --model $MODEL --max-iterations $MAX_ITER --n-runs $N_RUNS \
-        --no-feedback \
-        --output "results/iterative/ablation_no_feedback_${W}_${TIMESTAMP}.json"
-done
-
-echo ""
-echo "============================================================"
-echo "ABLATION STUDY COMPLETED: $(date)"
-echo "============================================================"
+"$PYTHON" scripts/aggregate_trackc_results.py \
+    --results-dir "$RUN_DIR" --output "$RUN_DIR/summary.json"
+echo "Validated ablation: $RUN_DIR"

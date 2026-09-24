@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+import shlex
 from pathlib import Path
 
 import yaml
@@ -109,21 +110,28 @@ class BenchmarkCommandBuilder:
         # Block size
         try:
             bs = self.parse_size(params.get("block_size", "100M"))
-            bs = max(self.min_block_size, min(bs, self.max_block_size))
+            if not self.min_block_size <= bs <= self.max_block_size:
+                errors.append(f"Block size {bs} outside [{self.min_block_size}, {self.max_block_size}]")
             sanitized["block_size"] = str(bs)
         except (ValueError, TypeError):
+            errors.append(f"Invalid block_size: {params.get('block_size')}")
             sanitized["block_size"] = str(100 * 1024 * 1024)
 
         # Segments
         try:
             seg = int(params.get("segments", 10))
-            seg = max(self.min_segments, min(seg, self.max_segments))
+            if not self.min_segments <= seg <= self.max_segments:
+                errors.append(f"Segments {seg} outside [{self.min_segments}, {self.max_segments}]")
             sanitized["segments"] = str(seg)
         except (ValueError, TypeError):
+            errors.append(f"Invalid segments: {params.get('segments')}")
             sanitized["segments"] = "10"
 
         # File per proc
-        sanitized["file_per_proc"] = bool(params.get("file_per_proc", True))
+        file_per_proc = params.get("file_per_proc", True)
+        if not isinstance(file_per_proc, bool):
+            errors.append("file_per_proc must be a boolean")
+        sanitized["file_per_proc"] = file_per_proc if isinstance(file_per_proc, bool) else True
 
         # Extra flags - only allow known safe flags
         extra = params.get("extra_flags", "-e -C -w -r")
@@ -211,20 +219,51 @@ class BenchmarkCommandBuilder:
         return cmd
 
     def build_mdtest_command(self, params, output_dir=None):
-        """Build a safe mdtest command from parameters."""
+        """Build a shell command from already validated mdtest parameters."""
         out = output_dir or self.scratch_dir
-        cmd = "mdtest"
-        cmd += f" -n {params.get('items_per_rank', 1000)}"
-        if params.get("write_bytes", 0) > 0:
-            cmd += f" -w {params['write_bytes']}"
-        if params.get("read_bytes", 0) > 0:
-            cmd += f" -e {params['read_bytes']}"
+        argv = ["mdtest", "-n", str(params["items_per_rank"])]
+        if params["write_bytes"] > 0:
+            argv.extend(("-w", str(params["write_bytes"])))
+        if params["read_bytes"] > 0:
+            argv.extend(("-e", str(params["read_bytes"])))
         if params.get("files_only", True):
-            cmd += " -F"
+            argv.append("-F")
         if params.get("unique_dir", False):
-            cmd += " -u"
-        cmd += f" -d {out}/mdtest_dir"
-        return cmd
+            argv.append("-u")
+        argv.extend(("-d", f"{out}/mdtest_dir"))
+        return " ".join(shlex.quote(value) for value in argv)
+
+    def validate_mdtest_params(self, params):
+        """Accept only bounded integer counts and strict booleans for mdtest."""
+        errors = []
+        sanitized = {}
+        bounds = {
+            "items_per_rank": (1, 10_000_000),
+            "write_bytes": (0, 1 << 30),
+            "read_bytes": (0, 1 << 30),
+        }
+        for name, (minimum, maximum) in bounds.items():
+            value = params.get(name, 1000 if name == "items_per_rank" else 0)
+            if isinstance(value, bool):
+                errors.append(f"{name} must be an integer")
+                continue
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError):
+                errors.append(f"{name} must be an integer")
+                continue
+            if str(parsed) != str(value).strip() and not isinstance(value, int):
+                errors.append(f"{name} must contain only an integer")
+            if not minimum <= parsed <= maximum:
+                errors.append(f"{name} must be in [{minimum}, {maximum}]")
+            sanitized[name] = parsed
+        for name, default in (("files_only", True), ("unique_dir", False)):
+            value = params.get(name, default)
+            if not isinstance(value, bool):
+                errors.append(f"{name} must be a boolean")
+            else:
+                sanitized[name] = value
+        return not errors, sanitized, errors
 
     # =========================================================================
     # HACC-IO Validation and Command Building
@@ -270,7 +309,11 @@ class BenchmarkCommandBuilder:
             sanitized["num_particles"] = 200
 
         # Collective buffering (pass-through, handled at SLURM level)
-        sanitized["collective_buffering"] = params.get("collective_buffering", "disabled")
+        buffering = params.get("collective_buffering", "disabled")
+        if buffering not in {"enabled", "disabled"}:
+            errors.append("collective_buffering must be enabled or disabled")
+            buffering = "disabled"
+        sanitized["collective_buffering"] = buffering
 
         valid = len(errors) == 0
         return valid, sanitized, errors
@@ -410,6 +453,7 @@ class BenchmarkCommandBuilder:
         # COLLECTIVE_METADATA
         coll_meta = str(params.get("COLLECTIVE_METADATA", coll)).upper()
         if coll_meta not in ("YES", "NO"):
+            errors.append(f"Invalid COLLECTIVE_METADATA '{coll_meta}', must be YES or NO")
             coll_meta = coll
         sanitized["COLLECTIVE_METADATA"] = coll_meta
 
@@ -582,9 +626,11 @@ class BenchmarkCommandBuilder:
         # num_samples_per_file
         try:
             ns = int(params.get("num_samples_per_file", 1))
-            ns = max(1, min(ns, 1000))
+            if not 1 <= ns <= 1000:
+                errors.append(f"num_samples_per_file {ns} outside [1, 1000]")
             sanitized["num_samples_per_file"] = ns
         except (ValueError, TypeError):
+            errors.append(f"Invalid num_samples_per_file: {params.get('num_samples_per_file')}")
             sanitized["num_samples_per_file"] = 1
 
         # batch_size
@@ -604,25 +650,31 @@ class BenchmarkCommandBuilder:
         # read_threads
         try:
             rt = int(params.get("read_threads", 1))
-            rt = max(1, min(rt, 16))
+            if not 1 <= rt <= 16:
+                errors.append(f"read_threads {rt} outside [1, 16]")
             sanitized["read_threads"] = rt
         except (ValueError, TypeError):
+            errors.append(f"Invalid read_threads: {params.get('read_threads')}")
             sanitized["read_threads"] = 1
 
         # computation_time (seconds of simulated compute per batch)
         try:
             ct = float(params.get("computation_time", 0.01))
-            ct = max(0.0, min(ct, 10.0))
+            if not 0.0 <= ct <= 10.0:
+                errors.append(f"computation_time {ct} outside [0, 10]")
             sanitized["computation_time"] = ct
         except (ValueError, TypeError):
+            errors.append(f"Invalid computation_time: {params.get('computation_time')}")
             sanitized["computation_time"] = 0.01
 
         # epochs
         try:
             ep = int(params.get("epochs", 2))
-            ep = max(1, min(ep, 10))
+            if not 1 <= ep <= 10:
+                errors.append(f"epochs {ep} outside [1, 10]")
             sanitized["epochs"] = ep
         except (ValueError, TypeError):
+            errors.append(f"Invalid epochs: {params.get('epochs')}")
             sanitized["epochs"] = 2
 
         # format
@@ -635,17 +687,23 @@ class BenchmarkCommandBuilder:
         # sample_shuffle
         ss = str(params.get("sample_shuffle", "off")).lower()
         if ss not in self.VALID_DLIO_SHUFFLES:
+            errors.append(f"Invalid sample_shuffle '{ss}'")
             ss = "off"
         sanitized["sample_shuffle"] = ss
 
         # file_shuffle
         fs = str(params.get("file_shuffle", "off")).lower()
         if fs not in self.VALID_DLIO_SHUFFLES:
+            errors.append(f"Invalid file_shuffle '{fs}'")
             fs = "off"
         sanitized["file_shuffle"] = fs
 
         # seed
-        sanitized["seed"] = int(params.get("seed", 42))
+        try:
+            sanitized["seed"] = int(params.get("seed", 42))
+        except (TypeError, ValueError):
+            errors.append(f"Invalid seed: {params.get('seed')}")
+            sanitized["seed"] = 42
 
         valid = len(errors) == 0
         return valid, sanitized, errors

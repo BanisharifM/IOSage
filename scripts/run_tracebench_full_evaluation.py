@@ -1,19 +1,17 @@
-"""
-Comprehensive TraceBench evaluation: ALL 35 traces, 3-way comparison, bootstrap CIs.
+"""TraceBench evaluation with aligned three-system comparisons and intervals.
 
 Runs IOSage full pipeline on all 35 TraceBench traces (real_app_bench, IO500,
 single_issue_bench) and compares against IONavigator 1.0 and Drishti outputs.
 
-This is the DEFINITIVE TraceBench evaluation for the IOSage paper.
-
 Usage:
-    source .env && python scripts/run_tracebench_full_evaluation.py [--ml-only] [--subset all|real_app|io500|single]
+    python scripts/run_tracebench_full_evaluation.py --model-bundle BUNDLE \
+        --output-dir RUN_DIR [--knowledge-base KB]
 
-Outputs:
-    results/e2e_evaluation/tracebench_full_evaluation.json
+The output records hashes for the model, mapping, traces, and comparison files.
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -21,13 +19,13 @@ import re
 import subprocess
 import sys
 import time
-import traceback
 from pathlib import Path
 
 import numpy as np
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
+from src.artifact_paths import checked_output_dir  # noqa: E402
 
 # Load .env
 env_path = PROJECT_DIR / ".env"
@@ -57,8 +55,6 @@ LLMEVAL_DIR = TRACEBENCH_ROOT / "LLMEval"
 LABEL_MAPPING_FILE = (
     PROJECT_DIR / "data" / "external" / "tracebench" / "label_mapping.json"
 )
-OUTPUT_DIR = PROJECT_DIR / "results" / "e2e_evaluation"
-
 SUBSETS = ["real_app_bench", "single_issue_bench", "IO500"]
 
 OUR_DIMENSIONS = [
@@ -97,6 +93,15 @@ def load_label_mapping():
     return tb_to_dim
 
 
+def sha256_file(path):
+    """Return the SHA-256 digest of one required file."""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def load_all_traces():
     """Load ground truth labels for ALL TraceBench traces across all subsets."""
     tb_to_dim = load_label_mapping()
@@ -105,8 +110,7 @@ def load_all_traces():
     for subset in SUBSETS:
         label_file = DATASETS_DIR / subset / "trace_labels.json"
         if not label_file.exists():
-            logger.warning("No trace_labels.json for subset %s", subset)
-            continue
+            raise FileNotFoundError(f"TraceBench labels are missing: {label_file}")
 
         with open(label_file) as f:
             raw_labels = json.load(f)
@@ -233,7 +237,7 @@ except Exception as e:
 
 
 # ---------------------------------------------------------------------------
-# IONavigator output parsing (from tracebench_comprehensive_eval.py)
+# IONavigator output parsing
 # ---------------------------------------------------------------------------
 NEGATION_PATTERN = re.compile(
     r"(no\s+(significant|major|critical|notable|apparent|clear)\s+(issue|problem|concern|bottleneck))"
@@ -376,7 +380,7 @@ def compute_metrics(pred_set, gt_set, eval_dims=None):
 
 
 def bootstrap_ci(trace_results, n_bootstrap=10000, ci=0.95, seed=42):
-    """Compute BCa bootstrap confidence interval for aggregate F1."""
+    """Compute a percentile bootstrap confidence interval for aggregate F1."""
     rng = np.random.RandomState(seed)
     n = len(trace_results)
     if n < 3:
@@ -414,6 +418,24 @@ def bootstrap_ci(trace_results, n_bootstrap=10000, ci=0.95, seed=42):
     }
 
 
+def require_common_system_results(per_trace_results, system_names):
+    """Return aligned metric lists or reject an incomplete comparison."""
+    incomplete = []
+    for trace in per_trace_results:
+        missing = [name for name in system_names
+                   if trace.get(f"{name}_metrics") is None]
+        if missing:
+            incomplete.append(f"{trace['trace_key']}: {','.join(missing)}")
+    if incomplete:
+        raise RuntimeError(
+            "TraceBench comparison requires every system on every trace; "
+            + "; ".join(incomplete))
+    return {
+        name: [trace[f"{name}_metrics"] for trace in per_trace_results]
+        for name in system_names
+    }
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -424,16 +446,32 @@ def main():
     parser.add_argument("--subset", default="all",
                         choices=["all", "real_app_bench", "IO500", "single_issue_bench"],
                         help="Which subset to evaluate")
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base")
+    parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
+    if not args.ml_only and not args.knowledge_base:
+        parser.error("--knowledge-base is required for the full pipeline")
+    required_inputs = [Path(args.model_bundle), LABEL_MAPPING_FILE]
+    if args.knowledge_base:
+        required_inputs.append(Path(args.knowledge_base))
+    for input_path in required_inputs:
+        if not input_path.is_file():
+            parser.error(f"required input does not exist: {input_path}")
+    output_dir = checked_output_dir(args.output_dir)
+    if output_dir.exists():
+        raise FileExistsError(f"TraceBench output directory already exists: {output_dir}")
 
     logger.info("=" * 70)
-    logger.info("COMPREHENSIVE TRACEBENCH EVALUATION (ALL 35 TRACES)")
+    logger.info("TRACEBENCH EVALUATION (ALL 35 TRACES)")
     logger.info("=" * 70)
 
     # Load all traces
     all_traces = load_all_traces()
     if args.subset != "all":
         all_traces = {k: v for k, v in all_traces.items() if v["subset"] == args.subset}
+    if not all_traces:
+        raise ValueError(f"no TraceBench traces selected for subset {args.subset}")
     logger.info("Loaded %d traces across %d subsets", len(all_traces),
                  len(set(v["subset"] for v in all_traces.values())))
 
@@ -441,28 +479,14 @@ def main():
     pipeline = None
     if not args.ml_only:
         logger.info("Initializing IOSage pipeline...")
-        try:
-            from src.ioprescriber.pipeline import IOPrescriber
-            pipeline = IOPrescriber(llm_model="claude-sonnet")
-        except Exception as exc:
-            logger.warning("Pipeline init failed (%s), falling back to ML-only", exc)
-            args.ml_only = True
-
-    # Load ML models
-    logger.info("Loading ML models...")
-    import pickle
-    model_path = PROJECT_DIR / "models" / "phase2" / "xgboost_biquality_w100.pkl"
-    with open(model_path, "rb") as f:
-        model_bundle = pickle.load(f)
-
-    scalers_path = PROJECT_DIR / "data" / "processed" / "production" / "scalers.pkl"
-    with open(scalers_path, "rb") as f:
-        scalers = pickle.load(f)
-
-    import yaml
-    config_path = PROJECT_DIR / "configs" / "preprocessing.yaml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
+        from src.ioprescriber.pipeline import IOPrescriber
+        pipeline = IOPrescriber(
+            model_path=args.model_bundle, kb_path=args.knowledge_base,
+            llm_model="claude-sonnet", use_shap=True)
+        detector = pipeline.detector
+    else:
+        from src.ioprescriber.detector import Detector
+        detector = Detector(args.model_bundle)
 
     # Process each trace
     per_trace_results = []
@@ -498,6 +522,10 @@ def main():
             result["iosage_status"] = "NO_DARSHAN_FILE"
             result["iosage_metrics"] = None
         else:
+            result["darshan_input"] = {
+                "path": str(darshan_file.resolve()),
+                "sha256": sha256_file(darshan_file),
+            }
             features = parse_darshan_subprocess(str(darshan_file))
             if features is None:
                 logger.warning("  Parse failed for %s", trace_key)
@@ -506,58 +534,24 @@ def main():
             else:
                 if pipeline and not args.ml_only:
                     try:
-                        pipe_result = pipeline.analyze(features, workload_name=friendly)
-                        detected = set(pipe_result["step1_detection"]["detected"])
+                        pipe_result = pipeline.analyze(
+                            features, workload_name=friendly,
+                            sample_id=f"tracebench/{Path(darshan_file).name}",
+                            job_group=f"tracebench/{trace_key}")
+                        detected = set(pipe_result["detection"]["detected"])
                         detected.discard("healthy")
                         result["iosage_status"] = "SUCCESS"
                         result["iosage_detected"] = sorted(detected)
-                        result["iosage_predictions"] = pipe_result["step1_detection"]["predictions"]
+                        result["iosage_predictions"] = pipe_result["detection"]["predictions"]
                     except Exception as exc:
                         logger.error("  Pipeline failed: %s", exc)
                         result["iosage_status"] = "PIPELINE_FAILED"
                         result["iosage_metrics"] = None
                         detected = set()
                 else:
-                    # ML-only: replicate Detector.detect_from_features()
-                    # The Detector uses RAW engineered features (NO stage5 normalization)
-                    # XGBoost is tree-based → invariant to monotone transforms
-                    import pandas as pd
-
-                    # Get feature columns same way as Detector class
-                    if not hasattr(main, '_feature_cols'):
-                        import yaml as _yaml
-                        cfg_path = PROJECT_DIR / "configs" / "training.yaml"
-                        with open(cfg_path) as _f:
-                            _cfg = _yaml.safe_load(_f)
-                        prod_feat = pd.read_parquet(
-                            PROJECT_DIR / _cfg["paths"]["production_features"]
-                        )
-                        exclude = set(_cfg.get("exclude_features", []))
-                        for col in prod_feat.columns:
-                            if col.startswith("_") or col.startswith("drishti_"):
-                                exclude.add(col)
-                        main._feature_cols = [c for c in prod_feat.columns if c not in exclude]
-
-                    feature_cols = main._feature_cols
-                    X = np.array([[features.get(col, 0) for col in feature_cols]],
-                                  dtype=np.float32)
-
-                    detected = set()
-                    predictions = {}
-                    models_dict = model_bundle if isinstance(model_bundle, dict) else model_bundle.get("models", model_bundle)
-                    for dim in OUR_DIMENSIONS:
-                        model = models_dict.get(dim)
-                        if model is None:
-                            predictions[dim] = 0.0
-                            continue
-                        try:
-                            prob = float(model.predict_proba(X)[0][1])
-                        except Exception as e:
-                            logger.debug("Prediction failed for %s: %s", dim, e)
-                            prob = 0.0
-                        predictions[dim] = round(prob, 4)
-                        if prob >= 0.3:  # Same threshold as IOPrescriber Detector
-                            detected.add(dim)
+                    predictions, detected_list = detector.detect_from_features(features)
+                    detected = set(detected_list)
+                    detected.discard("healthy")
 
                     result["iosage_status"] = "SUCCESS"
                     result["iosage_detected"] = sorted(detected)
@@ -573,6 +567,10 @@ def main():
         # 2. IONavigator 1.0 detection (from pre-existing outputs)
         ion_file = LLMEVAL_DIR / trace_key / "ION-1.0_diagnosis.txt"
         if ion_file.exists():
+            result["ionavigator_input"] = {
+                "path": str(ion_file.resolve()),
+                "sha256": sha256_file(ion_file),
+            }
             ion_text = ion_file.read_text(errors="replace")
             ion_detected = parse_ion_detections(ion_text)
             m = compute_metrics(ion_detected, gt_dims)
@@ -589,6 +587,10 @@ def main():
         # 3. Drishti detection (from pre-existing outputs)
         drishti_file = LLMEVAL_DIR / trace_key / "drishti.txt"
         if drishti_file.exists():
+            result["drishti_input"] = {
+                "path": str(drishti_file.resolve()),
+                "sha256": sha256_file(drishti_file),
+            }
             drishti_text = drishti_file.read_text(errors="replace")
             drishti_detected = parse_drishti_detections(drishti_text)
             m = compute_metrics(drishti_detected, gt_dims)
@@ -607,6 +609,8 @@ def main():
     # ---------------------------------------------------------------------------
     # Aggregate results
     # ---------------------------------------------------------------------------
+    systems = require_common_system_results(per_trace_results, systems)
+
     logger.info("")
     logger.info("=" * 70)
     logger.info("AGGREGATE RESULTS")
@@ -697,8 +701,8 @@ def main():
             }
 
     # Save results
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = OUTPUT_DIR / "tracebench_full_evaluation.json"
+    output_dir.mkdir(parents=True)
+    output_path = output_dir / "tracebench_full_evaluation.json"
 
     n_parsed = sum(1 for r in per_trace_results if r.get("iosage_status") == "SUCCESS")
     n_failed = sum(1 for r in per_trace_results if r.get("iosage_status") in ("PARSE_FAILED", "NO_DARSHAN_FILE", "PIPELINE_FAILED"))
@@ -712,6 +716,19 @@ def main():
             "mode": "ml_only" if args.ml_only else "full_pipeline",
             "subset_filter": args.subset,
             "eval_dimensions": TRACEBENCH_DIMS,
+            "common_trace_ids": [trace["trace_key"] for trace in per_trace_results],
+            "model_bundle": {
+                "path": str(Path(args.model_bundle).resolve()),
+                "sha256": sha256_file(args.model_bundle),
+            },
+            "knowledge_base": ({
+                "path": str(Path(args.knowledge_base).resolve()),
+                "sha256": sha256_file(args.knowledge_base),
+            } if args.knowledge_base else None),
+            "label_mapping": {
+                "path": str(LABEL_MAPPING_FILE.resolve()),
+                "sha256": sha256_file(LABEL_MAPPING_FILE),
+            },
             "note": "throughput_utilization excluded from eval (TraceBench does not label it)",
         },
         "aggregate_comparison": aggregates,
@@ -739,7 +756,7 @@ def main():
                   f"{agg['f1']:>8.3f} {agg['total_tp']:>5} {agg['total_fp']:>5} "
                   f"{agg['total_fn']:>5} [{ci['ci_lower']:.3f}, {ci['ci_upper']:.3f}]")
 
-    print(f"\nPer-dimension F1:")
+    print("\nPer-dimension F1:")
     print(f"{'Dimension':<25} {'IOSage':>8} {'IONav':>8} {'Drishti':>8}")
     print("-" * 55)
     for dim in TRACEBENCH_DIMS:
@@ -749,7 +766,7 @@ def main():
               f"{vals.get('ionavigator', {}).get('f1', 0):>8.3f} "
               f"{vals.get('drishti', {}).get('f1', 0):>8.3f}")
 
-    print(f"\nPer-subset breakdown:")
+    print("\nPer-subset breakdown:")
     for subset in SUBSETS:
         sub = per_subset_agg.get(subset, {})
         if sub:

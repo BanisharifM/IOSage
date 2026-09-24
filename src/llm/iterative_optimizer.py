@@ -1,10 +1,9 @@
-"""
-IOSage: ML-Guided Iterative LLM Code Optimization for HPC I/O.
+"""ML-guided benchmark parameter experiment with Darshan feedback.
 
 Architecture (research-backed -- STELLAR/PerfCoder/POLO/Self-Refine):
   1. ML Classifier detects bottleneck type + SHAP features
   2. KB Retriever finds matching benchmark fix patterns
-  3. LLM generates optimized benchmark configuration
+  3. LLM proposes a benchmark configuration
   4. BenchmarkCommandBuilder validates config (safety layer)
   5. IterativeExecutor runs on HPC via SLURM, collects Darshan log
   6. ML re-classifies (did the fix work?)
@@ -42,13 +41,10 @@ Usage:
 import json
 import logging
 import os
-import pickle
 import sys
 import time
-from copy import deepcopy
 from pathlib import Path
 
-import numpy as np
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -67,6 +63,26 @@ DIMENSIONS = [
     "access_pattern", "interface_choice", "file_strategy",
     "throughput_utilization", "healthy",
 ]
+
+
+def condition_name(*, use_ml, use_shap, use_kb, use_feedback, max_iterations):
+    """Return the declared experiment condition for one supported configuration."""
+    disabled = []
+    if not use_ml:
+        disabled.append("no_ml")
+    elif not use_shap:
+        disabled.append("no_shap")
+    if not use_kb:
+        disabled.append("no_kb")
+    if not use_feedback:
+        disabled.append("no_feedback")
+    if len(disabled) > 1:
+        raise ValueError(f"combined ablation switches are unsupported: {disabled}")
+    if disabled:
+        if max_iterations == 1:
+            raise ValueError("single-shot cannot be combined with a component ablation")
+        return disabled[0]
+    return "single_shot" if max_iterations == 1 else "full"
 
 # OpenRouter model IDs (same as single-shot recommender)
 MODELS = {
@@ -95,7 +111,7 @@ DIM_DESCRIPTIONS = {
 
 
 class IterativeOptimizer:
-    """ML-guided iterative LLM code optimization with Darshan feedback.
+    """ML-guided benchmark parameter experiment with Darshan feedback.
 
     The core loop:
         detect(darshan) -> explain(shap) -> retrieve(kb) ->
@@ -103,7 +119,8 @@ class IterativeOptimizer:
         re_detect(darshan) -> evaluate -> iterate_or_stop
     """
 
-    def __init__(self, config_path=None, model="claude-sonnet",
+    def __init__(self, config_path=None, model_path=None, kb_path=None,
+                 model="claude-sonnet",
                  max_iterations=5, temperature=0.0, cache_dir=None,
                  use_ml=True, use_shap=True, use_kb=True,
                  use_feedback=True, dry_run=False):
@@ -131,21 +148,28 @@ class IterativeOptimizer:
         self.use_kb = use_kb
         self.use_feedback = use_feedback
         self.dry_run = dry_run
+        self.model_path = model_path
+        self.kb_path = kb_path
+        self.condition = condition_name(
+            use_ml=use_ml,
+            use_shap=use_shap,
+            use_kb=use_kb,
+            use_feedback=use_feedback,
+            max_iterations=max_iterations,
+        )
 
         # Load configs
         iter_config_path = config_path or PROJECT_DIR / "configs" / "iterative.yaml"
         with open(iter_config_path) as f:
             self.iter_config = yaml.safe_load(f)
 
-        train_config_path = PROJECT_DIR / "configs" / "training.yaml"
-        with open(train_config_path) as f:
-            self.train_config = yaml.safe_load(f)
-
         # Defaults for optional components
         self.models = {}
         self.feature_cols = []
         self.explainer = None
         self.kb = []
+        self.detector = None
+        self.retriever = None
 
         # Load ML models
         if self.use_ml:
@@ -188,49 +212,29 @@ class IterativeOptimizer:
         )
 
     def _load_ml_models(self):
-        """Load Phase 2 biquality XGBoost models."""
-        model_path = PROJECT_DIR / "models" / "phase2" / "xgboost_biquality_w100.pkl"
-        with open(model_path, "rb") as f:
-            self.models = pickle.load(f)
-
-        # Get feature columns
-        import pandas as pd
-        prod_feat = pd.read_parquet(
-            PROJECT_DIR / self.train_config["paths"]["production_features"]
-        )
-        exclude = set(self.train_config.get("exclude_features", []))
-        for col in prod_feat.columns:
-            if col.startswith("_") or col.startswith("drishti_"):
-                exclude.add(col)
-        self.feature_cols = [c for c in prod_feat.columns if c not in exclude]
+        """Load the same final-evaluation bundle used by IOPrescriber."""
+        if not self.model_path:
+            raise ValueError("model_path is required when ML detection is enabled")
+        from src.ioprescriber.detector import Detector
+        self.detector = Detector(self.model_path)
+        self.models = self.detector.models
+        self.feature_cols = self.detector.feature_cols
         logger.info("  ML models loaded: %d dimensions, %d features", len(self.models), len(self.feature_cols))
 
     def _load_shap_explainer(self):
         """Load SHAP TreeExplainers for per-dimension attribution."""
-        try:
-            from src.ioprescriber.explainer import Explainer
-            self.explainer = Explainer(
-                models=self.models,
-                feature_cols=self.feature_cols,
-            )
-            logger.info("  SHAP explainer loaded")
-        except Exception as e:
-            logger.warning("  SHAP explainer failed to load: %s", e)
-            self.explainer = None
-            self.use_shap = False
+        from src.ioprescriber.explainer import Explainer
+        self.explainer = Explainer(models=self.models, feature_cols=self.feature_cols)
+        logger.info("  SHAP explainer loaded")
 
     def _load_knowledge_base(self):
         """Load the benchmark knowledge base."""
-        kb_path = PROJECT_DIR / "data" / "knowledge_base" / "knowledge_base_full.json"
-        if kb_path.exists():
-            with open(kb_path) as f:
-                self.kb = json.load(f)
-            logger.info("  KB loaded: %d entries", len(self.kb))
-        else:
-            # Fallback: build from recommendation module
-            from src.llm.recommendation import load_knowledge_base
-            self.kb = load_knowledge_base()
-            logger.info("  KB built: %d entries", len(self.kb))
+        if not self.kb_path:
+            raise ValueError("kb_path is required when KB retrieval is enabled")
+        from src.ioprescriber.retriever import Retriever
+        self.retriever = Retriever(self.kb_path)
+        self.kb = self.retriever.kb
+        logger.info("  KB loaded: %d entries", len(self.kb))
 
     # =========================================================================
     # ML Detection + SHAP
@@ -246,23 +250,7 @@ class IterativeOptimizer:
         if not self.use_ml:
             return {}, ["unknown"]
 
-        X = np.array(
-            [[features_dict.get(col, 0) for col in self.feature_cols]],
-            dtype=np.float32,
-        )
-
-        predictions = {}
-        for dim in DIMENSIONS:
-            if dim in self.models:
-                prob = float(self.models[dim].predict_proba(X)[0][1])
-                predictions[dim] = round(prob, 4)
-
-        threshold = self.iter_config.get("iteration", {}).get("convergence_threshold", 0.3)
-        detected = [d for d in DIMENSIONS if predictions.get(d, 0) > threshold and d != "healthy"]
-        if not detected:
-            detected = ["healthy"]
-
-        return predictions, detected
+        return self.detector.detect_from_features(features_dict)
 
     def get_shap_features(self, features_dict, detected_dims):
         """Get SHAP top features per detected dimension.
@@ -273,16 +261,8 @@ class IterativeOptimizer:
         if not self.use_shap or not self.explainer:
             return {}
 
-        try:
-            X = np.array(
-                [[features_dict.get(col, 0) for col in self.feature_cols]],
-                dtype=np.float32,
-            )
-            shap_results = self.explainer.explain(X, detected_dims)
-            return shap_results
-        except Exception as e:
-            logger.warning("  SHAP failed: %s", e)
-            return {}
+        X = self.detector.feature_vector(features_dict)
+        return self.explainer.explain(X, detected_dims)
 
     # =========================================================================
     # KB Retrieval
@@ -293,13 +273,7 @@ class IterativeOptimizer:
         if not self.use_kb:
             return []
 
-        from src.llm.recommendation import retrieve_relevant_entries
-        signature = {k: features_dict.get(k, 0) for k in [
-            "avg_write_size", "small_io_ratio", "seq_write_ratio",
-            "metadata_time_ratio", "collective_ratio", "total_bw_mb_s",
-            "nprocs", "POSIX_BYTES_WRITTEN", "POSIX_FSYNCS",
-        ]}
-        return retrieve_relevant_entries(self.kb, detected_dims, signature, top_k)
+        return self.retriever.retrieve(detected_dims, features_dict, top_k=top_k)
 
     # =========================================================================
     # LLM Prompt Building
@@ -309,7 +283,7 @@ class IterativeOptimizer:
                      shap_features, kb_matches, darshan_before, darshan_after=None,
                      current_config=None, best_speedup=None, rollback=False,
                      work_changed=False):
-        """Build structured prompt for current iteration.
+        """Build the benchmark parameter experiment prompt.
 
         Key differences from single-shot recommendation:
         - Asks LLM to output benchmark CONFIG CHANGES (not arbitrary code)
@@ -317,12 +291,14 @@ class IterativeOptimizer:
         - Includes SHAP features for targeted guidance
         - Rollback hint when regression detected
         """
-        system_prompt = """You are an HPC I/O performance optimization expert.
-You optimize benchmark configurations to fix detected I/O bottlenecks.
+        system_prompt = """You are an HPC I/O measurement expert.
+You propose benchmark parameter changes for a parameter-tuning experiment. This
+experiment does not generate or validate application source-code fixes.
 
 RULES:
 1. Output ONLY benchmark parameter changes in the specified JSON format.
-2. Every recommendation MUST be grounded in the benchmark evidence provided.
+2. KB citations support only the detected bottleneck dimension. They do not
+   validate a proposed benchmark parameter change.
 3. Target the specific bottleneck dimensions detected by the ML classifier.
 4. If a previous iteration made things worse, try a COMPLETELY DIFFERENT strategy.
 5. Do NOT fabricate performance numbers.
@@ -344,9 +320,8 @@ RULES:
    - TIMESTEPS: integer [1, 100] (number of write/read timesteps)
    - MEM_PATTERN: 'CONTIG' or 'INTERLEAVED' (memory layout)
    - FILE_PATTERN: 'CONTIG' or 'INTERLEAVED' (file layout)
-   - To fix access_granularity: increase DIM_1 (bigger writes per rank)
    - To fix interface_choice: enable COLLECTIVE_DATA=YES
-   - Keep TIMESTEPS constant to maintain fair data volume comparison
+   - Keep DIM_1 and TIMESTEPS constant to maintain the same work
 11. For DLIO (ML I/O) benchmarks:
    - record_length: integer [64, 16777216] (bytes per training sample)
    - num_files_train: integer [10, 10000] (number of training data files)
@@ -358,7 +333,6 @@ RULES:
    - format: 'npz', 'hdf5', 'csv', or 'tfrecord' (data format)
    - sample_shuffle: 'off', 'random', or 'seed' (sample ordering)
    - file_shuffle: 'off', 'random', or 'seed' (file ordering)
-   - To fix access_granularity: increase record_length
    - To fix access_pattern: set sample_shuffle=off, file_shuffle=off
    - To fix throughput_utilization: increase batch_size and read_threads
 12. For HACC-IO benchmarks:
@@ -367,7 +341,7 @@ RULES:
    - collective_buffering: 'enabled' or 'disabled' (ROMIO aggregation control)
    - To fix interface_choice: switch from posix_shared to mpiio_shared
    - To fix file_strategy: switch from fpp to mpiio_shared
-   - Increase num_particles to increase data volume (amortize overhead)
+   - Keep num_particles constant to maintain the same work
 13. For custom (load_imbalance) benchmarks:
    - imbalance_factor: float [1.0, 100.0] (rank 0 writes this many times more data)
    - base_size_mb: integer [1, 500] (base data size per non-zero rank in MB)
@@ -402,13 +376,10 @@ RULES:
             for i, match in enumerate(kb_matches[:3]):
                 e = match["entry"]
                 kb_str += f"\n  Evidence {i+1} ({e['entry_id']}):\n"
-                for fix in e.get("fixes", [])[:1]:
-                    kb_str += f"    Cause: {fix.get('cause', 'N/A')}\n"
-                    kb_str += f"    Fix: {fix.get('fix', 'N/A')}\n"
-                    if fix.get("code_before"):
-                        kb_str += f"    Before: {fix['code_before']}\n"
-                    if fix.get("code_after"):
-                        kb_str += f"    After: {fix['code_after']}\n"
+                kb_str += f"    Dimensions: {', '.join(e['bottleneck_labels'])}\n"
+                source = e["source_code"]
+                kb_str += (f"    Source: {source['repository']} at {source['revision']}\n"
+                           f"    Path: {source['path']}\n")
 
         # Current config section
         config_str = ""
@@ -433,7 +404,7 @@ RULES:
 ## Current Benchmark Config:
 {config_str}
 
-## Detected Bottlenecks (ML classifier, Micro-F1=0.923):
+## Detected Bottlenecks (ML classifier):
 {detection_str}
 """
 
@@ -492,7 +463,7 @@ Respond in JSON:
     "unique_dir": true/false,
     "files_only": true/false
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -509,7 +480,7 @@ Respond in JSON:
     "num_particles": "particle count per rank (optional)",
     "collective_buffering": "enabled or disabled (optional)"
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -529,7 +500,7 @@ Respond in JSON:
     "MEM_PATTERN": "CONTIG or INTERLEAVED (optional)",
     "FILE_PATTERN": "CONTIG or INTERLEAVED (optional)"
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -552,7 +523,7 @@ Respond in JSON:
     "sample_shuffle": "off or random or seed (optional)",
     "file_shuffle": "off or random or seed (optional)"
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -568,7 +539,7 @@ Respond in JSON:
     "imbalance_factor": "new imbalance factor (optional, 1.0 = balanced)",
     "base_size_mb": "new base data size in MB (optional)"
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -589,7 +560,7 @@ Respond in JSON:
     "extra_flags": "full flag string e.g. '-e -C -w -r'",
     "collective": true/false
   },
-  "expected_improvement": "estimated speedup based on KB evidence",
+  "evidence_scope": "KB supports diagnosis only",
   "changes_made": ["list of specific changes and WHY they help"],
   "kb_citations": ["list of KB entry IDs used"]
 }
@@ -603,20 +574,40 @@ Respond in JSON:
     def call_llm(self, system_prompt, user_prompt):
         """Call LLM via OpenRouter with response caching."""
         import hashlib
-
-        cache_key = hashlib.md5(
-            (system_prompt + user_prompt + self.model_id).encode()
+        cache_request = {
+            "schema_version": 2,
+            "system_prompt_sha256": hashlib.sha256(system_prompt.encode()).hexdigest(),
+            "user_prompt_sha256": hashlib.sha256(user_prompt.encode()).hexdigest(),
+            "model": self.model_id,
+            "resolved_model": self.model_id,
+            "temperature": self.temperature,
+            "max_tokens": 2000,
+            "endpoint": "https://openrouter.ai/api/v1",
+            "code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        }
+        cache_key = hashlib.sha256(
+            json.dumps(cache_request, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         cache_path = Path(self.cache_dir) / f"{cache_key}.json"
 
         if cache_path.exists():
             with open(cache_path) as f:
                 cached = json.load(f)
+            if cached.get("request") != cache_request:
+                raise ValueError(f"iterative cache contract mismatch: {cache_path}")
+            self._validate_iterative_response(json.loads(cached["response"]))
             logger.info("  Cache hit: %s", cache_path.name[:12])
-            meta = cached.get("metadata", {})
-            self.total_tokens_input += meta.get("tokens_input", 0)
-            self.total_tokens_output += meta.get("tokens_output", 0)
-            return cached["response"], meta
+            source = cached.get("metadata", {})
+            return cached["response"], {
+                "model": source.get("model", self.model_id),
+                "resolved_model": source.get("resolved_model"),
+                "cache_hit": True,
+                "api_latency_ms": 0.0,
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "request_id": None,
+                "cache_source_request_id": source.get("request_id"),
+            }
 
         t0 = time.perf_counter()
 
@@ -640,14 +631,23 @@ Respond in JSON:
         tokens_in = getattr(response.usage, "prompt_tokens", 0)
         tokens_out = getattr(response.usage, "completion_tokens", 0)
         latency_ms = (time.perf_counter() - t0) * 1000
+        resolved_model = getattr(response, "model", None)
+        if resolved_model != self.model_id:
+            raise ValueError(
+                f"provider resolved {self.model_id} to {resolved_model}; use an exact model ID")
 
         metadata = {
             "model": self.model_id,
-            "latency_ms": round(latency_ms, 1),
+            "resolved_model": resolved_model,
+            "cache_hit": False,
+            "api_latency_ms": round(latency_ms, 1),
             "tokens_input": tokens_in,
             "tokens_output": tokens_out,
+            "request_id": getattr(response, "id", None),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
+
+        self._validate_iterative_response(json.loads(text))
 
         self.total_tokens_input += tokens_in
         self.total_tokens_output += tokens_out
@@ -656,11 +656,28 @@ Respond in JSON:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_path, "w") as f:
             json.dump({
+                "cache_schema_version": 2,
+                "request": cache_request,
                 "response": text, "metadata": metadata,
-                "system_prompt": system_prompt, "user_prompt": user_prompt,
             }, f, indent=2)
 
         return text, metadata
+
+    @staticmethod
+    def _validate_iterative_response(parsed):
+        if not isinstance(parsed, dict):
+            raise ValueError("iterative response must be an object")
+        if not isinstance(parsed.get("strategy"), str) or not parsed["strategy"]:
+            raise ValueError("iterative response needs a strategy")
+        if not isinstance(parsed.get("config_changes"), dict):
+            raise ValueError("iterative config_changes must be an object")
+        for key in ("changes_made", "kb_citations"):
+            value = parsed.get(key)
+            if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
+                raise ValueError(f"iterative {key} must be a string list")
+        if parsed.get("evidence_scope") != "KB supports diagnosis only":
+            raise ValueError("iterative response must limit KB evidence to diagnosis")
+        return parsed
 
     def parse_llm_response(self, response_text):
         """Parse LLM JSON response, handle malformed output."""
@@ -673,8 +690,8 @@ Respond in JSON:
                 text = parts[1]
 
         try:
-            return json.loads(text.strip()), None
-        except (json.JSONDecodeError, IndexError) as e:
+            return self._validate_iterative_response(json.loads(text.strip())), None
+        except (json.JSONDecodeError, IndexError, ValueError) as e:
             logger.warning("  JSON parse failed: %s", str(e)[:80])
             return None, str(e)
 
@@ -703,7 +720,8 @@ Respond in JSON:
         except that the objective is wall time (closed_loop_metrics).
         """
         from .closed_loop_metrics import aggregate_repeats
-        first, measurements = None, []
+        first, measurements, allocation_elapsed = None, [], 0.0
+        self._last_execution_allocation_s = 0.0
         for k in range(max(1, int(repeats))):
             # The job name must stay identical across repeats: the executor derives the
             # per-job scratch directory from it, and that directory has to match the output
@@ -713,14 +731,19 @@ Respond in JSON:
             # enough; SLURM job ids keep the logs and Darshan files apart.
             kw = dict(exec_kwargs)
             res = self.executor.execute_benchmark(cmd, **kw)
+            allocation_elapsed += float(res.get("elapsed_s", 0.0))
+            self._last_execution_allocation_s = allocation_elapsed
             if res.get("success") and res.get("measurement"):
                 measurements.append(res["measurement"])
                 if first is None:
                     first = res
             else:
                 logger.warning("  repeat %d failed (job %s)", k, res.get("job_id"))
+                return None, None, []
         confidence = float(self.iter_config.get("iteration", {}).get("confidence", 0.90))
-        return first, aggregate_repeats(measurements, confidence), measurements
+        aggregate = aggregate_repeats(measurements, confidence)
+        aggregate["allocation_elapsed_s"] = allocation_elapsed
+        return first, aggregate, measurements
 
     def _execute_interleaved(self, control_cmd, control_kwargs, cand_cmd, cand_kwargs, repeats):
         """Run control and candidate alternately: control, candidate, control, candidate, ...
@@ -737,18 +760,29 @@ Respond in JSON:
         from .closed_loop_metrics import aggregate_repeats
         confidence = float(self.iter_config.get("iteration", {}).get("confidence", 0.90))
         cand_first, cand_meas, ctrl_meas = None, [], []
+        cand_elapsed = ctrl_elapsed = 0.0
+        self._last_execution_allocation_s = 0.0
         for k in range(max(1, int(repeats))):
             for label, cmd, kw, sink in (("control", control_cmd, control_kwargs, ctrl_meas),
                                          ("candidate", cand_cmd, cand_kwargs, cand_meas)):
                 res = self.executor.execute_benchmark(cmd, **dict(kw))
+                if label == "candidate":
+                    cand_elapsed += float(res.get("elapsed_s", 0.0))
+                else:
+                    ctrl_elapsed += float(res.get("elapsed_s", 0.0))
+                self._last_execution_allocation_s = cand_elapsed + ctrl_elapsed
                 if res.get("success") and res.get("measurement"):
                     sink.append(res["measurement"])
                     if label == "candidate" and cand_first is None:
                         cand_first = res
                 else:
                     logger.warning("  %s run %d failed (job %s)", label, k, res.get("job_id"))
-        return (cand_first, aggregate_repeats(cand_meas, confidence),
-                aggregate_repeats(ctrl_meas, confidence))
+                    return None, None, None
+        candidate = aggregate_repeats(cand_meas, confidence)
+        control = aggregate_repeats(ctrl_meas, confidence)
+        candidate["allocation_elapsed_s"] = cand_elapsed
+        control["allocation_elapsed_s"] = ctrl_elapsed
+        return cand_first, candidate, control
 
     def run_optimization(self, workload_name, run_id=0):
         """Run the full iterative optimization loop for one workload.
@@ -762,9 +796,18 @@ Respond in JSON:
         """
         workload_config = self.iter_config["workloads"][workload_name]
         bad_config = dict(workload_config["bad_config"])
+        from .closed_loop_metrics import work_params_changed
+        reference_config = workload_config.get("known_good_config")
+        if reference_config:
+            inconsistent = work_params_changed(
+                workload_config.get("benchmark", "ior"), bad_config, reference_config)
+            if inconsistent:
+                raise ValueError(
+                    f"workload {workload_name} reference changes work parameters {inconsistent}; "
+                    "define an equal-work reference before running it")
 
         logger.info("=" * 70)
-        logger.info("ITERATIVE OPTIMIZATION: %s (run %d)", workload_name, run_id)
+        logger.info("ITERATIVE PARAMETER EXPERIMENT: %s (run %d)", workload_name, run_id)
         logger.info("  Bottleneck: %s", workload_config.get("bottleneck"))
         logger.info("  Description: %s", workload_config.get("description"))
         logger.info("=" * 70)
@@ -775,14 +818,20 @@ Respond in JSON:
 
         repeats = int(self.iter_config.get("iteration", {}).get("repeats", 8)) if not self.dry_run else 1
         history = {
+            "schema_version": 2,
             "workload": workload_name,
             "run_id": run_id,
+            "condition": self.condition,
+            "result_id": (
+                f"{workload_name}:{self.model_key}:{self.condition}:{run_id}"
+            ),
             "model": self.model_key,
             "model_id": self.model_id,
             "max_iterations": self.max_iterations,
             "config": {
                 "use_ml": self.use_ml, "use_shap": self.use_shap,
                 "use_kb": self.use_kb, "use_feedback": self.use_feedback,
+                "dry_run": self.dry_run,
             },
             "iterations": [],
             "best_iteration": -1,
@@ -797,6 +846,14 @@ Respond in JSON:
 
         # Determine benchmark type
         benchmark_type = workload_config.get("benchmark", "ior")
+        slurm_resources = {
+            "nodes": int(self.iter_config["slurm"]["nodes"]),
+            "ntasks": int(self.iter_config["slurm"]["ntasks"]),
+            "cpus_per_task": int(self.iter_config["slurm"].get("cpus_per_task", 1)),
+            "walltime": str(self.iter_config["slurm"]["walltime"]),
+        }
+        slurm_resources.update(workload_config.get("slurm_override", {}))
+        history["slurm_resources"] = slurm_resources
 
         # Step 1: Execute the "bad" baseline config to get initial Darshan
         logger.info("  Step 1: Running baseline (bad) config...")
@@ -809,9 +866,8 @@ Respond in JSON:
             job_base = f"iter_{workload_name}_r{run_id}_{model_short}_baseline"
             job_scratch = f"{self.iter_config['slurm']['scratch_dir']}/{job_base}"
             if benchmark_type == "mdtest":
-                sanitized = dict(current_config)
-                baseline_cmd = self.builder.build_mdtest_command(sanitized, output_dir=job_scratch)
-                errs = []
+                valid, sanitized, errs = self.builder.validate_mdtest_params(current_config)
+                baseline_cmd = self.builder.build_mdtest_command(sanitized, output_dir=job_scratch) if valid else None
             elif benchmark_type == "hacc_io":
                 valid, sanitized, errs = self.builder.validate_hacc_params(current_config)
                 baseline_cmd = self.builder.build_hacc_command(sanitized, output_dir=job_scratch)
@@ -838,7 +894,11 @@ Respond in JSON:
                 valid, sanitized, errs = self.builder.validate_ior_params(current_config)
                 baseline_cmd = self.builder.build_ior_command(sanitized, output_dir=job_scratch)
 
-            exec_kwargs = {"job_name": job_base, "benchmark_type": benchmark_type}
+            if not valid:
+                raise ValueError(f"baseline configuration is invalid: {errs}")
+
+            exec_kwargs = {"job_name": job_base, "benchmark_type": benchmark_type,
+                           "slurm_resources": slurm_resources}
             if benchmark_type == "hacc_io":
                 exec_kwargs["hacc_config"] = sanitized
             elif benchmark_type == "h5bench":
@@ -852,6 +912,8 @@ Respond in JSON:
 
             if baseline_result is None or baseline_meas is None:
                 logger.error("  Baseline execution failed!")
+                history["total_execution_time_s"] += getattr(
+                    self, "_last_execution_allocation_s", 0.0)
                 history["final_status"] = "baseline_failed"
                 return history
 
@@ -862,6 +924,8 @@ Respond in JSON:
             history["baseline_metrics"] = baseline_metrics
             history["baseline_walltime_s"] = baseline_meas["walltime_s"]
             history["baseline_measurement"] = baseline_meas
+            history["baseline_execution_time_s"] = baseline_meas.get("allocation_elapsed_s", 0.0)
+            history["total_execution_time_s"] += history["baseline_execution_time_s"]
             history["baseline_darshan_paths"] = baseline_result.get("darshan_paths", [])
             logger.info("  Baseline wall time: %.2f s (median of %d, %.0f%% CI [%.2f, %.2f], relMAD %.1f%%, "
                         "range %.0f%%), BW %.2f MB/s",
@@ -899,6 +963,7 @@ Respond in JSON:
         if "healthy" in detected and len(detected) == 1:
             logger.info("  No bottlenecks detected -- already healthy")
             history["final_status"] = "already_healthy"
+            history["total_iterations"] = 0
             return history
 
         # SHAP features
@@ -912,7 +977,6 @@ Respond in JSON:
         best_features = baseline_features.copy()
         best_config = dict(current_config)
         best_speedup = 1.0
-        best_bw = baseline_bw
         current_features = baseline_features.copy()
         rollback = False
 
@@ -927,7 +991,6 @@ Respond in JSON:
                                 "confidence": float(it_cfg.get("confidence", 0.90)),
                                 "repeats": repeats, "work_tolerance": work_tolerance,
                                 "regression_factor": regression_factor, "min_gain": min_gain}
-        best_measurement = baseline_meas
         last_work_changed = False
         convergence_threshold = self.iter_config.get("iteration", {}).get("convergence_threshold", 0.3)
 
@@ -988,6 +1051,28 @@ Respond in JSON:
             logger.info("  Strategy: %s", parsed.get("strategy", "?")[:80])
             logger.info("  Changes: %s", parsed.get("changes_made", [])[:3])
 
+            if self.use_kb:
+                retrieved = {match["entry"]["entry_id"]: match["entry"] for match in kb_matches}
+                citations = parsed["kb_citations"]
+                if not citations or len(citations) != len(set(citations)):
+                    iteration_record["executed"] = False
+                    iteration_record["evidence_error"] = "citations must be a nonempty unique list"
+                    history["iterations"].append(iteration_record)
+                    history["total_llm_latency_ms"] += metadata.get("api_latency_ms", 0)
+                    continue
+                unknown = set(citations) - set(retrieved)
+                unrelated = [entry_id for entry_id in citations
+                             if not (set(retrieved[entry_id]["bottleneck_labels"]) & set(detected))]
+                if unknown or unrelated:
+                    iteration_record["executed"] = False
+                    iteration_record["evidence_error"] = {
+                        "unknown_citations": sorted(unknown),
+                        "unrelated_citations": sorted(unrelated),
+                    }
+                    history["iterations"].append(iteration_record)
+                    history["total_llm_latency_ms"] += metadata.get("api_latency_ms", 0)
+                    continue
+
             # Apply config changes
             config_changes = self.builder.parse_llm_config_changes(parsed)
             if not config_changes:
@@ -997,8 +1082,7 @@ Respond in JSON:
 
             # Validate and build command
             if benchmark_type == "mdtest":
-                sanitized = dict(new_config)
-                errs = []
+                valid, sanitized, errs = self.builder.validate_mdtest_params(new_config)
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
             elif benchmark_type == "hacc_io":
@@ -1007,6 +1091,7 @@ Respond in JSON:
                     logger.warning("  Config validation warnings: %s", errs[:3])
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
+
             elif benchmark_type == "custom":
                 valid, sanitized, errs = self.builder.validate_custom_params(new_config)
                 if errs:
@@ -1032,6 +1117,14 @@ Respond in JSON:
                 iteration_record["validated_config"] = sanitized
                 iteration_record["validation_errors"] = errs
 
+            if not valid:
+                logger.warning("  REJECTED before execution: invalid proposal %s", errs[:3])
+                iteration_record["executed"] = False
+                iteration_record["rejected_invalid_config"] = True
+                history["iterations"].append(iteration_record)
+                history["total_llm_latency_ms"] += metadata.get("api_latency_ms", 0)
+                continue
+
             # Pre-run work guard (A1): a proposal that changes a work-defining
             # parameter is rejected without spending a job on it.
             from .closed_loop_metrics import work_params_changed
@@ -1047,7 +1140,7 @@ Respond in JSON:
                 current_config = dict(best_config)
                 current_features = best_features.copy()
                 history["iterations"].append(iteration_record)
-                history["total_llm_latency_ms"] += metadata.get("latency_ms", 0)
+                history["total_llm_latency_ms"] += metadata.get("api_latency_ms", 0)
                 continue
 
             # Execute
@@ -1081,6 +1174,7 @@ Respond in JSON:
                     logger.info("  Executing: %s", cmd[:120])
 
                 exec_kwargs = {"job_name": iter_job, "benchmark_type": benchmark_type,
+                               "slurm_resources": slurm_resources,
                                "workload": workload_name, "work_config": sanitized}
                 if benchmark_type == "hacc_io":
                     exec_kwargs["hacc_config"] = sanitized
@@ -1098,8 +1192,16 @@ Respond in JSON:
                 exec_result["success"] = bool(exec_first) and new_meas is not None
 
                 iteration_record["executed"] = exec_result["success"]
-                iteration_record["execution_time_s"] = exec_result["elapsed_s"]
-                history["total_execution_time_s"] += exec_result["elapsed_s"]
+                if new_meas is None:
+                    candidate_time = getattr(self, "_last_execution_allocation_s", 0.0)
+                    control_time = 0.0
+                else:
+                    candidate_time = new_meas.get("allocation_elapsed_s", 0.0)
+                    control_time = control_meas.get("allocation_elapsed_s", 0.0) if control_meas else 0.0
+                iteration_record["candidate_execution_time_s"] = candidate_time
+                iteration_record["control_execution_time_s"] = control_time
+                iteration_record["execution_time_s"] = candidate_time + control_time
+                history["total_execution_time_s"] += candidate_time + control_time
 
                 if exec_result["success"]:
                     from .closed_loop_metrics import evaluate_candidate
@@ -1160,8 +1262,6 @@ Respond in JSON:
                         best_speedup = speedup
                         best_config = dict(sanitized)
                         best_features = new_features.copy()
-                        best_bw = new_bw
-                        best_measurement = new_meas
                         history["best_iteration"] = iteration
                         rollback = False
                         logger.info("  NEW BEST: %.2fx at iteration %d", speedup, iteration)
@@ -1173,7 +1273,10 @@ Respond in JSON:
                         current_config = dict(best_config)
                         current_features = best_features.copy()
                     else:
-                        rollback = False
+                        iteration_record["rollback"] = True
+                        rollback = True
+                        current_config = dict(best_config)
+                        current_features = best_features.copy()
 
                     if not rollback:
                         current_config = dict(sanitized)
@@ -1188,6 +1291,7 @@ Respond in JSON:
                 else:
                     logger.error("  Execution FAILED")
                     iteration_record["executed"] = False
+                    iteration_record["execution_error"] = True
             else:
                 # Dry run
                 iteration_record["executed"] = False
@@ -1195,7 +1299,11 @@ Respond in JSON:
                 logger.info("  [DRY RUN] Proposed config: %s", sanitized)
 
             history["iterations"].append(iteration_record)
-            history["total_llm_latency_ms"] += metadata.get("latency_ms", 0)
+            history["total_llm_latency_ms"] += metadata.get("api_latency_ms", 0)
+
+            if iteration_record.get("execution_error"):
+                history["final_status"] = "candidate_execution_failed"
+                break
 
             # Convergence check
             remaining = [d for d in detected if d != "healthy" and predictions.get(d, 0) > convergence_threshold]
@@ -1235,10 +1343,9 @@ Respond in JSON:
 
     def _load_test_features(self, workload_name):
         """Load test features for dry-run mode (first sample with matching bottleneck)."""
-        import pandas as pd
+        from src.models.biquality import load_final_benchmark_test_frames
 
-        test_feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_features.parquet")
-        test_labels = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_labels.parquet")
+        _, test_feat, test_labels, _ = load_final_benchmark_test_frames(self.model_path)
 
         workload_config = self.iter_config["workloads"][workload_name]
         bottleneck = workload_config.get("bottleneck", "access_granularity")
@@ -1257,11 +1364,33 @@ Respond in JSON:
 # CLI Entry Point
 # =============================================================================
 
+def publish_results(results, output_path):
+    """Validate and publish one immutable iterative result file."""
+    from src.llm.iterative_result import validate_iterative_result
+
+    if not results:
+        raise ValueError("no iterative results to publish")
+    for result in results:
+        validate_iterative_result(result)
+    output_path = Path(output_path)
+    if output_path.exists():
+        raise FileExistsError(f"iterative output already exists: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output_path.with_name(f".{output_path.name}.tmp-{os.getpid()}")
+    if temporary.exists():
+        raise FileExistsError(f"temporary iterative output already exists: {temporary}")
+    with temporary.open("x") as handle:
+        json.dump(results, handle, indent=2, default=str)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, output_path)
+
+
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="IOSage: ML-Guided Iterative LLM Code Optimization"
+        description="IOSage ML-guided benchmark parameter experiment"
     )
     parser.add_argument("--workload", default=None, help="Workload name from iterative.yaml")
     parser.add_argument("--model", default="claude-sonnet",
@@ -1275,13 +1404,34 @@ def main():
     parser.add_argument("--no-kb", action="store_true", help="Ablation: disable KB")
     parser.add_argument("--no-feedback", action="store_true", help="Ablation: no iteration feedback")
     parser.add_argument("--output", default=None, help="Output JSON path")
+    parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "iterative.yaml"))
+    parser.add_argument("--model-bundle", help="Final-evaluation training bundle")
+    parser.add_argument("--knowledge-base", help="Schema 2 measured-evidence KB")
     args = parser.parse_args()
+    if args.max_iterations < 1:
+        parser.error("--max-iterations must be positive")
+    if args.n_runs < 1:
+        parser.error("--n-runs must be positive")
+    switches = sum((args.no_ml, args.no_shap, args.no_kb, args.no_feedback))
+    if switches > 1:
+        parser.error("select at most one component ablation")
+    if switches and args.max_iterations == 1:
+        parser.error("single-shot cannot be combined with a component ablation")
+    if args.dry_run and args.output:
+        parser.error("--output cannot be used with --dry-run")
+    if not args.no_ml and not args.model_bundle:
+        parser.error("--model-bundle is required unless --no-ml is set")
+    if not args.no_kb and not args.knowledge_base:
+        parser.error("--knowledge-base is required unless --no-kb is set")
 
     optimizer = IterativeOptimizer(
+        config_path=args.config,
+        model_path=args.model_bundle,
+        kb_path=args.knowledge_base,
         model=args.model,
         max_iterations=args.max_iterations,
         use_ml=not args.no_ml,
-        use_shap=not args.no_shap,
+        use_shap=not args.no_shap and not args.no_ml,
         use_kb=not args.no_kb,
         use_feedback=not args.no_feedback,
         dry_run=args.dry_run,
@@ -1306,17 +1456,24 @@ def main():
             all_results.append(result)
 
     # Save results
-    output_path = args.output or str(
-        PROJECT_DIR / "results" / "iterative" / f"iterative_results_{args.model}_{int(time.time())}.json"
-    )
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(all_results, f, indent=2, default=str)
-    logger.info("Results saved: %s", output_path)
+    configured_root = Path(optimizer.iter_config["slurm"]["results_dir"])
+    if not configured_root.is_absolute():
+        configured_root = PROJECT_DIR / configured_root
+    published_root = (PROJECT_DIR / "results" / "iterative").resolve()
+    output_path = Path(args.output) if args.output else (
+        configured_root / f"iterative_results_{args.model}_{int(time.time())}.json")
+    resolved_output = output_path.resolve()
+    if resolved_output == published_root or published_root in resolved_output.parents:
+        raise ValueError("new iterative results cannot be written under results/iterative")
+    if args.dry_run:
+        logger.info("Dry run completed; simulated records were not published")
+    else:
+        publish_results(all_results, output_path)
+        logger.info("Results saved: %s", output_path)
 
     # Print summary
     print("\n" + "=" * 70)
-    print("ITERATIVE OPTIMIZATION SUMMARY")
+    print("ITERATIVE PARAMETER EXPERIMENT SUMMARY")
     print("=" * 70)
     for r in all_results:
         print(f"  {r.get('workload','?'):30s} run={r.get('run_id',0)} "

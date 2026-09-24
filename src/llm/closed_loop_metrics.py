@@ -79,7 +79,7 @@ def darshan_summary(path):
 
 
 def phase_walltime(summaries):
-    """Sum, over sequential phases, of the longest runtime per phase.
+    """Sum the elapsed interval union represented by all logs.
 
     Logs whose start falls inside an earlier log's window are concurrent ranks
     of the same phase (DLIO per-rank NONMPI logs); logs that start after the
@@ -87,14 +87,14 @@ def phase_walltime(summaries):
     Returns (walltime_s, n_phases).
     """
     phases = []
-    for s in sorted(summaries, key=lambda x: (x["start"], -x["runtime"])):
-        if phases and s["start"] < phases[-1]["end"]:
-            phases[-1]["runtime"] = max(phases[-1]["runtime"], s["runtime"])
-            phases[-1]["end"] = max(phases[-1]["end"], s["start"] + s["runtime"])
+    for s in sorted(summaries, key=lambda x: (x["start"], x["runtime"])):
+        start = float(s["start"])
+        end = start + float(s["runtime"])
+        if phases and start <= phases[-1]["end"]:
+            phases[-1]["end"] = max(phases[-1]["end"], end)
         else:
-            phases.append({"start": s["start"], "end": s["start"] + s["runtime"],
-                           "runtime": s["runtime"]})
-    return sum(p["runtime"] for p in phases), len(phases)
+            phases.append({"start": start, "end": end})
+    return sum(p["end"] - p["start"] for p in phases), len(phases)
 
 
 def select_primary_log(summaries, benchmark_type=None):

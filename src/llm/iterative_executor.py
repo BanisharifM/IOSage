@@ -8,7 +8,6 @@ Refactored from src/ioprescriber/validator.py for reusable iteration support.
 """
 
 import glob
-import json
 import logging
 import os
 import subprocess
@@ -34,7 +33,9 @@ class IterativeExecutor:
         self.partition = slurm_cfg.get("partition", "cpu")
         self.nodes = slurm_cfg.get("nodes", 1)
         self.ntasks = slurm_cfg.get("ntasks", 16)
+        self.cpus_per_task = slurm_cfg.get("cpus_per_task", 1)
         self.walltime = slurm_cfg.get("walltime", "00:10:00")
+        self.last_submission = None
         paths_cfg = config.get("paths", {})
         self.nvidia_lib_base = paths_cfg.get(
             "nvidia_lib_base",
@@ -48,7 +49,8 @@ class IterativeExecutor:
             "/work/nvme/bdau/mbanisharifdehkordi/bench_scratch/iterative",
         )
         self.darshan_log_dir = str(
-            PROJECT_DIR / slurm_cfg.get("darshan_log_dir", "data/benchmark_logs/iterative")
+            PROJECT_DIR / slurm_cfg.get(
+                "darshan_log_dir", "data/benchmark_logs/resubmission/iterative")
         )
         self.darshan_lib = slurm_cfg.get(
             "darshan_lib",
@@ -72,7 +74,8 @@ class IterativeExecutor:
         )
 
     def generate_slurm_script(self, job_name, benchmark_command, benchmark_type="ior",
-                             hacc_config=None, h5bench_config=None, dlio_config=None):
+                             hacc_config=None, h5bench_config=None, dlio_config=None,
+                             slurm_resources=None):
         """Generate a SLURM batch script for a benchmark run.
 
         Args:
@@ -88,48 +91,68 @@ class IterativeExecutor:
         Returns:
             path to the generated .slurm script
         """
+        resources = dict(slurm_resources or {})
+        allowed = {"nodes", "ntasks", "cpus_per_task", "walltime"}
+        unknown = set(resources) - allowed
+        if unknown:
+            raise ValueError(f"unknown SLURM resource keys: {sorted(unknown)}")
+        nodes = resources.get("nodes", self.nodes)
+        ntasks = resources.get("ntasks", self.ntasks)
+        cpus_per_task = resources.get("cpus_per_task", self.cpus_per_task)
+        walltime = resources.get("walltime", self.walltime)
+        if (not isinstance(nodes, int) or nodes < 1 or
+                not isinstance(ntasks, int) or ntasks < 1 or
+                not isinstance(cpus_per_task, int) or cpus_per_task < 1):
+            raise ValueError("SLURM nodes, ntasks, and cpus_per_task must be positive integers")
+        if not isinstance(walltime, str) or not walltime:
+            raise ValueError("SLURM walltime must be a nonempty string")
+        previous = self.nodes, self.ntasks, self.cpus_per_task, self.walltime
+        self.nodes, self.ntasks, self.cpus_per_task, self.walltime = (
+            nodes, ntasks, cpus_per_task, walltime)
+
         # Use per-job scratch directory to prevent file conflicts between concurrent runs.
         # The path must match what the optimizer passes in benchmark_command's -o flag.
         # Uniqueness is handled by the optimizer including model name or run ID in job_name.
         job_scratch = f"{self.scratch_dir}/{job_name}"
 
-        if benchmark_type == "h5bench":
-            script = self._generate_h5bench_slurm(
-                job_name, benchmark_command, job_scratch, h5bench_config or {}
-            )
-        elif benchmark_type == "dlio":
-            script = self._generate_dlio_slurm(
-                job_name, benchmark_command, job_scratch, dlio_config or {}
-            )
-        elif benchmark_type == "hacc_io":
-            script = self._generate_hacc_slurm(
-                job_name, benchmark_command, job_scratch, hacc_config or {}
-            )
-        elif benchmark_type == "custom":
-            script = self._generate_custom_slurm(
-                job_name, benchmark_command, job_scratch
-            )
-        else:
-            # IOR / mdtest
-            module_load = (
-                "# Initialize the module system from the system profile: a batch script must not\n"
-                "# rely on the \"module\" function or MODULEPATH being inherited from the submitting\n"
-                "# shell. Only /etc/profile sets Delta's default module tree (the spack Core tree\n"
-                "# that provides ior); modules.sh alone leaves that module unknown. No user dotfile\n"
-                "# is read, so nothing is inherited from the submitting account.\n"
-                "source /etc/profile >/dev/null 2>&1 || "
-                "source /etc/profile.d/modules.sh >/dev/null 2>&1 || true\n"
-                "module load ior/3.3.0-gcc13.3.1 || "
-                "{ echo \"ERROR: module load ior/3.3.0-gcc13.3.1 failed\"; exit 1; }"
-            )
-            script = f"""#!/bin/bash
+        try:
+            if benchmark_type == "h5bench":
+                script = self._generate_h5bench_slurm(
+                    job_name, benchmark_command, job_scratch, h5bench_config or {}
+                )
+            elif benchmark_type == "dlio":
+                script = self._generate_dlio_slurm(
+                    job_name, benchmark_command, job_scratch, dlio_config or {}
+                )
+            elif benchmark_type == "hacc_io":
+                script = self._generate_hacc_slurm(
+                    job_name, benchmark_command, job_scratch, hacc_config or {}
+                )
+            elif benchmark_type == "custom":
+                script = self._generate_custom_slurm(
+                    job_name, benchmark_command, job_scratch
+                )
+            else:
+                # IOR / mdtest
+                module_load = (
+                    "# Initialize the module system from the system profile: a batch script must not\n"
+                    "# rely on the \"module\" function or MODULEPATH being inherited from the submitting\n"
+                    "# shell. Only /etc/profile sets Delta's default module tree (the spack Core tree\n"
+                    "# that provides ior); modules.sh alone leaves that module unknown. No user dotfile\n"
+                    "# is read, so nothing is inherited from the submitting account.\n"
+                    "source /etc/profile || { echo \"ERROR: /etc/profile failed\"; exit 1; }\n"
+                    "module load ior/3.3.0-gcc13.3.1 || "
+                    "{ echo \"ERROR: module load ior/3.3.0-gcc13.3.1 failed\"; exit 1; }"
+                )
+                script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={self.partition}
 #SBATCH --account={self.account}
 #SBATCH --nodes={self.nodes}
 #SBATCH --ntasks={self.ntasks}
-#SBATCH --cpus-per-task=1
-#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task={self.cpus_per_task}
+#SBATCH --time={self.walltime}
+#SBATCH --export=NONE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
@@ -163,7 +186,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "IOSage Iterative Optimization - Benchmark Execution"
+echo "IOSage Parameter Experiment - Benchmark Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Date: $(date)"
@@ -189,6 +212,8 @@ fi
 
 exit $EXIT_CODE
 """
+        finally:
+            self.nodes, self.ntasks, self.cpus_per_task, self.walltime = previous
 
         script_path = Path(self.results_dir) / f"{job_name}.slurm"
         with open(script_path, "w") as f:
@@ -215,8 +240,9 @@ exit $EXIT_CODE
 #SBATCH --account={self.account}
 #SBATCH --nodes={self.nodes}
 #SBATCH --ntasks={self.ntasks}
-#SBATCH --cpus-per-task=1
-#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task={self.cpus_per_task}
+#SBATCH --time={self.walltime}
+#SBATCH --export=NONE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
@@ -225,7 +251,7 @@ exit $EXIT_CODE
 # /etc/profile sets Delta's default module tree (the spack Core tree that provides ior
 # and the Cray PrgEnv defaults); modules.sh alone leaves those modules unknown. No user
 # dotfile is read, so nothing is inherited from the submitting account.
-source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+source /etc/profile || {{ echo "ERROR: /etc/profile failed"; exit 1; }}
 # No extra module: /etc/profile loads the site default PrgEnv-gnu and cray-mpich.
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
@@ -255,7 +281,7 @@ cleanup() {{ rm -f "$JOB_SCRATCH"/hacc_checkpoint* 2>/dev/null; rm -rf "$JOB_SCR
 trap cleanup EXIT
 
 echo "============================================================"
-echo "IOSage Iterative Optimization - HACC-IO Execution"
+echo "IOSage Parameter Experiment - HACC-IO Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Collective buffering: {cb}"
@@ -294,13 +320,14 @@ exit $EXIT_CODE
 #SBATCH --account={self.account}
 #SBATCH --nodes={self.nodes}
 #SBATCH --ntasks={self.ntasks}
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --mem=32g
-#SBATCH --time=01:00:00
+#SBATCH --time={self.walltime}
+#SBATCH --export=NONE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
-source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+source /etc/profile || {{ echo "ERROR: /etc/profile failed"; exit 1; }}
 # mpi4py here is a pip build linked against the MPICH ABI; cray-mpich-abi supplies
 # libmpi.so.12 on top of Cray MPICH, without which every rank fails to import MPI.
 module load {self.python_mpi_modules} || {{ echo "ERROR: module load {self.python_mpi_modules} failed"; exit 1; }}
@@ -330,7 +357,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "IOSage Iterative Optimization - Custom Benchmark Execution"
+echo "IOSage Parameter Experiment - Custom Benchmark Execution"
 echo "Job: {job_name}"
 echo "Command: {benchmark_command}"
 echo "Date: $(date)"
@@ -384,9 +411,10 @@ exit $EXIT_CODE
 #SBATCH --account={self.account}
 #SBATCH --nodes={self.nodes}
 #SBATCH --ntasks={self.ntasks}
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --mem=0
-#SBATCH --time=02:00:00
+#SBATCH --time={self.walltime}
+#SBATCH --export=NONE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
@@ -395,15 +423,12 @@ exit $EXIT_CODE
 # /etc/profile sets Delta's default module tree (the spack Core tree that provides ior
 # and the Cray PrgEnv defaults); modules.sh alone leaves those modules unknown. No user
 # dotfile is read, so nothing is inherited from the submitting account.
-source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+source /etc/profile || {{ echo "ERROR: /etc/profile failed"; exit 1; }}
 module load {self.h5bench_modules} || {{ echo "ERROR: module load {self.h5bench_modules} failed"; exit 1; }}
 
 export DARSHAN_LOGPATH="{self.darshan_log_dir}"
 mkdir -p "${{DARSHAN_LOGPATH}}"
 export DARSHAN_CONFIG_PATH="{self.darshan_config}"
-
-# HDF5 parallel library path
-export LD_LIBRARY_PATH="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2/lib:${{LD_LIBRARY_PATH:-}}"
 
 # ROMIO collective buffering control
 {hints_line}
@@ -428,7 +453,7 @@ cleanup() {{ rm -f "$JOB_SCRATCH"/h5bench_output.h5* "$JOB_SCRATCH"/output.csv 2
 trap cleanup EXIT
 
 echo "============================================================"
-echo "IOSage Iterative Optimization - h5bench Execution"
+echo "IOSage Parameter Experiment - h5bench Execution"
 echo "Job: {job_name}"
 echo "Collective data: {coll}"
 echo "Date: $(date)"
@@ -438,6 +463,8 @@ echo "============================================================"
 # Pre-flight checks
 if [ -x "{write_cmd.split()[0]}" ]; then
     echo "  h5bench_write: OK"
+    echo "  Resolved HDF5 libraries:"
+    ldd "{write_cmd.split()[0]}" | grep -i hdf5 || {{ echo "ERROR: no HDF5 library resolved"; exit 1; }}
 else
     echo "  ERROR: h5bench_write not found"
     exit 1
@@ -454,8 +481,14 @@ WRITE_RC=$?
 echo ""
 echo "Write completed at $(date), exit code: ${{WRITE_RC}}"
 
+if [ "$WRITE_RC" -ne 0 ]; then
+    echo "ERROR: h5bench write failed"
+    exit "$WRITE_RC"
+fi
+
 # === h5bench READ phase ===
 H5_FILE=$(echo "{read_cmd}" | awk '{{print $NF}}')
+READ_RC=1
 if [ -f "$H5_FILE" ]; then
     echo ""
     echo "=== h5bench READ phase ==="
@@ -467,11 +500,12 @@ if [ -f "$H5_FILE" ]; then
     echo ""
     echo "Read completed at $(date), exit code: ${{READ_RC}}"
 else
-    echo "WARNING: HDF5 output file not found, skipping read phase"
+    echo "ERROR: HDF5 output file not found; read phase cannot run"
 fi
 
 echo ""
 echo "Exit code (write): $WRITE_RC"
+echo "Exit code (read): $READ_RC"
 echo "Completed: $(date)"
 
 # Report Darshan log location
@@ -482,7 +516,10 @@ else
     echo "WARNING: No Darshan log found"
 fi
 
-exit $WRITE_RC
+if [ "$READ_RC" -ne 0 ]; then
+    exit "$READ_RC"
+fi
+exit 0
 """
 
     def _generate_dlio_slurm(self, job_name, benchmark_commands, job_scratch,
@@ -497,31 +534,25 @@ exit $WRITE_RC
         """
         datagen_cmd, training_cmd = benchmark_commands
 
-        # DLIO requires PyTorch which needs CUDA — must use GPU partition
+        # DLIO requires PyTorch which needs CUDA - must use GPU partition
         gpu_partition = "gpuA100x4"
         gpu_account = "bdau-delta-gpu"
-
-        # Use 4 ranks for DLIO (not 16). The original benchmark sweep that
-        # successfully generated 60 GT logs used 4 ranks on CPU. With 16 ranks
-        # and tiny records (64 bytes), PyTorch distributed training hangs on
-        # inter-rank synchronization barriers because the I/O is negligible
-        # relative to synchronization overhead.
-        dlio_ntasks = 4
 
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition={gpu_partition}
 #SBATCH --account={gpu_account}
-#SBATCH --nodes=1
-#SBATCH --ntasks={dlio_ntasks}
-#SBATCH --cpus-per-task=4
+#SBATCH --nodes={self.nodes}
+#SBATCH --ntasks={self.ntasks}
+#SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=128g
-#SBATCH --time=01:00:00
+#SBATCH --time={self.walltime}
+#SBATCH --export=NONE
 #SBATCH --output={self.results_dir}/{job_name}_%j.out
 #SBATCH --error={self.results_dir}/{job_name}_%j.err
 
-source /etc/profile >/dev/null 2>&1 || source /etc/profile.d/modules.sh >/dev/null 2>&1 || true
+source /etc/profile || {{ echo "ERROR: /etc/profile failed"; exit 1; }}
 # mpi4py here is a pip build linked against the MPICH ABI; cray-mpich-abi supplies
 # libmpi.so.12 on top of Cray MPICH, without which every rank fails to import MPI.
 module load {self.python_mpi_modules} || {{ echo "ERROR: module load {self.python_mpi_modules} failed"; exit 1; }}
@@ -532,7 +563,7 @@ export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "${{DARSHAN_LOGPATH}}"
 # Python imports hundreds of .so/.pyc files before DLIO touches a data file, so the record
 # limit must be well above the 1024 default; configs/darshan_runtime.conf sets 65536 POSIX
-# and STDIO records (it supersedes the older configs/darshan_dlio.conf, which set 8192).
+# and STDIO records.
 export DARSHAN_CONFIG_PATH="{self.darshan_config}"
 
 # Fix PyTorch CUDA library conflict on Delta.
@@ -570,7 +601,7 @@ cleanup() {{ rm -rf "$JOB_SCRATCH" 2>/dev/null || true; }}
 trap cleanup EXIT
 
 echo "============================================================"
-echo "IOSage Iterative Optimization - DLIO Execution"
+echo "IOSage Parameter Experiment - DLIO Execution"
 echo "Job: {job_name}"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
@@ -605,26 +636,26 @@ fi
 exit $EXIT_CODE
 """
 
-    def submit_and_wait(self, script_path, timeout_seconds=7200, poll_interval=30):
+    def submit_and_wait(self, script_path, timeout_seconds=7200, poll_interval=30,
+                        sbatch_args=None, script_args=None):
         """Submit SLURM job and wait for completion.
 
-        IMPORTANT: Unsets conflicting SLURM env vars BEFORE sbatch to prevent
-        'step creation disabled' errors on Delta. The parent session (Claude Code)
-        sets SLURM_CPUS_PER_TASK=8 and SLURM_TRES_PER_TASK=cpu=8 which conflict
-        with the child job's --cpus-per-task=1.
+        Unset conflicting SLURM environment variables before ``sbatch`` to
+        prevent step-creation errors when the caller has a different CPU request.
 
         Args:
             script_path: path to .slurm script
             timeout_seconds: max wait time (default 2h)
             poll_interval: seconds between sacct polls
+            sbatch_args: options placed before the script, e.g.
+                ["--export=CASE_ID=N1,REPEAT=3"] (application run scripts take
+                their case identity this way because they use --export=NONE)
+            script_args: positional arguments placed after the script
 
         Returns:
             job_id string if successful, None if failed
         """
-        # Clean SLURM env vars that the parent session sets (e.g., Claude Code job
-        # sets SLURM_CPUS_PER_TASK=8, SLURM_TRES_PER_TASK=cpu=8). These get inherited
-        # by sbatch and cause "step creation disabled" errors when the child job's
-        # --cpus-per-task=1 conflicts with the inherited value.
+        # Remove inherited SLURM resource requests before submitting the child job.
         clean_env = os.environ.copy()
         # Strip PYTHONPATH: .local_pkgs has numpy 1.24.3 which shadows conda's
         # numpy 1.26.4 and breaks TensorFlow/DLIO (missing np.dtypes)
@@ -640,16 +671,19 @@ exit $EXIT_CODE
                      "SLURM_STEP_NUM_NODES", "SLURM_STEP_TASKS_PER_NODE"]:
             clean_env.pop(var, None)
 
+        self.last_submission = None
         result = subprocess.run(
-            ["sbatch", script_path],
+            ["sbatch", *(sbatch_args or []), script_path, *(script_args or [])],
             capture_output=True, text=True,
             env=clean_env,
         )
         if result.returncode != 0:
             logger.error("sbatch failed: %s", result.stderr.strip())
+            self.last_submission = {"job_id": None, "state": "SUBMIT_FAILED"}
             return None
 
         job_id = result.stdout.strip().split()[-1]
+        self.last_submission = {"job_id": job_id, "state": "SUBMITTED"}
         logger.info("  Submitted SLURM job %s", job_id)
 
         t0 = time.time()
@@ -686,18 +720,41 @@ exit $EXIT_CODE
                     continue
 
                 terminal = {"COMPLETED", "FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"}
-                if main_state in terminal:
+                normalized_state = main_state.split()[0].rstrip("+")
+                if normalized_state in terminal:
                     elapsed = time.time() - t0
+                    self.last_submission = {"job_id": job_id, "state": normalized_state}
                     logger.info("  Job %s: %s (%.0fs)", job_id, main_state, elapsed)
-                    return job_id if main_state == "COMPLETED" else None
+                    return job_id if normalized_state == "COMPLETED" else None
             except subprocess.TimeoutExpired:
                 pass
             time.sleep(poll_interval)
 
         logger.error("  Job %s timed out after %ds", job_id, timeout_seconds)
         # Try to cancel the timed-out job
-        subprocess.run(["scancel", job_id], capture_output=True)
-        return None
+        cancel = subprocess.run(["scancel", job_id], capture_output=True, text=True)
+        if cancel.returncode != 0:
+            raise RuntimeError(
+                f"scancel failed for timed-out job {job_id}: {cancel.stderr.strip()}")
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            check = subprocess.run(
+                ["sacct", "-X", "-j", job_id, "--format=JobIDRaw,State",
+                 "--noheader", "--parsable2"],
+                capture_output=True, text=True, timeout=30)
+            states = []
+            if check.returncode == 0:
+                for line in check.stdout.splitlines():
+                    fields = line.split("|")
+                    if len(fields) >= 2 and fields[0] == job_id:
+                        states.append(fields[1].split()[0].rstrip("+"))
+            if len(states) == 1 and states[0] in {
+                    "COMPLETED", "FAILED", "TIMEOUT", "CANCELLED",
+                    "NODE_FAIL", "OUT_OF_MEMORY"}:
+                self.last_submission = {"job_id": job_id, "state": states[0]}
+                return None
+            time.sleep(2)
+        raise RuntimeError(f"cancellation of timed-out job {job_id} was not verified")
 
     def find_darshan_logs(self, job_id):
         """All Darshan logs of a completed SLURM job (A2).
@@ -712,6 +769,31 @@ exit $EXIT_CODE
         if not logs:
             logger.warning("  No Darshan log found for job %s", job_id)
         return logs
+
+    def verify_allocation(self, job_id, resources):
+        """Require the completed main job to report the requested allocation."""
+        query = subprocess.run(
+            ["sacct", "-X", "-j", str(job_id), "--noheader", "--parsable2",
+             "--format=JobIDRaw,NNodes,AllocCPUS,ElapsedRaw"],
+            capture_output=True, text=True, timeout=30)
+        if query.returncode != 0:
+            raise RuntimeError(f"sacct allocation query failed for job {job_id}: {query.stderr.strip()}")
+        matches = []
+        for line in query.stdout.splitlines():
+            fields = line.split("|")
+            if len(fields) >= 4 and fields[0] == str(job_id):
+                matches.append(fields)
+        if len(matches) != 1:
+            raise RuntimeError(f"expected one main allocation row for job {job_id}, got {len(matches)}")
+        nodes, cpus = int(matches[0][1]), int(matches[0][2])
+        expected_nodes = int(resources["nodes"])
+        expected_cpus = int(resources["ntasks"]) * int(resources.get("cpus_per_task", 1))
+        if nodes != expected_nodes or cpus != expected_cpus:
+            raise RuntimeError(
+                f"job {job_id} allocation differs: nodes {nodes}/{expected_nodes}, "
+                f"CPUs {cpus}/{expected_cpus}")
+        elapsed_s = float(matches[0][3])
+        return {"nodes": nodes, "allocated_cpus": cpus, "elapsed_s": elapsed_s}
 
     def find_darshan_log(self, job_id):
         """Newest Darshan log of a job (kept for callers that need one path).
@@ -902,7 +984,7 @@ exit $EXIT_CODE
 
     def execute_benchmark(self, benchmark_command, job_name, benchmark_type="ior",
                           hacc_config=None, h5bench_config=None, dlio_config=None,
-                          workload=None, work_config=None):
+                          workload=None, work_config=None, slurm_resources=None):
         """Full execution cycle: generate script -> submit -> wait -> parse.
 
         Args:
@@ -925,7 +1007,6 @@ exit $EXIT_CODE
                 darshan_path: str or None
                 elapsed_s: float
         """
-        t0 = time.time()
         result = {
             "success": False,
             "job_id": None,
@@ -951,14 +1032,25 @@ exit $EXIT_CODE
             job_name, benchmark_command, benchmark_type,
             hacc_config=hacc_config, h5bench_config=h5bench_config,
             dlio_config=dlio_config,
+            slurm_resources=slurm_resources,
         )
-        job_id = self.submit_and_wait(script, timeout_seconds=timeout)
+        completed_job_id = self.submit_and_wait(script, timeout_seconds=timeout)
+        submission = self.last_submission or {}
+        job_id = completed_job_id or submission.get("job_id")
 
         if not job_id:
-            result["elapsed_s"] = time.time() - t0
             return result
 
         result["job_id"] = job_id
+        result["slurm_state"] = submission.get("state")
+        result["slurm_resources"] = dict(slurm_resources or {
+            "nodes": self.nodes, "ntasks": self.ntasks,
+            "cpus_per_task": self.cpus_per_task, "walltime": self.walltime})
+        result["verified_allocation"] = self.verify_allocation(
+            job_id, result["slurm_resources"])
+        result["elapsed_s"] = result["verified_allocation"]["elapsed_s"]
+        if completed_job_id is None:
+            return result
 
         # Every Darshan log of the job: wall time and work come from all of
         # them, classifier features from the phase-appropriate primary log.
@@ -1008,5 +1100,4 @@ exit $EXIT_CODE
             if dlio_out:
                 result["ior_output"] = dlio_out
 
-        result["elapsed_s"] = time.time() - t0
         return result

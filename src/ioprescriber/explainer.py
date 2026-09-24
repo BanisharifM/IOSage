@@ -9,7 +9,6 @@ Output: {dimension: [{feature, value, shap_value, direction}]}
 """
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import shap

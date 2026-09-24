@@ -19,7 +19,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from src.models.biquality import BOTTLENECK_DIMENSIONS, BUNDLE_FORMAT, DIMENSION_NAMES, predict  # noqa: E402
+from src.models.biquality import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES, predict, validate_bundle  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +35,12 @@ class Detector:
         that vary it; the bundle's value is the trained protocol's)."""
         with open(model_path, "rb") as f:
             bundle = pickle.load(f)
-        if not isinstance(bundle, dict) or bundle.get("bundle_format") != BUNDLE_FORMAT:
-            raise ValueError(f"{model_path} is not a model bundle of format {BUNDLE_FORMAT}; "
-                             "train with scripts/train_biquality.py")
+        validate_bundle(bundle)
+        if not bundle['final_evaluation']:
+            raise ValueError("detector requires a bundle from an explicit final evaluation run")
         if threshold is not None:
+            if not 0 < float(threshold) < 1:
+                raise ValueError("threshold override must be in (0, 1)")
             bundle = dict(bundle, decision_threshold=float(threshold))
         self.bundle = bundle
         self.models = bundle["models"]

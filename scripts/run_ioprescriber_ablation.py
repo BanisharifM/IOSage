@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ablation Study for IOPrescriber — IOSage paper Table 4.
+Ablation Study for IOPrescriber - IOSage paper Table 4.
 
 Runs 6 ablation conditions to prove each component adds value:
   A1: Full system vs LLM alone (no ML detection, raw Darshan to LLM)
@@ -30,12 +30,9 @@ import json
 import logging
 import os
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 LOCAL_PKGS = PROJECT_DIR / ".local_pkgs"
 if LOCAL_PKGS.exists():
@@ -44,6 +41,8 @@ sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+from src.models.biquality import load_final_benchmark_test_frames  # noqa: E402
 
 DIMENSIONS = [
     "access_granularity", "metadata_intensity", "parallelism_efficiency",
@@ -85,13 +84,24 @@ def select_ablation_workloads(test_feat, test_labels, n=4):
 
 
 def run_full_system(pipeline, features, workload_name):
-    """A0: Full system (baseline) — ML + SHAP + KB + LLM."""
-    return pipeline.analyze(features, workload_name=f"FULL_{workload_name}")
+    """A0: Full system (baseline) - ML + SHAP + KB + LLM."""
+    result = pipeline.analyze(features, workload_name=f"FULL_{workload_name}")
+    from src.ioprescriber.contracts import validate_pipeline_result
+    validate_pipeline_result(result)
+    section = result["recommendation"]
+    return {
+        "condition": "A0_full", "workload": workload_name,
+        "has_ml": True, "has_shap": True, "has_kb": True,
+        "detected": result["detection"]["detected"],
+        "recommendation": section["parsed"],
+        "metadata": section["metadata"] or {},
+        "groundedness": section["groundedness"] or {},
+    }
 
 
 def run_no_ml(recommender, retriever, features, workload_name):
-    """A1: No ML detection — give LLM raw Darshan summary only (IOAgent-style)."""
-    # No ML predictions, no SHAP — just raw features to LLM
+    """A1: No ML detection - give LLM raw Darshan summary only (IOAgent-style)."""
+    # No ML predictions, no SHAP - just raw features to LLM
     summary_keys = ["nprocs", "runtime_seconds", "POSIX_BYTES_WRITTEN",
                      "avg_write_size", "small_io_ratio", "seq_write_ratio",
                      "metadata_time_ratio", "collective_ratio", "total_bw_mb_s",
@@ -99,19 +109,10 @@ def run_no_ml(recommender, retriever, features, workload_name):
     darshan_summary = {k: round(float(features.get(k, 0)), 4)
                        for k in summary_keys if features.get(k, 0) != 0}
 
-    system_prompt = """You are an HPC I/O performance expert. Analyze these Darshan counters
-and recommend code-level I/O optimizations. Be specific about what to change.
-Respond in JSON with: diagnosis, recommendations (each with code_before, code_after, expected_speedup)."""
-
-    user_prompt = f"""Analyze this job's Darshan I/O profile:
-
-{json.dumps(darshan_summary, indent=2)}
-
-Provide specific code-level optimization recommendations in JSON format.
-"""
-
-    raw_response, metadata = recommender.call_llm(system_prompt, user_prompt)
-    parsed, parse_error = recommender.parse_response(raw_response)
+    parsed, metadata, raw_response = recommender.recommend_without_evidence(
+        [dimension for dimension in DIMENSIONS if dimension != "healthy"],
+        darshan_summary)
+    parse_error = None
 
     return {
         "condition": "A1_no_ml",
@@ -120,16 +121,15 @@ Provide specific code-level optimization recommendations in JSON format.
         "recommendation": parsed,
         "metadata": metadata,
         "groundedness": {"groundedness_score": 0.0, "n_recommendations": 0, "n_grounded": 0,
-                          "note": "No KB provided — groundedness N/A"},
+                          "note": "No KB provided - groundedness N/A"},
         "parse_error": parse_error,
     }
 
 
 def run_no_kb(pipeline, features, workload_name):
-    """A2: No KB — ML + SHAP but LLM gets no benchmark evidence."""
+    """A2: No KB - ML + SHAP but LLM gets no benchmark evidence."""
     predictions, detected = pipeline.detector.detect_from_features(features)
-    X = np.array([[features.get(col, 0) for col in pipeline.detector.feature_cols]],
-                  dtype=np.float32)
+    X = pipeline.detector.feature_vector(features)
     shap_features = pipeline.explainer.explain(X, detected_dims=detected)
 
     summary_keys = ["nprocs", "runtime_seconds", "POSIX_BYTES_WRITTEN",
@@ -138,37 +138,9 @@ def run_no_kb(pipeline, features, workload_name):
     darshan_summary = {k: round(float(features.get(k, 0)), 4)
                        for k in summary_keys if features.get(k, 0) != 0}
 
-    # Build prompt WITHOUT KB entries
-    detection_str = "\n".join(
-        f"  - {dim}: {predictions[dim]:.2f} — {DIM_DESCRIPTIONS.get(dim, '')}"
-        for dim in detected
-    )
-    shap_str = ""
-    for dim, feats in shap_features.items():
-        if feats:
-            shap_str += f"\n  {dim}:\n"
-            for f in feats[:5]:
-                shap_str += f"    - {f['feature']} = {f['value']:.4f} (|SHAP|={f['abs_importance']:.4f})\n"
-
-    system_prompt = """You are an HPC I/O performance expert. You are given ML detection results
-and SHAP feature attributions. Recommend specific code-level I/O optimizations.
-Respond in JSON with: diagnosis, recommendations (each with code_before, code_after, expected_speedup)."""
-
-    user_prompt = f"""## Detected Bottlenecks (ML classifier):
-{detection_str}
-
-## Key Features (SHAP attribution):
-{shap_str}
-
-## Darshan Summary:
-{json.dumps(darshan_summary, indent=2)}
-
-Note: No benchmark evidence available. Base recommendations on general I/O best practices.
-Respond in JSON format.
-"""
-
-    raw_response, metadata = pipeline.recommender.call_llm(system_prompt, user_prompt)
-    parsed, parse_error = pipeline.recommender.parse_response(raw_response)
+    parsed, metadata, raw_response = pipeline.recommender.recommend_without_evidence(
+        detected, darshan_summary, shap_features=shap_features)
+    parse_error = None
 
     return {
         "condition": "A2_no_kb",
@@ -177,13 +149,13 @@ Respond in JSON format.
         "detected": detected,
         "recommendation": parsed,
         "metadata": metadata,
-        "groundedness": {"groundedness_score": 0.0, "note": "No KB — groundedness N/A"},
+        "groundedness": {"groundedness_score": 0.0, "note": "No KB - groundedness N/A"},
         "parse_error": parse_error,
     }
 
 
 def run_no_shap(pipeline, features, workload_name):
-    """A3: No SHAP — ML + KB but LLM gets bottleneck labels only, no feature attribution."""
+    """A3: No SHAP - ML + KB but LLM gets bottleneck labels only, no feature attribution."""
     predictions, detected = pipeline.detector.detect_from_features(features)
     kb_entries = pipeline.retriever.retrieve(detected, features)
 
@@ -211,10 +183,9 @@ def run_no_shap(pipeline, features, workload_name):
 
 
 def run_ml_only(pipeline, features, workload_name):
-    """A4: ML-only — detection + SHAP, no LLM recommendation."""
+    """A4: ML-only - detection + SHAP, no LLM recommendation."""
     predictions, detected = pipeline.detector.detect_from_features(features)
-    X = np.array([[features.get(col, 0) for col in pipeline.detector.feature_cols]],
-                  dtype=np.float32)
+    X = pipeline.detector.feature_vector(features)
     shap_features = pipeline.explainer.explain(X, detected_dims=detected)
 
     return {
@@ -225,8 +196,9 @@ def run_ml_only(pipeline, features, workload_name):
         "predictions": predictions,
         "shap_top_features": {dim: feats[:3] for dim, feats in shap_features.items()},
         "recommendation": None,
-        "metadata": {"latency_ms": 0, "tokens_input": 0, "tokens_output": 0},
-        "groundedness": {"groundedness_score": None, "note": "No LLM — no recommendations to ground"},
+        "metadata": {"api_latency_ms": 0, "tokens_input": 0, "tokens_output": 0,
+                     "cache_hit": False},
+        "groundedness": {"groundedness_score": None, "note": "No LLM - no recommendations to ground"},
     }
 
 
@@ -234,6 +206,9 @@ def main():
     parser = argparse.ArgumentParser(description="Ablation study for IOPrescriber")
     parser.add_argument("--ablation", default="all", choices=["all", "A1", "A2", "A3", "A4"])
     parser.add_argument("--n-workloads", type=int, default=4)
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base", required=True)
+    parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
 
     # Load env
@@ -247,13 +222,17 @@ def main():
 
     from src.ioprescriber.pipeline import IOPrescriber
 
-    pipeline = IOPrescriber(llm_model="claude-sonnet")
+    pipeline = IOPrescriber(
+        model_path=args.model_bundle, kb_path=args.knowledge_base,
+        llm_model="claude-sonnet", use_shap=True)
 
-    # Load test data
-    test_feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_features.parquet")
-    test_labels = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "benchmark" / "test_labels.parquet")
+    _, test_feat, test_labels, test_sample_ids = load_final_benchmark_test_frames(
+        args.model_bundle)
 
     workload_indices = select_ablation_workloads(test_feat, test_labels, args.n_workloads)
+    if len(workload_indices) != args.n_workloads:
+        raise ValueError(
+            f"requested {args.n_workloads} workloads but selected {len(workload_indices)}")
     logger.info("Selected %d workloads for ablation", len(workload_indices))
 
     all_results = {}
@@ -274,24 +253,19 @@ def main():
 
             logger.info("  Workload %d/%d: %s", w_idx + 1, len(workload_indices), name)
 
-            try:
-                if abl == "A0":
-                    result = run_full_system(pipeline, features, name)
-                elif abl == "A1":
-                    result = run_no_ml(pipeline.recommender, pipeline.retriever, features, name)
-                elif abl == "A2":
-                    result = run_no_kb(pipeline, features, name)
-                elif abl == "A3":
-                    result = run_no_shap(pipeline, features, name)
-                elif abl == "A4":
-                    result = run_ml_only(pipeline, features, name)
-                else:
-                    continue
-
-                abl_results.append(result)
-            except Exception as e:
-                logger.error("  FAILED: %s", e)
-                abl_results.append({"condition": abl, "workload": name, "error": str(e)})
+            if abl == "A0":
+                result = run_full_system(pipeline, features, name)
+            elif abl == "A1":
+                result = run_no_ml(pipeline.recommender, pipeline.retriever, features, name)
+            elif abl == "A2":
+                result = run_no_kb(pipeline, features, name)
+            elif abl == "A3":
+                result = run_no_shap(pipeline, features, name)
+            elif abl == "A4":
+                result = run_ml_only(pipeline, features, name)
+            else:
+                raise AssertionError(f"unsupported ablation {abl}")
+            abl_results.append(result)
 
         all_results[abl] = abl_results
 
@@ -323,18 +297,14 @@ def main():
 
         for r in valid:
             g = r.get("groundedness", {})
+            rec = r.get("recommendation")
+            m = r.get("metadata", {})
             if g.get("groundedness_score") is not None:
                 gnd_scores.append(g["groundedness_score"])
-            rec = r.get("recommendation")
             if rec and isinstance(rec, dict):
                 n_recs_list.append(len(rec.get("recommendations", [])))
-            elif r.get("step4_recommendation", {}).get("parsed"):
-                n_recs_list.append(len(r["step4_recommendation"]["parsed"].get("recommendations", [])))
-            m = r.get("metadata", {})
-            if not m:
-                m = r.get("step4_recommendation", {}).get("metadata", {})
-            if m and m.get("latency_ms"):
-                latencies.append(m["latency_ms"])
+            if m and m.get("api_latency_ms"):
+                latencies.append(m["api_latency_ms"])
 
         gnd = f"{np.mean(gnd_scores):.3f}" if gnd_scores else "N/A"
         recs = f"{np.mean(n_recs_list):.1f}" if n_recs_list else "N/A"
@@ -345,11 +315,23 @@ def main():
     logger.info("=" * 80)
 
     # Save
-    results_dir = PROJECT_DIR / "results" / "ablation"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    results_path = results_dir / f"ablation_results_{int(time.time())}.json"
-    with open(results_path, "w") as f:
+    results_dir = Path(args.output_dir).resolve()
+    if results_dir.exists():
+        raise FileExistsError(f"ablation output directory already exists: {results_dir}")
+    results_dir.mkdir(parents=True)
+    results_path = results_dir / "ablation_results.json"
+    with results_path.open("x") as f:
         json.dump(all_results, f, indent=2, default=str)
+    import hashlib
+    with (results_dir / "ablation_manifest.json").open("x") as handle:
+        json.dump({
+            "schema_version": 1,
+            "model_bundle_sha256": hashlib.sha256(Path(args.model_bundle).read_bytes()).hexdigest(),
+            "knowledge_base_sha256": hashlib.sha256(Path(args.knowledge_base).read_bytes()).hexdigest(),
+            "sample_ids": [test_sample_ids[index] for index in workload_indices],
+            "conditions": ablations_to_run,
+            "results_sha256": hashlib.sha256(results_path.read_bytes()).hexdigest(),
+        }, handle, indent=2)
     logger.info("Results saved: %s", results_path)
 
 

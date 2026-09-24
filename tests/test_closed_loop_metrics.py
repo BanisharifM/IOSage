@@ -13,8 +13,15 @@ def test_phase_walltime_concurrent_and_sequential():
     # two concurrent per-rank logs (one phase) then a later phase
     s = [{"start": 0, "runtime": 10.0}, {"start": 1, "runtime": 12.0}, {"start": 30, "runtime": 5.0}]
     wall, n = phase_walltime(s)
-    # phase 1: logs (0,10) and (1,12) overlap -> longest = 12; phase 2: 5 -> 17 total
-    assert n == 2 and abs(wall - 17.0) < 1e-9
+    # phase 1 is the union [0, 13]; phase 2 is [30, 35].
+    assert n == 2 and abs(wall - 18.0) < 1e-9
+    staggered = [{"start": 0, "runtime": 10.0}, {"start": 9, "runtime": 10.0}]
+    assert phase_walltime(staggered) == (19.0, 1)
+    chained = [{"start": 0, "runtime": 3.0}, {"start": 3, "runtime": 4.0},
+               {"start": 6, "runtime": 3.0}]
+    assert phase_walltime(chained) == (9.0, 1)
+    nested = [{"start": 0, "runtime": 10.0}, {"start": 2, "runtime": 1.0}]
+    assert phase_walltime(nested) == (10.0, 1)
 
 
 def test_aggregate_repeats_median_and_spread():

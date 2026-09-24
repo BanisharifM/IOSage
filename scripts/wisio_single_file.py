@@ -24,8 +24,13 @@ WISIO_RULES = [
 def main():
     trace_path = sys.argv[1]
 
-    from dask.distributed import LocalCluster, Client
-    from wisio.darshan import DarshanAnalyzer
+    try:
+        from dask.distributed import LocalCluster, Client
+        from wisio.darshan import DarshanAnalyzer
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "WisIO dependencies are missing; install requirements-wisio.txt"
+        ) from exc
 
     cluster = LocalCluster(
         n_workers=1, threads_per_worker=1, memory_limit="4GB", silence_logs=50

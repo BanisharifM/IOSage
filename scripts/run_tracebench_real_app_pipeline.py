@@ -18,12 +18,12 @@ Outputs:
     results/e2e_evaluation/tracebench_real_app_results.json
 """
 
+import argparse
 import json
 import logging
 import os
 import subprocess
 import sys
-import tempfile
 import time
 import traceback
 from pathlib import Path
@@ -42,8 +42,6 @@ if env_path.exists():
                 val = val.strip().strip('"')
                 os.environ[key] = val
 
-import numpy as np
-import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -289,6 +287,10 @@ def check_nc_nofill_recommendation(recommendation):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run the TraceBench application pipeline")
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base", required=True)
+    args = parser.parse_args()
     logger.info("=" * 70)
     logger.info("TraceBench Real Application Pipeline Evaluation (Tier 1 E2E)")
     logger.info("=" * 70)
@@ -328,7 +330,9 @@ def main():
     logger.info("")
     logger.info("Initializing IOPrescriber pipeline...")
     from src.ioprescriber.pipeline import IOPrescriber
-    pipeline = IOPrescriber(llm_model="claude-sonnet")
+    pipeline = IOPrescriber(
+        model_path=args.model_bundle, kb_path=args.knowledge_base,
+        llm_model="claude-sonnet", use_shap=True)
 
     # Process each trace
     all_results = []
@@ -400,7 +404,10 @@ def main():
         # Run pipeline
         logger.info("Running IOPrescriber pipeline...")
         try:
-            pipe_result = pipeline.analyze(features, workload_name=friendly)
+            pipe_result = pipeline.analyze(
+                features, workload_name=friendly,
+                sample_id=f"tracebench/{darshan_path.name}",
+                job_group=f"tracebench/{darshan_path.stem}")
         except Exception as exc:
             logger.error("Pipeline failed for %s: %s", friendly, exc)
             traceback.print_exc()
@@ -410,8 +417,8 @@ def main():
             continue
 
         # Extract pipeline outputs
-        predictions = pipe_result["step1_detection"]["predictions"]
-        detected = pipe_result["step1_detection"]["detected"]
+        predictions = pipe_result["detection"]["predictions"]
+        detected = pipe_result["detection"]["detected"]
 
         result["ml_predictions"] = predictions
         result["ml_detected"] = detected
@@ -430,7 +437,7 @@ def main():
 
         # SHAP
         result["shap_top_features"] = {}
-        for dim, feats in pipe_result.get("step2_shap", {}).items():
+        for dim, feats in pipe_result["attribution"].items():
             if feats:
                 result["shap_top_features"][dim] = [
                     {"feature": f["feature"], "importance": round(f["abs_importance"], 4)}
@@ -438,10 +445,10 @@ def main():
                 ]
 
         # KB retrieval
-        result["kb_retrieval"] = pipe_result.get("step3_retrieval", {})
+        result["kb_retrieval"] = pipe_result["retrieval"]
 
         # LLM recommendation
-        rec = pipe_result.get("step4_recommendation", {})
+        rec = pipe_result["recommendation"]
         result["llm_recommendation"] = {
             "parsed": rec.get("parsed"),
             "groundedness": rec.get("groundedness"),
@@ -514,7 +521,7 @@ def main():
     print("=" * 70)
     print(f"\nTraces parsed: {aggregate['traces_parsed']}/{len(matched)}")
     print(f"Traces failed: {aggregate['traces_failed']}")
-    print(f"\nAggregate ML Detection (vs TraceBench labels):")
+    print("\nAggregate ML Detection (vs TraceBench labels):")
     print(f"  True Positives:  {tp}")
     print(f"  False Positives: {fp}")
     print(f"  False Negatives: {fn}")
@@ -565,7 +572,7 @@ def main():
                 expl = rx.get("explanation", "N/A")[:80]
                 print(f"      {i+1}. [{dim_name}] {expl}")
         else:
-            print(f"    LLM: No parsed output")
+            print("    LLM: No parsed output")
 
         # NC_NOFILL check
         nc = r.get("nc_nofill_check")

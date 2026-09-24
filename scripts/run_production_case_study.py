@@ -25,12 +25,13 @@ Output:
     results/production_case_study/random_50_summary.md
 """
 
+import argparse
 import json
 import logging
 import os
 import sys
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -106,7 +107,22 @@ def build_darshan_summary(features_row):
     return summary
 
 
+def agreement_category(heuristic_has_bottleneck, ml_has_bottleneck):
+    """Name one of the four heuristic/ML Boolean states."""
+    if not heuristic_has_bottleneck and not ml_has_bottleneck:
+        return "agree_healthy"
+    if heuristic_has_bottleneck and ml_has_bottleneck:
+        return "agree_bottleneck"
+    if not heuristic_has_bottleneck and ml_has_bottleneck:
+        return "heuristic_healthy_ml_bottleneck"
+    return "heuristic_bottleneck_ml_healthy"
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Run the production case study")
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base", required=True)
+    args = parser.parse_args()
     logger.info("=" * 70)
     logger.info("Production Case Study: 50 Random Polaris Logs")
     logger.info("=" * 70)
@@ -125,7 +141,9 @@ def main():
     # Initialize pipeline
     logger.info("Initializing IOPrescriber pipeline...")
     from src.ioprescriber.pipeline import IOPrescriber
-    pipeline = IOPrescriber(llm_model="claude-sonnet")
+    pipeline = IOPrescriber(
+        model_path=args.model_bundle, kb_path=args.knowledge_base,
+        llm_model="claude-sonnet", use_shap=True)
 
     # Check API key
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -189,37 +207,29 @@ def main():
         for d in detected:
             detection_counter[d] += 1
 
-        # Step 2: SHAP (always run, fast)
-        try:
-            X = np.array([[features_dict.get(col, 0) for col in pipeline.detector.feature_cols]],
-                          dtype=np.float32)
-            shap_features = pipeline.explainer.explain(X, detected_dims=detected)
-            result["shap_top_features"] = {}
-            for dim, feats in shap_features.items():
-                if feats:
-                    result["shap_top_features"][dim] = [
-                        {"feature": f["feature"], "importance": round(f["abs_importance"], 4)}
-                        for f in feats[:3]
-                    ]
-        except Exception as exc:
-            logger.warning("  SHAP failed: %s", exc)
-            shap_features = {}
-            result["shap_top_features"] = {}
+        # Step 2: SHAP. A full-system sample fails if attribution fails.
+        X = pipeline.detector.feature_vector(features_dict)
+        shap_features = pipeline.explainer.explain(X, detected_dims=detected)
+        result["shap_top_features"] = {}
+        for dim, feats in shap_features.items():
+            if feats:
+                result["shap_top_features"][dim] = [
+                    {"feature": f["feature"], "importance": round(f["abs_importance"], 4)}
+                    for f in feats[:3]
+                ]
 
-        # Step 3: KB Retrieval (always run, no API cost)
-        try:
-            kb_entries = pipeline.retriever.retrieve(detected, features_dict)
-            result["kb_retrieval"] = {
-                "n_entries": len(kb_entries),
-                "entries": [{"entry_id": m["entry"]["entry_id"],
-                             "similarity": m["similarity"],
-                             "matched_dims": m["matched_dims"]}
-                            for m in kb_entries],
-            }
-        except Exception as exc:
-            logger.warning("  KB retrieval failed: %s", exc)
-            kb_entries = []
-            result["kb_retrieval"] = {"n_entries": 0, "entries": []}
+        # Step 3: KB retrieval. Evidence failures invalidate the sample.
+        kb_entries = pipeline.retriever.retrieve(
+            detected, features_dict,
+            query_sample_id=str(features_dict.get("_source_path", "")),
+            query_job_group=f"production/{job_id}")
+        result["kb_retrieval"] = {
+            "n_entries": len(kb_entries),
+            "entries": [{"entry_id": m["entry"]["entry_id"],
+                         "similarity": m["similarity"],
+                         "matched_dims": m["matched_dims"]}
+                        for m in kb_entries],
+        }
 
         # Step 4: LLM Recommendation (only for non-healthy detections)
         ml_has_bottleneck = any(d != "healthy" for d in detected)
@@ -248,13 +258,16 @@ def main():
                     logger.warning("  LLM: parse failed")
 
                 if metadata:
-                    total_latency_ms += metadata.get("latency_ms", 0)
+                    total_latency_ms += metadata.get("api_latency_ms", 0)
 
                 llm_call_count += 1
 
             except Exception as exc:
                 logger.error("  LLM failed: %s", exc)
                 result["llm_recommendation"] = {"error": str(exc)}
+                result["status"] = "LLM_FAILED"
+                all_results.append(result)
+                continue
         else:
             if not ml_has_bottleneck:
                 logger.info("  Step 4: SKIPPED (healthy, no recommendation needed)")
@@ -329,22 +342,21 @@ def main():
     agree_bottleneck = 0
     disagree_h2b = 0  # heuristic=healthy, ML=bottleneck
     disagree_b2h = 0  # heuristic=bottleneck, ML=healthy
-    dim_agreement = defaultdict(lambda: {"agree": 0, "disagree": 0})
-
     for r in all_results:
         if r.get("status") != "SUCCESS":
             continue
         ml_has_bn = any(d != "healthy" for d in r.get("ml_detected", []))
         h_has_bn = not r.get("is_heuristic_healthy", True)
 
-        if not ml_has_bn and not h_has_bn:
+        category = agreement_category(h_has_bn, ml_has_bn)
+        if category == "agree_healthy":
             agree_healthy += 1
-        elif ml_has_bn and h_has_bn:
+        elif category == "agree_bottleneck":
             agree_bottleneck += 1
-        elif not h_has_bn and not ml_has_bn:
-            disagree_b2h += 1
-        else:
+        elif category == "heuristic_healthy_ml_bottleneck":
             disagree_h2b += 1
+        else:
+            disagree_b2h += 1
 
     logger.info("")
     logger.info("ML vs Heuristic Agreement (NOT accuracy -- informational):")
@@ -419,9 +431,9 @@ def generate_summary_md(stats, all_results):
     lines.append("")
     lines.append(f"- **Sample size**: {stats['n_samples']} logs (stratified: {stats['n_bottleneck_sample']} bottleneck + {stats['n_healthy_sample']} healthy)")
     lines.append(f"- **Random seed**: {stats['seed']}")
-    lines.append(f"- **Source**: 131,151 production Polaris Darshan logs")
-    lines.append(f"- **LLM**: Claude Sonnet via OpenRouter (temperature=0)")
-    lines.append(f"- **Purpose**: Unbiased accuracy estimate (no cherry-picking)")
+    lines.append("- **Source**: 131,151 production Polaris Darshan logs")
+    lines.append("- **LLM**: Claude Sonnet via OpenRouter (temperature=0)")
+    lines.append("- **Purpose**: Unbiased accuracy estimate (no cherry-picking)")
     lines.append("")
 
     lines.append("## ML Detection Distribution")
@@ -501,7 +513,7 @@ def generate_summary_md(stats, all_results):
         # SHAP
         shap = r.get("shap_top_features", {})
         if shap:
-            lines.append(f"- **Top SHAP features**:")
+            lines.append("- **Top SHAP features**:")
             for dim, feats in shap.items():
                 if feats:
                     feat_str = ", ".join(f"{f['feature']} ({f['importance']:.3f})" for f in feats[:2])
