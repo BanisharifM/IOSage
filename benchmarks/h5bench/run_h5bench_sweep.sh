@@ -38,7 +38,6 @@ HEALTHY_DIR="${BENCH_SCRATCH}/healthy"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/h5bench"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/h5bench"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 HDF5_PARALLEL="/opt/cray/pe/hdf5-parallel/1.14.3.5/gnu/12.2"
 
 REPETITIONS=3
@@ -85,7 +84,7 @@ NUM_DIMS=1
 DIM_1=${dim1}
 DIM_2=1
 DIM_3=1
-CSV_FILE=output.csv
+CSV_FILE=@CSV_FILE@
 CONFIG_EOF
 
     # Read config (used by h5bench_read)
@@ -102,7 +101,7 @@ NUM_DIMS=1
 DIM_1=${dim1}
 DIM_2=1
 DIM_3=1
-CSV_FILE=output.csv
+CSV_FILE=@CSV_FILE@
 CONFIG_EOF
 }
 
@@ -119,6 +118,8 @@ generate_job_script() {
 
     local job_name="h5b_${scenario_name}_n${nranks}_r${rep}"
     local script_path="${RESULTS_DIR}/${job_name}.slurm"
+    local expected_stripe=-1
+    [ "${output_dir}" = "${BOTTLENECK_DIR}" ] && expected_stripe=1
 
     # Build MPICH hints
     local mpich_hints=""
@@ -140,12 +141,26 @@ generate_job_script() {
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
 # --- Environment ---
-module load PrgEnv-gnu/8.6.0 cray-hdf5-parallel/1.14.3.5 2>/dev/null || true
+set -euo pipefail
+source /etc/profile
+module load cray-hdf5-parallel/1.14.3.9
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable "${H5BENCH_BUILD}/h5bench_write" "\${RUN_MANIFEST}"
+benchmark_record_executable "${H5BENCH_BUILD}/h5bench_read" "\${RUN_MANIFEST}"
+H5_OUTPUT="${output_dir}/${job_name}_\${SLURM_JOB_ID}.h5"
+WRITE_CSV="${output_dir}/${job_name}_\${SLURM_JOB_ID}_write.csv"
+READ_CSV="${output_dir}/${job_name}_\${SLURM_JOB_ID}_read.csv"
+WRITE_CONFIG="${output_dir}/${job_name}_\${SLURM_JOB_ID}.write.conf"
+READ_CONFIG="${output_dir}/${job_name}_\${SLURM_JOB_ID}.read.conf"
+sed "s|@CSV_FILE@|\${WRITE_CSV}|" "${config_path}.write" > "\${WRITE_CONFIG}"
+sed "s|@CSV_FILE@|\${READ_CSV}|" "${config_path}.read" > "\${READ_CONFIG}"
 
 # Cleanup h5bench data files on ANY exit
-cleanup() { rm -f "${output_dir}/h5bench_output.h5"* "${output_dir}/output.csv" 2>/dev/null || true; }
+cleanup() { rm -f "\${H5_OUTPUT}" "\${WRITE_CSV}" "\${READ_CSV}" "\${WRITE_CONFIG}" "\${READ_CONFIG}"; }
 trap cleanup EXIT
 
 # Darshan log directory
@@ -175,8 +190,12 @@ echo "============================================================"
 # --- Pre-flight checks ---
 echo ""
 echo "Pre-flight checks:"
-OUTPUT_STRIPE=\$(lfs getstripe -c "${output_dir}" 2>/dev/null || echo "unknown")
+OUTPUT_STRIPE=\$(lfs getstripe -c "${output_dir}")
 echo "  Output dir stripe_count: \${OUTPUT_STRIPE}"
+[[ "\${OUTPUT_STRIPE}" == "${expected_stripe}" ]] || {
+    echo "ERROR: expected stripe count ${expected_stripe}, found \${OUTPUT_STRIPE}" >&2
+    exit 3
+}
 
 if [ -x "${H5BENCH_BUILD}/h5bench_write" ]; then
     echo "  h5bench_write: OK"
@@ -197,44 +216,22 @@ echo ""
 
 # --- Run h5bench write with Darshan ---
 echo "=== h5bench WRITE phase ==="
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-    ${H5BENCH_BUILD}/h5bench_write ${config_path}.write ${output_dir}/h5bench_output.h5
+benchmark_run "${scenario_name}_write_rep${rep}" h5bench_write "\${RUN_MANIFEST}" \
+    srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
+    ${H5BENCH_BUILD}/h5bench_write "\${WRITE_CONFIG}" "\${H5_OUTPUT}"
+[[ -s "\${H5_OUTPUT}" ]] || { echo "h5bench write output is missing or empty" >&2; exit 4; }
+echo "Write completed at \$(date), exit code: 0"
 
-WRITE_RC=\$?
 echo ""
-echo "Write completed at \$(date), exit code: \${WRITE_RC}"
+echo "=== h5bench READ phase ==="
+benchmark_run "${scenario_name}_read_rep${rep}" h5bench_read "\${RUN_MANIFEST}" \
+    srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
+    ${H5BENCH_BUILD}/h5bench_read "\${READ_CONFIG}" "\${H5_OUTPUT}"
+echo "Read completed at \$(date), exit code: 0"
+[[ \$(grep -vc '^#' "\${RUN_MANIFEST}") -eq 2 ]] || { echo "incomplete run manifest" >&2; exit 5; }
+cat "\${RUN_MANIFEST}"
 
-# --- Run h5bench read with Darshan ---
-# Read uses same HDF5 file created by write
-if [ -f "${output_dir}/h5bench_output.h5" ]; then
-    echo ""
-    echo "=== h5bench READ phase ==="
-    srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-        ${H5BENCH_BUILD}/h5bench_read ${config_path}.read ${output_dir}/h5bench_output.h5
-
-    READ_RC=\$?
-    echo ""
-    echo "Read completed at \$(date), exit code: \${READ_RC}"
-else
-    echo "WARNING: HDF5 output file not found, skipping read phase"
-fi
-
-# --- Verify Darshan log ---
-echo ""
-echo "Checking for Darshan log..."
-LATEST_LOG=\$(ls -t "\${DARSHAN_LOGPATH}"/*.darshan 2>/dev/null | head -1)
-if [ -n "\${LATEST_LOG}" ]; then
-    echo "Darshan log found: \${LATEST_LOG}"
-    echo "Size: \$(ls -lh "\${LATEST_LOG}" | awk '{print \$5}')"
-    ${DARSHAN_PARSER} --total "\${LATEST_LOG}" 2>/dev/null | head -20
-else
-    echo "WARNING: No Darshan log found"
-fi
-
-# --- Cleanup HDF5 data files ---
-rm -f "${output_dir}/h5bench_output.h5"* "${output_dir}/output.csv" 2>/dev/null || true
-echo ""
-echo "Cleaned up h5bench data files."
+# Benchmark data cleanup runs through the EXIT trap.
 SLURM_EOF
 
     echo "${script_path}"
@@ -250,7 +247,7 @@ echo "Repetitions: ${REPETITIONS}"
 echo "============================================================"
 
 mkdir -p "${LOG_DIR}" "${RESULTS_DIR}"
-mkdir -p "${BOTTLENECK_DIR}" "${HEALTHY_DIR}" 2>/dev/null || true
+mkdir -p "${BOTTLENECK_DIR}" "${HEALTHY_DIR}"
 
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
@@ -278,7 +275,7 @@ submit_job() {
 # =========================================================================
 
 # ===== SCENARIO: indep_small =====
-# HDF5 independent I/O with small data — interface_choice bottleneck
+# HDF5 independent I/O with small data: interface_choice bottleneck
 # Each rank writes independently (no collective), small arrays
 # 1024 elements × 8 bytes = 8 KB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small" ]; then
@@ -288,11 +285,11 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small" ]; then
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             config="${RESULTS_DIR}/config_indep_small_n${nranks}_r${rep}.json"
-            generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
+            generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "CONTIG" "CONTIG" "1024" "10"
             script=$(generate_job_script \
-                "indep_small" "interface_choice=1" \
-                "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
+                "indep_small" "access_granularity=1,interface_choice=1" \
+                "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
     done
@@ -302,28 +299,28 @@ fi
 # HDF5 compound datatype (array-of-structs layout), collective I/O, large data.
 # Research finding: h5bench INTERLEAVED = HDF5 compound type, NOT random POSIX access.
 # HDF5 internal pipeline converts compound writes to sequential POSIX I/O (Darshan
-# confirms 92-94% sequential). Relabeled as healthy — large collective sequential I/O.
+# confirms 92-94% sequential). Relabeled as healthy: large collective sequential I/O.
 # Ref: Bez et al. (ACM CSUR 2023) on abstraction gap between I/O stack levels.
 # 262144 elements × 8 bytes = 2 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interleaved_access" ]; then
     echo ""
-    echo "--- Scenario: interleaved_access (Healthy — compound type, collective, sequential POSIX) ---"
+    echo "--- Scenario: interleaved_access (Healthy: compound type, collective, sequential POSIX) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             config="${RESULTS_DIR}/config_interleaved_n${nranks}_r${rep}.json"
-            generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
+            generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "YES" "YES" "INTERLEAVED" "INTERLEAVED" "262144" "10"
             script=$(generate_job_script \
                 "interleaved_access" "healthy=1" \
-                "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
+                "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
         done
     done
 fi
 
 # ===== SCENARIO: collective_small =====
-# Collective HDF5 I/O but very small data — access_granularity bottleneck
+# Collective HDF5 I/O but very small data: access_granularity bottleneck
 # 128 elements × 8 bytes = 1 KB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "collective_small" ]; then
     echo ""
@@ -332,18 +329,18 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "collective_small" ];
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             config="${RESULTS_DIR}/config_coll_small_n${nranks}_r${rep}.json"
-            generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
+            generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "YES" "YES" "CONTIG" "CONTIG" "128" "20"
             script=$(generate_job_script \
                 "collective_small" "access_granularity=1" \
-                "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
+                "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
         done
     done
 fi
 
 # ===== SCENARIO: collective_large_healthy =====
-# Collective HDF5 I/O, large data, full striping — healthy baseline
+# Collective HDF5 I/O, large data, full striping: healthy baseline
 # 4194304 elements × 8 bytes = 32 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "collective_large_healthy" ]; then
     echo ""
@@ -388,7 +385,7 @@ fi
 
 # ===== SCENARIO: indep_small_interleaved =====
 # Independent + compound type + small data: 2 bottlenecks
-# interface_choice + access_granularity (access_pattern removed — HDF5 compound
+# interface_choice + access_granularity (access_pattern removed: HDF5 compound
 # type produces sequential POSIX I/O, see interleaved_access comment above)
 # 256 elements × 8 bytes = 2 KB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interleaved" ]; then
@@ -398,11 +395,11 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interlea
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             config="${RESULTS_DIR}/config_indep_small_inter_n${nranks}_r${rep}.json"
-            generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
+            generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "256" "20"
             script=$(generate_job_script \
                 "indep_small_interleaved" "access_granularity=1,interface_choice=1" \
-                "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
+                "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
     done
@@ -410,7 +407,7 @@ fi
 
 # ===== SCENARIO: indep_interleaved =====
 # Independent + compound type: 1 bottleneck
-# interface_choice only (access_pattern removed — HDF5 compound type produces
+# interface_choice only (access_pattern removed: HDF5 compound type produces
 # sequential POSIX I/O). Large enough data to not be granularity issue.
 # 524288 elements × 8 bytes = 4 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]; then
@@ -420,11 +417,11 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             config="${RESULTS_DIR}/config_indep_inter_n${nranks}_r${rep}.json"
-            generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
+            generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "524288" "10"
             script=$(generate_job_script \
                 "indep_interleaved" "interface_choice=1" \
-                "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
+                "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
     done
@@ -465,15 +462,15 @@ fi
 echo ""
 echo "Scenario breakdown:"
 echo "  Single-label:"
-echo "    indep_small              → interface_choice=1"
-echo "    interleaved_access       → healthy=1 (compound type → seq POSIX)"
-echo "    collective_small         → access_granularity=1"
-echo "    collective_large_healthy → healthy=1"
-echo "    indep_large_healthy      → healthy=1"
+echo "    interleaved_access       : healthy=1 (compound type, sequential POSIX)"
+echo "    collective_small         : access_granularity=1"
+echo "    collective_large_healthy : healthy=1"
+echo "    indep_large_healthy      : healthy=1"
 echo "  Multi-label:"
-echo "    indep_small_interleaved  → access_granularity=1, interface_choice=1"
-echo "    indep_interleaved        → interface_choice=1"
-echo "    indep_small_single_ost   → access_granularity=1, interface_choice=1, throughput_utilization=1"
+echo "    indep_small              : access_granularity=1, interface_choice=1"
+echo "    indep_small_interleaved  : access_granularity=1, interface_choice=1"
+echo "    indep_interleaved        : interface_choice=1"
+echo "    indep_small_single_ost   : access_granularity=1, interface_choice=1, throughput_utilization=1"
 echo ""
 echo "After completion, run feature extraction:"
 echo "  python scripts/extract_benchmark_features.py --bench-type h5bench"

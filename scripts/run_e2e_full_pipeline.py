@@ -10,11 +10,11 @@ Usage:
     source .env && python scripts/run_e2e_full_pipeline.py
 """
 
+import argparse
 import json
 import logging
 import os
 import sys
-import time
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -31,7 +31,6 @@ if env_path.exists():
                 val = val.strip().strip('"')
                 os.environ[key] = val
 
-import numpy as np
 import pandas as pd
 
 logging.basicConfig(
@@ -123,6 +122,10 @@ def select_candidates(feat, lab, bottleneck_cols):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run the production end-to-end case set")
+    parser.add_argument("--model-bundle", required=True)
+    parser.add_argument("--knowledge-base", required=True)
+    args = parser.parse_args()
     logger.info("Loading production data...")
     feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "production" / "features.parquet")
     lab = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "production" / "labels.parquet")
@@ -141,7 +144,9 @@ def main():
     # Initialize the full pipeline
     logger.info("Initializing IOPrescriber pipeline...")
     from src.ioprescriber.pipeline import IOPrescriber
-    pipeline = IOPrescriber(llm_model="claude-sonnet")
+    pipeline = IOPrescriber(
+        model_path=args.model_bundle, kb_path=args.knowledge_base,
+        llm_model="claude-sonnet", use_shap=True)
 
     all_results = []
 
@@ -157,7 +162,10 @@ def main():
         logger.info("  Ground truth labels: %s", cand["bottlenecks"])
         logger.info("=" * 70)
 
-        result = pipeline.analyze(features_dict, workload_name=cand["name"])
+        result = pipeline.analyze(
+            features_dict, workload_name=cand["name"],
+            sample_id=str(features_dict.get("_source_path", "")),
+            job_group=f"production/{cand['jobid']}")
 
         # Enrich result with metadata
         result["candidate_info"] = cand
@@ -179,7 +187,7 @@ def main():
 
         # Check ML vs ground truth
         gt_bns = set(c for c in bottleneck_cols if label_dict.get(c, 0) == 1)
-        pred_bns = set(result["step1_detection"]["detected"])
+        pred_bns = set(result["detection"]["detected"])
         if "healthy" in pred_bns:
             pred_bns.discard("healthy")
         result["ml_vs_gt"] = {
@@ -223,20 +231,20 @@ def main():
         print(f"  ML correct:   {r['ml_vs_gt']['correct']}")
 
         # SHAP
-        shap = r.get("step2_shap", {})
+        shap = r["attribution"]
         for dim, feats in shap.items():
             if feats:
                 top = feats[0]
                 print(f"  SHAP {dim}: {top['feature']} (|SHAP|={top['abs_importance']:.3f})")
 
         # KB
-        kb = r.get("step3_retrieval", {})
+        kb = r["retrieval"]
         print(f"  KB entries: {kb.get('n_entries', 0)}")
         for e in kb.get("entries", [])[:2]:
             print(f"    - {e['entry_id']} (sim={e['similarity']:.3f})")
 
         # LLM
-        rec = r.get("step4_recommendation", {})
+        rec = r["recommendation"]
         if rec.get("parsed"):
             parsed = rec["parsed"]
             print(f"  LLM diagnosis: {parsed.get('diagnosis', 'N/A')[:120]}...")
@@ -251,9 +259,9 @@ def main():
             print(f"  Groundedness: {gs.get('groundedness_score', 0):.2f} "
                   f"({gs.get('n_grounded', 0)}/{gs.get('n_recommendations', 0)})")
         elif rec.get("groundedness") is None:
-            print(f"  LLM: SKIPPED (no API key)")
+            print("  LLM: SKIPPED (no API key)")
         else:
-            print(f"  LLM: Parse error")
+            print("  LLM: Parse error")
 
     print(f"\nFull results: {output_path}")
 

@@ -6,10 +6,11 @@
 #SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1
 #SBATCH --time=48:00:00
-#SBATCH --output=results/closed_loop/e2e_pathological_%j.out
-#SBATCH --error=results/closed_loop/e2e_pathological_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/e2e_pathological_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/e2e_pathological_%j.err
+#SBATCH --export=NONE
 
-module load gcc-native/13.2 cray-mpich/8.1.32 cray-hdf5-parallel/1.14.3.5 cray-netcdf-hdf5parallel/4.9.0.17
+set -euo pipefail
 
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TASK 2>/dev/null
 export SLURM_CPUS_PER_TASK=1
@@ -20,9 +21,17 @@ PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 E2E_DIR="${PROJECT_DIR}/benchmarks/e2e"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 export DARSHAN_LOGPATH="${PROJECT_DIR}/data/benchmark_logs/e2e"
-SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/e2e/pathological"
+SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/e2e/pathological_${SLURM_JOB_ID}"
+RESULTS_DIR="${PROJECT_DIR}/results/resubmission/closed_loop/${SLURM_JOB_ID}"
 
-mkdir -p "${DARSHAN_LOGPATH}" "${SCRATCH}"
+mkdir -p "${DARSHAN_LOGPATH}" "${SCRATCH}" "${RESULTS_DIR}"
+source "${E2E_DIR}/modules.sh"
+source "${E2E_DIR}/job_lib.sh"
+e2e_build
+BIN="${E2E_DIR}/build/write_3d_nc4_pathological"
+MANIFEST="${RESULTS_DIR}/e2e_pathological_${SLURM_JOB_ID}.tsv"
+cleanup() { rm -rf "${SCRATCH}"; }
+trap cleanup EXIT
 cd "${SCRATCH}"
 
 echo "E2E PATHOLOGICAL - $(date)"
@@ -31,11 +40,7 @@ echo "Host: $(hostname), Job: $SLURM_JOB_ID"
 
 rm -f "${SCRATCH}/e2e_pathological.nc4"
 
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
-    "${E2E_DIR}/write_3d_nc4_pathological" \
-    "${SCRATCH}/e2e_pathological" \
-    8 8 1 32 32 128
-
-echo "Exit code: $?"
+e2e_run_and_record pathological none "$BIN" "${SCRATCH}/e2e_pathological" "$MANIFEST" 8 8 1 32 32 128
+[[ $(wc -l < "$MANIFEST") -eq 2 ]] || { echo "pathological manifest is incomplete" >&2; exit 92; }
 echo "Completed: $(date)"
-ls -la ${DARSHAN_LOGPATH}/*id${SLURM_JOB_ID}* 2>/dev/null || echo "WARNING: No Darshan log found for job $SLURM_JOB_ID"
+cat "$MANIFEST"

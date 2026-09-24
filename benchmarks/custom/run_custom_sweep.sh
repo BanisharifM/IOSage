@@ -14,7 +14,8 @@ BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/custom"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/custom"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+PYTHON_BIN="${IOSAGE_ENV}/bin/python"
 SCRIPT="${PROJECT_DIR}/benchmarks/custom/load_imbalance.py"
 
 REPETITIONS=3
@@ -36,7 +37,7 @@ echo "Custom Benchmark Sweep Generator"
 echo "Date: $(date)"
 echo "============================================================"
 
-mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" 2>/dev/null || true
+mkdir -p "${LOG_DIR}" "${RESULTS_DIR}"
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 
@@ -47,7 +48,7 @@ for factor in 2 5 10 20; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 job_name="custom_imbalance_f${factor}_mb${base_mb}_n${nranks}_r${rep}"
-                nodes=$(( (nranks + 127) / 128 ))
+                nodes=$(( (nranks + 63) / 64 ))
                 [ $nodes -lt 1 ] && nodes=1
                 output_dir="${BENCH_SCRATCH}/custom/${job_name}"
 
@@ -64,28 +65,34 @@ for factor in 2 5 10 20; do
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
+set -euo pipefail
+source /etc/profile
+module load cray-mpich-abi
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable "${PYTHON_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
+cleanup() { rm -rf "${output_dir}"; }
+trap cleanup EXIT
 
 echo "Custom imbalance: factor=${factor}, base=${base_mb}MB, ranks=${nranks}, rep=${rep}"
 echo "Label:    parallelism_efficiency=1"
 echo "Date: \$(date)"
 
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+BENCHMARK_EXPECTED_LOGS=${nranks} benchmark_run "${job_name}" python "\${RUN_MANIFEST}" \\
+    srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${PYTHON_BIN} ${SCRIPT} \\
     --imbalance-factor ${factor} \\
     --base-size-mb ${base_mb} \\
     --output-dir "${output_dir}" \\
     --seed $((42 + rep))
 
-echo "Complete at \$(date), exit: \$?"
-
-LATEST_LOG=\$(ls -t "\${DARSHAN_LOGPATH}"/*.darshan 2>/dev/null | head -1)
-[ -n "\${LATEST_LOG}" ] && echo "Darshan log: \${LATEST_LOG}" || echo "WARNING: No Darshan log"
-
-rm -rf "${output_dir}" 2>/dev/null || true
+echo "Complete at \$(date), exit: 0"
+cat "\${RUN_MANIFEST}"
 SLURM_EOF
 
                 if [ "${DRY_RUN}" = true ]; then
@@ -108,7 +115,7 @@ for base_mb in 50 100; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             job_name="custom_balanced_mb${base_mb}_n${nranks}_r${rep}"
-            nodes=$(( (nranks + 127) / 128 ))
+            nodes=$(( (nranks + 63) / 64 ))
             [ $nodes -lt 1 ] && nodes=1
             output_dir="${BENCH_SCRATCH}/custom/${job_name}"
 
@@ -125,23 +132,33 @@ for base_mb in 50 100; do
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
+set -euo pipefail
+source /etc/profile
+module load cray-mpich-abi
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable "${PYTHON_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
+cleanup() { rm -rf "${output_dir}"; }
+trap cleanup EXIT
 
 echo "Balanced I/O: base=${base_mb}MB, ranks=${nranks}, rep=${rep}"
 echo "Label:    healthy=1"
 
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+BENCHMARK_EXPECTED_LOGS=${nranks} benchmark_run "${job_name}" python "\${RUN_MANIFEST}" \\
+    srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
     ${PYTHON_BIN} ${SCRIPT} \\
     --imbalance-factor 1.0 \\
     --base-size-mb ${base_mb} \\
     --output-dir "${output_dir}" \\
     --seed $((42 + rep))
 
-echo "Complete at \$(date)"
-rm -rf "${output_dir}" 2>/dev/null || true
+echo "Complete at \$(date), exit: 0"
+cat "\${RUN_MANIFEST}"
 SLURM_EOF
 
             if [ "${DRY_RUN}" = true ]; then

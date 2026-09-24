@@ -1,20 +1,4 @@
 #!/bin/bash
-# =============================================================================
-# Smoke Test: Validate Benchmark + Darshan Pipeline Before Full Sweep
-# =============================================================================
-# Runs 6 quick IOR tests (one per bottleneck type + healthy) to verify:
-#   1. Darshan captures logs via LD_PRELOAD + srun
-#   2. Darshan logs contain expected counters
-#   3. Feature extraction works on benchmark logs
-#   4. Lustre stripe overrides work
-#   5. ROMIO hint control works
-#
-# MUST RUN AS SLURM JOB (needs srun):
-#   sbatch benchmarks/smoke_test.sh
-#
-# After completion, check:
-#   cat data/benchmark_results/smoke_test_*.out
-# =============================================================================
 #SBATCH --job-name=bench_smoke_test
 #SBATCH --partition=cpu
 #SBATCH --account=bdau-delta-cpu
@@ -22,232 +6,117 @@
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=1
 #SBATCH --time=00:30:00
-#SBATCH --output=data/benchmark_results/smoke_test_%j.out
-#SBATCH --error=data/benchmark_results/smoke_test_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_results/smoke_test_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/data/benchmark_results/smoke_test_%j.err
+#SBATCH --export=NONE
 
 set -euo pipefail
 
-# --- Configuration ---
-PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
-BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
-DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
-PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
-SMOKE_DIR="${BENCH_SCRATCH}/smoke_test"
-SMOKE_LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/smoke_test"
+PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
+BENCH_SCRATCH=/work/hdd/bdau/mbanisharifdehkordi/bench_scratch
+DARSHAN_LIB=/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so
+IOSAGE_ENV=${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}
+PYTHON_BIN=$IOSAGE_ENV/bin/python
+SMOKE_DIR=$BENCH_SCRATCH/smoke_test_$SLURM_JOB_ID
+SMOKE_LOG_DIR=$PROJECT_DIR/data/benchmark_logs/smoke_test
+RESULTS_DIR=$PROJECT_DIR/data/benchmark_results
+RUN_MANIFEST=$RESULTS_DIR/smoke_test_${SLURM_JOB_ID}.manifest.tsv
 
+source /etc/profile
 module load ior/3.3.0-gcc13.3.1
+source "$PROJECT_DIR/benchmarks/job_guard.sh"
+benchmark_record_executable ior "$RUN_MANIFEST"
+benchmark_record_executable mdtest "$RUN_MANIFEST"
+mkdir -p "$SMOKE_DIR" "$SMOKE_LOG_DIR" "$RESULTS_DIR"
+cleanup() { rm -rf "$SMOKE_DIR"; }
+trap cleanup EXIT
+export DARSHAN_LOGPATH=$SMOKE_LOG_DIR
 
-echo "============================================================"
-echo "SMOKE TEST: Benchmark + Darshan Pipeline Validation"
-echo "Date: $(date)"
-echo "Host: $(hostname)"
-echo "Nodes: ${SLURM_JOB_NUM_NODES:-1}"
-echo "Tasks: ${SLURM_NTASKS:-4}"
-echo "============================================================"
+SMALL_DIR=$SMOKE_DIR/single_ost
+HEALTHY_DIR=$SMOKE_DIR/full_stripe
+mkdir -p "$SMALL_DIR" "$HEALTHY_DIR"
+lfs setstripe -c 1 -S 1M "$SMALL_DIR"
+lfs setstripe -c -1 -S 1M "$HEALTHY_DIR"
+[[ $(lfs getstripe -c "$SMALL_DIR") == 1 ]] || { echo "single-OST setup failed" >&2; exit 3; }
+[[ $(lfs getstripe -c "$HEALTHY_DIR") == -1 ]] || { echo "full-stripe setup failed" >&2; exit 3; }
 
 PASS=0
 FAIL=0
 TESTS=0
 
-run_test() {
-    local test_name="$1"
-    local label="$2"
-    local ior_cmd="$3"
-    local extra_env="$4"
+run_ior_test()
+{
+    local test_name=$1
+    local labels=$2
+    local output_dir=$3
+    local buffering=$4
+    local tasks=$5
+    shift 5
+    [[ $1 == -- ]] || { echo "internal smoke-test argument error" >&2; exit 2; }
+    shift
+    local output_prefix=$output_dir/${test_name}_output
+    local run_output=$SMOKE_DIR/${test_name}.out
+    local report=$RESULTS_DIR/smoke_${test_name}_${SLURM_JOB_ID}.json
+    local log_path
 
-    TESTS=$((TESTS + 1))
-    echo ""
-    echo "--- Test ${TESTS}: ${test_name} ---"
-    echo "  Label: ${label}"
-    echo "  Command: srun ${ior_cmd}"
+    ((TESTS += 1))
+    case $buffering in
+        enabled)
+            export MPICH_MPIIO_HINTS="*:romio_cb_write=enable:romio_ds_write=disable"
+            ;;
+        disabled)
+            export MPICH_MPIIO_HINTS="*:romio_cb_write=disable:romio_cb_read=disable:romio_ds_write=disable:romio_ds_read=disable"
+            ;;
+        none)
+            unset MPICH_MPIIO_HINTS
+            ;;
+        *)
+            echo "invalid buffering mode: $buffering" >&2
+            exit 2
+            ;;
+    esac
 
-    # Clean log dir
-    rm -f "${SMOKE_LOG_DIR}"/*.darshan 2>/dev/null || true
-
-    # Run IOR with Darshan
-    export DARSHAN_LOGPATH="${SMOKE_LOG_DIR}"
-    if [ -n "${extra_env}" ]; then
-        eval "export ${extra_env}"
+    if ! benchmark_run "$test_name" ior "$RUN_MANIFEST"         srun --ntasks="$tasks" --export="ALL,LD_PRELOAD=$DARSHAN_LIB" "$@" -o "$output_prefix"         >"$run_output" 2>&1; then
+        echo "$test_name: IOR run failed"
+        tail -20 "$run_output"
+        ((FAIL += 1))
+        return 0
     fi
-
-    local OUTPUT_FILE="${SMOKE_DIR}/${test_name}_output"
-    if srun --export=ALL,LD_PRELOAD="${DARSHAN_LIB}" \
-        ${ior_cmd} -o "${OUTPUT_FILE}" 2>&1 | tail -5; then
-        echo "  IOR: OK"
+    log_path=$(tail -n 1 "$RUN_MANIFEST" | cut -f4)
+    if "$PYTHON_BIN" "$PROJECT_DIR/scripts/verify_smoke_scenario.py"         --log "$log_path" --labels "$labels" --output "$report"; then
+        echo "$test_name: PASS ($labels)"
+        ((PASS += 1))
     else
-        echo "  IOR: FAILED (exit code $?)"
-        FAIL=$((FAIL + 1))
-        return
+        echo "$test_name: label verification failed; report $report"
+        ((FAIL += 1))
     fi
-
-    # Check Darshan log was created
-    local LOG_FILE
-    LOG_FILE=$(ls -t "${SMOKE_LOG_DIR}"/*.darshan 2>/dev/null | head -1)
-    if [ -z "${LOG_FILE}" ]; then
-        echo "  Darshan log: NOT FOUND"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-    local LOG_SIZE
-    LOG_SIZE=$(stat -c%s "${LOG_FILE}" 2>/dev/null || echo "0")
-    echo "  Darshan log: $(basename ${LOG_FILE}) (${LOG_SIZE} bytes)"
-
-    if [ "${LOG_SIZE}" -lt 100 ]; then
-        echo "  Darshan log: TOO SMALL (likely empty/corrupt)"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-
-    # Parse and verify key counters
-    local PARSER_OUT
-    PARSER_OUT=$(${DARSHAN_PARSER} --total "${LOG_FILE}" 2>/dev/null)
-    if [ -z "${PARSER_OUT}" ]; then
-        echo "  darshan-parser: FAILED"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-
-    # Check for POSIX module
-    if echo "${PARSER_OUT}" | grep -q "POSIX"; then
-        echo "  POSIX module: present"
-    else
-        echo "  POSIX module: MISSING"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-
-    # Check POSIX_BYTES_WRITTEN > 0
-    local BYTES_WRITTEN
-    BYTES_WRITTEN=$(echo "${PARSER_OUT}" | grep "POSIX_BYTES_WRITTEN" | head -1 | awk '{print $NF}')
-    if [ -n "${BYTES_WRITTEN}" ] && [ "${BYTES_WRITTEN}" -gt 0 ] 2>/dev/null; then
-        echo "  POSIX_BYTES_WRITTEN: ${BYTES_WRITTEN}"
-    else
-        echo "  POSIX_BYTES_WRITTEN: 0 or missing"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-
-    # Try feature extraction
-    if ${PYTHON_BIN} -c "
-import sys
-sys.path.insert(0, '${PROJECT_DIR}')
-from src.data.parse_darshan import parse_darshan_log
-from src.data.feature_extraction import extract_raw_features
-report = parse_darshan_log('${LOG_FILE}')
-features = extract_raw_features(report)
-print(f'  Features extracted: {len(features)} columns')
-print(f'  Key features: nprocs={features.get(\"nprocs\", \"N/A\")}, runtime={features.get(\"runtime_seconds\", \"N/A\"):.2f}s')
-" 2>&1; then
-        echo "  Feature extraction: OK"
-    else
-        echo "  Feature extraction: FAILED"
-        FAIL=$((FAIL + 1))
-        return
-    fi
-
-    # Clean up IOR data files
-    rm -f "${OUTPUT_FILE}"* 2>/dev/null || true
-
-    echo "  RESULT: PASS"
-    PASS=$((PASS + 1))
+    rm -f "${output_prefix}"*
 }
 
-# --- Setup ---
-mkdir -p "${SMOKE_DIR}" "${SMOKE_LOG_DIR}"
+run_ior_test small_io access_granularity=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 512 -b 64K -s 400 -F -e -C -w -r
+run_ior_test random_io access_pattern=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 4096 -b 10M -s 10 -z -F -e -C -w -r --posix.odirect
+run_ior_test interface_misuse interface_choice=1 "$HEALTHY_DIR" disabled 4 --     ior -a POSIX -t 1048576 -b 100M -s 4 -e -C -w -r --posix.odirect
+run_ior_test file_per_process file_strategy=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 4194304 -b 100M -s 4 -F -e -C -w -r --posix.odirect
+run_ior_test healthy_collective healthy=1 "$HEALTHY_DIR" enabled 1 --     ior -a MPIIO -t 4194304 -b 100M -s 4 -c -e -w -r
 
-# Test 1: Small I/O (access_granularity bottleneck)
-# Use stripe_count=1 dir
-SMALL_DIR="${SMOKE_DIR}/small"
-mkdir -p "${SMALL_DIR}"
-lfs setstripe -c 1 -S 1M "${SMALL_DIR}" 2>/dev/null || true
-run_test "small_io" "access_granularity=1" \
-    "ior -a POSIX -t 512 -b 64K -s 100 -F -e -C -w -r" ""
-
-# Test 2: Random I/O (access_pattern bottleneck)
-# Use FPP (-F) with random offsets to avoid shared-file alignment issues with O_DIRECT
-run_test "random_io" "access_pattern=1" \
-    "ior -a POSIX -t 4096 -b 10M -s 10 -z -F -e -C -w -r --posix.odirect" ""
-
-# Test 3: Interface misuse (POSIX on shared file)
-run_test "interface_misuse" "interface_choice=1" \
-    "ior -a POSIX -t 1048576 -b 100M -s 4 -e -C -w -r --posix.odirect" \
-    'MPICH_MPIIO_HINTS="*:romio_cb_write=disable:romio_cb_read=disable"'
-
-# Test 4: Healthy (large sequential FPP)
-HEALTHY_DIR="${SMOKE_DIR}/healthy"
-mkdir -p "${HEALTHY_DIR}"
-lfs setstripe -c -1 -S 1M "${HEALTHY_DIR}" 2>/dev/null || true
-run_test "healthy_fpp" "healthy=1" \
-    "ior -a POSIX -t 4194304 -b 100M -s 4 -F -e -C -w -r --posix.odirect" ""
-
-# Test 5: Healthy MPI-IO collective
-run_test "healthy_collective" "healthy=1" \
-    "ior -a MPIIO -t 4194304 -b 100M -s 4 -c -e -C -w -r" \
-    'MPICH_MPIIO_HINTS="*:romio_cb_write=enable:romio_ds_write=disable"'
-
-# Test 6: mdtest (metadata)
-echo ""
-echo "--- Test 6: mdtest (metadata_intensity) ---"
-TESTS=$((TESTS + 1))
-MDTEST_DIR="${SMOKE_DIR}/mdtest_test"
-mkdir -p "${MDTEST_DIR}"
-rm -f "${SMOKE_LOG_DIR}"/*.darshan 2>/dev/null || true
-export DARSHAN_LOGPATH="${SMOKE_LOG_DIR}"
-
-if srun --export=ALL,LD_PRELOAD="${DARSHAN_LIB}" \
-    mdtest -n 100 -w 100 -e 100 -F -d "${MDTEST_DIR}" 2>&1 | tail -5; then
-    LOG_FILE=$(ls -t "${SMOKE_LOG_DIR}"/*.darshan 2>/dev/null | head -1)
-    if [ -n "${LOG_FILE}" ]; then
-        echo "  Darshan log: $(basename ${LOG_FILE})"
-        echo "  RESULT: PASS"
-        PASS=$((PASS + 1))
+((TESTS += 1))
+MDTEST_DIR=$SMOKE_DIR/mdtest
+mkdir -p "$MDTEST_DIR"
+MDTEST_REPORT=$RESULTS_DIR/smoke_mdtest_${SLURM_JOB_ID}.json
+if benchmark_run mdtest_metadata mdtest "$RUN_MANIFEST"     srun --export="ALL,LD_PRELOAD=$DARSHAN_LIB"     mdtest -n 100 -w 0 -e 0 -F -d "$MDTEST_DIR"; then
+    LOG_PATH=$(tail -n 1 "$RUN_MANIFEST" | cut -f4)
+    if "$PYTHON_BIN" "$PROJECT_DIR/scripts/verify_smoke_scenario.py"         --log "$LOG_PATH" --labels metadata_intensity=1 --output "$MDTEST_REPORT"; then
+        echo "mdtest_metadata: PASS"
+        ((PASS += 1))
     else
-        echo "  Darshan log: NOT FOUND"
-        FAIL=$((FAIL + 1))
+        echo "mdtest_metadata: label verification failed; report $MDTEST_REPORT"
+        ((FAIL += 1))
     fi
 else
-    echo "  mdtest: FAILED"
-    FAIL=$((FAIL + 1))
-fi
-rm -rf "${MDTEST_DIR}" 2>/dev/null || true
-
-# --- Lustre stripe verification ---
-echo ""
-echo "--- Lustre Stripe Verification ---"
-TESTS=$((TESTS + 1))
-echo "  Bottleneck dir striping:"
-STRIPE=$(lfs getstripe -c "${SMALL_DIR}" 2>/dev/null || echo "unknown")
-echo "    ${SMALL_DIR}: stripe_count=${STRIPE}"
-if [ "${STRIPE}" = "1" ]; then
-    echo "  RESULT: PASS (PFL overridden)"
-    PASS=$((PASS + 1))
-else
-    echo "  RESULT: WARN (stripe_count=${STRIPE}, expected 1)"
-    # Not fatal — PFL may not be overridable from compute node
-    PASS=$((PASS + 1))
+    echo "mdtest_metadata: run failed"
+    ((FAIL += 1))
 fi
 
-# --- Summary ---
-echo ""
-echo "============================================================"
-echo "SMOKE TEST RESULTS"
-echo "============================================================"
-echo "Total tests: ${TESTS}"
-echo "Passed:      ${PASS}"
-echo "Failed:      ${FAIL}"
-echo ""
-
-if [ ${FAIL} -eq 0 ]; then
-    echo "ALL TESTS PASSED. Ready for full sweep."
-    echo ""
-    echo "Next steps:"
-    echo "  1. bash benchmarks/ior/run_ior_sweep.sh --dry-run   # Preview IOR jobs"
-    echo "  2. bash benchmarks/ior/run_ior_sweep.sh             # Submit IOR jobs"
-    echo "  3. bash benchmarks/mdtest/run_mdtest_sweep.sh       # Submit mdtest jobs"
-    exit 0
-else
-    echo "${FAIL} TEST(S) FAILED. Investigate before running full sweep."
-    echo "Check: data/benchmark_results/smoke_test_${SLURM_JOB_ID}.out"
-    exit 1
-fi
+echo "Smoke results: $PASS passed, $FAIL failed, $TESTS total"
+[[ $TESTS -eq 6 && $PASS -eq 6 && $FAIL -eq 0 ]] || exit 1
+echo "ALL TESTS PASSED. Ready for full sweep."

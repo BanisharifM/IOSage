@@ -30,7 +30,6 @@ HEALTHY_DIR="${BENCH_SCRATCH}/healthy"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/ior"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/ior"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 
 REPETITIONS=3
 DRY_RUN=false
@@ -68,6 +67,8 @@ generate_job_script() {
     local job_name="ior_${scenario_name}_t${transfer_size}_n${nranks}_r${rep}"
     local script_path="${RESULTS_DIR}/${job_name}.slurm"
     local ior_output="${output_dir}/${job_name}"
+    local expected_stripe=-1
+    [ "${output_dir}" = "${BOTTLENECK_DIR}" ] && expected_stripe=1
 
     # Build MPICH hints
     local mpich_hints=""
@@ -92,9 +93,15 @@ generate_job_script() {
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
 # --- Environment ---
+set -euo pipefail
+source /etc/profile
 module load ior/3.3.0-gcc13.3.1
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable ior "\${RUN_MANIFEST}"
 
 # Ensure IOR data files are cleaned up on ANY exit (including failure/quota)
 cleanup() { rm -f ${ior_output}* 2>/dev/null || true; }
@@ -126,8 +133,12 @@ echo ""
 echo "Pre-flight checks:"
 
 # 1. Verify Lustre stripe on output directory
-OUTPUT_STRIPE=\$(lfs getstripe -c "${output_dir}" 2>/dev/null || echo "unknown")
+OUTPUT_STRIPE=\$(lfs getstripe -c "${output_dir}")
 echo "  Output dir stripe_count: \${OUTPUT_STRIPE}"
+[[ "\${OUTPUT_STRIPE}" == "${expected_stripe}" ]] || {
+    echo "ERROR: expected stripe count ${expected_stripe}, found \${OUTPUT_STRIPE}" >&2
+    exit 3
+}
 
 # 2. Verify Darshan library exists on compute node
 if [ -f "${DARSHAN_LIB}" ]; then
@@ -142,32 +153,16 @@ echo "  MPICH_MPIIO_HINTS: \${MPICH_MPIIO_HINTS:-<not set>}"
 echo ""
 
 # --- Run IOR with Darshan instrumentation ---
-# Key: LD_PRELOAD passed ONLY to srun tasks (not to srun itself)
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
+benchmark_run "${scenario_name}_rep${rep}" ior "\${RUN_MANIFEST}" \
+    srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
     ${ior_cmd}
 
 echo ""
 echo "IOR completed at \$(date)"
-echo "Exit code: \$?"
+echo "Exit code: 0"
+cat "\${RUN_MANIFEST}"
 
-# --- Verify Darshan log was created ---
-echo ""
-echo "Checking for Darshan log..."
-LATEST_LOG=\$(ls -t "\${DARSHAN_LOGPATH}"/*.darshan 2>/dev/null | head -1)
-if [ -n "\${LATEST_LOG}" ]; then
-    echo "Darshan log found: \${LATEST_LOG}"
-    echo "Size: \$(ls -lh "\${LATEST_LOG}" | awk '{print \$5}')"
-    # Quick parse to verify
-    ${DARSHAN_PARSER} --total "\${LATEST_LOG}" 2>/dev/null | head -20
-else
-    echo "WARNING: No Darshan log found in \${DARSHAN_LOGPATH}"
-    echo "Darshan instrumentation may have failed."
-fi
-
-# --- Cleanup IOR data files (large, not needed) ---
-rm -f ${ior_output}* 2>/dev/null || true
-echo ""
-echo "Cleaned up IOR data files."
+# Benchmark data cleanup runs through the EXIT trap.
 SLURM_EOF
 
     echo "${script_path}"
@@ -185,7 +180,7 @@ echo "============================================================"
 
 # Ensure directories exist
 mkdir -p "${LOG_DIR}" "${RESULTS_DIR}"
-mkdir -p "${BOTTLENECK_DIR}" "${HEALTHY_DIR}" 2>/dev/null || true
+mkdir -p "${BOTTLENECK_DIR}" "${HEALTHY_DIR}"
 
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
@@ -469,7 +464,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_easy" ]; then
     echo ""
-    echo "--- Scenario: io500_easy (IO500 IOR-easy — healthy) ---"
+    echo "--- Scenario: io500_easy (IO500 IOR-easy: healthy) ---"
     for nranks in 16 64 256; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -496,15 +491,15 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "e2e_posix_vs_mpiio" 
             script=$(generate_job_script \
                 "e2e_posix_shared" "interface_choice=1" \
                 "POSIX" "1048576" "100M" "4" "${nranks}" "${rep}" \
-                "-e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
+                "-e -C -w -r" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
 
-            # MPI-IO collective on shared file (good)
+            # MPI-IO collective calls on the same directory and ROMIO buffering mode
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
                 "e2e_mpiio_coll" "healthy=1" \
                 "MPIIO" "1048576" "100M" "4" "${nranks}" "${rep}" \
-                "-c -e -C -w -r" "${HEALTHY_DIR}" "enabled")
+                "-c -e -C -w -r" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
     done

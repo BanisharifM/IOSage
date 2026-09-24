@@ -43,10 +43,21 @@ def main():
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if args.repeats < 2:
+        parser.error("--repeats must be at least 2")
 
     cfg = yaml.safe_load(open(args.config))
+    if args.workload not in cfg["workloads"]:
+        parser.error(f"unknown workload: {args.workload}")
     base_dir = cfg["measurement_study"]["targets"][args.target]
     workload = cfg["workloads"][args.workload]
+    if workload.get("benchmark") != "ior":
+        parser.error("decision_validation currently supports IOR workloads only")
+    if not args.fix and workload.get("known_good_config") is None:
+        parser.error(
+            "the selected workload has no comparison configuration; "
+            "provide --fix KEY=VALUE entries"
+        )
     tcfg = copy.deepcopy(cfg)
     tcfg["slurm"]["scratch_dir"] = base_dir
     executor = IterativeExecutor(tcfg)
@@ -54,6 +65,8 @@ def main():
 
     if args.fix:
         fixed = dict(workload["bad_config"])
+        if any("=" not in item for item in args.fix):
+            parser.error("every --fix entry must have the form KEY=VALUE")
         fixed.update(dict(kv.split("=", 1) for kv in args.fix))
     else:
         fixed = workload["known_good_config"]
@@ -63,7 +76,7 @@ def main():
         job = f"dval_{arm}_{args.workload}"
         cmd = builder.build_ior_command(sanitized, output_dir=f"{base_dir}/{job}")
         arms[arm] = {"params": sanitized, "script": executor.generate_slurm_script(job, cmd, "ior"),
-                     "measurements": [], "job_ids": []}
+                     "measurements": [], "job_ids": [], "failed": []}
 
     for k in range(args.repeats):
         for arm, a in arms.items():
@@ -72,16 +85,31 @@ def main():
             job_id = executor.submit_and_wait(a["script"], poll_interval=10)
             if job_id is None:
                 logger.warning("%s round %d: job failed", arm, k)
+                a["failed"].append({"round": k, "reason": "job_failed"})
                 continue
             time.sleep(5)
             logs = executor.find_darshan_logs(job_id)
             if not logs:
                 logger.warning("%s round %d: no Darshan log (job %s)", arm, k, job_id)
+                a["failed"].append({"round": k, "job_id": job_id, "reason": "darshan_log_missing"})
                 continue
             m = job_measurement(logs, "ior", args.workload, a["params"])
             a["measurements"].append(m)
             a["job_ids"].append(job_id)
             logger.info("%s round %d: %.1f s (job %s)", arm, k, m["walltime_s"], job_id)
+
+    incomplete = {arm: len(a["measurements"]) for arm, a in arms.items()
+                  if len(a["measurements"]) != args.repeats}
+    if incomplete:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        with open(args.output, "w") as f:
+            json.dump({"workload": args.workload, "target": args.target,
+                       "repeats": args.repeats, "status": "incomplete",
+                       "arms": {arm: {"successful_runs": len(a["measurements"]),
+                                      "job_ids": a["job_ids"], "failed_attempts": a["failed"]}
+                                for arm, a in arms.items()}}, f, indent=2)
+        logger.error("required run counts not met: %s", incomplete)
+        raise SystemExit(1)
 
     agg = {arm: aggregate_repeats(a["measurements"], args.confidence) for arm, a in arms.items()}
     null = evaluate_candidate(agg["A"], agg["A_prime"], best_speedup=1.0)

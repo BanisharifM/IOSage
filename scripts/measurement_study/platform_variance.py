@@ -41,6 +41,8 @@ def main():
     parser.add_argument("--output", required=True, help="JSON result path")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if args.repeats < 2:
+        parser.error("--repeats must be at least 2")
 
     cfg = yaml.safe_load(open(args.config))
     targets = cfg.get("measurement_study", {}).get("targets", {})
@@ -50,6 +52,7 @@ def main():
 
     results = {"workload": args.workload, "repeats": args.repeats,
                "started": time.strftime("%Y-%m-%d %H:%M:%S"), "targets": {}}
+    incomplete = False
     for name in args.targets:
         base_dir = targets[name]
         tcfg = copy.deepcopy(cfg)
@@ -60,24 +63,33 @@ def main():
         job = f"mstudy_{name}_{args.workload}"
         cmd = builder.build_ior_command(params, output_dir=f"{base_dir}/{job}")
         script = executor.generate_slurm_script(job, cmd, "ior")
-        walls, job_ids = [], []
+        walls, job_ids, failed = [], [], []
         for i in range(args.repeats):
             # Submit through the executor: it strips the submitter's SLURM_* step options, which
             # otherwise carry over into the job and stall srun when this driver is itself a batch job.
             job_id = executor.submit_and_wait(script, poll_interval=10)
             if job_id is None:
                 logger.warning("%s run %d: job failed", name, i)
+                failed.append({"run": i, "reason": "job_failed"})
                 continue
             time.sleep(5)  # let the Darshan log land
             logs = executor.find_darshan_logs(job_id)
             if not logs:
                 logger.warning("%s run %d: no Darshan log (job %s)", name, i, job_id)
+                failed.append({"run": i, "job_id": job_id, "reason": "darshan_log_missing"})
                 continue
             wall = job_measurement(logs, "ior", args.workload, params)["walltime_s"]
             walls.append(wall)
             job_ids.append(job_id)
             logger.info("%s run %d: %.1f s (job %s)", name, i, wall, job_id)
-        if walls:
+        if len(walls) != args.repeats:
+            incomplete = True
+            results["targets"][name] = {
+                "dir": base_dir, "status": "incomplete", "job_ids": job_ids,
+                "runs_s": [round(w, 2) for w in walls], "failed_attempts": failed,
+            }
+            logger.error("%s has %d/%d required runs", name, len(walls), args.repeats)
+        else:
             med = statistics.median(walls)
             results["targets"][name] = {
                 "dir": base_dir, "job_ids": job_ids, "runs_s": [round(w, 2) for w in walls],
@@ -91,6 +103,8 @@ def main():
         with open(args.output, "w") as f:                # save after every target
             json.dump(results, f, indent=2)
     logger.info("wrote %s", args.output)
+    if incomplete:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

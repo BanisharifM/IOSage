@@ -6,8 +6,11 @@
 #SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1
 #SBATCH --time=48:00:00
-#SBATCH --output=results/closed_loop/e2e_%j.out
-#SBATCH --error=results/closed_loop/e2e_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/e2e_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/e2e_%j.err
+#SBATCH --export=NONE
+
+set -euo pipefail
 
 # =============================================================================
 # E2E Closed-Loop Validation: Pathological vs Ultra-Optimized NetCDF-4 Write
@@ -36,16 +39,21 @@ echo "Tasks: $SLURM_NTASKS"
 echo "============================================================"
 
 # --- Environment ---
-module load gcc-native/13.2 cray-mpich/8.1.32 cray-hdf5-parallel/1.14.3.5 cray-netcdf-hdf5parallel/4.9.0.17
-
 PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 E2E_DIR="${PROJECT_DIR}/benchmarks/e2e"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
 DARSHAN_LOGPATH="${PROJECT_DIR}/data/benchmark_logs/e2e"
-SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/e2e"
-RESULTS_DIR="${PROJECT_DIR}/results/closed_loop"
+SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch/e2e/closed_loop_${SLURM_JOB_ID}"
+RESULTS_DIR="${PROJECT_DIR}/results/resubmission/closed_loop/${SLURM_JOB_ID}"
 
 mkdir -p "${DARSHAN_LOGPATH}" "${RESULTS_DIR}" "${SCRATCH}"
+source "${E2E_DIR}/modules.sh"
+source "${E2E_DIR}/job_lib.sh"
+e2e_build
+MANIFEST="${RESULTS_DIR}/e2e_closed_loop_${SLURM_JOB_ID}.tsv"
+CORRECTNESS_MANIFEST="${RESULTS_DIR}/e2e_closed_loop_correctness_${SLURM_JOB_ID}.tsv"
+cleanup() { rm -rf "${SCRATCH}"; }
+trap cleanup EXIT
 cd "${SCRATCH}"
 
 # --- Darshan environment ---
@@ -94,26 +102,10 @@ unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU SLURM_TRES_PER_TASK SLURM_CPUS_PER_TAS
 export SLURM_CPUS_PER_TASK=1
 export SLURM_CPUS_PER_TASK=1
 
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
-    "${E2E_DIR}/write_3d_nc4_pathological" \
-    "${SCRATCH}/e2e_pathological" \
+e2e_run_and_record pathological none "${E2E_DIR}/build/write_3d_nc4_pathological" \
+    "${SCRATCH}/e2e_pathological" "$MANIFEST" \
     ${NPX} ${NPY} ${NPZ} ${NDX} ${NDY} ${NDZ}
-
-PATHOLOGICAL_EXIT=$?
-echo "Pathological exit code: ${PATHOLOGICAL_EXIT}"
 echo "Pathological finished: $(date)"
-
-# Capture Darshan log
-PATHO_LOG=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
-if [ -n "${PATHO_LOG}" ]; then
-    echo "Pathological Darshan log: ${PATHO_LOG}"
-    cp "${PATHO_LOG}" "${DARSHAN_LOGPATH}/e2e_pathological_${SLURM_JOB_ID}.darshan" 2>/dev/null
-else
-    echo "WARNING: No Darshan log found for pathological run"
-fi
-
-# Clean up data file
-rm -f "${SCRATCH}/e2e_pathological.nc4"
 
 echo ""
 
@@ -135,26 +127,11 @@ echo "============================================================"
 
 rm -f "${SCRATCH}/e2e_ultra_optimized.nc4"
 
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
-    "${E2E_DIR}/write_3d_nc4_ultra_optimized" \
-    "${SCRATCH}/e2e_ultra_optimized" \
+e2e_run_and_record ultra_optimized netcdf_disable_fill_process_chunks_no_sync \
+    "${E2E_DIR}/build/write_3d_nc4_ultra_optimized" \
+    "${SCRATCH}/e2e_ultra_optimized" "$MANIFEST" \
     ${NPX} ${NPY} ${NPZ} ${NDX} ${NDY} ${NDZ}
-
-OPTIMIZED_EXIT=$?
-echo "Ultra-optimized exit code: ${OPTIMIZED_EXIT}"
 echo "Ultra-optimized finished: $(date)"
-
-# Capture Darshan log
-OPT_LOG=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
-if [ -n "${OPT_LOG}" ]; then
-    echo "Ultra-optimized Darshan log: ${OPT_LOG}"
-    cp "${OPT_LOG}" "${DARSHAN_LOGPATH}/e2e_ultra_optimized_${SLURM_JOB_ID}.darshan" 2>/dev/null
-else
-    echo "WARNING: No Darshan log found for ultra-optimized run"
-fi
-
-# Clean up data file
-rm -f "${SCRATCH}/e2e_ultra_optimized.nc4"
 
 echo ""
 
@@ -172,26 +149,17 @@ echo "============================================================"
 
 rm -f "${SCRATCH}/e2e_baseline.nc4"
 
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
-    "${E2E_DIR}/write_3d_nc4" \
-    "${SCRATCH}/e2e_baseline" \
+e2e_run_and_record baseline none "${E2E_DIR}/build/write_3d_nc4" \
+    "${SCRATCH}/e2e_baseline" "$MANIFEST" \
     ${NPX} ${NPY} ${NPZ} ${NDX} ${NDY} ${NDZ}
-
-BASELINE_EXIT=$?
-echo "Baseline exit code: ${BASELINE_EXIT}"
 echo "Baseline finished: $(date)"
 
-# Capture Darshan log
-BASE_LOG=$(ls -t ${DARSHAN_LOGPATH}/*.darshan 2>/dev/null | head -1)
-if [ -n "${BASE_LOG}" ]; then
-    echo "Baseline Darshan log: ${BASE_LOG}"
-    cp "${BASE_LOG}" "${DARSHAN_LOGPATH}/e2e_baseline_${SLURM_JOB_ID}.darshan" 2>/dev/null
-else
-    echo "WARNING: No Darshan log found for baseline run"
-fi
-
-# Clean up data file
-rm -f "${SCRATCH}/e2e_baseline.nc4"
+e2e_verify_pair pathological ultra_optimized \
+    "${SCRATCH}/e2e_pathological.nc4" "${SCRATCH}/e2e_ultra_optimized.nc4" \
+    "$CORRECTNESS_MANIFEST"
+e2e_verify_pair baseline ultra_optimized \
+    "${SCRATCH}/e2e_baseline.nc4" "${SCRATCH}/e2e_ultra_optimized.nc4" \
+    "$CORRECTNESS_MANIFEST"
 
 # =============================================================================
 # Summary
@@ -202,8 +170,11 @@ echo "SUMMARY"
 echo "============================================================"
 echo "Output format: filename nprocs ndx ndy ndz size_GB time_sec throughput_GBps"
 echo ""
-echo "Darshan logs saved to: ${DARSHAN_LOGPATH}"
-ls -la ${DARSHAN_LOGPATH}/e2e_*_${SLURM_JOB_ID}.darshan 2>/dev/null
+echo "Run manifest: ${MANIFEST}"
+[[ $(wc -l < "$MANIFEST") -eq 4 ]] || { echo "closed-loop manifest is incomplete" >&2; exit 92; }
+[[ $(wc -l < "$CORRECTNESS_MANIFEST") -eq 3 ]] || { echo "correctness manifest is incomplete" >&2; exit 92; }
+cat "$MANIFEST"
+cat "$CORRECTNESS_MANIFEST"
 echo ""
 echo "Job completed: $(date)"
 echo "============================================================"

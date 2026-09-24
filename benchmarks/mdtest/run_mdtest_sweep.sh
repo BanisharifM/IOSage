@@ -29,7 +29,6 @@ MDTEST_DIR="${BENCH_SCRATCH}/mdtest"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/mdtest"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/mdtest"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
 
 REPETITIONS=3
 DRY_RUN=false
@@ -56,7 +55,7 @@ generate_mdtest_job() {
     local read_bytes="$6"
     local rep="$7"
     local extra_flags="$8"
-    local nodes=$(( (nranks + 127) / 128 ))
+    local nodes=$(( (nranks + 63) / 64 ))
     [ $nodes -lt 1 ] && nodes=1
 
     local job_name="mdtest_${scenario_name}_n${items}_r${nranks}_rep${rep}"
@@ -70,13 +69,20 @@ generate_mdtest_job() {
 #SBATCH --account=${SLURM_ACCOUNT}
 #SBATCH --nodes=${nodes}
 #SBATCH --ntasks=${nranks}
+#SBATCH --ntasks-per-node=64
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16g
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
+set -euo pipefail
+source /etc/profile
 module load ior/3.3.0-gcc13.3.1
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable mdtest "\${RUN_MANIFEST}"
 
 export DARSHAN_LOGPATH="${LOG_DIR}"
 mkdir -p "\${DARSHAN_LOGPATH}"
@@ -114,21 +120,15 @@ TEST_STRIPE=\$(lfs getstripe -c "${test_dir}" 2>/dev/null || echo "unknown")
 echo "  Test dir stripe_count: \${TEST_STRIPE}"
 echo ""
 
-srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-    mdtest -n ${items} -w ${write_bytes} -e ${read_bytes} \\
-    ${extra_flags} \\
+benchmark_run "${scenario_name}_rep${rep}" mdtest "\${RUN_MANIFEST}" \
+    srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
+    mdtest -n ${items} -w ${write_bytes} -e ${read_bytes} \
+    ${extra_flags} \
     -d "${test_dir}"
 
 echo ""
-echo "mdtest completed at \$(date), exit code: \$?"
-
-# Verify Darshan log
-LATEST_LOG=\$(ls -t "\${DARSHAN_LOGPATH}"/*.darshan 2>/dev/null | head -1)
-if [ -n "\${LATEST_LOG}" ]; then
-    echo "Darshan log: \${LATEST_LOG} (\$(ls -lh "\${LATEST_LOG}" | awk '{print \$5}'))"
-else
-    echo "WARNING: No Darshan log found"
-fi
+echo "mdtest completed at \$(date), exit code: 0"
+cat "\${RUN_MANIFEST}"
 
 # Cleanup handled by trap EXIT
 SLURM_EOF
@@ -142,7 +142,7 @@ echo "Date: $(date)"
 echo "Dry run: ${DRY_RUN}"
 echo "============================================================"
 
-mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" "${MDTEST_DIR}" 2>/dev/null || true
+mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" "${MDTEST_DIR}"
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 SKIPPED_JOBS=0
@@ -221,7 +221,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
     echo ""
     echo "--- Scenario: metadata_cross_node ---"
     for items in 5000 10000; do
-        for nranks in 32 64 128; do
+        for nranks in 128 256; do
             # Inode safety check
             local_files=$((items * nranks))
             if [ ${local_files} -gt ${INODE_HEADROOM} ]; then
@@ -234,7 +234,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
                 script=$(generate_mdtest_job \
                     "meta_cross" "metadata_intensity=1" \
                     "${nranks}" "${items}" "64" "64" "${rep}" \
-                    "-F -N ${nranks}")
+                    "-F -N 1")
                 submit_job "${script}"
             done
         done
@@ -333,7 +333,7 @@ fi
 # Label: healthy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_easy" ]; then
     echo ""
-    echo "--- Scenario: io500_mdtest_easy (IO500 standardized — healthy) ---"
+    echo "--- Scenario: io500_mdtest_easy (IO500 standardized: healthy) ---"
     for items in 100 500; do
         for nranks in 16 64; do
             for rep in $(seq 1 ${REPETITIONS}); do

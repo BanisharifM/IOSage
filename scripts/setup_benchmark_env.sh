@@ -16,13 +16,16 @@ set -euo pipefail
 PROJECT_DIR="/work/hdd/bdau/mbanisharifdehkordi/IOSage"
 BENCH_SCRATCH="/work/hdd/bdau/mbanisharifdehkordi/bench_scratch"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-DARSHAN_PARSER="/projects/bdau/envs/sc2026/bin/darshan-parser"
-PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
-PIP_BIN="/projects/bdau/envs/sc2026/bin/pip"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+DARSHAN_PARSER="${IOSAGE_ENV}/bin/darshan-parser"
+PYTHON_BIN="${IOSAGE_ENV}/bin/python"
+PIP_BIN="${IOSAGE_ENV}/bin/pip"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results"
 
 echo "============================================================"
+
+source /etc/profile
 echo "Phase 2: Benchmark Environment Setup"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
@@ -31,11 +34,13 @@ echo "============================================================"
 # --- Step 1: Verify modules ---
 echo ""
 echo "[1/6] Verifying modules..."
-module load ior/3.3.0-gcc13.3.1 2>/dev/null || { echo "ERROR: Cannot load ior module"; exit 1; }
-IOR_PATH=$(which ior 2>/dev/null) || { echo "ERROR: ior not found after module load"; exit 1; }
-MDTEST_PATH=$(which mdtest 2>/dev/null) || { echo "ERROR: mdtest not found after module load"; exit 1; }
+module load ior/3.3.0-gcc13.3.1
+IOR_PATH=$(command -v ior) || { echo "ERROR: ior not found after module load"; exit 1; }
+MDTEST_PATH=$(command -v mdtest) || { echo "ERROR: mdtest not found after module load"; exit 1; }
+IOR_VERSION=$(ior -v --dryRun 2>&1 | sed -n '1p')
 echo "  IOR:    ${IOR_PATH}"
 echo "  mdtest: ${MDTEST_PATH}"
+echo "  Suite:  ${IOR_VERSION}"
 
 # Verify cray-mpich
 if ! module list 2>&1 | grep -q "cray-mpich"; then
@@ -60,9 +65,10 @@ if [ ! -f "${DARSHAN_PARSER}" ]; then
 fi
 echo "  Parser:  ${DARSHAN_PARSER}"
 
-# Verify Darshan lib is compatible (64-bit, not stripped)
+# Verify Darshan lib is compatible and query the parser version.
 file "${DARSHAN_LIB}" | grep -q "ELF 64-bit" || { echo "ERROR: Darshan lib is not 64-bit ELF"; exit 1; }
-echo "  Darshan 3.4.6 verified OK"
+DARSHAN_VERSION=$("${DARSHAN_PARSER}" --version)
+echo "  Darshan parser version: ${DARSHAN_VERSION}"
 
 # --- Step 3: Create benchmark directories with controlled Lustre striping ---
 echo ""
@@ -80,25 +86,25 @@ mkdir -p "${BENCH_SCRATCH}"
 # Bottleneck directory: single OST (limited bandwidth by design)
 BOTTLENECK_DIR="${BENCH_SCRATCH}/bottleneck"
 mkdir -p "${BOTTLENECK_DIR}"
-lfs setstripe -c 1 -S 1M -p ddn_hdd "${BOTTLENECK_DIR}" 2>/dev/null || echo "  WARN: lfs setstripe failed for bottleneck dir (may need compute node)"
+lfs setstripe -c 1 -S 1M -p ddn_hdd "${BOTTLENECK_DIR}"
 echo "  Bottleneck dir: ${BOTTLENECK_DIR} (stripe_count=1, pool=ddn_hdd)"
 
 # Healthy directory: all 12 HDD OSTs (maximum bandwidth)
 HEALTHY_DIR="${BENCH_SCRATCH}/healthy"
 mkdir -p "${HEALTHY_DIR}"
-lfs setstripe -c -1 -S 1M -p ddn_hdd "${HEALTHY_DIR}" 2>/dev/null || echo "  WARN: lfs setstripe failed for healthy dir (may need compute node)"
+lfs setstripe -c -1 -S 1M -p ddn_hdd "${HEALTHY_DIR}"
 echo "  Healthy dir:    ${HEALTHY_DIR} (stripe_count=-1, all 12 HDD OSTs)"
 
 # Medium directory: 4 OSTs
 MEDIUM_DIR="${BENCH_SCRATCH}/medium"
 mkdir -p "${MEDIUM_DIR}"
-lfs setstripe -c 4 -S 1M -p ddn_hdd "${MEDIUM_DIR}" 2>/dev/null || echo "  WARN: lfs setstripe failed for medium dir (may need compute node)"
+lfs setstripe -c 4 -S 1M -p ddn_hdd "${MEDIUM_DIR}"
 echo "  Medium dir:     ${MEDIUM_DIR} (stripe_count=4)"
 
 # mdtest scratch (will create many small files)
 MDTEST_DIR="${BENCH_SCRATCH}/mdtest"
 mkdir -p "${MDTEST_DIR}"
-lfs setstripe -c 1 -S 1M "${MDTEST_DIR}" 2>/dev/null || true
+lfs setstripe -c 1 -S 1M "${MDTEST_DIR}"
 echo "  mdtest dir:     ${MDTEST_DIR} (stripe_count=1)"
 
 # DLIO data directory
@@ -109,9 +115,15 @@ echo "  DLIO dir:       ${DLIO_DIR}"
 # Verify striping
 echo ""
 echo "  Verifying stripe settings..."
-for dir in "${BOTTLENECK_DIR}" "${HEALTHY_DIR}" "${MEDIUM_DIR}"; do
-    STRIPE_COUNT=$(lfs getstripe -c "${dir}" 2>/dev/null || echo "unknown")
+for spec in "${BOTTLENECK_DIR}:1" "${HEALTHY_DIR}:-1" "${MEDIUM_DIR}:4" "${MDTEST_DIR}:1"; do
+    dir=${spec%:*}
+    expected=${spec##*:}
+    STRIPE_COUNT=$(lfs getstripe -c "${dir}")
     echo "    ${dir}: stripe_count=${STRIPE_COUNT}"
+    [[ "${STRIPE_COUNT}" == "${expected}" ]] || {
+        echo "ERROR: ${dir} has stripe count ${STRIPE_COUNT}, expected ${expected}" >&2
+        exit 1
+    }
 done
 
 # --- Step 4: Install mpi4py from source ---
@@ -131,8 +143,8 @@ else
     if ${PYTHON_BIN} -c "from mpi4py import MPI" 2>/dev/null; then
         echo "  mpi4py installed successfully"
     else
-        echo "  WARNING: mpi4py installation may have failed."
-        echo "  Try manually: MPICC=cc ${PIP_BIN} install --no-binary mpi4py mpi4py"
+        echo "ERROR: mpi4py installation failed." >&2
+        exit 1
     fi
 fi
 
@@ -148,8 +160,8 @@ else
     if ${PYTHON_BIN} -c "import dlio_benchmark" 2>/dev/null; then
         echo "  DLIO installed successfully"
     else
-        echo "  WARNING: DLIO installation may have failed."
-        echo "  DLIO benchmarks will be skipped. IOR/mdtest are sufficient for Phase 1."
+        echo "ERROR: DLIO installation failed." >&2
+        exit 1
     fi
 fi
 
@@ -166,15 +178,15 @@ echo "Component              Status"
 echo "---------------------  ------"
 
 # IOR
-if which ior >/dev/null 2>&1; then
-    echo "IOR 3.3.0              OK"
+if command -v ior >/dev/null 2>&1; then
+    echo "IOR (${IOR_VERSION})    OK"
 else
     echo "IOR 3.3.0              FAIL"
     ERRORS=$((ERRORS + 1))
 fi
 
 # mdtest
-if which mdtest >/dev/null 2>&1; then
+if command -v mdtest >/dev/null 2>&1; then
     echo "mdtest                 OK"
 else
     echo "mdtest                 FAIL"
@@ -198,8 +210,8 @@ else
 fi
 
 # Python
-if [ -f "${PYTHON_BIN}" ]; then
-    echo "Python 3.9             OK"
+if [ -x "${PYTHON_BIN}" ]; then
+    echo "Python $(${PYTHON_BIN} --version 2>&1) OK"
 else
     echo "Python 3.9             FAIL"
     ERRORS=$((ERRORS + 1))
@@ -209,25 +221,31 @@ fi
 if ${PYTHON_BIN} -c "from mpi4py import MPI" 2>/dev/null; then
     echo "mpi4py                 OK"
 else
-    echo "mpi4py                 WARN (needed for DLIO/custom only)"
+    echo "mpi4py                 FAIL"
+    ERRORS=$((ERRORS + 1))
 fi
 
 # DLIO
 if ${PYTHON_BIN} -c "import dlio_benchmark" 2>/dev/null; then
     echo "DLIO benchmark         OK"
 else
-    echo "DLIO benchmark         WARN (can install later)"
+    echo "DLIO benchmark         FAIL"
+    ERRORS=$((ERRORS + 1))
 fi
 
 # Lustre
-if lfs getstripe "${BOTTLENECK_DIR}" >/dev/null 2>&1; then
+if [[ $(lfs getstripe -c "${BOTTLENECK_DIR}") == 1 &&
+      $(lfs getstripe -c "${HEALTHY_DIR}") == -1 &&
+      $(lfs getstripe -c "${MEDIUM_DIR}") == 4 &&
+      $(lfs getstripe -c "${MDTEST_DIR}") == 1 ]]; then
     echo "Lustre striping        OK"
 else
-    echo "Lustre striping        WARN (lfs may need compute node)"
+    echo "Lustre striping        FAIL"
+    ERRORS=$((ERRORS + 1))
 fi
 
 # srun
-if which srun >/dev/null 2>&1; then
+if command -v srun >/dev/null 2>&1; then
     echo "SLURM srun             OK"
 else
     echo "SLURM srun             FAIL"

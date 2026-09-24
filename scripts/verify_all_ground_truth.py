@@ -87,6 +87,34 @@ def main():
         logger.info("Verifying %s", bench)
         rows.extend(verify_benchmark(bench, log_dir, manifest))
 
+    selected_manifest = manifest[manifest["benchmark"].isin(bench_types)].copy()
+    if selected_manifest.empty:
+        raise ValueError(f"manifest has no samples for {bench_types}")
+    expected_keys = {
+        (
+            row.benchmark,
+            str(row.job_id),
+            row.log_file if row.benchmark in AGGREGATED_BENCHMARKS else "",
+        )
+        for row in selected_manifest.itertuples(index=False)
+    }
+    actual_keys = {
+        (
+            row["benchmark"],
+            str(row["job_id"]),
+            row["first_file"] if row["benchmark"] in AGGREGATED_BENCHMARKS else "",
+        )
+        for row in rows
+    }
+    if expected_keys != actual_keys:
+        missing = expected_keys - actual_keys
+        extra = actual_keys - expected_keys
+        detail = next(iter(sorted(missing or extra)))
+        raise RuntimeError(
+            "verified sample set differs from the label manifest: "
+            f"missing={len(missing)}, extra={len(extra)}, first={detail}"
+        )
+
     totals = {s: sum(r["status"] == s for r in rows) for s in ("pass", "fail", "unparsed", "excluded")}
     totals["below_cleaning_rule"] = sum(r["cleaning_rule"].startswith("below") for r in rows)
     logger.info("OVERALL: %s", totals)

@@ -22,8 +22,10 @@ DLIO_DIR="${BENCH_SCRATCH}/dlio"
 LOG_DIR="${PROJECT_DIR}/data/benchmark_logs/dlio"
 RESULTS_DIR="${PROJECT_DIR}/data/benchmark_results/dlio"
 DARSHAN_LIB="/work/hdd/bdau/mbanisharifdehkordi/darshan-install/lib/libdarshan.so"
-PYTHON_BIN="/projects/bdau/envs/sc2026/bin/python"
-DLIO_BIN="/projects/bdau/envs/sc2026/bin/dlio_benchmark"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+PYTHON_BIN="${IOSAGE_ENV}/bin/python"
+DLIO_BIN="${IOSAGE_ENV}/bin/dlio_benchmark"
+PYTHON_EXE_NAME=$(basename "$(readlink -f "${PYTHON_BIN}")")
 
 REPETITIONS=3
 DRY_RUN=false
@@ -47,7 +49,7 @@ generate_dlio_job() {
     local nranks="$3"
     local rep="$4"
     local dlio_overrides="$5"  # Hydra-style overrides
-    local nodes=$(( (nranks + 127) / 128 ))
+    local nodes=$(( (nranks + 63) / 64 ))
     [ $nodes -lt 1 ] && nodes=1
 
     local job_name="dlio_${scenario_name}_n${nranks}_rep${rep}"
@@ -66,17 +68,26 @@ generate_dlio_job() {
 #SBATCH --time=${SLURM_WALLTIME}
 #SBATCH --output=${RESULTS_DIR}/${job_name}_%j.out
 #SBATCH --error=${RESULTS_DIR}/${job_name}_%j.err
+#SBATCH --export=NONE
 
+set -euo pipefail
+source /etc/profile
+module load cray-mpich-abi
+source "${PROJECT_DIR}/benchmarks/job_guard.sh"
+RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
+benchmark_record_executable "${DLIO_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
 export DARSHAN_MODMEM=4
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${data_dir}"
+cleanup() { rm -rf "${data_dir}"; }
+trap cleanup EXIT
 
 # Fix PyTorch CUDA library conflict on Delta.
 # System anaconda3 has libnvJitLink.so.12.1 which shadows the pip-installed
 # nvidia-nvjitlink-cu12 12.8.  Prepend pip NVIDIA libs so the correct
 # versions are found first (see iterative_executor.py for full explanation).
-NVIDIA_LIB_BASE="/projects/bdau/envs/sc2026/lib/python3.9/site-packages/nvidia"
+NVIDIA_LIB_BASE="${IOSAGE_ENV}/lib/python3.9/site-packages/nvidia"
 NVIDIA_LIBS=""
 for subdir in "\$NVIDIA_LIB_BASE"/*/lib; do
     [ -d "\$subdir" ] && NVIDIA_LIBS="\${NVIDIA_LIBS:+\$NVIDIA_LIBS:}\$subdir"
@@ -102,28 +113,22 @@ srun --cpu-bind=none --export=ALL \\
 
 echo "Data generation complete at \$(date)"
 
-# Step 2: Run training (this is what generates the Darshan log we want)
-srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\
-    ${DLIO_BIN} \\
-    workload=unet3d_v100 \\
-    ++workload.workflow.generate_data=False \\
-    ++workload.workflow.train=True \\
-    ++workload.dataset.data_folder=${data_dir} \\
+# Step 2: Run training
+BENCHMARK_EXPECTED_LOGS=${nranks} benchmark_run "${scenario_name}_rep${rep}" \
+    ${PYTHON_EXE_NAME} "\${RUN_MANIFEST}" \
+    srun --cpu-bind=none --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \
+    ${DLIO_BIN} \
+    workload=unet3d_v100 \
+    ++workload.workflow.generate_data=False \
+    ++workload.workflow.train=True \
+    ++workload.dataset.data_folder=${data_dir} \
     ${dlio_overrides}
 
 echo ""
-echo "DLIO training complete at \$(date), exit code: \$?"
-
-# Verify Darshan log
-LATEST_LOG=\$(ls -t "\${DARSHAN_LOGPATH}"/*.darshan 2>/dev/null | head -1)
-if [ -n "\${LATEST_LOG}" ]; then
-    echo "Darshan log: \${LATEST_LOG} (\$(ls -lh "\${LATEST_LOG}" | awk '{print \$5}'))"
-else
-    echo "WARNING: No Darshan log found"
-fi
+echo "DLIO training complete at \$(date), exit code: 0"
+cat "\${RUN_MANIFEST}"
 
 # Cleanup DLIO data
-rm -rf "${data_dir}" 2>/dev/null || true
 SLURM_EOF
 
     echo "${script_path}"
@@ -134,7 +139,7 @@ echo "DLIO Parameter Sweep Generator"
 echo "Date: $(date)"
 echo "============================================================"
 
-mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" "${DLIO_DIR}" 2>/dev/null || true
+mkdir -p "${LOG_DIR}" "${RESULTS_DIR}" "${DLIO_DIR}"
 TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 
