@@ -1,0 +1,5 @@
+-r requirements.txt
+# Versions used by the checked WisIO runtime under ../IOSage_runtime/python_pkgs.
+dask==2023.4.1
+distributed==2023.4.1
+wisio[darshan]==0.1.1

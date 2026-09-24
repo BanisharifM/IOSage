@@ -1,25 +1,18 @@
-# Notebooks — IOSage
+# IOSage notebooks
 
-Jupyter notebooks for reviewers and artifact evaluation.
+The notebooks consume current manifested runs. They do not contain stored outputs or fixed result assertions.
 
-## Quick Start
+Install the notebook extra, then run from this directory after setting the paths named in each notebook:
 
 ```bash
-conda activate sc2026
+conda activate iosage
+python -m pip install -r requirements-notebooks.txt
 cd notebooks
 jupyter notebook
 ```
 
-## Notebooks
-
-| # | Notebook | Description | Runtime |
-|---|----------|-------------|---------|
-| 01 | `01_reproduce_main_results.ipynb` | Reproduce Table 2 (main results), all baselines | < 2 min |
-| 02 | `02_shap_analysis.ipynb` | Feature attribution, beeswarm plots, domain validation | < 1 min |
-| 03 | `03_data_exploration.ipynb` | Dataset overview, feature distributions, label analysis | < 1 min |
-
-## Notes
-
-- Notebooks load pre-trained models and pre-computed results (no training needed)
-- "Full path" training can be run via `scripts/reproduce_all.sh`
-- All notebooks assume the working directory is `notebooks/` and project root is `../`
+| Notebook | Required input |
+|---|---|
+| `01_reproduce_main_results.ipynb` | `IOSAGE_TRAINING_RUN`, an immutable final-evaluation training run |
+| `02_shap_analysis.ipynb` | `IOSAGE_ATTRIBUTION_DIR`, output from `src.models.attribution` |
+| `03_data_exploration.ipynb` | `IOSAGE_PRODUCTION_DIR` and `IOSAGE_BENCHMARK_DIR`, both with passed manifests |

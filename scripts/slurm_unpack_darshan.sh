@@ -20,8 +20,12 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=32g
 #SBATCH --time=06:00:00
-#SBATCH --output=logs/slurm/unpack_darshan_%j.out
-#SBATCH --error=logs/slurm/unpack_darshan_%j.err
+#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/logs/slurm/unpack_darshan_%j.out
+#SBATCH --error=/work/hdd/bdau/mbanisharifdehkordi/IOSage/logs/slurm/unpack_darshan_%j.err
+#SBATCH --export=NONE
+
+set -euo pipefail
+source /etc/profile
 
 echo "=== Unpack Darshan Logs ==="
 echo "Job ID:    ${SLURM_JOB_ID}"
@@ -38,7 +42,9 @@ bash scripts/unpack_darshan_logs.sh --workers 32
 echo ""
 echo "=== Disk Usage ==="
 du -sh Darshan_Logs/
-du -sh Darshan_Logs/2024/ Darshan_Logs/2025/ Darshan_Logs/2026/ 2>/dev/null
+for year in 2024 2025 2026; do
+    [[ -d "Darshan_Logs/$year" ]] && du -sh "Darshan_Logs/$year"
+done
 
 echo ""
 echo "=== Done ==="

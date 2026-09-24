@@ -67,11 +67,14 @@ References:
 """
 
 import argparse
+import hashlib
+import json
 import logging
+import os
 import sys
+import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -128,7 +131,6 @@ def compute_drishti_codes(df):
     dict[str, pd.Series]
         Maps Drishti code (e.g., 'P05') to boolean Series (True = triggered).
     """
-    n = len(df)
     t = DRISHTI_THRESHOLDS
     codes = {}
 
@@ -500,6 +502,9 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     features_path = Path(features_path)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_path.with_name(output_path.name + '.manifest.json')
+    if output_path.exists() or manifest_path.exists():
+        raise FileExistsError(f"refusing to replace labels or manifest: {output_path}")
 
     logger.info("Loading features from %s", features_path)
     df = pd.read_parquet(features_path)
@@ -547,11 +552,39 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
             raise ValueError(f"confidence filter >= {min_confidence} left no rows; "
                              "nothing written")
 
-    # Write output
-    result.to_parquet(output_path, index=False, engine='pyarrow')
+    # Write output and provenance without replacing prior evidence.
+    token = f"{os.getpid()}.{time.time_ns()}"
+    output_tmp = output_path.with_name(output_path.name + f'.tmp.{token}')
+    result.to_parquet(output_tmp, index=False, engine='pyarrow')
+    os.rename(output_tmp, output_path)
+
+    def sha256(path):
+        digest = hashlib.sha256()
+        with open(path, 'rb') as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b''):
+                digest.update(block)
+        return digest.hexdigest()
+
+    manifest = {
+        'schema_version': 1,
+        'status': 'passed',
+        'method': 'drishti_heuristic',
+        'min_confidence': min_confidence,
+        'features': {'path': str(features_path.resolve()), 'sha256': sha256(features_path)},
+        'labels': {'path': str(output_path.resolve()), 'sha256': sha256(output_path),
+                   'rows': len(result), 'columns': len(result.columns)},
+        'script': {'path': str(Path(__file__).resolve()),
+                   'sha256': sha256(Path(__file__).resolve())},
+    }
+    manifest_tmp = manifest_path.with_name(manifest_path.name + f'.tmp.{token}')
+    with open(manifest_tmp, 'x') as handle:
+        json.dump(manifest, handle, indent=2, sort_keys=True)
+        handle.write('\n')
+    os.rename(manifest_tmp, manifest_path)
     logger.info("Wrote heuristic labels to %s (%d rows, %.1f MB)",
                 output_path, len(result),
                 output_path.stat().st_size / 1e6)
+    logger.info("Label manifest: %s", manifest_path)
 
     # Summary statistics
     _log_summary(result)
@@ -580,7 +613,8 @@ def _log_summary(result):
             logger.info("  %d issues: %6d (%5.1f%%)", k, count, 100 * count / n)
 
     # Drishti code trigger rates
-    code_cols = [c for c in result.columns if c.startswith('drishti_')]
+    code_cols = [c for c in result.columns
+                 if c.startswith('drishti_') and c != 'drishti_confidence']
     logger.info("Drishti code trigger rates:")
     for col in sorted(code_cols):
         count = result[col].sum()
