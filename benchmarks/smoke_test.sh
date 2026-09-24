@@ -31,6 +31,7 @@ mkdir -p "$SMOKE_DIR" "$SMOKE_LOG_DIR" "$RESULTS_DIR"
 cleanup() { rm -rf "$SMOKE_DIR"; }
 trap cleanup EXIT
 export DARSHAN_LOGPATH=$SMOKE_LOG_DIR
+export DARSHAN_CONFIG_PATH=$PROJECT_DIR/configs/darshan_runtime.conf
 
 SMALL_DIR=$SMOKE_DIR/single_ost
 HEALTHY_DIR=$SMOKE_DIR/full_stripe
@@ -95,8 +96,8 @@ run_ior_test()
 
 run_ior_test small_io access_granularity=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 512 -b 64K -s 400 -F -e -C -w -r
 run_ior_test random_io access_pattern=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 4096 -b 10M -s 10 -z -F -e -C -w -r --posix.odirect
-run_ior_test interface_misuse interface_choice=1 "$HEALTHY_DIR" disabled 4 --     ior -a POSIX -t 1048576 -b 100M -s 4 -e -C -w -r --posix.odirect
-run_ior_test file_per_process file_strategy=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 4194304 -b 100M -s 4 -F -e -C -w -r --posix.odirect
+run_ior_test interface_misuse interface_choice=1 "$HEALTHY_DIR" disabled 4 --     ior -a MPIIO -t 65536 -b 100M -s 4 -e -C -w -r
+run_ior_test misaligned request_alignment=1 "$HEALTHY_DIR" none 4 --     ior -a POSIX -t 1000 -b 1000000 -s 50 -F -e -C -w -r
 run_ior_test healthy_collective healthy=1 "$HEALTHY_DIR" enabled 1 --     ior -a MPIIO -t 4194304 -b 100M -s 4 -c -e -w -r
 
 ((TESTS += 1))
@@ -117,6 +118,24 @@ else
     ((FAIL += 1))
 fi
 
+((TESTS += 1))
+MDTEST_FILES_DIR=$SMOKE_DIR/mdtest_many_small
+mkdir -p "$MDTEST_FILES_DIR"
+MDTEST_FILES_REPORT=$RESULTS_DIR/smoke_mdtest_many_small_${SLURM_JOB_ID}.json
+if benchmark_run mdtest_many_small mdtest "$RUN_MANIFEST"     srun --export="ALL,LD_PRELOAD=$DARSHAN_LIB"     mdtest -n 300 -w 4096 -e 4096 -F -u -d "$MDTEST_FILES_DIR"; then
+    LOG_PATH=$(tail -n 1 "$RUN_MANIFEST" | cut -f4)
+    if "$PYTHON_BIN" "$PROJECT_DIR/scripts/verify_smoke_scenario.py"         --log "$LOG_PATH" --labels file_strategy=1 --output "$MDTEST_FILES_REPORT"; then
+        echo "mdtest_many_small: PASS"
+        ((PASS += 1))
+    else
+        echo "mdtest_many_small: label verification failed; report $MDTEST_FILES_REPORT"
+        ((FAIL += 1))
+    fi
+else
+    echo "mdtest_many_small: run failed"
+    ((FAIL += 1))
+fi
+
 echo "Smoke results: $PASS passed, $FAIL failed, $TESTS total"
-[[ $TESTS -eq 6 && $PASS -eq 6 && $FAIL -eq 0 ]] || exit 1
+[[ $TESTS -eq 7 && $PASS -eq 7 && $FAIL -eq 0 ]] || exit 1
 echo "ALL TESTS PASSED. Ready for full sweep."

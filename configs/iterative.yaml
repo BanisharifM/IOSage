@@ -38,8 +38,8 @@ models:
     cost_per_mtok_output: 0.79
 
 # --- Workload Definitions ---
-# Each workload: a "bad" IOR/mdtest config that has a known bottleneck
-# The LLM must discover and propose the fix through iterative refinement
+# Supported workloads have a registered counter target and an equal-work
+# reference. Historical unsupported entries remain with classifier_supported=false.
 workloads:
   ior_small_posix:
     benchmark: ior
@@ -48,15 +48,15 @@ workloads:
     bad_config:
       api: POSIX
       transfer_size: "64"
-      block_size: "1M"
-      segments: 100
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r"
     known_good_config:  # For comparison only, not given to LLM
       api: POSIX
-      transfer_size: "1048576"
-      block_size: "100M"
-      segments: 10
+      transfer_size: "4194304"
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r"
 
@@ -99,6 +99,7 @@ workloads:
       extra_flags: "-e -C -w -r"
 
   ior_interface_shared:
+    classifier_supported: false
     benchmark: ior
     bottleneck: interface_choice
     description: "POSIX on shared file (should use MPI-IO collective)"
@@ -119,20 +120,20 @@ workloads:
 
   ior_misaligned:
     benchmark: ior
-    bottleneck: access_granularity
-    description: "Non-power-of-2 transfer size (1000 bytes)"
+    bottleneck: request_alignment
+    description: "File-offset misalignment from 1000-byte transfers"
     bad_config:
       api: POSIX
       transfer_size: "1000"
-      block_size: "1000000"
-      segments: 50
+      block_size: "4096000"
+      segments: 12
       file_per_proc: true
       extra_flags: "-e -C -w -r"
     known_good_config:
       api: POSIX
-      transfer_size: "1048576"
-      block_size: "100M"
-      segments: 10
+      transfer_size: "4096"
+      block_size: "4096000"
+      segments: 12
       file_per_proc: true
       extra_flags: "-e -C -w -r"
 
@@ -143,19 +144,20 @@ workloads:
     bad_config:
       api: POSIX
       transfer_size: "4096"
-      block_size: "1M"
-      segments: 100
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r -O useO_DIRECT=1"
     known_good_config:
       api: POSIX
-      transfer_size: "1048576"
-      block_size: "100M"
-      segments: 10
+      transfer_size: "4194304"
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r -O useO_DIRECT=1"
 
   mdtest_metadata_storm:
+    classifier_supported: false
     benchmark: mdtest
     bottleneck: metadata_intensity
     description: "Many file creates in shared directory"
@@ -185,6 +187,7 @@ workloads:
 
   # --- HACC-IO workloads ---
   hacc_posix_shared_small:
+    classifier_supported: false
     benchmark: hacc_io
     bottleneck: interface_choice
     description: "POSIX shared file with small particles (should use MPI-IO)"
@@ -198,6 +201,7 @@ workloads:
       collective_buffering: enabled
 
   hacc_fpp_small:
+    classifier_supported: false
     benchmark: hacc_io
     bottleneck: file_strategy
     description: "File-per-process with many ranks and small particles"
@@ -225,6 +229,7 @@ workloads:
 
   # --- h5bench (HDF5) workloads ---
   h5bench_small_access:
+    classifier_supported: false
     benchmark: h5bench
     bottleneck: access_granularity
     description: "Small DIM_1 with independent I/O (small HDF5 writes per rank)"
@@ -244,6 +249,7 @@ workloads:
       FILE_PATTERN: CONTIG
 
   h5bench_indep_vs_coll:
+    classifier_supported: false
     benchmark: h5bench
     bottleneck: interface_choice
     description: "Independent HDF5 I/O vs collective (should use collective)"
@@ -263,6 +269,7 @@ workloads:
       FILE_PATTERN: CONTIG
 
   h5bench_interleaved_pattern:
+    classifier_supported: false
     benchmark: h5bench
     bottleneck: access_pattern
     description: "Interleaved memory+file pattern causing non-contiguous I/O"
@@ -283,6 +290,7 @@ workloads:
 
   # --- DLIO (ML I/O) workloads ---
   dlio_small_records:
+    classifier_supported: false
     benchmark: dlio
     bottleneck: access_granularity
     description: "Small record reads (DL data loading with 1KB samples, like BERT tokenized text)"
@@ -314,6 +322,7 @@ workloads:
       cpus_per_task: 4
 
   dlio_shuffle_heavy:
+    classifier_supported: false
     benchmark: dlio
     bottleneck: access_pattern
     description: "Heavy random file shuffle across many files (random directory traversal)"
@@ -349,6 +358,7 @@ workloads:
       cpus_per_task: 4
 
   dlio_many_small_files:
+    classifier_supported: false
     benchmark: dlio
     bottleneck: access_granularity
     description: "Many tiny training files (256B records, metadata-heavy file explosion)"
@@ -381,6 +391,7 @@ workloads:
 
   # --- Extended closed-loop pairs (mdtest + multi-node IOR) ---
   mdtest_fpp_explosion:
+    classifier_supported: false
     benchmark: mdtest
     bottleneck: file_strategy
     description: "Excessive file-per-process (5000/rank) vs moderate (50/rank)"
@@ -427,15 +438,15 @@ workloads:
     bad_config:
       api: POSIX
       transfer_size: "4096"
-      block_size: "1M"
-      segments: 100
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r -O useO_DIRECT=1"
     known_good_config:
       api: POSIX
-      transfer_size: "1048576"
-      block_size: "100M"
-      segments: 10
+      transfer_size: "4194304"
+      block_size: "4M"
+      segments: 25
       file_per_proc: true
       extra_flags: "-e -C -w -r -O useO_DIRECT=1"
 

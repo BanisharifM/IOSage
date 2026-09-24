@@ -77,6 +77,7 @@ source "${PROJECT_DIR}/benchmarks/job_guard.sh"
 RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
 benchmark_record_executable "${DLIO_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 export DARSHAN_MODMEM=4
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${data_dir}"
@@ -144,7 +145,7 @@ TOTAL_JOBS=0
 SUBMITTED_JOBS=0
 
 # ===== small_records =====
-# Label: access_granularity = 1
+# Aggregate NPZ counters do not isolate the configured record size.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "small_records" ]; then
     echo ""
     echo "--- Scenario: small_records ---"
@@ -163,7 +164,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "small_records" ]; th
                 overrides+=" ++workload.dataset.format=npz"
 
                 script=$(generate_dlio_job \
-                    "small_rl${rl}" "access_granularity=1" \
+                    "small_rl${rl}" "classifier_excluded" \
                     "${nranks}" "${rep}" "${overrides}")
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
@@ -178,7 +179,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "small_records" ]; th
 fi
 
 # ===== checkpoint_burst =====
-# Label: throughput_utilization = 1
+# Checkpoint bursts require temporal evidence not present in the classifier.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "checkpoint_burst" ]; then
     echo ""
     echo "--- Scenario: checkpoint_burst ---"
@@ -200,7 +201,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "checkpoint_burst" ];
                 overrides+=" ++workload.dataset.format=npz"
 
                 script=$(generate_dlio_job \
-                    "ckpt_ms${ms}" "throughput_utilization=1" \
+                    "ckpt_ms${ms}" "classifier_excluded" \
                     "${nranks}" "${rep}" "${overrides}")
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
@@ -215,7 +216,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "checkpoint_burst" ];
 fi
 
 # ===== healthy_ml =====
-# Label: healthy = 1
+# The aggregate counters do not support a global healthy label.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_ml" ]; then
     echo ""
     echo "--- Scenario: healthy_ml ---"
@@ -234,7 +235,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_ml" ]; then
                 overrides+=" ++workload.dataset.format=npz"
 
                 script=$(generate_dlio_job \
-                    "healthy_rl${rl}" "healthy=1" \
+                    "healthy_rl${rl}" "classifier_excluded" \
                     "${nranks}" "${rep}" "${overrides}")
                 if [ "${DRY_RUN}" = true ]; then
                     echo "  [DRY] ${script}"
@@ -249,7 +250,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_ml" ]; then
 fi
 
 # ===== shuffle_heavy =====
-# Label: access_pattern = 1
+# File shuffling is not distinguishable in the current aggregate counters.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "shuffle_heavy" ]; then
     echo ""
     echo "--- Scenario: shuffle_heavy ---"
@@ -269,7 +270,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "shuffle_heavy" ]; th
             overrides+=" ++workload.dataset.format=npz"
 
             script=$(generate_dlio_job \
-                "shuffle" "access_pattern=1" \
+                "shuffle" "classifier_excluded" \
                 "${nranks}" "${rep}" "${overrides}")
             if [ "${DRY_RUN}" = true ]; then
                 echo "  [DRY] ${script}"

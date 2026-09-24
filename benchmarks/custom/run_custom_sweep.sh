@@ -74,6 +74,7 @@ source "${PROJECT_DIR}/benchmarks/job_guard.sh"
 RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
 benchmark_record_executable "${PYTHON_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
 cleanup() { rm -rf "${output_dir}"; }
@@ -141,13 +142,14 @@ source "${PROJECT_DIR}/benchmarks/job_guard.sh"
 RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
 benchmark_record_executable "${PYTHON_BIN}" "\${RUN_MANIFEST}"
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 export DARSHAN_ENABLE_NONMPI=1
 mkdir -p "\${DARSHAN_LOGPATH}" "${output_dir}"
 cleanup() { rm -rf "${output_dir}"; }
 trap cleanup EXIT
 
 echo "Balanced I/O: base=${base_mb}MB, ranks=${nranks}, rep=${rep}"
-echo "Label:    healthy=1"
+echo "Label:    parallelism_efficiency=0"
 
 BENCHMARK_EXPECTED_LOGS=${nranks} benchmark_run "${job_name}" python "\${RUN_MANIFEST}" \\
     srun --export=ALL,LD_PRELOAD=${DARSHAN_LIB} \\

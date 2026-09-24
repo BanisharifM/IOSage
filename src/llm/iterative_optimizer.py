@@ -58,13 +58,6 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
-
-
 def condition_name(*, use_ml, use_shap, use_kb, use_feedback, max_iterations):
     """Return the declared experiment condition for one supported configuration."""
     disabled = []
@@ -99,15 +92,24 @@ MODEL_COSTS = {
 }
 
 DIM_DESCRIPTIONS = {
-    "access_granularity": "I/O with very small transfer sizes, causing excessive syscall overhead",
-    "metadata_intensity": "Excessive file metadata operations relative to data I/O",
+    "access_granularity": "Many requests no larger than 1 MiB",
+    "metadata_intensity": "Metadata calls consume at least half of recorded I/O time",
     "parallelism_efficiency": "Uneven I/O load distribution across MPI ranks",
-    "access_pattern": "Random file access, defeating read-ahead and prefetching",
-    "interface_choice": "Using suboptimal I/O interface for the access pattern",
-    "file_strategy": "Suboptimal file strategy (FPP explosion or shared-file contention)",
-    "throughput_utilization": "Throughput below achievable (excessive sync, poor config)",
-    "healthy": "No significant I/O bottleneck detected",
+    "access_pattern": "Many POSIX requests are nonsequential",
+    "request_alignment": "Many POSIX requests begin at file-misaligned offsets",
+    "interface_choice": "Many independent MPI-IO calls occur without collective calls",
+    "file_strategy": "More than 1000 small data files are accessed",
+    "throughput_utilization": "A synchronous durability call occurs after each write",
+    "healthy": "All registered patterns are absent and observable",
 }
+
+
+def supported_workloads(config):
+    """Return workload names whose constructed label is supported."""
+    return [
+        name for name, workload in config["workloads"].items()
+        if workload.get("classifier_supported", True)
+    ]
 
 
 class IterativeOptimizer:
@@ -310,9 +312,11 @@ RULES:
    -s (segments), -F (file-per-proc), -c (collective MPI-IO), -e (fsync at end),
    -C (reorder tasks), -Y (fsync per write), -z (random offsets),
    -O useO_DIRECT=1 (bypass page cache, requires -t >= 4096).
-8. The transfer_size (-t) controls I/O granularity. The block_size (-b) and segments (-s)
-   control total data volume. Only change -t to fix access_granularity. Only change -a/-c
-   to fix interface_choice. Only remove -Y to fix throughput. Only remove -z to fix access_pattern.
+8. The transfer_size (-t) controls I/O granularity and file-offset alignment. The block_size
+   (-b) and segments (-s) control total data volume. Only change -t to fix
+   access_granularity. Use a transfer size that divides the block size to fix
+   request_alignment. Only change -a/-c to fix interface_choice. Only remove -Y to fix
+   throughput_utilization. Only remove -z to fix access_pattern.
 9. For h5bench (HDF5) benchmarks:
    - DIM_1: integer [64, 16777216] (elements per rank per timestep, 8 bytes each)
    - COLLECTIVE_DATA: 'YES' or 'NO' (HDF5 collective I/O)
@@ -795,6 +799,9 @@ Respond in JSON:
             dict with full optimization history, metrics, and cost
         """
         workload_config = self.iter_config["workloads"][workload_name]
+        if not workload_config.get("classifier_supported", True):
+            raise ValueError(
+                f"workload {workload_name} is excluded by the classifier-label audit")
         bad_config = dict(workload_config["bad_config"])
         from .closed_loop_metrics import work_params_changed
         reference_config = workload_config.get("known_good_config")
@@ -1439,7 +1446,7 @@ def main():
 
     # Determine workloads
     if args.sweep:
-        workloads = list(optimizer.iter_config["workloads"].keys())
+        workloads = supported_workloads(optimizer.iter_config)
     elif args.workload:
         workloads = [args.workload]
     else:

@@ -46,7 +46,11 @@ else
     mapfile -t WORKLOADS < <("$PYTHON" - <<'PY'
 import yaml
 with open("configs/iterative.yaml") as handle:
-    print("\n".join(yaml.safe_load(handle)["workloads"]))
+    workloads = yaml.safe_load(handle)["workloads"]
+    print("\n".join(
+        name for name, config in workloads.items()
+        if config.get("classifier_supported", True)
+    ))
 PY
 )
 fi

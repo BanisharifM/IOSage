@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from scripts.run_production_case_study import agreement_category
 from scripts.run_fair_ablation import _healthy_ablation_result, _normalize_result
@@ -27,7 +28,8 @@ from src.ioprescriber.recommender import Recommender
 from src.ioprescriber.retriever import Retriever
 from src.llm.benchmark_command_builder import BenchmarkCommandBuilder
 from src.llm.iterative_executor import IterativeExecutor
-from src.llm.iterative_optimizer import IterativeOptimizer
+from src.llm.iterative_optimizer import IterativeOptimizer, supported_workloads
+from src.llm.closed_loop_metrics import work_params_changed
 from src.llm.evidence_kb import build_knowledge_base
 
 
@@ -323,6 +325,36 @@ def test_iterative_schema_and_disagreement_directions():
     assert {state: agreement_category(*state) for state in states} == states
 
 
+def test_iterative_sweep_excludes_unsupported_label_constructions():
+    config = {
+        "workloads": {
+            "supported": {"benchmark": "ior"},
+            "excluded": {"benchmark": "dlio", "classifier_supported": False},
+        }
+    }
+    assert supported_workloads(config) == ["supported"]
+
+
+def test_supported_iterative_references_preserve_configured_work():
+    config = yaml.safe_load(Path("configs/iterative.yaml").read_text())
+    for name in supported_workloads(config):
+        workload = config["workloads"][name]
+        reference = workload.get("known_good_config")
+        if reference is not None:
+            assert work_params_changed(
+                workload["benchmark"], workload["bad_config"], reference
+            ) == [], name
+
+    optimizer = object.__new__(IterativeOptimizer)
+    optimizer.iter_config = config
+    try:
+        optimizer.run_optimization("dlio_small_records")
+    except ValueError as error:
+        assert "excluded by the classifier-label audit" in str(error)
+    else:
+        raise AssertionError("an unsupported iterative workload was accepted")
+
+
 def test_evidence_builder_uses_development_ids_and_joins_shap_by_id():
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -340,7 +372,8 @@ def test_evidence_builder_uses_development_ids_and_joins_shap_by_id():
         })
         for dimension in (
                 "metadata_intensity", "parallelism_efficiency", "access_pattern",
-                "interface_choice", "file_strategy", "throughput_utilization"):
+                "request_alignment", "interface_choice", "file_strategy",
+                "throughput_utilization"):
             labels[dimension] = 0
         features_path, labels_path = root / "features.parquet", root / "labels.parquet"
         features.to_parquet(features_path, index=False)

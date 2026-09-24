@@ -109,6 +109,7 @@ trap cleanup EXIT
 
 # Darshan log directory
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 mkdir -p "\${DARSHAN_LOGPATH}"
 
 # ROMIO collective buffering control
@@ -248,10 +249,10 @@ fi
 
 # ===== SCENARIO: misaligned =====
 # Non-power-of-2 transfer sizes
-# Label: access_granularity = 1
+# Labels: access_granularity = 1, request_alignment = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "misaligned" ]; then
     echo ""
-    echo "--- Scenario: misaligned (Access Granularity = BAD, non-aligned) ---"
+    echo "--- Scenario: misaligned (Granularity + File Alignment = BAD) ---"
     for tsize in 1000 1500 3000 7000; do
         # block_size must be a multiple of transfer_size (IOR requirement)
         bsize=$(( tsize * 1000 ))
@@ -259,7 +260,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "misaligned" ]; then
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_job_script \
-                    "misaligned" "access_granularity=1" \
+                    "misaligned" "access_granularity=1,request_alignment=1" \
                     "POSIX" "${tsize}" "${bsize}" "50" "${nranks}" "${rep}" \
                     "-F -e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
                 submit_job "${script}"
@@ -309,16 +310,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "random_small" ]; the
 fi
 
 # ===== SCENARIO: interface_misuse_posix_shared =====
-# POSIX on shared file (should use collective MPI-IO)
-# Label: interface_choice = 1
+# POSIX on a shared file. This is retained for intervention studies, but shared
+# POSIX access alone does not satisfy the registered interface rule.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interface_misuse_posix_shared" ]; then
     echo ""
-    echo "--- Scenario: interface_misuse_posix_shared (Interface = BAD) ---"
+    echo "--- Scenario: interface_misuse_posix_shared (classifier excluded) ---"
     for nranks in 16 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "interface_posix_shared" "interface_choice=1" \
+                "interface_posix_shared" "classifier_excluded" \
                 "POSIX" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-e -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -345,16 +346,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interface_misuse_mpi
 fi
 
 # ===== SCENARIO: file_explosion =====
-# File-per-process with many ranks
-# Label: file_strategy = 1
+# File-per-process with 64 to 256 large files. Retained for intervention
+# studies, but it does not satisfy the registered many-small-files rule.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "file_explosion" ]; then
     echo ""
-    echo "--- Scenario: file_explosion (File Strategy = BAD) ---"
+    echo "--- Scenario: file_explosion (classifier excluded) ---"
     for nranks in 64 128 256; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "file_explosion" "file_strategy=1" \
+                "file_explosion" "classifier_excluded" \
                 "POSIX" "65536" "10M" "10" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -392,7 +393,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_collective" 
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "healthy_collective" "healthy=1" \
+                "healthy_collective" "access_granularity=0,metadata_intensity=0,interface_choice=0" \
                 "MPIIO" "4194304" "1G" "4" "${nranks}" "${rep}" \
                 "-c -e -C -w -r" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
@@ -410,7 +411,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_posix_fpp" ]
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "healthy_posix_fpp" "healthy=1" \
+                "healthy_posix_fpp" "access_granularity=0,metadata_intensity=0,access_pattern=0,file_strategy=0,throughput_utilization=0" \
                 "POSIX" "4194304" "1G" "4" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -424,12 +425,12 @@ fi
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_large_seq" ]; then
     echo ""
     echo "--- Scenario: healthy_large_seq (Healthy) ---"
-    for tsize in 1048576 4194304 16777216; do
+    for tsize in 4194304 16777216; do
         for nranks in 4 16; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_job_script \
-                    "healthy_large_seq" "healthy=1" \
+                    "healthy_large_seq" "access_granularity=0,metadata_intensity=0,access_pattern=0,file_strategy=0,throughput_utilization=0" \
                     "POSIX" "${tsize}" "1G" "4" "${nranks}" "${rep}" \
                     "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
                 submit_job "${script}"
@@ -441,7 +442,7 @@ fi
 # ===== SCENARIO: io500_hard =====
 # IO500 IOR-hard config: 47008-byte transfer on shared file (standardized stress test)
 # ION paper (HotStorage'24) used this exact config for evaluation against Drishti
-# Label: access_granularity = 1, interface_choice = 1 (small I/O on shared file)
+# Label: access_granularity = 1. Shared POSIX access is not an interface label.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_hard" ]; then
     echo ""
     echo "--- Scenario: io500_hard (IO500 IOR-hard standardized config) ---"
@@ -451,7 +452,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_hard" ]; then
             # IO500 IOR-hard: 47008 bytes, shared file, interspersed writes
             # 47008 > 4096, so O_DIRECT is safe (page-aligned at 4KB boundary? No, 47008 = 46*1024 = 46KB, aligned)
             script=$(generate_job_script \
-                "io500_hard" "access_granularity=1,interface_choice=1" \
+                "io500_hard" "access_granularity=1" \
                 "POSIX" "47008" "47008" "1000" "${nranks}" "${rep}" \
                 "-e -C -w -r" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -460,16 +461,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_hard" ]; then
 fi
 
 # ===== SCENARIO: io500_easy =====
-# IO500 IOR-easy: large I/O, user-configurable (healthy baseline)
-# Label: healthy = 1
+# IO500 IOR-easy at the 1 MiB class boundary. This scenario is retained for
+# comparison but is not a universal healthy control for the registered rule.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_easy" ]; then
     echo ""
-    echo "--- Scenario: io500_easy (IO500 IOR-easy: healthy) ---"
+    echo "--- Scenario: io500_easy (classifier excluded) ---"
     for nranks in 16 64 256; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "io500_easy" "healthy=1" \
+                "io500_easy" "classifier_excluded" \
                 "POSIX" "1048576" "1G" "4" "${nranks}" "${rep}" \
                 "-F -e -C -w -r --posix.odirect" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -480,16 +481,17 @@ fi
 # ===== SCENARIO: e2e_3d_write (E2E-style scientific I/O) =====
 # Multi-API comparison: same data pattern through POSIX vs MPI-IO
 # Demonstrates interface choice impact on identical workload
-# Label: interface_choice = 1 (POSIX version) or healthy = 1 (MPI-IO collective version)
+# The POSIX arm is intervention evidence only. The MPI-IO arm is a registered
+# negative control for missing collective calls.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "e2e_posix_vs_mpiio" ]; then
     echo ""
     echo "--- Scenario: e2e_posix_vs_mpiio (E2E API comparison) ---"
     for nranks in 16 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
-            # POSIX on shared file (bad)
+            # POSIX on shared file: retained for the paired intervention only.
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "e2e_posix_shared" "interface_choice=1" \
+                "e2e_posix_shared" "classifier_excluded" \
                 "POSIX" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-e -C -w -r" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -497,7 +499,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "e2e_posix_vs_mpiio" 
             # MPI-IO collective calls on the same directory and ROMIO buffering mode
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "e2e_mpiio_coll" "healthy=1" \
+                "e2e_mpiio_coll" "interface_choice=0" \
                 "MPIIO" "1048576" "100M" "4" "${nranks}" "${rep}" \
                 "-c -e -C -w -r" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"

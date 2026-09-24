@@ -165,6 +165,7 @@ trap cleanup EXIT
 
 # Darshan log directory
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 mkdir -p "\${DARSHAN_LOGPATH}"
 
 # HDF5 parallel library path (ensure runtime finds parallel version)
@@ -299,12 +300,12 @@ fi
 # HDF5 compound datatype (array-of-structs layout), collective I/O, large data.
 # Research finding: h5bench INTERLEAVED = HDF5 compound type, NOT random POSIX access.
 # HDF5 internal pipeline converts compound writes to sequential POSIX I/O (Darshan
-# confirms 92-94% sequential). Relabeled as healthy: large collective sequential I/O.
+# confirms 92-94% sequential). It is a negative control for access_pattern.
 # Ref: Bez et al. (ACM CSUR 2023) on abstraction gap between I/O stack levels.
 # 262144 elements × 8 bytes = 2 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interleaved_access" ]; then
     echo ""
-    echo "--- Scenario: interleaved_access (Healthy: compound type, collective, sequential POSIX) ---"
+    echo "--- Scenario: interleaved_access (Access Pattern negative control) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -312,7 +313,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "interleaved_access" 
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "YES" "YES" "INTERLEAVED" "INTERLEAVED" "262144" "10"
             script=$(generate_job_script \
-                "interleaved_access" "healthy=1" \
+                "interleaved_access" "access_pattern=0" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
         done
@@ -332,7 +333,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "collective_small" ];
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "YES" "YES" "CONTIG" "CONTIG" "128" "20"
             script=$(generate_job_script \
-                "collective_small" "access_granularity=1" \
+                "collective_small" "access_granularity=1,interface_choice=0" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
         done
@@ -352,7 +353,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "collective_large_hea
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "YES" "YES" "CONTIG" "CONTIG" "4194304" "5"
             script=$(generate_job_script \
-                "collective_large_healthy" "healthy=1" \
+                "collective_large_healthy" "access_granularity=0,metadata_intensity=0,interface_choice=0" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
         done
@@ -372,7 +373,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_large_healthy"
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "CONTIG" "CONTIG" "4194304" "5"
             script=$(generate_job_script \
-                "indep_large_healthy" "healthy=1" \
+                "indep_large_healthy" "access_granularity=0" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -397,8 +398,10 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interlea
             config="${RESULTS_DIR}/config_indep_small_inter_n${nranks}_r${rep}.json"
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "256" "20"
+            label_dims="access_granularity=1"
+            [ "${nranks}" -eq 64 ] && label_dims="access_granularity=1,interface_choice=1"
             script=$(generate_job_script \
-                "indep_small_interleaved" "access_granularity=1,interface_choice=1" \
+                "indep_small_interleaved" "${label_dims}" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -406,13 +409,12 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_interlea
 fi
 
 # ===== SCENARIO: indep_interleaved =====
-# Independent + compound type: 1 bottleneck
-# interface_choice only (access_pattern removed: HDF5 compound type produces
-# sequential POSIX I/O). Large enough data to not be granularity issue.
+# Independent + compound type. The current operation counts do not reach the
+# registered missing-collective threshold, so this case is classifier excluded.
 # 524288 elements × 8 bytes = 4 MB per rank per timestep
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]; then
     echo ""
-    echo "--- Scenario: indep_interleaved (Interface Choice = BAD) ---"
+    echo "--- Scenario: indep_interleaved (classifier excluded) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -420,7 +422,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]
             generate_h5bench_config "${config}" "${HEALTHY_DIR}" \
                 "NO" "NO" "INTERLEAVED" "INTERLEAVED" "524288" "10"
             script=$(generate_job_script \
-                "indep_interleaved" "interface_choice=1" \
+                "indep_interleaved" "classifier_excluded" \
                 "${config}" "${nranks}" "${rep}" "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -428,11 +430,12 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_interleaved" ]
 fi
 
 # ===== SCENARIO: indep_small_single_ost =====
-# Independent + small + single OST: interface_choice + access_granularity + throughput_utilization
+# Independent + small + single OST. Storage placement is a separate variable,
+# so this mixed construction is classifier excluded.
 # 512 elements × 8 bytes = 4 KB per rank per timestep, on 1 OST
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_single_ost" ]; then
     echo ""
-    echo "--- Scenario: indep_small_single_ost (Interface + Granularity + Throughput = BAD) ---"
+    echo "--- Scenario: indep_small_single_ost (classifier excluded) ---"
     for nranks in 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
@@ -440,7 +443,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "indep_small_single_o
             generate_h5bench_config "${config}" "${BOTTLENECK_DIR}" \
                 "NO" "NO" "CONTIG" "CONTIG" "512" "20"
             script=$(generate_job_script \
-                "indep_small_single_ost" "access_granularity=1,interface_choice=1,throughput_utilization=1" \
+                "indep_small_single_ost" "classifier_excluded" \
                 "${config}" "${nranks}" "${rep}" "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
         done
@@ -462,15 +465,15 @@ fi
 echo ""
 echo "Scenario breakdown:"
 echo "  Single-label:"
-echo "    interleaved_access       : healthy=1 (compound type, sequential POSIX)"
+echo "    interleaved_access       : access_pattern=0"
 echo "    collective_small         : access_granularity=1"
-echo "    collective_large_healthy : healthy=1"
-echo "    indep_large_healthy      : healthy=1"
+echo "    collective_large_healthy : access_granularity=0, metadata_intensity=0, interface_choice=0"
+echo "    indep_large_healthy      : access_granularity=0"
 echo "  Multi-label:"
 echo "    indep_small              : access_granularity=1, interface_choice=1"
-echo "    indep_small_interleaved  : access_granularity=1, interface_choice=1"
-echo "    indep_interleaved        : interface_choice=1"
-echo "    indep_small_single_ost   : access_granularity=1, interface_choice=1, throughput_utilization=1"
+echo "    indep_small_interleaved  : access_granularity=1; interface_choice=1 at 64 ranks"
+echo "    indep_interleaved        : classifier_excluded"
+echo "    indep_small_single_ost   : classifier_excluded"
 echo ""
 echo "After completion, run feature extraction:"
 echo "  python scripts/extract_benchmark_features.py --bench-type h5bench"

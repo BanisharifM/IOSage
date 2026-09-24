@@ -8,10 +8,9 @@
 # HACC-IO writes 9 arrays per rank (xx,yy,zz,vx,vy,vz,phi,pid,mask)
 # = 38 bytes per particle per rank.
 #
-# Three executables cover different I/O strategies:
-#   hacc_io_posix_shared : POSIX on shared file (interface misuse for parallel)
-#   hacc_io_mpiio_shared : MPI-IO on shared file (proper parallel I/O)
-#   hacc_io_fpp          : POSIX file-per-process (one file per rank)
+# Three executables cover different I/O strategies. The MPI-IO source uses
+# independent MPI_File_write_at and MPI_File_read_at calls despite its legacy
+# filename; it does not provide a collective-I/O control.
 #
 # HOW IT FORCES SPECIFIC PATTERNS (overriding Delta defaults):
 #   1. lfs setstripe -c 1  → overrides PFL auto-restriping → single OST
@@ -113,6 +112,7 @@ trap cleanup EXIT
 
 # Darshan log directory
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 mkdir -p "\${DARSHAN_LOGPATH}"
 
 # ROMIO collective buffering control
@@ -224,18 +224,17 @@ submit_job() {
 # =========================================================================
 
 # ===== SCENARIO: posix_shared_large =====
-# POSIX I/O on shared file with large data: interface_choice bottleneck
-# HACC-IO uses POSIX read/write on a shared file, which is suboptimal for
-# parallel I/O. Should use MPI-IO collective.
+# POSIX I/O on a shared file with large data. Shared POSIX access alone does
+# not satisfy the registered interface rule, so this case is excluded.
 # 1M particles/rank × 38 bytes = 38 MB/rank
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_large" ]; then
     echo ""
-    echo "--- Scenario: posix_shared_large (Interface Choice = BAD) ---"
+    echo "--- Scenario: posix_shared_large (classifier excluded) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "posix_shared_large" "interface_choice=1" \
+                "posix_shared_large" "classifier_excluded" \
                 "hacc_io_posix_shared" "1000000" "${nranks}" "${rep}" \
                 "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -244,17 +243,16 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_large" 
 fi
 
 # ===== SCENARIO: fpp_many_ranks =====
-# File-per-process with many ranks: file_strategy bottleneck
-# Each rank creates its own file → metadata overhead, many small files
+# File-per-process with 32 to 128 files, below the registered file-count rule.
 # 100K particles/rank × 38 bytes = 3.8 MB/rank (moderate per file)
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "fpp_many_ranks" ]; then
     echo ""
-    echo "--- Scenario: fpp_many_ranks (File Strategy = BAD) ---"
+    echo "--- Scenario: fpp_many_ranks (classifier excluded) ---"
     for nranks in 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "fpp_many_ranks" "file_strategy=1" \
+                "fpp_many_ranks" "classifier_excluded" \
                 "hacc_io_fpp" "100000" "${nranks}" "${rep}" \
                 "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -263,17 +261,17 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "fpp_many_ranks" ]; t
 fi
 
 # ===== SCENARIO: posix_shared_single_ost =====
-# POSIX on shared file, single OST: throughput_utilization bottleneck
-# All ranks write to one file on one OST → bandwidth ceiling
+# POSIX on a shared file and one OST. Storage placement is not the registered
+# per-write synchronization rule, so this case is excluded.
 # 500K particles/rank × 38 bytes = 19 MB/rank, many ranks contending
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_single_ost" ]; then
     echo ""
-    echo "--- Scenario: posix_shared_single_ost (Throughput = BAD) ---"
+    echo "--- Scenario: posix_shared_single_ost (classifier excluded) ---"
     for nranks in 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "posix_shared_single_ost" "interface_choice=1,throughput_utilization=1" \
+                "posix_shared_single_ost" "classifier_excluded" \
                 "hacc_io_posix_shared" "500000" "${nranks}" "${rep}" \
                 "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -282,17 +280,17 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_single_
 fi
 
 # ===== SCENARIO: mpiio_collective_healthy =====
-# MPI-IO collective on shared file, full striping: healthy baseline
-# Proper parallel I/O: MPI-IO with collective buffering on all OSTs
+# The legacy MPI-IO executable uses independent MPI-IO calls. It cannot serve
+# as the registered collective-I/O negative control and is excluded.
 # 1M particles/rank × 38 bytes = 38 MB/rank
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "mpiio_collective_healthy" ]; then
     echo ""
-    echo "--- Scenario: mpiio_collective_healthy (Healthy) ---"
+    echo "--- Scenario: mpiio_collective_healthy (classifier excluded) ---"
     for nranks in 16 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "mpiio_collective_healthy" "healthy=1" \
+                "mpiio_collective_healthy" "classifier_excluded" \
                 "hacc_io_mpiio_shared" "1000000" "${nranks}" "${rep}" \
                 "${HEALTHY_DIR}" "enabled")
             submit_job "${script}"
@@ -311,7 +309,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "fpp_healthy" ]; then
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "fpp_healthy" "healthy=1" \
+                "fpp_healthy" "file_strategy=0" \
                 "hacc_io_fpp" "2000000" "${nranks}" "${rep}" \
                 "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -324,17 +322,17 @@ fi
 # =========================================================================
 
 # ===== SCENARIO: posix_shared_small =====
-# POSIX on shared file with small particles: interface_choice + access_granularity
-# Small per-rank data on shared file without collective I/O
+# Small POSIX shared-file case. The aggregate call count and interface do not
+# isolate a registered target, so this case is excluded.
 # 100 particles/rank × 38 bytes = 3,800 bytes/rank (tiny I/O)
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_small" ]; then
     echo ""
-    echo "--- Scenario: posix_shared_small (Interface + Granularity = BAD) ---"
+    echo "--- Scenario: posix_shared_small (classifier excluded) ---"
     for nranks in 16 32 64; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "posix_shared_small" "access_granularity=1,interface_choice=1" \
+                "posix_shared_small" "classifier_excluded" \
                 "hacc_io_posix_shared" "100" "${nranks}" "${rep}" \
                 "${HEALTHY_DIR}" "disabled")
             submit_job "${script}"
@@ -343,17 +341,17 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_small" 
 fi
 
 # ===== SCENARIO: posix_shared_small_single_ost =====
-# POSIX shared file, small data, single OST: 3 simultaneous bottlenecks
-# interface_choice + access_granularity + throughput_utilization
+# Small POSIX shared-file case on one OST. This mixed storage construction is
+# classifier excluded.
 # 200 particles/rank × 38 bytes = 7,600 bytes/rank
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_small_single_ost" ]; then
     echo ""
-    echo "--- Scenario: posix_shared_small_single_ost (Interface + Granularity + Throughput = BAD) ---"
+    echo "--- Scenario: posix_shared_small_single_ost (classifier excluded) ---"
     for nranks in 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "posix_shared_small_single_ost" "access_granularity=1,interface_choice=1,throughput_utilization=1" \
+                "posix_shared_small_single_ost" "classifier_excluded" \
                 "hacc_io_posix_shared" "200" "${nranks}" "${rep}" \
                 "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -362,17 +360,17 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "posix_shared_small_s
 fi
 
 # ===== SCENARIO: fpp_small_many =====
-# File-per-process with small particles and many ranks
-# file_strategy + access_granularity
+# File-per-process with 32 to 128 small files, below the registered file-count
+# rule and with too few application calls for the small-request rule.
 # 50 particles/rank × 38 bytes = 1,900 bytes/rank (tiny files, many of them)
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "fpp_small_many" ]; then
     echo ""
-    echo "--- Scenario: fpp_small_many (File Strategy + Granularity = BAD) ---"
+    echo "--- Scenario: fpp_small_many (classifier excluded) ---"
     for nranks in 32 64 128; do
         for rep in $(seq 1 ${REPETITIONS}); do
             TOTAL_JOBS=$((TOTAL_JOBS + 1))
             script=$(generate_job_script \
-                "fpp_small_many" "file_strategy=1,access_granularity=1" \
+                "fpp_small_many" "classifier_excluded" \
                 "hacc_io_fpp" "50" "${nranks}" "${rep}" \
                 "${BOTTLENECK_DIR}" "disabled")
             submit_job "${script}"
@@ -406,16 +404,8 @@ else
 fi
 echo ""
 echo "Scenario breakdown:"
-echo "  Single-label:"
-echo "    posix_shared_large         : interface_choice=1"
-echo "    fpp_many_ranks             : file_strategy=1"
-echo "    mpiio_collective_healthy   : healthy=1"
-echo "    fpp_healthy                : healthy=1"
-echo "  Multi-label:"
-echo "    posix_shared_single_ost    : interface_choice=1, throughput_utilization=1"
-echo "    posix_shared_small         : access_granularity=1, interface_choice=1"
-echo "    posix_shared_small_1ost    : access_granularity=1, interface_choice=1, throughput_utilization=1"
-echo "    fpp_small_many             : file_strategy=1, access_granularity=1"
+echo "    fpp_healthy                : file_strategy=0"
+echo "    all other active cases     : classifier_excluded"
 echo ""
 echo "After completion, run feature extraction:"
 echo "  python scripts/extract_benchmark_features.py --bench-type hacc_io"

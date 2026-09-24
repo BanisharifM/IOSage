@@ -85,6 +85,7 @@ RUN_MANIFEST="${RESULTS_DIR}/${job_name}_\${SLURM_JOB_ID}.manifest.tsv"
 benchmark_record_executable mdtest "\${RUN_MANIFEST}"
 
 export DARSHAN_LOGPATH="${LOG_DIR}"
+export DARSHAN_CONFIG_PATH="${PROJECT_DIR}/configs/darshan_runtime.conf"
 mkdir -p "\${DARSHAN_LOGPATH}"
 
 echo "============================================================"
@@ -206,7 +207,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_uniqu
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
-                    "meta_unique" "metadata_intensity=1" \
+                    "meta_unique_configured" "metadata_intensity=1" \
                     "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F -u")
                 submit_job "${script}"
@@ -216,7 +217,8 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_storm_uniqu
 fi
 
 # ===== metadata_cross_node =====
-# Label: metadata_intensity = 1
+# The stored construction did not produce a stable metadata-time ratio, so it
+# is retained as an exploratory scenario and excluded from classifier labels.
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node" ]; then
     echo ""
     echo "--- Scenario: metadata_cross_node ---"
@@ -232,7 +234,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "metadata_cross_node"
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
-                    "meta_cross" "metadata_intensity=1" \
+                    "meta_cross" "classifier_excluded" \
                     "${nranks}" "${items}" "64" "64" "${rep}" \
                     "-F -N 1")
                 submit_job "${script}"
@@ -291,7 +293,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "healthy_metadata" ];
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
-                    "healthy" "healthy=1" \
+                    "healthy" "metadata_intensity=0" \
                     "${nranks}" "${items}" "1048576" "1048576" "${rep}" \
                     "-F -u")
                 submit_job "${script}"
@@ -303,7 +305,7 @@ fi
 # ===== io500_mdtest_hard =====
 # IO500 mdtest-hard: 3901-byte files in SHARED directory (standardized stress test)
 # ION paper used this config. Single shared dir = maximum MDS contention
-# Label: metadata_intensity = 1
+# Labels: metadata_intensity = 1, file_strategy = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]; then
     echo ""
     echo "--- Scenario: io500_mdtest_hard (IO500 standardized) ---"
@@ -319,7 +321,7 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
-                    "io500_hard" "metadata_intensity=1" \
+                    "io500_hard" "metadata_intensity=1,file_strategy=1" \
                     "${nranks}" "${items}" "3901" "3901" "${rep}" \
                     "-F")
                 submit_job "${script}"
@@ -329,17 +331,18 @@ if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_hard" ]
 fi
 
 # ===== io500_mdtest_easy =====
-# IO500 mdtest-easy: unique dirs, empty files (healthy metadata)
-# Label: healthy = 1
+# IO500 mdtest-easy creates many empty files. Unique directories reduce
+# contention but do not remove the registered metadata-time pattern.
+# Label: metadata_intensity = 1
 if [ -z "${SCENARIO_FILTER}" ] || [ "${SCENARIO_FILTER}" = "io500_mdtest_easy" ]; then
     echo ""
-    echo "--- Scenario: io500_mdtest_easy (IO500 standardized: healthy) ---"
+    echo "--- Scenario: io500_mdtest_easy (Metadata Intensity = BAD) ---"
     for items in 100 500; do
         for nranks in 16 64; do
             for rep in $(seq 1 ${REPETITIONS}); do
                 TOTAL_JOBS=$((TOTAL_JOBS + 1))
                 script=$(generate_mdtest_job \
-                    "io500_easy" "healthy=1" \
+                    "io500_easy" "metadata_intensity=1" \
                     "${nranks}" "${items}" "0" "0" "${rep}" \
                     "-F -u")
                 submit_job "${script}"
