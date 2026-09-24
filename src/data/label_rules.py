@@ -229,10 +229,18 @@ def rule_frame(features: pd.DataFrame | Mapping[str, object]) -> pd.DataFrame:
 
 
 def labels_from_features(features: pd.DataFrame | Mapping[str, object]) -> pd.DataFrame:
-    """Return the problem labels and their derived healthy complement."""
+    """Return the problem labels and their derived healthy complement.
+
+    A problem label is its rule decision masked by the target's validity
+    (``validity_from_features``): a rule evaluated on an incomplete module
+    record set is not evidence, so it never becomes a positive. Healthy is
+    the complement of the masked problem labels; whether healthy itself is a
+    valid target is ``valid_healthy`` of the same validity frame.
+    """
     rules = rule_frame(features)
-    labels = rules.astype(int)
-    labels["healthy"] = (~rules.any(axis=1)).astype(int)
+    validity = validity_from_features(features)[BOTTLENECK_DIMENSIONS].astype(bool)
+    labels = (rules & validity).astype(int)
+    labels["healthy"] = (~(rules & validity).any(axis=1)).astype(int)
     return labels[DIMENSION_NAMES]
 
 

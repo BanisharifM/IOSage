@@ -633,6 +633,31 @@ def test_label_artifact_records_shared_rule_source():
         assert manifest['method'] == 'iosage_shared_rules'
 
 
+def test_labels_are_masked_by_target_validity_and_accepted_by_the_trainer():
+    from src.models.biquality import _label_matrix, _label_validity
+    rows = raw_frame(2)
+    rows.loc[0, 'partial_posix'] = 1
+    rows.loc[0, 'POSIX_WRITES'] = 5000.0          # random writes: access_pattern fires
+    rows.loc[0, 'POSIX_SEQ_WRITES'] = 0.0
+    rows.loc[1, 'POSIX_WRITES'] = 5000.0
+    rows.loc[1, 'POSIX_SEQ_WRITES'] = 0.0
+    engineered = stage3_engineer(rows, config=CONFIG)
+    labels = labels_from_features(engineered)
+    validity = validity_from_features(engineered)
+    assert labels.loc[1, 'access_pattern'] == 1 and labels.loc[1, 'healthy'] == 0
+    assert validity.loc[0, 'access_pattern'] == 0 and labels.loc[0, 'access_pattern'] == 0
+    assert labels.loc[0, 'healthy'] == 1 and validity.loc[0, 'healthy'] == 0
+    with tempfile.TemporaryDirectory() as tmp:
+        features_path = Path(tmp) / 'features.parquet'
+        labels_path = Path(tmp) / 'labels.parquet'
+        engineered.to_parquet(features_path, index=False)
+        written = generate_heuristic_labels(features_path, labels_path)
+    _label_matrix(written, 'production labels')
+    valid = _label_validity(written, 'production labels', required=True)
+    assert valid.tolist() == [[False, False, False, False, False, True, False, False],
+                              [True] * 8]
+
+
 def test_label_artifact_refuses_empty_features():
     with tempfile.TemporaryDirectory() as tmp:
         features_path = Path(tmp) / 'features.parquet'
