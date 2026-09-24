@@ -1,162 +1,82 @@
 # IOSage
 
-**Benchmark-Grounded Multi-Label I/O Bottleneck Diagnosis with Validated Recommendations**
+IOSage combines multi-label I/O bottleneck detection with benchmark evidence, source-level recommendations, and measured closed-loop validation. The active work targets the IPDPS 2027 resubmission.
 
-Submitted to SC 2026 (Track: Performance Measurement, Modeling, and Tools).
+The `v1.0.0` tag is the published SC 2026 artifact snapshot. Results stored under historical `results/` directories belong to that snapshot unless a manifest says otherwise. They are not evidence for the active resubmission run.
 
-## Architecture
+## Pipeline
 
-![IOSage Architecture](figures/architecture.png)
+1. Parse Darshan logs and build a versioned feature table.
+2. Assign heuristic labels to the production corpus.
+3. verify benchmark jobs against construction labels and extract the same feature schema.
+4. Train the biquality detector with grouped benchmark partitions.
+5. Compute per-label attribution for the final detector bundle.
+6. Build a knowledge base from accepted development evidence and measured fixes.
+7. Detect, retrieve evidence, generate a code change, and measure the result.
 
-IOSage detects I/O bottlenecks in HPC applications from Darshan profiling logs and generates code-level optimization recommendations. It combines a multi-label XGBoost classifier with LLM-generated fixes grounded in a benchmark-verified knowledge base (DIOBench, 689 entries from six benchmark suites). The classifier acts as a precision gate: only detected bottleneck dimensions are forwarded to the LLM, reducing false positives by 94% compared to LLM-only diagnosis.
+The current implementation requires hashes and manifests at stage boundaries. Failed or incomplete stages do not publish a result.
 
-## Main Results
+## Current status
 
-| Metric | Value |
-|--------|-------|
-| ML detection (Micro-F1, 5 seeds) | 0.929 +/- 0.003 |
-| vs. Drishti / WisIO / IOAgent | 2.6x / 2.9x / 2.8x higher |
-| False-positive reduction (TraceBench) | 94% (33 to 2) |
-| Closed-loop speedup (4 LLMs, geomean) | 4.5x to 11.4x |
-| TraceBench real-app precision | 0.857 |
-| Detection latency (median) | 43 ms |
-| LLM latency (per trace) | 4 to 18 s |
+The resubmission pipeline and its software checks are under active repair and rerun. The benchmark inventory currently contains accepted and excluded rows, but the full benchmark verification, feature extraction, final detector training, attribution, LLM evaluation, and iterative closed-loop runs have not all completed on the new pipeline. See [`docs/7_resubmission/ROADMAP_STATUS.md`](docs/7_resubmission/ROADMAP_STATUS.md) for the live gates.
 
-### Per-Dimension Detection (F1)
+Paper figure generation from result data stays blocked until a current validated result manifest exists. Historical metrics remain available through the `v1.0.0` tag and its archived artifacts.
 
-![Per-Dimension F1](figures/per_dimension_f1.png)
+## Installation
 
-### Iterative Closed-Loop Speedups (4 LLMs)
-
-![Iterative Speedups](figures/iterative_speedups.png)
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.9, 16+ CPU cores, 16 GB RAM. No GPU required.
-- Conda (recommended) or pip.
-
-### Installation (15 min)
+The project environment used on Delta is:
 
 ```bash
-git clone https://github.com/BanisharifM/IOSage.git
-cd IOSage
+PYTHONNOUSERSITE=1 /work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/python scripts/run_tests.py
+```
+
+For a separate installation, use the pinned manifests:
+
+```bash
 conda env create -f environment.yml
-conda activate sc2026
-
-# Verify installation
-python -c "import xgboost, lightgbm, shap, cleanlab; print('OK')"
+conda activate iosage
+python -m pip install -r requirements-test.txt
+PYTHONNOUSERSITE=1 python -m pytest
 ```
 
-The smoke test should print `OK`.
+Optional requirements are split by purpose:
 
-### Quick Reproduction (20 min)
+- `requirements-wisio.txt` for the WisIO comparison.
+- `requirements-notebooks.txt` for notebooks.
+- `requirements-test.txt` for repository tests.
 
-Uses pre-processed features and cached LLM outputs. Single seed, no API key needed.
+## Reproduction driver
+
+`scripts/reproduce_all.sh` runs one selected stage or the maintained sequence. It creates an immutable directory below `results/resubmission/reproduction/` and stops when a required artifact is absent.
 
 ```bash
-bash scripts/reproduce_all.sh --quick
+bash scripts/reproduce_all.sh --step 1 --run-id environment_check_YYYYMMDD
 ```
 
-### Full Reproduction (65 min on 16 cores)
+The full sequence needs the real Darshan corpus, verified benchmark logs, a final model bundle, measured knowledge-base evidence, API credentials for live model calls, and Delta access for closed-loop measurements. The driver does not substitute cached or historical outputs when one of those inputs is missing.
 
-Runs all 5 seeds, all 4 model families, SHAP analysis, and figure generation.
+## Repository layout
 
-```bash
-bash scripts/reproduce_all.sh
+```text
+src/data/             Darshan parsing, feature extraction, and preprocessing
+src/models/           Biquality training and attribution
+src/ioprescriber/     Detection, retrieval, recommendation, and validation
+src/llm/              Knowledge-base and iterative optimization components
+configs/              Maintained experiment configuration
+benchmarks/           Benchmark definitions and SLURM generators
+scripts/              Pipeline, verification, and analysis entry points
+tests/                Contract and regression tests
+docs/7_resubmission/  Active roadmap and audit records
 ```
 
-## Reproducing Paper Results
+The root `paper` path is a compatibility symlink to the frozen SC 2026 repository. Active paper edits belong in the separate `papers/IPDPS_2027` repository.
 
-Each paper table and figure maps to a specific script step:
+## Data and provenance
 
-| Paper Element | Script | Expected Output |
-|---------------|--------|-----------------|
-| Table II (baselines) | `--step 6` | `results/.../final_metrics.json` |
-| Table III (ML ablation) | `--step 6` | XGBoost Mi-F1 in [0.910, 0.948] |
-| Table IV (per-label) | `--step 6` | Per-dimension F1 scores |
-| Table V (recommendation ablation) | `--step 8` | Groundedness and Rec.P metrics |
-| Tables VI-VII (closed-loop) | `--step 8` | Speedup ratios per workload |
-| Figure 3 (per-dim F1 bars) | `--step 9` | `paper/figures/fig_gt_vs_heuristic.pdf` |
-| Figure 4 (SHAP importance) | `--step 7` | `paper/figures/shap/fig_shap_global_bar.pdf` |
-| Figure 5 (iterative speedups) | `--step 9` | `paper/figures/fig_iterative_speedup_comparison.pdf` |
+Large inputs and generated outputs are not committed to the public repository. Each current result must identify its input paths, hashes, configuration, run directory, and source revision. `data/processed/README.md` describes the current and historical local layouts.
 
-Figure 1 (architecture diagram) was created manually and is included as a static PDF.
-
-## Project Structure
-
-```
-IOSage/
-├── src/
-│   ├── data/               # Darshan parsing, feature extraction, preprocessing
-│   ├── models/             # ML training (biquality), SHAP attribution
-│   ├── llm/                # LLM recommendation, KB retrieval, iterative optimizer
-│   └── ioprescriber/       # End-to-end pipeline (detect, retrieve, recommend)
-├── configs/                # Training and preprocessing hyperparameters (YAML)
-├── scripts/                # Reproduction, figure generation, verification
-├── benchmarks/             # Ground-truth generation (IOR, mdtest, DLIO, h5bench, HACC-IO, custom)
-├── data/
-│   ├── knowledge_base/     # 689-entry benchmark-verified KB (JSON)
-│   └── llm_cache/          # Cached LLM outputs for offline reproduction
-├── models/                 # Trained model weights
-└── results/                # Evaluation metrics and experiment outputs
-```
-
-## Dataset
-
-**Production corpus:** 1,397,216 anonymized Darshan logs from ALCF Polaris (Apr 2024 to Feb 2026).
-
-DOI: [10.5281/zenodo.15052603](https://doi.org/10.5281/zenodo.15052603)
-
-| Processing Stage | Rows | Features |
-|------------------|------|----------|
-| Raw extraction | 1,397,216 | 186 |
-| After cleaning | 131,151 | 186 |
-| ML-ready (after exclusion) | 131,151 | 157 |
-| Train / Val / Test (temporal) | 91,807 / 19,672 / 19,672 | 157 |
-
-**DIOBench (benchmark ground truth):** 689 verified samples from 6 benchmark suites (IOR, mdtest, DLIO, h5bench, HACC-IO, custom mpi4py), split into 201 development and 488 test via iterative stratification.
-
-## Claims Supported by This Artifact
-
-| # | Claim | Supported | How to Verify |
-|---|-------|-----------|---------------|
-| 1 | 0.929 Micro-F1 on 488-sample DIOBench test set | Yes | `--step 6`, check `final_metrics.json` |
-| 2 | Outperforms Drishti (0.364), WisIO (0.320), IOAgent (0.331) | Yes | `--step 6`, baselines in same JSON |
-| 3 | 94% FP reduction vs LLM-only (33 to 2) | Yes | `--step 8`, TraceBench evaluation |
-| 4 | Groundedness 0.83 to 0.95 across 4 LLMs | Yes | `--step 8`, cached LLM outputs |
-| 5 | 4.5x to 11.4x closed-loop speedups | Yes | Pre-computed iterative results in `results/` |
-| 6 | 43 ms median detection latency | Yes | `results/.../latency_breakdown.json` |
-
-**Not directly reproducible without HPC access:** benchmark execution (requires Lustre + SLURM) and live LLM inference (requires OpenRouter API key). Pre-computed results are provided for both.
-
-## Software Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Python | 3.9 | Runtime |
-| XGBoost | 2.1.4 | ML classifier (primary) |
-| LightGBM | 4.5.0 | ML classifier (baseline) |
-| scikit-learn | 1.6.1 | Metrics, Random Forest, MLP |
-| SHAP | 0.49.1 | Offline feature attribution |
-| Cleanlab | 2.7.1 | Label noise detection |
-| pandas | 2.3.3 | Data processing |
-| NumPy | 1.26.4 | Numerical computing |
-| PyDarshan | 3.5.0 | Darshan log parsing |
-| openai | 1.55+ | OpenRouter API client (optional) |
-
-All versions pinned in `environment.yml` and `requirements.txt`.
-
-## ALCF Polaris System
-
-| Component | Specification |
-|-----------|---------------|
-| Nodes | 520 HPE Apollo 6500 Gen 10+ |
-| CPU | AMD EPYC Milan 7543P (32-core) |
-| GPU | 4x NVIDIA A100 per node |
-| Storage | Eagle/Grand Lustre (160 OSTs, 100 PiB, 650 GiB/s) |
+The published production corpus is available from [Zenodo](https://doi.org/10.5281/zenodo.15052603).
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+See [LICENSE](LICENSE).
