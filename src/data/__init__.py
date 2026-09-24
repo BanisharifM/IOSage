@@ -1,46 +1,6 @@
-"""Data pipeline for Darshan log feature extraction."""
+"""Data pipeline for Darshan log feature extraction.
 
-from src.data.parse_darshan import parse_darshan_log, parse_benchmark_job
-from src.data.feature_extraction import (
-    extract_raw_features,
-    get_feature_names,
-    get_raw_feature_names,
-    get_info_columns,
-    FEATURE_GROUPS,
-)
-from src.data.preprocessing import (
-    stage2_clean,
-    stage3_engineer,
-    compute_statistics,
-    stage5_normalize,
-    create_splits,
-    load_preprocessing_config,
-)
-from src.data.drishti_labeling import (
-    generate_heuristic_labels,
-    compute_drishti_codes,
-    codes_to_labels,
-    DIMENSION_NAMES,
-    DRISHTI_THRESHOLDS,
-)
-
-__all__ = [
-    'parse_darshan_log',
-    'parse_benchmark_job',
-    'extract_raw_features',
-    'get_feature_names',
-    'get_raw_feature_names',
-    'get_info_columns',
-    'FEATURE_GROUPS',
-    'stage2_clean',
-    'stage3_engineer',
-    'compute_statistics',
-    'stage5_normalize',
-    'create_splits',
-    'load_preprocessing_config',
-    'generate_heuristic_labels',
-    'compute_drishti_codes',
-    'codes_to_labels',
-    'DIMENSION_NAMES',
-    'DRISHTI_THRESHOLDS',
-]
+Import the modules by their full path (``src.data.parse_darshan``,
+``src.data.label_rules``, ...). The package itself imports nothing, so the
+label contract and the rules can be used without the native Darshan library.
+"""

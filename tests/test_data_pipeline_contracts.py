@@ -2,6 +2,8 @@
 import json
 import os
 import signal
+import subprocess
+import sys
 import tempfile
 import time
 from copy import deepcopy
@@ -171,6 +173,12 @@ def test_benchmark_samples_record_the_parse_cause_for_every_layout():
         merged = list(iter_benchmark_samples('custom', tmp))
         assert [job for job, _, _, _ in merged] == ['11', '22']
         assert all(error.startswith('ValueError: cannot open per-rank log') for _, _, _, error in merged)
+
+
+def test_label_rules_import_without_the_native_darshan_library():
+    code = 'import sys, src.data.label_rules, src.data.benchmark_verify; sys.exit(int("darshan" in sys.modules))'
+    completed = subprocess.run([sys.executable, '-c', code], cwd=Path.cwd(), capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_batch_extract_refuses_empty_input_and_total_failure():
