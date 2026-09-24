@@ -1,5 +1,6 @@
 """Contracts of the data pipeline (Codex audit batch 1, items DATA-001 to DATA-016)."""
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -9,8 +10,10 @@ import src.data.batch_extract as batch_extract
 from src.data.benchmark_logs import load_manifest, manifest_row, validate_verification_report
 from src.data.benchmark_verify import DIMENSION_NAMES, verify_benchmark_log
 from src.data.drishti_labeling import codes_to_labels, compute_drishti_codes
-from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_feature_names
-from src.data.parse_darshan import _read_module_frames, parse_darshan_log
+from src.data.feature_extraction import (
+    ALL_RAW_COUNTERS, FEATURE_SCHEMA_VERSION, extract_raw_features, get_feature_names)
+from src.data.label_rules import labels_from_features, validity_from_features
+from src.data.parse_darshan import _partial_feature_modules, _read_module_frames, parse_darshan_log
 from src.data.preprocessing import (
     create_splits, engineer_one, load_preprocessing_config, stage2_clean, stage3_engineer,
     stage5_normalize)
@@ -18,8 +21,17 @@ from tests.pipeline_fixtures import raw_frame
 
 CONFIG = {'cleaning': {'min_duration_seconds': 1, 'min_total_bytes': 1024, 'min_io_ops': 1,
                        'require_posix': True},
-          'sentinel_handling': {'replace_negative_rank_with': 0},
-          'normalization': {},
+          'sentinel_handling': {'replace_negative_rank_with': 0,
+                                'replace_unavailable_counter_with': 0},
+          'normalization': {
+              'volume_counters': 'log1p_robust', 'count_counters': 'log1p_robust',
+              'histogram_counters': 'log1p', 'top4_counters': 'log1p',
+              'timing_counters': 'log1p_robust', 'timestamp_counters': 'none',
+              'categorical_counters': 'none', 'rank_id_counters': 'none',
+              'rank_stat_counters': 'log1p', 'rank_stat_bounded_counters': 'none',
+              'conditional_size_counters': 'log1p', 'indicator_features': 'none',
+              'ratio_features': 'none', 'ratio_unbounded_features': 'log1p',
+              'derived_absolute': 'log1p', 'metadata_features': 'log1p'},
           'splits': {'method': 'temporal', 'test_fraction': 0.2, 'val_fraction': 0.2},
           'random_seed': 42}
 
@@ -52,6 +64,19 @@ def _raw_row(path):
     })
     row['_source_path'] = path
     return row
+
+
+def _parsed_row(nprocs=4, runtime=30.0):
+    raw = raw_frame(1).iloc[0]
+    counters = {name: float(raw[name]) for name in ALL_RAW_COUNTERS}
+    counters.update(num_files=2.0, num_data_files=2.0)
+    return {
+        'job': {'nprocs': nprocs, 'runtime': runtime},
+        'counters': counters,
+        'modules': ['POSIX'],
+        'shared_file_flags': {'POSIX': False},
+        'partial_modules': [],
+    }
 
 
 def test_batch_extract_resumes_by_identity_and_accounts_for_every_path():
@@ -125,40 +150,58 @@ def test_unreadable_module_is_an_error_not_a_zero_sample():
             'cannot read module POSIX')
     assert parse_darshan_log('/nonexistent.darshan') is None
     _raises(lambda: parse_darshan_log('/nonexistent.darshan', strict=True), Exception)
-    _raises(lambda: __import__('src.data.parse_darshan', fromlist=['_reject_partial_feature_modules'])
-            ._reject_partial_feature_modules(_PartialReport(), 'partial.darshan'),
-            ValueError, 'incomplete feature module')
+    assert _partial_feature_modules(_PartialReport()) == {'POSIX'}
+
+
+def test_present_module_contract_is_strict_and_partial_state_is_explicit():
+    parsed = _parsed_row()
+    parsed['partial_modules'] = ['POSIX']
+    features = extract_raw_features(parsed)
+    assert features['partial_posix'] == 1 and features['partial_mpiio'] == 0
+    engineered = stage3_engineer(pd.DataFrame([features]), config=CONFIG)
+    validity = validity_from_features(engineered).iloc[0]
+    assert not validity[list(DIMENSION_NAMES)].any()
+
+    missing = _parsed_row()
+    missing['counters'].pop('POSIX_FSYNCS')
+    _raises(lambda: extract_raw_features(missing), ValueError, 'POSIX_FSYNCS')
+    invalid_processes = _parsed_row()
+    invalid_processes['job']['nprocs'] = 0
+    _raises(lambda: extract_raw_features(invalid_processes), ValueError, 'nprocs')
 
 
 # --- DATA-008: verification is a gate ------------------------------------
 
 def _features(**over):
     # a healthy 4-rank job: 2000 sequential 4 MiB POSIX writes, two files, no MPI-IO
-    f = engineer_one({'job': {'nprocs': 4, 'runtime': 30.0}, 'counters': {}, 'modules': ['POSIX'],
-                      'shared_file_flags': {'POSIX': False}})
+    f = engineer_one(_parsed_row(), config=CONFIG)
     f.update(nprocs=4, runtime_seconds=30.0, POSIX_READS=0.0, POSIX_WRITES=2000.0,
              POSIX_BYTES_WRITTEN=2000 * 4 * 1048576.0, POSIX_SIZE_WRITE_4M_10M=2000.0,
              POSIX_SEQ_WRITES=2000.0, metadata_time_ratio=0.01, rank_byte_range_ratio=0.0,
-             SHARED_BYTE_IMBALANCE=0.0, num_files=2, is_shared_file=0, POSIX_FSYNCS=0.0)
+             SHARED_BYTE_IMBALANCE=0.0, num_files=2, num_data_files=2,
+             is_shared_file=0, POSIX_FSYNCS=0.0,
+             io_bytes_all=2000 * 4 * 1048576.0, io_ops_all=2000.0,
+             metadata_time_ratio_all=0.01)
     f.update(over)
     return f
 
 
-CONTEXT = {'log_paths': [], 'offsets': {}, 'data_files': 2}
-
-
 def test_verification_rejects_empty_labels_and_checks_every_healthy_condition():
-    _raises(lambda: verify_benchmark_log(_features(), {d: 0 for d in DIMENSION_NAMES}, CONTEXT),
+    _raises(lambda: verify_benchmark_log(
+        _features(), {d: 0 for d in DIMENSION_NAMES}, CONFIG['cleaning']),
             ValueError, 'no dimension')
     healthy = {d: int(d == 'healthy') for d in DIMENSION_NAMES}
-    passed, report = verify_benchmark_log(_features(), healthy, CONTEXT)
+    passed, report = verify_benchmark_log(_features(), healthy, CONFIG['cleaning'])
     assert passed and report['total_checks'] == 8
-    passed, report = verify_benchmark_log(_features(POSIX_FSYNCS=2000.0), healthy, CONTEXT)
+    passed, report = verify_benchmark_log(
+        _features(POSIX_FSYNCS=2000.0), healthy, CONFIG['cleaning'])
     assert not passed and report['checks']['healthy/no_throughput_utilization']['status'] == 'fail'
     # one fsync per rank at close (IOR -e) is not a sync-per-write construction
-    assert verify_benchmark_log(_features(POSIX_FSYNCS=4.0), healthy, CONTEXT)[0]
+    assert verify_benchmark_log(
+        _features(POSIX_FSYNCS=4.0), healthy, CONFIG['cleaning'])[0]
     # a sub-second run is reported against the cleaning rule but not failed
-    passed, report = verify_benchmark_log(_features(runtime_seconds=0.4), healthy, CONTEXT)
+    passed, report = verify_benchmark_log(
+        _features(runtime_seconds=0.4), healthy, CONFIG['cleaning'])
     assert passed and not report['cleaning_rule'] and 'runtime' in report['cleaning_reason']
 
 
@@ -166,22 +209,26 @@ def test_verification_has_a_rule_for_every_bottleneck_dimension():
     cases = {
         # Drishti P06: over 1000 small writes that are over 10 percent of the writes
         'access_granularity': dict(POSIX_SIZE_WRITE_4M_10M=0.0, POSIX_SIZE_WRITE_1K_10K=2000.0),
-        'metadata_intensity': dict(metadata_time_ratio=0.5),
+        'metadata_intensity': dict(metadata_time_ratio_all=0.5),
         'parallelism_efficiency': dict(rank_byte_range_ratio=0.9),
         'access_pattern': dict(POSIX_SEQ_WRITES=100.0),
         'interface_choice': dict(is_shared_file=1),
-        'file_strategy': dict(),
+        'file_strategy': dict(num_data_files=4),
         'throughput_utilization': dict(POSIX_FSYNCS=2000.0),
     }
     for dim, over in cases.items():
         labels = {d: int(d == dim) for d in DIMENSION_NAMES}
-        context = dict(CONTEXT, data_files=4) if dim == 'file_strategy' else CONTEXT
-        assert verify_benchmark_log(_features(**over), labels, context)[0], dim
-        assert not verify_benchmark_log(_features(), labels, CONTEXT)[0], dim
+        assert verify_benchmark_log(
+            _features(**over), labels, CONFIG['cleaning'])[0], dim
+        assert not verify_benchmark_log(
+            _features(), labels, CONFIG['cleaning'])[0], dim
     # a read-only job is not a metadata-only job
     labels = {d: int(d == 'metadata_intensity') for d in DIMENSION_NAMES}
-    assert not verify_benchmark_log(_features(POSIX_BYTES_WRITTEN=0.0, POSIX_BYTES_READ=1e9, POSIX_READS=2000.0,
-                                              POSIX_WRITES=0.0, POSIX_SEQ_READS=2000.0), labels, CONTEXT)[0]
+    assert not verify_benchmark_log(
+        _features(POSIX_BYTES_WRITTEN=0.0, POSIX_BYTES_READ=1e9,
+                  POSIX_READS=2000.0, POSIX_WRITES=0.0, POSIX_SEQ_READS=2000.0,
+                  io_bytes_all=1e9),
+        labels, CONFIG['cleaning'])[0]
 
 
 def test_rules_follow_the_application_layer_for_mpiio_jobs():
@@ -191,14 +238,26 @@ def test_rules_follow_the_application_layer_for_mpiio_jobs():
                  POSIX_WRITES=8000.0, POSIX_SEQ_WRITES=8000.0, POSIX_SIZE_WRITE_4M_10M=0.0,
                  POSIX_SIZE_WRITE_100K_1M=8000.0, SHARED_BYTE_IMBALANCE=0.0)
     healthy = {d: int(d == 'healthy') for d in DIMENSION_NAMES}
-    assert verify_benchmark_log(_features(**mpiio), healthy, CONTEXT)[0]
+    assert verify_benchmark_log(_features(**mpiio), healthy, CONFIG['cleaning'])[0]
     # independent MPI-IO at scale without collectives is Drishti's M03
     indep = dict(mpiio, MPIIO_COLL_WRITES=0.0, MPIIO_INDEP_WRITES=2000.0)
     labels = {d: int(d == 'interface_choice') for d in DIMENSION_NAMES}
-    assert verify_benchmark_log(_features(**indep), labels, CONTEXT)[0]
+    assert verify_benchmark_log(_features(**indep), labels, CONFIG['cleaning'])[0]
     # under 1000 MPI-IO operations Drishti does not fire, so a small independent job stays healthy
     few = dict(indep, MPIIO_INDEP_WRITES=145.0, MPIIO_SIZE_WRITE_AGG_4M_10M=145.0)
-    assert verify_benchmark_log(_features(**few), healthy, CONTEXT)[0]
+    assert verify_benchmark_log(_features(**few), healthy, CONFIG['cleaning'])[0]
+
+
+def test_production_and_benchmark_labels_use_the_same_rules():
+    rows = pd.DataFrame([
+        _features(),
+        _features(POSIX_SIZE_WRITE_4M_10M=0.0, POSIX_SIZE_WRITE_1K_10K=2000.0),
+        _features(num_data_files=4),
+        _features(POSIX_FSYNCS=2000.0),
+    ])
+    expected = labels_from_features(rows)
+    actual = codes_to_labels(compute_drishti_codes(rows), rows)
+    pd.testing.assert_frame_equal(actual, expected)
 
 
 # --- DATA-007: manifest lookups are exact ---------------------------------
@@ -286,8 +345,7 @@ def test_chunk_merge_requires_complete_current_finite_schema():
 # --- DATA-010 / DATA-011 / DATA-012: schema contracts ----------------------
 
 def test_feature_name_api_matches_real_extraction():
-    engineered = engineer_one({'job': {'nprocs': 2, 'runtime': 5.0}, 'counters': {},
-                               'modules': ['POSIX'], 'shared_file_flags': {}})
+    engineered = engineer_one(_parsed_row(nprocs=2, runtime=5.0), config=CONFIG)
     produced = [k for k in engineered if not k.startswith('_')]
     assert sorted(produced) == sorted(get_feature_names())
     assert len(set(get_feature_names())) == len(get_feature_names()) == len(produced)
@@ -308,6 +366,16 @@ def test_missing_scaler_and_missing_config_are_errors():
     df = stage3_engineer(raw_frame(3))
     _raises(lambda: stage5_normalize(df, CONFIG, fit=False, scalers={}), ValueError, 'no fitted scaler')
     _raises(lambda: load_preprocessing_config('/nonexistent/preprocessing.yaml'), FileNotFoundError)
+
+
+def test_normalization_rejects_missing_keys_and_unknown_methods():
+    frame = stage3_engineer(raw_frame(3), config=CONFIG)
+    missing = deepcopy(CONFIG)
+    missing['normalization'].pop('rank_stat_bounded_counters')
+    _raises(lambda: stage5_normalize(frame, missing), ValueError, 'missing=')
+    unknown = deepcopy(CONFIG)
+    unknown['normalization']['volume_counters'] = 'log1p_robst'
+    _raises(lambda: stage5_normalize(frame, unknown), ValueError, 'unknown normalization')
 
 
 # --- DATA-013: splits are positions --------------------------------------
@@ -332,12 +400,16 @@ def test_temporal_split_returns_positions_for_any_index():
         for jobid in grouped['_jobid'].iloc[positions]:
             memberships.setdefault(jobid, set()).add(name)
     assert all(len(parts) == 1 for parts in memberships.values())
+    unidentified = raw_frame(10).drop(columns=['_source_path'])
+    unidentified['_jobid'] = 0
+    _raises(lambda: create_splits(unidentified, CONFIG), ValueError,
+            'cannot identify a row')
 
 
 # --- DATA-016: label conversion keeps the caller's index ------------------
 
 def test_codes_to_labels_keeps_index_and_stays_binary():
     df = stage3_engineer(raw_frame(2)).set_index(pd.Index([10, 20]))
-    labels = codes_to_labels(compute_drishti_codes(df))
+    labels = codes_to_labels(compute_drishti_codes(df), df)
     assert list(labels.index) == [10, 20]
     assert labels.isin([0, 1]).all().all() and labels['healthy'].tolist() == [1, 1]

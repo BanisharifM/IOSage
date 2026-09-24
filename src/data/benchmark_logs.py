@@ -20,10 +20,9 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-import darshan
 import pandas as pd
 
-from src.data.benchmark_verify import DIMENSION_NAMES
+from src.data.label_rules import DIMENSION_NAMES
 from src.data.parse_darshan import parse_benchmark_job, parse_darshan_log
 
 logger = logging.getLogger(__name__)
@@ -64,11 +63,11 @@ def group_logs_by_job(log_dir, bench_type):
 
 
 def iter_benchmark_samples(bench_type, log_dir):
-    """Yield ``(job_id, files, parsed)`` for every sample of a benchmark.
+    """Yield ``(job_id, files, parsed, error)`` for every benchmark sample.
 
     A sample is one merged job for the per-process benchmarks and one log
     for the others. ``parsed`` is None when the sample could not be parsed;
-    the error is logged with the job id so the caller can count it.
+    ``error`` contains the parse failure text when ``parsed`` is None.
     """
     if bench_type in PER_RANK_BENCHMARKS:
         groups = sorted(group_logs_by_job(log_dir, bench_type).items())
@@ -77,6 +76,7 @@ def iter_benchmark_samples(bench_type, log_dir):
                   for f in sorted(glob.glob(os.path.join(log_dir, "*.darshan")))]
 
     for job_id, files in groups:
+        error = None
         try:
             if bench_type in PER_RANK_BENCHMARKS:
                 parsed = parse_benchmark_job(files)
@@ -85,10 +85,11 @@ def iter_benchmark_samples(bench_type, log_dir):
                 if parsed is None:
                     raise ValueError("parse_darshan_log returned None")
         except ValueError as exc:
+            error = f"{type(exc).__name__}: {exc}"
             logger.error("Cannot parse %s job %s (%d files): %s",
                          bench_type, job_id, len(files), exc)
             parsed = None
-        yield job_id, files, parsed
+        yield job_id, files, parsed, error
 
 
 # ---------------------------------------------------------------------------
@@ -199,28 +200,3 @@ def manifest_row(manifest, bench_type, job_id, files):
         raise ValueError(f"{len(rows)} manifest rows for {bench_type} job {job_id} {key}")
     row = rows.iloc[0]
     return None if row["source"] == "none" else row
-
-
-def posix_file_facts(files):
-    """Per-file facts the verification rules need from the raw POSIX records:
-    ``offsets`` (record id to the highest byte offset read or written) and
-    ``data_files`` (distinct files with any bytes moved, standard streams
-    left out)."""
-    offsets = {}
-    data_files = set()
-    for path in files:
-        report = darshan.DarshanReport(str(path), read_all=False)
-        if "POSIX" not in report.modules:
-            continue
-        report.mod_read_all_records("POSIX")
-        df = report.records["POSIX"].to_df()["counters"]
-        names = getattr(report, "name_records", {}) or {}
-        per_file = df.groupby("id").agg(offset=("POSIX_MAX_BYTE_WRITTEN", "max"),
-                                        offset_r=("POSIX_MAX_BYTE_READ", "max"),
-                                        bytes=("POSIX_BYTES_READ", "sum"), written=("POSIX_BYTES_WRITTEN", "sum"))
-        for rid, row in per_file.iterrows():
-            rid = int(rid)
-            offsets[rid] = max(offsets.get(rid, 0), int(row["offset"]), int(row["offset_r"]))
-            if row["bytes"] + row["written"] > 0 and names.get(rid) not in ("<STDIN>", "<STDOUT>", "<STDERR>"):
-                data_files.add(rid)
-    return {"offsets": offsets, "data_files": len(data_files)}

@@ -24,8 +24,11 @@ Usage::
     # }
 """
 
+from __future__ import annotations
+
 import datetime
 import logging
+from pathlib import Path
 
 import darshan
 import darshan.backend.cffi_backend as darshan_backend
@@ -42,7 +45,9 @@ FEATURE_MODULES = (('POSIX', None), ('MPI-IO', 'MPIIO'), ('STDIO', None))
 # Public API
 # ---------------------------------------------------------------------------
 
-def parse_darshan_log(darshan_path, strict=False):
+def parse_darshan_log(
+    darshan_path: str | Path, strict: bool = False,
+) -> dict[str, object] | None:
     """Parse a single .darshan file and return structured data.
 
     Parameters
@@ -57,7 +62,8 @@ def parse_darshan_log(darshan_path, strict=False):
     -------
     dict or None
         Dictionary with keys ``'job'``, ``'counters'``, ``'modules'``,
-        ``'shared_file_flags'``. None if the file cannot be parsed.
+        ``'shared_file_flags'`` and ``'partial_modules'``.
+        None if the file cannot be parsed.
     """
     darshan_path = str(darshan_path)
     try:
@@ -69,29 +75,31 @@ def parse_darshan_log(darshan_path, strict=False):
         return None
 
 
-def list_available_modules(darshan_path):
-    """Return list of module names present in a Darshan log."""
-    result = parse_darshan_log(darshan_path)
-    if result is None:
-        return []
-    return result['modules']
-
-
 # ---------------------------------------------------------------------------
 # PyDarshan backend
 # ---------------------------------------------------------------------------
 
 def _job_metadata(report, nprocs=None):
     """Job dictionary from a report's metadata; ``nprocs`` overrides the log's."""
-    job_meta = report.metadata.get('job', {})
+    job_meta = report.metadata['job']
+    required = {
+        'jobid', 'uid', 'nprocs', 'start_time_sec', 'end_time_sec',
+        'run_time', 'log_ver',
+    }
+    missing = required - set(job_meta)
+    if missing:
+        raise ValueError(f"Darshan job metadata lacks {sorted(missing)}")
+    process_count = job_meta['nprocs'] if nprocs is None else nprocs
+    if int(process_count) < 1:
+        raise ValueError(f"invalid Darshan process count: {process_count}")
     return {
-        'jobid': job_meta.get('jobid', 0),
-        'uid': job_meta.get('uid', 0),
-        'nprocs': job_meta.get('nprocs', 1) if nprocs is None else nprocs,
-        'start_time': job_meta.get('start_time_sec', 0),
-        'end_time': job_meta.get('end_time_sec', 0),
-        'runtime': job_meta.get('run_time', 0.0),
-        'log_version': job_meta.get('log_ver', ''),
+        'jobid': job_meta['jobid'],
+        'uid': job_meta['uid'],
+        'nprocs': int(process_count),
+        'start_time': job_meta['start_time_sec'],
+        'end_time': job_meta['end_time_sec'],
+        'runtime': job_meta['run_time'],
+        'log_version': job_meta['log_ver'],
     }
 
 
@@ -104,11 +112,12 @@ def _read_module_frames(report, module_name, path):
         raise ValueError(f"cannot read module {module_name} of {path}: {exc}") from exc
 
 
-def _reject_partial_feature_modules(report, path):
-    partial = [mod for mod, _ in FEATURE_MODULES
-               if mod in report.modules and report.modules[mod].get('partial_flag', False)]
-    if partial:
-        raise ValueError(f"incomplete feature module data in {path}: {', '.join(partial)}")
+def _partial_feature_modules(report):
+    """Feature modules whose record sets are incomplete."""
+    return {
+        mod for mod, _ in FEATURE_MODULES
+        if mod in report.modules and report.modules[mod]['partial_flag']
+    }
 
 
 def _open_report(path):
@@ -155,10 +164,13 @@ def _parse_with_pydarshan(path):
     and reads only the feature modules.
     """
     report = _open_report(path)
-    _reject_partial_feature_modules(report, path)
     job = _job_metadata(report)
     modules = list(report.modules.keys())
     job['modules'] = modules
+    partial_modules = _partial_feature_modules(report)
+    if partial_modules:
+        logger.warning("Incomplete module records in %s: %s", path,
+                       ", ".join(sorted(partial_modules)))
 
     counters = {}
     shared_file_flags = {}
@@ -173,13 +185,16 @@ def _parse_with_pydarshan(path):
 
     name_records = getattr(report, 'name_records', {}) or {}
     counters.update(_rank_statistics(module_dfs, job['nprocs'], name_records))
-    counters['num_files'] = len(name_records)
+    file_facts = _file_facts(module_dfs, name_records)
+    counters['num_files'] = file_facts['num_files']
+    counters['num_data_files'] = file_facts['data_files']
 
     return {
         'job': job,
         'counters': counters,
         'modules': modules,
         'shared_file_flags': shared_file_flags,
+        'partial_modules': sorted(partial_modules),
     }
 
 
@@ -204,13 +219,19 @@ def _top4_merge(agg, new):
 
 
 def _shared_file_flag(df_int, nprocs):
-    """True when the module's records describe one file that all ranks used.
+    """True when any module record belongs to a file used by several ranks."""
+    if df_int is None or 'id' not in df_int.columns or df_int.empty:
+        return False
+    if (df_int['rank'] == -1).any():
+        return True
+    if nprocs <= 1:
+        return False
+    own = df_int[df_int['rank'] >= 0]
+    return bool((own.groupby('id')['rank'].nunique() > 1).any())
 
-    Darshan marks such a file with one reduced record of rank -1. The merged
-    per-process logs of ``parse_benchmark_job`` carry one record per rank
-    instead, so the file counts as shared when every one of the ``nprocs``
-    ranks has a record for it. One record from one rank is a private file.
-    """
+
+def _single_shared_file_flag(df_int, nprocs):
+    """True when all records describe one file used by every rank."""
     if df_int is None or 'id' not in df_int.columns or df_int.empty:
         return False
     if df_int['id'].nunique() != 1:
@@ -295,8 +316,9 @@ def _extract_pydarshan_module(dfs, module_name, counters, nprocs, prefix=None):
     df_float = dfs.get('fcounters')
 
     shared_file_flag = _shared_file_flag(df_int, nprocs)
+    single_shared_file = _single_shared_file_flag(df_int, nprocs)
     shared_values = {}
-    if shared_file_flag:
+    if single_shared_file:
         reduced = df_int['rank'] == -1
         if reduced.any():
             pos = int(np.flatnonzero(reduced.to_numpy())[-1])
@@ -443,8 +465,11 @@ _STANDARD_STREAMS = {'<STDIN>', '<STDOUT>', '<STDERR>'}
 RANK_STAT_KEYS = (
     'RANK_IO_COUNT', 'RANK_BYTES_MAX', 'RANK_BYTES_MIN', 'RANK_BYTES_VAR',
     'RANK_BYTES_GINI', 'RANK_TIME_MAX', 'RANK_TIME_MIN', 'RANK_TIME_VAR',
-    'RANK_SHARED_BYTES', 'SHARED_BYTE_IMBALANCE', 'SHARED_TIME_IMBALANCE',
+    'RANK_BYTES_TOTAL', 'RANK_TIME_TOTAL', 'RANK_SHARED_BYTES',
+    'SHARED_BYTE_IMBALANCE', 'SHARED_TIME_IMBALANCE',
     'FILE_WRITE_IMBALANCE', 'FILE_READ_IMBALANCE',
+    'SHARED_POSIX_READS', 'SHARED_POSIX_WRITES',
+    'SHARED_POSIX_SMALL_READS', 'SHARED_POSIX_SMALL_WRITES',
 )
 
 
@@ -461,6 +486,35 @@ def _gini(values):
 
 def _stream_ids(name_records):
     return {i for i, name in name_records.items() if name in _STANDARD_STREAMS}
+
+
+def _file_facts(module_dfs, name_records):
+    """Count feature-module files and files that moved data."""
+    streams = _stream_ids(name_records)
+    feature_ids = set()
+    data_ids = set()
+    for module in _RANK_LAYERS + ('MPI-IO',):
+        dfs = module_dfs.get(module)
+        if not dfs or dfs.get('counters') is None:
+            continue
+        frame = dfs['counters']
+        ids = {int(value) for value in frame['id'].unique()} - streams
+        feature_ids.update(ids)
+        if module not in _RANK_LAYERS:
+            continue
+        prefix = 'MPIIO' if module == 'MPI-IO' else module
+        byte_columns = [
+            name for name in (f'{prefix}_BYTES_READ', f'{prefix}_BYTES_WRITTEN')
+            if name in frame.columns
+        ]
+        if byte_columns:
+            totals = frame.groupby('id')[byte_columns].sum().sum(axis=1)
+            data_ids.update(int(record_id) for record_id in totals[totals > 0].index
+                            if int(record_id) not in streams)
+    return {
+        'num_files': len(feature_ids),
+        'data_files': len(data_ids),
+    }
 
 
 def _per_file_imbalance(df_int, column):
@@ -555,11 +609,21 @@ def _rank_statistics(module_dfs, nprocs, name_records):
     shared_bytes = 0.0
     file_write_imb = 0.0
     file_read_imb = 0.0
+    shared_posix_reads = 0.0
+    shared_posix_writes = 0.0
+    shared_posix_small_reads = 0.0
+    shared_posix_small_writes = 0.0
     streams = _stream_ids(name_records)
 
     # Straggler evidence from the layer the application used
     mpiio = module_dfs.get('MPI-IO')
-    if mpiio and mpiio.get('counters') is not None and not mpiio['counters'].empty:
+    mpiio_has_shared = (
+        mpiio
+        and mpiio.get('counters') is not None
+        and not mpiio['counters'].empty
+        and (mpiio['counters']['rank'] == -1).any()
+    )
+    if mpiio_has_shared:
         shared_byte_imb, shared_time_imb = _shared_record_imbalance(
             mpiio['counters'], mpiio.get('fcounters'), 'MPIIO')
     else:
@@ -603,6 +667,28 @@ def _rank_statistics(module_dfs, nprocs, name_records):
         if mod == 'POSIX' and not df_int.empty:
             file_write_imb = _per_file_imbalance(df_int, 'POSIX_BYTES_WRITTEN')
             file_read_imb = _per_file_imbalance(df_int, 'POSIX_BYTES_READ')
+            shared_ids = set(df_int.loc[df_int['rank'] == -1, 'id'])
+            own = df_int[df_int['rank'] >= 0]
+            shared_ids.update(
+                own.groupby('id')['rank'].nunique().loc[lambda count: count > 1].index
+            )
+            shared_records = df_int[df_int['id'].isin(shared_ids)]
+            shared_posix_reads = float(shared_records['POSIX_READS'].sum()) \
+                if 'POSIX_READS' in shared_records else 0.0
+            shared_posix_writes = float(shared_records['POSIX_WRITES'].sum()) \
+                if 'POSIX_WRITES' in shared_records else 0.0
+            small_read_columns = [name for name in [
+                'POSIX_SIZE_READ_0_100', 'POSIX_SIZE_READ_100_1K',
+                'POSIX_SIZE_READ_1K_10K', 'POSIX_SIZE_READ_10K_100K',
+                'POSIX_SIZE_READ_100K_1M',
+            ] if name in shared_records]
+            small_write_columns = [name for name in [
+                'POSIX_SIZE_WRITE_0_100', 'POSIX_SIZE_WRITE_100_1K',
+                'POSIX_SIZE_WRITE_1K_10K', 'POSIX_SIZE_WRITE_10K_100K',
+                'POSIX_SIZE_WRITE_100K_1M',
+            ] if name in shared_records]
+            shared_posix_small_reads = float(shared_records[small_read_columns].sum().sum())
+            shared_posix_small_writes = float(shared_records[small_write_columns].sum().sum())
 
         if df_float is not None and not df_float.empty:
             time_cols = [c for c in (f'{mod}_F_READ_TIME', f'{mod}_F_WRITE_TIME',
@@ -620,11 +706,17 @@ def _rank_statistics(module_dfs, nprocs, name_records):
         'RANK_TIME_MAX': float(rank_time.max()),
         'RANK_TIME_MIN': float(rank_time.min()),
         'RANK_TIME_VAR': float(rank_time.var()),
+        'RANK_BYTES_TOTAL': float(rank_bytes.sum()),
+        'RANK_TIME_TOTAL': float(rank_time.sum()),
         'RANK_SHARED_BYTES': shared_bytes,
         'SHARED_BYTE_IMBALANCE': shared_byte_imb,
         'SHARED_TIME_IMBALANCE': shared_time_imb,
         'FILE_WRITE_IMBALANCE': file_write_imb,
         'FILE_READ_IMBALANCE': file_read_imb,
+        'SHARED_POSIX_READS': shared_posix_reads,
+        'SHARED_POSIX_WRITES': shared_posix_writes,
+        'SHARED_POSIX_SMALL_READS': shared_posix_small_reads,
+        'SHARED_POSIX_SMALL_WRITES': shared_posix_small_writes,
     }
 
 
@@ -632,7 +724,7 @@ def _rank_statistics(module_dfs, nprocs, name_records):
 # Per-rank log aggregation for non-MPI benchmarks (DLIO, custom Python)
 # ---------------------------------------------------------------------------
 
-def parse_benchmark_job(rank_files):
+def parse_benchmark_job(rank_files: list[str | Path]) -> dict[str, object]:
     """Aggregate per-rank Darshan logs into a single job-level result.
 
     When Python/mpi4py programs run with LD_PRELOAD + DARSHAN_ENABLE_NONMPI=1,
@@ -664,8 +756,8 @@ def parse_benchmark_job(rank_files):
     ------
     ValueError
         If ``rank_files`` is empty, or a file cannot be opened or one of its
-        modules cannot be read. A partial merge would look like a complete
-        job with fewer processes, so it is refused.
+        modules cannot be read. Incomplete module record sets are retained
+        with an explicit indicator.
     """
     if not rank_files:
         raise ValueError("parse_benchmark_job needs at least one per-rank log")
@@ -677,23 +769,31 @@ def parse_benchmark_job(rank_files):
     job_meta = None
     all_modules = set()
     all_name_records = {}
+    partial_modules = set()
     start_times = []
     end_times = []
 
     for rank_idx, fpath in enumerate(sorted(rank_files)):
         try:
             report = _open_report(str(fpath))
-            _reject_partial_feature_modules(report, fpath)
         except Exception as exc:
             raise ValueError(f"cannot open per-rank log {fpath}: {exc}") from exc
 
+        file_partial = _partial_feature_modules(report)
+        if file_partial:
+            partial_modules.update(file_partial)
+            logger.warning("Incomplete module records in %s: %s", fpath,
+                           ", ".join(sorted(file_partial)))
+
         if job_meta is None:
             job_meta = _job_metadata(report, nprocs=nprocs)
-        jm = report.metadata.get('job', {})
-        if jm.get('start_time_sec', 0) > 0:
-            start_times.append(jm['start_time_sec'])
-        if jm.get('end_time_sec', 0) > 0:
-            end_times.append(jm['end_time_sec'])
+        jm = report.metadata['job']
+        required_times = {'start_time_sec', 'start_time_nsec', 'end_time_sec', 'end_time_nsec'}
+        missing_times = required_times - set(jm)
+        if missing_times:
+            raise ValueError(f"Darshan job timestamps lack {sorted(missing_times)} in {fpath}")
+        start_times.append(jm['start_time_sec'] + jm['start_time_nsec'] / 1e9)
+        end_times.append(jm['end_time_sec'] + jm['end_time_nsec'] / 1e9)
 
         # Every record of this file belongs to this process
         for mod, _ in FEATURE_MODULES:
@@ -733,11 +833,14 @@ def parse_benchmark_job(rank_files):
             dfs, mod, counters, nprocs, prefix=prefix)
 
     counters.update(_rank_statistics(module_dfs, nprocs, all_name_records))
-    counters['num_files'] = len(all_name_records)
+    file_facts = _file_facts(module_dfs, all_name_records)
+    counters['num_files'] = file_facts['num_files']
+    counters['num_data_files'] = file_facts['data_files']
 
     return {
         'job': job_meta,
         'counters': counters,
         'modules': sorted(all_modules),
         'shared_file_flags': shared_file_flags,
+        'partial_modules': sorted(partial_modules),
     }

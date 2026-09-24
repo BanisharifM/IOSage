@@ -9,10 +9,10 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from src.data.benchmark_logs import posix_file_facts  # noqa: E402
-from src.data.benchmark_verify import DIMENSION_NAMES, verify_benchmark_log  # noqa: E402
+from src.data.benchmark_verify import verify_benchmark_log  # noqa: E402
+from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 from src.data.parse_darshan import parse_darshan_log  # noqa: E402
-from src.data.preprocessing import engineer_one  # noqa: E402
+from src.data.preprocessing import engineer_one, load_preprocessing_config  # noqa: E402
 
 
 def parse_labels(text):
@@ -35,9 +35,9 @@ def main():
     log_path = Path(args.log).resolve()
     labels = parse_labels(args.labels)
     parsed = parse_darshan_log(log_path, strict=True)
-    features = engineer_one(parsed)
-    context = {"log_paths": [str(log_path)], **posix_file_facts([str(log_path)])}
-    passed, report = verify_benchmark_log(features, labels, context)
+    config = load_preprocessing_config()
+    features = engineer_one(parsed, config=config)
+    passed, report = verify_benchmark_log(features, labels, config['cleaning'])
     result = {"log": str(log_path), "labels": labels, **report}
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

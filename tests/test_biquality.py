@@ -47,6 +47,8 @@ def _production(tmp, n=60):
     df['POSIX_WRITES'] = RNG.randint(1, 5000, n).astype(float)
     labels = pd.DataFrame({d: RNG.randint(0, 2, n) for d in BOTTLENECK_DIMENSIONS})
     labels['healthy'] = (labels[BOTTLENECK_DIMENSIONS].sum(axis=1) == 0).astype(int)
+    for dimension in DIMENSION_NAMES:
+        labels[f'valid_{dimension}'] = 1
     labels['_source_path'] = df['_source_path']
     labels['_jobid'] = 7  # one job id for every row: alignment must not use it
     return df, labels

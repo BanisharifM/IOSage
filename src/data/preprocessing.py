@@ -24,6 +24,8 @@ Design principles:
     input; a missing column is an error, never a zero.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 
@@ -34,6 +36,7 @@ import yaml
 from src.data.feature_extraction import (
     FEATURE_GROUPS,
     FEATURE_SCHEMA_VERSION,
+    DERIVED_FEATURE_NAMES,
     _EPS,
     _SENTINEL,
     compute_layer_and_rank_features,
@@ -42,6 +45,14 @@ from src.data.feature_extraction import (
 )
 
 logger = logging.getLogger(__name__)
+
+_RANK_SENTINEL_COLUMNS = [
+    'POSIX_FASTEST_RANK', 'POSIX_FASTEST_RANK_BYTES',
+    'POSIX_SLOWEST_RANK', 'POSIX_SLOWEST_RANK_BYTES',
+]
+_UNAVAILABLE_SENTINEL_COLUMNS = [
+    'POSIX_MMAPS', 'POSIX_MEM_ALIGNMENT', 'POSIX_FILE_ALIGNMENT',
+]
 
 
 # ---------------------------------------------------------------------------
@@ -67,11 +78,45 @@ def require_raw_schema(df, stage):
                          f"first: {missing[:5]}")
 
 
+def apply_sentinel_handling(df, config):
+    """Replace documented Darshan sentinels and reject unexpected ones."""
+    sentinel_config = config['sentinel_handling']
+    expected_keys = {'replace_negative_rank_with', 'replace_unavailable_counter_with'}
+    if set(sentinel_config) != expected_keys:
+        raise ValueError(
+            "sentinel_handling keys differ from the required contract: "
+            f"missing={sorted(expected_keys - set(sentinel_config))}, "
+            f"unknown={sorted(set(sentinel_config) - expected_keys)}"
+        )
+    df = df.copy()
+    replacements = {}
+    for column in _RANK_SENTINEL_COLUMNS:
+        count = int((df[column] == _SENTINEL).sum())
+        if count:
+            df.loc[df[column] == _SENTINEL, column] = sentinel_config['replace_negative_rank_with']
+            replacements[column] = count
+    for column in _UNAVAILABLE_SENTINEL_COLUMNS:
+        count = int((df[column] == _SENTINEL).sum())
+        if count:
+            df.loc[df[column] == _SENTINEL, column] = sentinel_config['replace_unavailable_counter_with']
+            replacements[column] = count
+    known = set(_RANK_SENTINEL_COLUMNS + _UNAVAILABLE_SENTINEL_COLUMNS)
+    unexpected = [
+        column for column in get_raw_feature_names()
+        if column in df.columns and column not in known and (df[column] == _SENTINEL).any()
+    ]
+    if unexpected:
+        raise ValueError(f"unexpected -1 sentinel values in raw columns {unexpected[:5]}")
+    return df, replacements
+
+
 # ---------------------------------------------------------------------------
 # Stage 2: Cleaning
 # ---------------------------------------------------------------------------
 
-def stage2_clean(df, config):
+def stage2_clean(
+    df: pd.DataFrame, config: dict[str, object],
+) -> tuple[pd.DataFrame, dict[str, object]]:
     """Clean raw features: filter invalid jobs, handle sentinels, add indicators.
 
     Parameters
@@ -148,25 +193,9 @@ def stage2_clean(df, config):
     # this frame and the parquet written from it by position.
     df = df.reset_index(drop=True)
 
-    # --- Handle sentinel values ---
-    rank_replacement = config['sentinel_handling']['replace_negative_rank_with']
-
-    # Integer sentinel -1 replacement for rank-related counters
-    rank_int_cols = [
-        'POSIX_FASTEST_RANK', 'POSIX_FASTEST_RANK_BYTES',
-        'POSIX_SLOWEST_RANK', 'POSIX_SLOWEST_RANK_BYTES',
-    ]
-    for col in rank_int_cols:
-        mask = df[col] == _SENTINEL
-        if mask.any():
-            df.loc[mask, col] = rank_replacement
-
-    # Float sentinel 0.0 for rank timing (already 0 for non-shared, keep as is)
-
-    # MMAPS sentinel -1 (overflow clamp)
-    mask = df['POSIX_MMAPS'] == _SENTINEL
-    if mask.any():
-        df.loc[mask, 'POSIX_MMAPS'] = 0
+    # --- Handle documented sentinel values ---
+    df, replacements = apply_sentinel_handling(df, config)
+    report['sentinel_replacements'] = replacements
 
     report['final_rows'] = len(df)
     report['rows_removed'] = report['initial_rows'] - report['final_rows']
@@ -186,7 +215,9 @@ def stage2_clean(df, config):
 # Stage 3: Feature Engineering
 # ---------------------------------------------------------------------------
 
-def stage3_engineer(df):
+def stage3_engineer(
+    df: pd.DataFrame, config: dict[str, object] | None = None,
+) -> pd.DataFrame:
     """Compute derived features from cleaned raw counters (vectorized).
 
     Parameters
@@ -202,15 +233,9 @@ def stage3_engineer(df):
     logger.info("Computing derived features for %d rows (vectorized)...",
                 len(df))
     require_raw_schema(df, 'stage3_engineer')
-    df = df.copy()
-
-    # Replace sentinel -1 with 0 in feature columns for safe computation
-    feature_cols = [c for c in df.columns if not c.startswith('_')]
-    for col in feature_cols:
-        if df[col].dtype in [np.float64, np.float32, np.int64, np.int32]:
-            mask = df[col] == _SENTINEL
-            if mask.any():
-                df.loc[mask, col] = 0.0
+    if config is None:
+        config = load_preprocessing_config()
+    df, _ = apply_sentinel_handling(df, config)
 
     def g(col):
         # every raw column exists (require_raw_schema); a typo must not become 0
@@ -326,19 +351,21 @@ def stage3_engineer(df):
     for name, values in compute_layer_and_rank_features(g, nprocs).items():
         df[name] = values
 
-    n_derived = len(FEATURE_GROUPS.get('ratio', [])) + len(FEATURE_GROUPS.get('derived_absolute', []))
+    n_derived = len(DERIVED_FEATURE_NAMES)
     logger.info("Added %d derived features (total: %d columns)",
                 n_derived, len(df.columns))
     return df
 
 
-def engineer_one(parsed_log):
+def engineer_one(
+    parsed_log: dict[str, object], config: dict[str, object] | None = None,
+) -> dict[str, object]:
     """Raw plus derived features of one parsed log, as a dict.
 
     The same two steps the batch pipeline runs (``extract_raw_features``,
     then ``stage3_engineer``), for callers that handle single logs.
     """
-    df = stage3_engineer(pd.DataFrame([extract_raw_features(parsed_log)]))
+    df = stage3_engineer(pd.DataFrame([extract_raw_features(parsed_log)]), config=config)
     return df.iloc[0].to_dict()
 
 
@@ -508,7 +535,12 @@ def drop_excluded_features(df, config, train_df=None):
 # Stage 5: Normalization
 # ---------------------------------------------------------------------------
 
-def stage5_normalize(df, config, fit=True, scalers=None):
+def stage5_normalize(
+    df: pd.DataFrame,
+    config: dict[str, object],
+    fit: bool = True,
+    scalers: dict[str, object] | None = None,
+) -> tuple[pd.DataFrame, dict[str, object]]:
     """Apply group-specific normalization.
 
     Parameters
@@ -532,38 +564,39 @@ def stage5_normalize(df, config, fit=True, scalers=None):
     """
     from sklearn.preprocessing import RobustScaler
 
-    norm_config = config.get('normalization', {})
+    norm_config = config['normalization']
     if scalers is None:
         scalers = {}
 
     df = df.copy()
     feature_cols = [c for c in df.columns if not c.startswith('_')]
 
-    # Build column-to-group mapping
-    col_to_group = {}
-    for group_name, cols in FEATURE_GROUPS.items():
-        for col in cols:
-            if col in feature_cols:
-                col_to_group[col] = group_name
-
-    # Get normalization method per group from config
+    config_keys = {
+        'volume': 'volume_counters', 'count': 'count_counters',
+        'histogram': 'histogram_counters', 'top4': 'top4_counters',
+        'timing': 'timing_counters', 'timestamp': 'timestamp_counters',
+        'categorical': 'categorical_counters', 'rank_id': 'rank_id_counters',
+        'rank_stat': 'rank_stat_counters',
+        'rank_stat_bounded': 'rank_stat_bounded_counters',
+        'conditional_size': 'conditional_size_counters',
+        'indicator': 'indicator_features', 'ratio': 'ratio_features',
+        'ratio_unbounded': 'ratio_unbounded_features',
+        'derived_absolute': 'derived_absolute', 'metadata': 'metadata_features',
+    }
+    expected_keys = set(config_keys.values())
+    if set(norm_config) != expected_keys:
+        raise ValueError(
+            "normalization keys differ from the required contract: "
+            f"missing={sorted(expected_keys - set(norm_config))}, "
+            f"unknown={sorted(set(norm_config) - expected_keys)}"
+        )
+    allowed_methods = {'none', 'log1p', 'log1p_robust', 'log10p1'}
+    invalid = {key: value for key, value in norm_config.items()
+               if value not in allowed_methods}
+    if invalid:
+        raise ValueError(f"unknown normalization methods: {invalid}")
     group_methods = {
-        'volume': norm_config.get('volume_counters', 'log1p_robust'),
-        'count': norm_config.get('count_counters', 'log1p_robust'),
-        'histogram': norm_config.get('histogram_counters', 'log1p'),
-        'top4': norm_config.get('top4_counters', 'log1p'),
-        'timing': norm_config.get('timing_counters', 'log1p_robust'),
-        'timestamp': norm_config.get('timestamp_counters', 'none'),
-        'categorical': norm_config.get('categorical_counters', 'none'),
-        'rank_id': norm_config.get('rank_id_counters', 'none'),
-        'rank_stat': norm_config.get('rank_stat_counters', 'log1p'),
-        'rank_stat_bounded': 'none',
-        'conditional_size': norm_config.get('conditional_size_counters', 'log1p'),
-        'indicator': norm_config.get('indicator_features', 'none'),
-        'ratio': norm_config.get('ratio_features', 'none'),
-        'ratio_unbounded': norm_config.get('ratio_unbounded_features', 'log1p'),
-        'derived_absolute': norm_config.get('derived_absolute', 'log1p'),
-        'metadata': norm_config.get('metadata_features', 'log1p'),
+        group: norm_config[config_key] for group, config_key in config_keys.items()
     }
 
     # Apply group-specific normalization (vectorized)
@@ -596,6 +629,9 @@ def stage5_normalize(df, config, fit=True, scalers=None):
         elif method == 'log10p1':
             # Legacy: log10(x+1) for backward compatibility
             df[cols] = np.log10(df[cols].clip(lower=0) + 1)
+
+        else:
+            raise AssertionError(f"normalization method was not validated: {method}")
 
     logger.info("Normalization complete: %d columns", len(feature_cols))
     return df, scalers
@@ -647,9 +683,16 @@ def create_splits(df, config):
         if jobid != 0:
             key = (uid, jobid)
         elif '_source_path' in df.columns:
-            key = ('path', df['_source_path'].iloc[pos])
+            source_path = df['_source_path'].iloc[pos]
+            if pd.isna(source_path) or not str(source_path).strip():
+                raise ValueError(
+                    "grouped split cannot identify a row with _jobid 0 and an empty _source_path"
+                )
+            key = ('path', str(source_path))
         else:
-            key = ('row', pos)
+            raise ValueError(
+                "grouped split cannot identify a row with _jobid 0 and no _source_path"
+            )
         group_rows.setdefault(key, []).append(pos)
         row_keys.append(key)
     if len(group_rows) < 3:
@@ -716,10 +759,9 @@ def find_sparse_features(df, max_zero_fraction=0.99):
     feature_cols = [c for c in df.columns if not c.startswith('_')]
     sparse = []
     for col in feature_cols:
-        if col in df.columns:
-            zero_frac = (df[col] == 0).mean()
-            if zero_frac > max_zero_fraction:
-                sparse.append((col, zero_frac))
+        zero_frac = (df[col] == 0).mean()
+        if zero_frac > max_zero_fraction:
+            sparse.append((col, zero_frac))
     sparse.sort(key=lambda x: x[1], reverse=True)
     return sparse
 

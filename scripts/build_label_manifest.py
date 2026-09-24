@@ -23,12 +23,10 @@ Usage:
 
 import argparse
 import glob
-import hashlib
 import json
 import logging
-import os
 import sys
-import time
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -39,7 +37,8 @@ sys.path.insert(0, str(PROJECT_DIR))
 from src.data.benchmark_logs import (  # noqa: E402
     AGGREGATED_BENCHMARKS, MANIFEST_COLUMNS, PER_RANK_BENCHMARKS,
     group_logs_by_job, job_id_of)
-from src.data.benchmark_verify import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES  # noqa: E402
+from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES  # noqa: E402
+from src.utils.artifacts import sha256_file, write_atomic  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -84,8 +83,9 @@ def slurm_out_label(results_dir, job_id):
         return None
     if len(outs) > 1:
         raise ValueError(f"job {job_id}: {len(outs)} stdout files: {outs}")
-    labels = [line.strip().split("Label:", 1)[1].strip()
-              for line in open(outs[0]) if line.strip().startswith("Label:")]
+    with open(outs[0]) as handle:
+        labels = [line.strip().split("Label:", 1)[1].strip()
+                  for line in handle if line.strip().startswith("Label:")]
     if len(labels) != 1:
         raise ValueError(f"job {job_id}: {len(labels)} Label lines in {outs[0]}")
     scenario = os.path.basename(outs[0])[: -len(f"_{job_id}.out")]
@@ -126,8 +126,9 @@ def load_benchmark_config(path):
 def boost_rows(features_path, labels_path):
     """Rows of the boost job from the recorded step mapping."""
     if not features_path.exists() or not labels_path.exists():
-        logger.warning("boost artifacts not found, no step_mapping rows")
-        return {}
+        raise FileNotFoundError(
+            f"boost artifacts are required: {features_path}, {labels_path}"
+        )
     feats = pd.read_parquet(features_path, columns=["_source_path"])
     labs = pd.read_parquet(labels_path)
     if len(feats) != len(labs):
@@ -207,24 +208,14 @@ def main():
     existing = [str(path) for path in (output, provenance_path) if path.exists()]
     if existing:
         raise FileExistsError(f"refusing to replace label manifest artifacts: {existing}")
-    token = f"{os.getpid()}.{time.time_ns()}"
-    output_tmp = output.with_name(output.name + f".tmp.{token}")
-    manifest.to_csv(output_tmp, index=False)
-    os.rename(output_tmp, output)
-
-    def sha256(path):
-        digest = hashlib.sha256()
-        with open(path, "rb") as handle:
-            for block in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(block)
-        return digest.hexdigest()
+    write_atomic(output, lambda path: manifest.to_csv(path, index=False))
 
     provenance = {
         "schema_version": 1,
         "status": "passed",
-        "config": {"path": str(Path(args.config).resolve()), "sha256": sha256(args.config)},
+        "config": {"path": str(Path(args.config).resolve()), "sha256": sha256_file(args.config)},
         "script": {"path": str(Path(__file__).resolve()),
-                   "sha256": sha256(Path(__file__).resolve())},
+                   "sha256": sha256_file(Path(__file__).resolve())},
         "inputs": {
             "log_dir": str(log_dir.resolve()),
             "results_dir": str(results_dir.resolve()),
@@ -232,13 +223,14 @@ def main():
             "boost_labels": str(_project_path(paths["boost_labels"]).resolve()),
         },
         "counts": actual_counts,
-        "output": {"path": str(output), "sha256": sha256(output), "rows": len(manifest)},
+        "output": {"path": str(output), "sha256": sha256_file(output), "rows": len(manifest)},
     }
-    provenance_tmp = provenance_path.with_name(provenance_path.name + f".tmp.{token}")
-    with open(provenance_tmp, "x") as handle:
-        json.dump(provenance, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    os.rename(provenance_tmp, provenance_path)
+    def write_provenance(path):
+        with path.open("x") as handle:
+            json.dump(provenance, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    write_atomic(provenance_path, write_provenance)
     summary = manifest.groupby(["benchmark", "source"]).size()
     logger.info("Manifest written: %s (%d rows)\n%s", output, len(manifest), summary.to_string())
     logger.info("Provenance: %s", provenance_path)

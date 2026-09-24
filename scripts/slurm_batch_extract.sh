@@ -9,10 +9,10 @@
 #
 # Each array task runs batch_extract.py which:
 #   - Uses multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
-#   - Recycles workers every 500 tasks (maxtasksperchild, prevents C leaks)
+#   - Recycles workers every 500 tasks (maxtasksperchild bounds C library growth)
 #   - Has per-file 120s timeout via signal.alarm (prevents hung PyDarshan)
 #   - Writes atomic sub-chunk files with _part_ prefix (no SLURM collision)
-#   - Supports checkpoint/resume (skip completed sub-chunks on restart)
+#   - Supports checkpoint/resume by exact source-path identity
 #   - Keeps one error CSV per attempt for diagnosis
 #
 # Submit:
@@ -33,9 +33,9 @@
 set -euo pipefail
 
 # --- Configuration ---
-IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/${USER:?USER is unset}/envs/iosage}"
 PYTHON="${IOSAGE_ENV}/bin/python"
-PROJECT_DIR=/work/hdd/bdau/mbanisharifdehkordi/IOSage
+PROJECT_DIR="${IOSAGE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 INPUT_DIR="${INPUT_DIR:-${PROJECT_DIR}/Darshan_Logs}"
 OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_DIR}/data/processed/resubmission/production}"
 CHUNK_DIR="${OUTPUT_DIR}/chunks"

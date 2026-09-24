@@ -10,20 +10,22 @@ vectorized, in ``src.data.preprocessing.stage3_engineer`` (also for single logs
 through ``engineer_one``); ``compute_layer_and_rank_features`` here holds the
 part of that computation that this module defines.
 
-Feature groups (~150 total):
-  - Job metadata (2): nprocs, runtime
-  - POSIX raw counters (~85): operations, bytes, patterns, histograms,
+Feature groups:
+  - Job metadata: nprocs, runtime
+  - POSIX raw counters: operations, bytes, patterns, histograms,
     alignment, timing, timestamps, imbalance
-  - MPI-IO raw counters (~18): operations, bytes, timing
-  - STDIO raw counters (~11): operations, bytes, timing
-  - Module/file indicators (~7): has_mpiio, has_stdio, has_hdf5, etc.
-  - Derived ratios (~30): bandwidth, size, pattern, metadata, imbalance,
+  - MPI-IO raw counters: operations, bytes, timing
+  - STDIO raw counters: operations, bytes, timing
+  - Module and file indicators: presence, partial state, sharing
+  - Derived values: bandwidth, size, pattern, metadata, imbalance,
     temporal, access concentration
 
 Missing modules (e.g., MPI-IO absent for non-MPI jobs) are zero-filled.
 Feature exclusion and normalization are deferred to the preprocessing stage
 and driven by statistical analysis, not hardcoded here.
 """
+
+from __future__ import annotations
 
 import logging
 
@@ -44,9 +46,10 @@ _SENTINEL = -1
 # parquet written by older code cannot be engineered into false zeros.
 # 1: SC 2026 dataset (156 columns). 2: per-rank and shared-record statistics,
 # variance counters kept for one shared file, MPI-IO request-size histograms,
-# Lustre info columns removed. 3: feature modules with incomplete records are
-# rejected instead of being treated as complete counter sets.
-FEATURE_SCHEMA_VERSION = 3
+# Lustre info columns removed. 3: incomplete module records were rejected.
+# 4: incomplete-module indicators, exact data-file counts and stream-free
+# rank totals were added; present modules require their complete counter schema.
+FEATURE_SCHEMA_VERSION = 4
 
 # ---------------------------------------------------------------------------
 # Feature definition lists: ALL counters, no exclusions
@@ -118,7 +121,7 @@ POSIX_FLOAT_COUNTERS = [
     'POSIX_F_CLOSE_END_TIMESTAMP',
     # Rank time imbalance (CONDITIONAL: 0.0 if not shared)
     'POSIX_F_FASTEST_RANK_TIME', 'POSIX_F_SLOWEST_RANK_TIME',
-    # Variance (ZEROED in v3.5.0 --total)
+    # Variance of rank time and bytes for a shared record
     'POSIX_F_VARIANCE_RANK_TIME', 'POSIX_F_VARIANCE_RANK_BYTES',
 ]
 
@@ -185,12 +188,16 @@ RANK_STAT_COUNTERS = [
     'RANK_TIME_MAX',       # I/O time of the slowest rank
     'RANK_TIME_MIN',       # I/O time of the fastest rank
     'RANK_TIME_VAR',       # population variance of I/O time over all ranks
+    'RANK_BYTES_TOTAL',     # stream-free bytes represented by rank statistics
+    'RANK_TIME_TOTAL',      # stream-free time represented by rank statistics
     'RANK_SHARED_BYTES',   # bytes in shared (rank -1) records
     'SHARED_BYTE_IMBALANCE',  # Drishti P18 over reduced records: |slowest - fastest bytes| / bytes,
     'SHARED_TIME_IMBALANCE',  # and P19 on time; from the MPI-IO records when the job
                               # has them (collective buffering makes POSIX uneven), else POSIX
     'FILE_WRITE_IMBALANCE',  # Drishti per-file (max - min) / max, written bytes
     'FILE_READ_IMBALANCE',   # same for read bytes
+    'SHARED_POSIX_READS', 'SHARED_POSIX_WRITES',
+    'SHARED_POSIX_SMALL_READS', 'SHARED_POSIX_SMALL_WRITES',
 ]
 
 # All raw counter names
@@ -314,12 +321,15 @@ FEATURE_GROUPS = {
     'indicator': [
         'has_posix', 'has_mpiio', 'has_stdio',
         'has_hdf5', 'has_pnetcdf', 'has_apmpi', 'has_heatmap',
-        'is_shared_file',
+        'partial_posix', 'partial_mpiio', 'partial_stdio', 'is_shared_file',
     ],
     # Per-rank statistics (unbounded, heavy-tailed): log1p
     'rank_stat': [
         'RANK_IO_COUNT', 'RANK_BYTES_MAX', 'RANK_BYTES_MIN', 'RANK_BYTES_VAR',
-        'RANK_TIME_MAX', 'RANK_TIME_MIN', 'RANK_TIME_VAR', 'RANK_SHARED_BYTES',
+        'RANK_TIME_MAX', 'RANK_TIME_MIN', 'RANK_TIME_VAR',
+        'RANK_BYTES_TOTAL', 'RANK_TIME_TOTAL', 'RANK_SHARED_BYTES',
+        'SHARED_POSIX_READS', 'SHARED_POSIX_WRITES',
+        'SHARED_POSIX_SMALL_READS', 'SHARED_POSIX_SMALL_WRITES',
     ],
     # Per-rank statistics bounded in [0, 1]: no normalization
     'rank_stat_bounded': [
@@ -361,7 +371,7 @@ FEATURE_GROUPS = {
     ],
     # Derived absolute: unbounded derived values
     'derived_absolute': [
-        'io_duration', 'dominant_access_size', 'num_files',
+        'io_duration', 'dominant_access_size', 'num_files', 'num_data_files',
         'io_bytes_all', 'io_ops_all',
     ],
     # Job metadata
@@ -377,19 +387,25 @@ INFO_COLUMNS = [
 ]
 
 # Names produced by stage 3 on top of the raw columns (every derived group;
-# num_files is emitted raw and therefore left out here)
+# file counts are emitted raw and therefore left out here)
 DERIVED_FEATURE_NAMES = [
     name for name in (FEATURE_GROUPS['ratio'] + FEATURE_GROUPS['ratio_unbounded']
                       + FEATURE_GROUPS['derived_absolute'])
-    if name != 'num_files'
+    if name not in {'num_files', 'num_data_files'}
 ]
+
+MODULE_COUNTERS = {
+    'POSIX': POSIX_INT_COUNTERS + POSIX_FLOAT_COUNTERS,
+    'MPI-IO': MPIIO_INT_COUNTERS + MPIIO_FLOAT_COUNTERS,
+    'STDIO': STDIO_INT_COUNTERS + STDIO_FLOAT_COUNTERS,
+}
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def extract_raw_features(parsed_log):
+def extract_raw_features(parsed_log: dict[str, object]) -> dict[str, object]:
     """Extract ALL raw counters + indicators from a parsed Darshan log.
 
     This is Stage 1 extraction: no transforms, no exclusions, no derived
@@ -414,11 +430,32 @@ def extract_raw_features(parsed_log):
     features = {}
 
     # --- Job metadata ---
-    features['nprocs'] = max(job.get('nprocs', 1), 1)
-    features['runtime_seconds'] = max(job.get('runtime', 0.0), 0.0)
+    if 'nprocs' not in job or int(job['nprocs']) < 1:
+        raise ValueError(f"invalid or missing nprocs: {job.get('nprocs')}")
+    if 'runtime' not in job:
+        raise ValueError("parsed job lacks runtime")
+    features['nprocs'] = int(job['nprocs'])
+    features['runtime_seconds'] = max(float(job['runtime']), 0.0)
 
-    # --- ALL raw counters (zero-fill if missing module) ---
-    for counter in ALL_RAW_COUNTERS:
+    # --- Module counters: zero-fill absent modules, require present schemas ---
+    for module, counters in MODULE_COUNTERS.items():
+        if module in modules:
+            missing = [counter for counter in counters if counter not in raw]
+            if missing:
+                raise ValueError(
+                    f"present module {module} lacks {len(missing)} expected counters, "
+                    f"first: {missing[:5]}"
+                )
+            for counter in counters:
+                features[counter] = raw[counter]
+        else:
+            for counter in counters:
+                features[counter] = 0.0
+    if any(module in modules for module in MODULE_COUNTERS):
+        missing = [counter for counter in RANK_STAT_COUNTERS if counter not in raw]
+        if missing:
+            raise ValueError(f"parsed rank statistics lack {missing[:5]}")
+    for counter in RANK_STAT_COUNTERS:
         features[counter] = raw.get(counter, 0.0)
 
     # --- Module presence indicators ---
@@ -430,12 +467,22 @@ def extract_raw_features(parsed_log):
     features['has_apmpi'] = 1 if 'APMPI' in modules else 0
     features['has_heatmap'] = 1 if 'HEATMAP' in modules else 0
 
+    partial_modules = set(parsed_log.get('partial_modules', []))
+    features['partial_posix'] = int('POSIX' in partial_modules)
+    features['partial_mpiio'] = int('MPI-IO' in partial_modules)
+    features['partial_stdio'] = int('STDIO' in partial_modules)
+
     # --- Shared file indicator (from parse_darshan shared_file_flag) ---
-    # True if ALL POSIX records reference the same file ID
+    # True if any POSIX file record is shared by several ranks.
     features['is_shared_file'] = 1 if shared_flags.get('POSIX', False) else 0
 
-    # --- File count ---
+    # --- File counts ---
+    if any(module in modules for module in MODULE_COUNTERS):
+        for name in ('num_files', 'num_data_files'):
+            if name not in raw:
+                raise ValueError(f"parsed counters lack {name}")
     features['num_files'] = raw.get('num_files', 0)
+    features['num_data_files'] = raw.get('num_data_files', 0)
 
     # --- Job info columns (not features, carried for identification) ---
     features['_schema_version'] = FEATURE_SCHEMA_VERSION
@@ -449,20 +496,21 @@ def extract_raw_features(parsed_log):
     return features
 
 
-def get_raw_feature_names():
+def get_raw_feature_names() -> list[str]:
     """Ordered raw feature names: what ``extract_raw_features`` emits without
     the info columns."""
-    return ['nprocs', 'runtime_seconds'] + ALL_RAW_COUNTERS + FEATURE_GROUPS['indicator'] + ['num_files']
+    return (['nprocs', 'runtime_seconds'] + ALL_RAW_COUNTERS
+            + FEATURE_GROUPS['indicator'] + ['num_files', 'num_data_files'])
 
 
-def get_feature_names():
+def get_feature_names() -> list[str]:
     """Ordered feature names after stage 3 (raw plus derived), without the
     info columns. ``tests/test_rank_statistics.py`` asserts that this equals
     the columns a real extraction produces."""
     return get_raw_feature_names() + DERIVED_FEATURE_NAMES
 
 
-def get_info_columns():
+def get_info_columns() -> list[str]:
     """The ``_*`` identification columns (not features)."""
     return list(INFO_COLUMNS)
 
@@ -502,6 +550,8 @@ def compute_layer_and_rank_features(g, nprocs):
     write_time_all = g('POSIX_F_WRITE_TIME') + g('STDIO_F_WRITE_TIME')
     meta_time_all = g('POSIX_F_META_TIME') + g('STDIO_F_META_TIME')
     time_all = g('POSIX_F_READ_TIME') + g('STDIO_F_READ_TIME') + write_time_all + meta_time_all
+    rank_bytes_total = g('RANK_BYTES_TOTAL')
+    rank_time_total = g('RANK_TIME_TOTAL')
     n = np.maximum(nprocs, 1)
 
     return {
@@ -514,15 +564,15 @@ def compute_layer_and_rank_features(g, nprocs):
         'metadata_time_ratio_all': meta_time_all / np.maximum(time_all, _EPS),
         'write_time_fraction_all': write_time_all / np.maximum(time_all, _EPS),
         'io_rank_fraction': g('RANK_IO_COUNT') / n,
-        'top_rank_byte_share': g('RANK_BYTES_MAX') / np.maximum(bytes_all, _EPS),
-        'top_rank_time_share': g('RANK_TIME_MAX') / np.maximum(time_all, _EPS),
+        'top_rank_byte_share': g('RANK_BYTES_MAX') / np.maximum(rank_bytes_total, _EPS),
+        'top_rank_time_share': g('RANK_TIME_MAX') / np.maximum(rank_time_total, _EPS),
         'rank_byte_range_ratio': (g('RANK_BYTES_MAX') - g('RANK_BYTES_MIN'))
         / np.maximum(g('RANK_BYTES_MAX'), _EPS),
         'rank_time_range_ratio': (g('RANK_TIME_MAX') - g('RANK_TIME_MIN'))
         / np.maximum(g('RANK_TIME_MAX'), _EPS),
-        'shared_record_byte_share': g('RANK_SHARED_BYTES') / np.maximum(bytes_all, _EPS),
+        'shared_record_byte_share': g('RANK_SHARED_BYTES') / np.maximum(rank_bytes_total, _EPS),
         'rank_bytes_cv_all': np.sqrt(np.maximum(g('RANK_BYTES_VAR'), 0))
-        / np.maximum(bytes_all / n, _EPS),
+        / np.maximum(rank_bytes_total / n, _EPS),
         'rank_time_cv_all': np.sqrt(np.maximum(g('RANK_TIME_VAR'), 0))
-        / np.maximum(time_all / n, _EPS),
+        / np.maximum(rank_time_total / n, _EPS),
     }

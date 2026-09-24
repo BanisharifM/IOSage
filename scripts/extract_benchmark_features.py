@@ -26,12 +26,9 @@ Usage:
 """
 
 import argparse
-import hashlib
 import json
 import logging
-import os
 import sys
-import time
 from pathlib import Path
 
 import pandas as pd
@@ -41,16 +38,17 @@ sys.path.insert(0, str(PROJECT_DIR))
 from src.data.benchmark_logs import (  # noqa: E402
     AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, PER_RANK_BENCHMARKS, iter_benchmark_samples,
     load_manifest, manifest_row, validate_verification_report)
-from src.data.benchmark_verify import DIMENSION_NAMES  # noqa: E402
+from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 from src.data.feature_extraction import (  # noqa: E402
     FEATURE_SCHEMA_VERSION, extract_raw_features, get_info_columns)
-from src.data.preprocessing import stage3_engineer  # noqa: E402
+from src.data.preprocessing import load_preprocessing_config, stage3_engineer  # noqa: E402
+from src.utils.artifacts import sha256_file, write_atomic  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 DEFAULT_LOG_DIR = PROJECT_DIR / "data" / "benchmark_logs"
-DEFAULT_OUTPUT_DIR = PROJECT_DIR / "data" / "processed" / "benchmark"
+DEFAULT_OUTPUT_DIR = PROJECT_DIR / "data" / "processed" / "resubmission" / "benchmark"
 BENCHMARKS = sorted(AGGREGATED_BENCHMARKS | PER_RANK_BENCHMARKS)
 EXTRA_COLUMNS = ["_source_path", "_benchmark", "_scenario", "_ground_truth_job_id"]
 LABEL_META = ["job_id", "benchmark", "scenario", "n_ranks", "n_darshan_files", "label_source"]
@@ -60,12 +58,13 @@ def extract_benchmark(bench_type, log_dir, manifest):
     """Feature and label rows of one benchmark; returns (features, labels, counts)."""
     feature_rows, label_rows = [], []
     counts = {"extracted": 0, "unlabeled": 0, "unparsed": 0}
-    for job_id, files, parsed in iter_benchmark_samples(bench_type, str(log_dir)):
+    for job_id, files, parsed, error in iter_benchmark_samples(bench_type, str(log_dir)):
         row = manifest_row(manifest, bench_type, job_id, files)
         if row is None:
             counts["unlabeled"] += 1
             continue
         if parsed is None:
+            logger.error("  %s job %s was not parsed: %s", bench_type, job_id, error)
             counts["unparsed"] += 1
             continue
         features = extract_raw_features(parsed)
@@ -90,10 +89,12 @@ def main():
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--verification-report", required=True,
                         help="CSV produced by verify_all_ground_truth.py")
+    parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "preprocessing.yaml"))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--bench-type", choices=["all"] + BENCHMARKS, default="all")
     args = parser.parse_args()
 
+    config = load_preprocessing_config(args.config)
     manifest = load_manifest(args.manifest)
     bench_types = BENCHMARKS if args.bench_type == "all" else [args.bench_type]
     verification = validate_verification_report(
@@ -117,7 +118,7 @@ def main():
 
     # Same derived features as the production pipeline; the extra columns
     # are carried through untouched (stage 3 leaves _-prefixed columns alone)
-    features_df = stage3_engineer(pd.DataFrame(all_features))
+    features_df = stage3_engineer(pd.DataFrame(all_features), config=config)
     info_cols = get_info_columns()
     feature_cols = [c for c in features_df.columns if c not in info_cols and c not in EXTRA_COLUMNS]
     features_df = features_df[feature_cols + info_cols + EXTRA_COLUMNS]
@@ -131,20 +132,8 @@ def main():
     existing = [str(path) for path in (feat_path, label_path, dataset_manifest_path) if path.exists()]
     if existing:
         raise FileExistsError(f"refusing to replace existing outputs: {existing}")
-    token = f"{os.getpid()}.{time.time_ns()}"
-    feat_tmp = output_dir / f"features.parquet.tmp.{token}"
-    label_tmp = output_dir / f"labels.parquet.tmp.{token}"
-    features_df.to_parquet(feat_tmp, index=False)
-    labels_df.to_parquet(label_tmp, index=False)
-    os.rename(feat_tmp, feat_path)
-    os.rename(label_tmp, label_path)
-
-    def sha256(path):
-        digest = hashlib.sha256()
-        with open(path, "rb") as handle:
-            for block in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(block)
-        return digest.hexdigest()
+    write_atomic(feat_path, lambda path: features_df.to_parquet(path, index=False))
+    write_atomic(label_path, lambda path: labels_df.to_parquet(path, index=False))
 
     dataset_manifest = {
         "schema_version": 1,
@@ -153,29 +142,34 @@ def main():
         "benchmarks": bench_types,
         "verification": verification,
         "inputs": {
+            "preprocessing_config": {
+                "path": str(Path(args.config).resolve()),
+                "sha256": sha256_file(args.config),
+            },
             "label_manifest": {
                 "path": str(Path(args.manifest).resolve()),
-                "sha256": sha256(args.manifest),
+                "sha256": sha256_file(args.manifest),
             },
             "verification_report": {
                 "path": str(Path(args.verification_report).resolve()),
-                "sha256": sha256(args.verification_report),
+                "sha256": sha256_file(args.verification_report),
             },
         },
         "outputs": {
-            "features": {"path": str(feat_path), "sha256": sha256(feat_path),
+            "features": {"path": str(feat_path), "sha256": sha256_file(feat_path),
                          "rows": len(features_df), "columns": len(features_df.columns)},
-            "labels": {"path": str(label_path), "sha256": sha256(label_path),
+            "labels": {"path": str(label_path), "sha256": sha256_file(label_path),
                        "rows": len(labels_df), "columns": len(labels_df.columns)},
         },
         "script": {"path": str(Path(__file__).resolve()),
-                   "sha256": sha256(Path(__file__).resolve())},
+                   "sha256": sha256_file(Path(__file__).resolve())},
     }
-    dataset_manifest_tmp = output_dir / f".dataset_manifest.json.tmp.{token}"
-    with open(dataset_manifest_tmp, "x") as handle:
-        json.dump(dataset_manifest, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    os.rename(dataset_manifest_tmp, dataset_manifest_path)
+    def write_manifest(path):
+        with path.open("x") as handle:
+            json.dump(dataset_manifest, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    write_atomic(dataset_manifest_path, write_manifest)
     logger.info("Features: %s, labels: %s", features_df.shape, labels_df.shape)
     logger.info("Label positives: %s", labels_df[DIMENSION_NAMES].sum().to_dict())
     logger.info("Saved: %s, %s, and %s", feat_path, label_path, dataset_manifest_path)

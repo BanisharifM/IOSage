@@ -16,7 +16,6 @@ group bootstrap intervals, and an immutable run directory with a manifest.
 The entry point is ``scripts/train_biquality.py``.
 """
 
-import hashlib
 import json
 import logging
 import os
@@ -32,13 +31,14 @@ import yaml
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
 
-from src.data.benchmark_verify import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
+from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
 from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_feature_names, get_raw_feature_names
+from src.utils.artifacts import sha256_file
 
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-BUNDLE_FORMAT = 3
+BUNDLE_FORMAT = 4
 SUPPORTED_MODELS = ('xgboost', 'lightgbm', 'random_forest')
 
 
@@ -73,6 +73,7 @@ def _resolve(config, key):
 class ProductionData:
     X: np.ndarray
     y: np.ndarray            # seven bottleneck labels
+    valid: np.ndarray        # target validity for incomplete module records
     ids: np.ndarray          # _source_path
     start_time: np.ndarray
     train_idx: np.ndarray
@@ -85,6 +86,7 @@ class ProductionData:
 class BenchmarkData:
     X: np.ndarray
     y: np.ndarray            # seven bottleneck labels
+    valid: np.ndarray        # construction labels are valid for every target
     ids: np.ndarray          # "<benchmark>/<job_id>/<log basename>"
     groups: np.ndarray       # "<benchmark>/<job_id>"
     benchmark: np.ndarray    # benchmark type per row
@@ -112,6 +114,22 @@ def _label_matrix(labels, what):
     if not np.array_equal(values['healthy'].to_numpy(dtype=int), expected_healthy.to_numpy()):
         raise ValueError(f"{what} healthy labels are inconsistent with bottleneck labels")
     return values[BOTTLENECK_DIMENSIONS].to_numpy(dtype=np.float32)
+
+
+def _label_validity(labels, what, required):
+    columns = [f'valid_{dimension}' for dimension in DIMENSION_NAMES]
+    present = [column for column in columns if column in labels.columns]
+    if not present:
+        if required:
+            raise ValueError(f"{what} lack per-dimension validity columns")
+        return np.ones((len(labels), len(BOTTLENECK_DIMENSIONS)), dtype=bool)
+    if len(present) != len(columns):
+        raise ValueError(f"{what} have an incomplete validity contract")
+    values = labels[columns]
+    if not values.isin([0, 1]).all().all():
+        raise ValueError(f"{what} validity columns must be binary and complete")
+    return values[[f'valid_{dimension}' for dimension in BOTTLENECK_DIMENSIONS]].to_numpy(
+        dtype=bool)
 
 
 def _finite_matrix(frame, columns, what):
@@ -207,11 +225,13 @@ def load_production(config, feature_set='full'):
             <= first_by_part[1].max() <= first_by_part[2].min()):
         raise ValueError("production job groups are not in time order (train < val < test)")
 
-    y = _label_matrix(labels.reset_index(), 'production labels')
+    aligned_labels = labels.reset_index()
+    y = _label_matrix(aligned_labels, 'production labels')
+    valid = _label_validity(aligned_labels, 'production labels', required=True)
     X = _finite_matrix(features, names, 'production features')
 
     return ProductionData(
-        X=X, y=y,
+        X=X, y=y, valid=valid,
         ids=features['_source_path'].to_numpy(), start_time=start,
         train_idx=train_idx, val_idx=val_idx, test_idx=test_idx, feature_names=names)
 
@@ -273,6 +293,7 @@ def load_benchmark(config, feature_names):
     if missing:
         raise ValueError(f"benchmark features lack {len(missing)} contract columns, first {missing[:5]}")
     y = _label_matrix(labels, 'benchmark labels')
+    valid = _label_validity(labels, 'benchmark labels', required=False)
 
     groups = (features['_benchmark'] + '/' + features['_ground_truth_job_id'].astype(str)).to_numpy()
     ids = (groups + '/' + features['_source_path'].map(lambda p: Path(p).name)).to_numpy()
@@ -282,7 +303,7 @@ def load_benchmark(config, feature_names):
     train_idx, val_idx, test_idx = grouped_benchmark_partitions(
         y, groups, split['test_ratio'], split['validation_ratio'], split['seed'])
     X = _finite_matrix(features, feature_names, 'benchmark features')
-    return BenchmarkData(X=X, y=y, ids=ids,
+    return BenchmarkData(X=X, y=y, valid=valid, ids=ids,
                          groups=groups, benchmark=features['_benchmark'].to_numpy(),
                          train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
 
@@ -291,21 +312,27 @@ def load_benchmark(config, feature_names):
 # Fitting and prediction
 # ---------------------------------------------------------------------------
 
-def scale_pos_weights(y, max_weight):
+def scale_pos_weights(y, max_weight, valid=None):
     """Per-label negative/positive ratio, capped."""
     if max_weight <= 0:
         raise ValueError("max_weight must be positive")
+    if valid is None:
+        valid = np.ones_like(y, dtype=bool)
+    if valid.shape != y.shape:
+        raise ValueError("label validity shape differs from labels")
     weights = []
     for i, dim in enumerate(BOTTLENECK_DIMENSIONS):
-        positives = y[:, i].sum()
-        negatives = len(y) - positives
+        observed = y[valid[:, i], i]
+        positives = observed.sum()
+        negatives = len(observed) - positives
         if positives == 0 or negatives == 0:
             raise ValueError(f"training rows need both classes for {dim}")
         weights.append(min(negatives / positives, max_weight))
     return weights
 
 
-def fit_models(X, y, weights, X_val, y_val, model_type, config, seed):
+def fit_models(X, y, weights, X_val, y_val, model_type, config, seed,
+               valid=None, val_valid=None):
     """One binary classifier per bottleneck dimension.
 
     Tree boosters stop early on the production validation partition and the
@@ -326,27 +353,44 @@ def fit_models(X, y, weights, X_val, y_val, model_type, config, seed):
         raise ValueError("training inputs contain non-finite values")
     if (weights <= 0).any():
         raise ValueError("sample weights must be positive")
+    if valid is None:
+        valid = np.ones_like(y, dtype=bool)
+    if val_valid is None:
+        val_valid = np.ones_like(y_val, dtype=bool)
+    if valid.shape != y.shape or val_valid.shape != y_val.shape:
+        raise ValueError("label validity shapes differ from label matrices")
+    if not valid.any(axis=0).all() or not val_valid.any(axis=0).all():
+        raise ValueError("every target needs valid training and validation rows")
     params = dict(config['models'][model_type]['params'])
-    spw = scale_pos_weights(y, config['imbalance']['max_weight'])
+    spw = scale_pos_weights(y, config['imbalance']['max_weight'], valid=valid)
     rounds = int(config['early_stopping']['rounds'])
     models, best_iteration = {}, {}
     for i, dim in enumerate(BOTTLENECK_DIMENSIONS):
+        train_rows = valid[:, i]
+        validation_rows = val_valid[:, i]
+        X_dimension = X[train_rows]
+        y_dimension = y[train_rows, i]
+        weight_dimension = weights[train_rows]
+        X_validation = X_val[validation_rows]
+        y_validation = y_val[validation_rows, i]
         if model_type == 'xgboost':
             from xgboost import XGBClassifier
             clf = XGBClassifier(**params, scale_pos_weight=spw[i], random_state=seed,
                                 verbosity=0, early_stopping_rounds=rounds)
-            clf.fit(X, y[:, i], sample_weight=weights, eval_set=[(X_val, y_val[:, i])], verbose=False)
+            clf.fit(X_dimension, y_dimension, sample_weight=weight_dimension,
+                    eval_set=[(X_validation, y_validation)], verbose=False)
             best_iteration[dim] = int(clf.best_iteration)
         elif model_type == 'lightgbm':
             import lightgbm
             clf = lightgbm.LGBMClassifier(**params, scale_pos_weight=spw[i], random_state=seed, verbose=-1)
-            clf.fit(X, y[:, i], sample_weight=weights, eval_set=[(X_val, y_val[:, i])],
+            clf.fit(X_dimension, y_dimension, sample_weight=weight_dimension,
+                    eval_set=[(X_validation, y_validation)],
                     callbacks=[lightgbm.early_stopping(rounds, verbose=False)])
             best_iteration[dim] = int(clf.best_iteration_)
         else:
             from sklearn.ensemble import RandomForestClassifier
             clf = RandomForestClassifier(**params, random_state=seed)
-            clf.fit(X, y[:, i], sample_weight=weights)
+            clf.fit(X_dimension, y_dimension, sample_weight=weight_dimension)
             best_iteration[dim] = int(params['n_estimators'])
         models[dim] = clf
     return models, best_iteration
@@ -415,12 +459,12 @@ def validate_bundle(bundle):
 def verify_bundle_inputs(bundle):
     """Check that the configuration and datasets still match the bundle."""
     validate_bundle(bundle)
-    if _sha256(bundle['config_path']) != bundle['config_sha256']:
+    if sha256_file(bundle['config_path']) != bundle['config_sha256']:
         raise ValueError("training configuration differs from the bundle hash")
     for name, record in bundle['input_hashes'].items():
         if set(record) != {'path', 'sha256'}:
             raise ValueError(f"bundle input record {name} has an invalid contract")
-        if _sha256(record['path']) != record['sha256']:
+        if sha256_file(record['path']) != record['sha256']:
             raise ValueError(f"training input {name} differs from the bundle hash")
 
 
@@ -559,14 +603,6 @@ def with_healthy(y7):
 # Runs
 # ---------------------------------------------------------------------------
 
-def _sha256(path):
-    h = hashlib.sha256()
-    with open(path, 'rb') as fh:
-        for block in iter(lambda: fh.read(1 << 20), b''):
-            h.update(block)
-    return h.hexdigest()
-
-
 def _git_revision():
     out = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=PROJECT_DIR, capture_output=True, text=True)
     return out.stdout.strip() if out.returncode == 0 else 'unknown'
@@ -587,7 +623,7 @@ def _git_state():
 def _input_hashes(config):
     keys = ('production_features', 'production_labels', 'production_splits',
             'benchmark_features', 'benchmark_labels')
-    return {key: {'path': str(_resolve(config, key)), 'sha256': _sha256(_resolve(config, key))}
+    return {key: {'path': str(_resolve(config, key)), 'sha256': sha256_file(_resolve(config, key))}
             for key in keys}
 
 
@@ -622,7 +658,7 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
     if not git_clean:
         raise RuntimeError("training requires a clean Git worktree")
     input_hashes = _input_hashes(config)
-    config_sha256 = _sha256(config['_path'])
+    config_sha256 = sha256_file(config['_path'])
 
     prod = load_production(config, feature_set)
     bench = load_benchmark(config, prod.feature_names)
@@ -640,13 +676,17 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
     if use_production:
         X_train = np.vstack([prod.X[prod_train], bench.X[train_idx]])
         y_train = np.vstack([prod.y[prod_train], bench.y[train_idx]])
+        valid_train = np.vstack([prod.valid[prod_train], bench.valid[train_idx]])
         weights = np.concatenate([np.ones(len(prod_train)), np.full(len(train_idx), clean_weight)])
         X_early, y_early = prod.X[prod.val_idx], prod.y[prod.val_idx]
+        valid_early = prod.valid[prod.val_idx]
         early_stopping_source = 'production_validation'
     else:
         X_train, y_train = bench.X[train_idx], bench.y[train_idx]
+        valid_train = bench.valid[train_idx]
         weights = np.ones(len(train_idx))
         X_early, y_early = bench.X[bench.val_idx], bench.y[bench.val_idx]
+        valid_early = bench.valid[bench.val_idx]
         early_stopping_source = 'benchmark_validation'
     excluded_test = (bench.test_idx[bench.benchmark[bench.test_idx] == hold_out_benchmark]
                  if hold_out_benchmark is not None else None)
@@ -674,7 +714,8 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
     for seed in seeds:
         t0 = time.time()
         models, best_iteration = fit_models(
-            X_train, y_train, weights, X_early, y_early, model_type, config, seed)
+            X_train, y_train, weights, X_early, y_early, model_type, config, seed,
+            valid=valid_train, val_valid=valid_early)
         bundle = {
             'bundle_format': BUNDLE_FORMAT, 'feature_schema_version': FEATURE_SCHEMA_VERSION,
             'feature_names': list(prod.feature_names), 'dimensions': list(DIMENSION_NAMES),
@@ -719,7 +760,8 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
     final_revision, final_clean = _git_state()
     if final_revision != revision or not final_clean:
         raise RuntimeError("Git revision or worktree state changed during the run")
-    if _input_hashes(config) != input_hashes or _sha256(config['_path']) != config_sha256:
+    if (_input_hashes(config) != input_hashes
+            or sha256_file(config['_path']) != config_sha256):
         raise RuntimeError("a training input or configuration changed during the run")
 
     summary = {}

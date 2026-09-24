@@ -8,16 +8,18 @@
 #SBATCH --mem=8G
 #SBATCH --time=03:00:00
 #SBATCH --export=NONE
-#SBATCH --output=/work/hdd/bdau/mbanisharifdehkordi/IOSage/results/resubmission/verification/verify_gt_%j.out
+#SBATCH --output=/work/hdd/bdau/%u/IOSage/results/resubmission/verification/verify_gt_%j.out
 # Verify every benchmark Darshan sample against its constructed label and write one row per
-# sample. Usage: sbatch scripts/verify_ground_truth.slurm [bench-type, default all]
-set -euo pipefail
+# sample. Submit from the repository root:
+# sbatch scripts/verify_ground_truth.slurm [bench-type, default all]
 source /etc/profile
-IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
+set -euo pipefail
+IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/${USER:?USER is unset}/envs/iosage}"
 export PATH="$IOSAGE_ENV/bin:$PATH" PYTHONNOUSERSITE=1; unset PYTHONPATH
-cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
+PROJECT_DIR="${IOSAGE_PROJECT_DIR:-${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR is unset}}"
+cd "$PROJECT_DIR"
 BENCH="${1:-all}"
-OUT=results/resubmission/verification/ground_truth_${BENCH}_$(date +%F)_${SLURM_JOB_ID}.csv
+OUT="$PROJECT_DIR/results/resubmission/verification/ground_truth_${BENCH}_$(date +%F)_${SLURM_JOB_ID}.csv"
 echo "host $(hostname) commit $(git rev-parse --short HEAD) bench $BENCH report $OUT"
 "$IOSAGE_ENV/bin/python" scripts/verify_all_ground_truth.py --bench-type "$BENCH" --report "$OUT"
 [[ -s "$OUT" ]] || { echo "verification report is missing or empty: $OUT" >&2; exit 3; }

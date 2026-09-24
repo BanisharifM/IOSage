@@ -23,4 +23,5 @@ def raw_frame(n_rows, start=0):
     df['_end_time'] = df['_start_time'] + 20
     df['_modules'] = 'POSIX'
     df['_log_version'] = '3.41'
+    df['_source_path'] = [f'/logs/synthetic_{row}.darshan' for row in range(start, start + n_rows)]
     return df

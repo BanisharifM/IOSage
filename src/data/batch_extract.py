@@ -8,7 +8,7 @@ and metadata of ``extract_raw_features`` plus ``_source_path``.
 
 Designed for scale (1M+ files):
   - multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
-  - maxtasksperchild for automatic worker recycling (C library leaks)
+  - maxtasksperchild for automatic worker recycling (bounds C library growth)
   - Per-file signal.alarm timeout (prevents hung PyDarshan C calls)
   - Atomic writes (write to .tmp, rename to final)
   - Resume by identity: a rerun skips every path already present in a part
@@ -49,6 +49,7 @@ from src.data.feature_extraction import (
     FEATURE_SCHEMA_VERSION, extract_raw_features, get_info_columns, get_raw_feature_names,
 )
 from src.data.parse_darshan import parse_darshan_log
+from src.utils.artifacts import write_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +129,11 @@ def _existing_parts(chunk_dir, stem, suffix):
 
 def _write_parquet(df, path):
     """Atomic write: to a temporary file, then rename."""
-    if path.exists():
-        raise ExtractionError(f"refusing to replace existing output: {path}")
-    tmp_path = path.with_name(f"{path.name}.tmp.{os.getpid()}.{time.time_ns()}")
-    df.to_parquet(tmp_path, index=False, engine='pyarrow')
-    os.rename(tmp_path, path)
+    try:
+        write_atomic(path, lambda temporary: df.to_parquet(
+            temporary, index=False, engine='pyarrow'))
+    except FileExistsError as exc:
+        raise ExtractionError(str(exc)) from exc
 
 
 def _write_part(records, part_path):

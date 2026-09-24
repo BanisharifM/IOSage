@@ -131,12 +131,12 @@ def _posix_with_variance(ids, rank=-1):
     return {'counters': ints, 'fcounters': floats}
 
 
-def test_shared_counters_kept_only_for_one_file_used_by_all_ranks():
+def test_shared_indicator_covers_any_shared_file_but_variance_needs_one_file():
     counters = {}
     assert _extract_pydarshan_module(_posix_with_variance([1]), 'POSIX', counters, 4)
     assert counters['POSIX_F_VARIANCE_RANK_BYTES'] == 2.5
     counters = {}
-    assert not _extract_pydarshan_module(_posix_with_variance([1, 2]), 'POSIX', counters, 4)
+    assert _extract_pydarshan_module(_posix_with_variance([1, 2]), 'POSIX', counters, 4)
     assert counters['POSIX_F_VARIANCE_RANK_BYTES'] == 0.0
     # one private record from rank 3 is not a shared file
     counters = {}
@@ -188,6 +188,7 @@ def test_dict_and_vectorized_paths_agree():
            'RANK_IO_COUNT': 4.0, 'RANK_BYTES_MAX': 10.0, 'RANK_BYTES_MIN': 1.0,
            'RANK_BYTES_VAR': 15.1875, 'RANK_BYTES_GINI': 0.5, 'RANK_TIME_MAX': 1.0,
            'RANK_TIME_MIN': 0.1, 'RANK_TIME_VAR': 0.15,
+           'RANK_BYTES_TOTAL': 16.0, 'RANK_TIME_TOTAL': 1.3,
            'RANK_SHARED_BYTES': 0.0, 'FILE_WRITE_IMBALANCE': 0.0, 'FILE_READ_IMBALANCE': 0.0})
     scalar = compute_layer_and_rank_features(lambda k: float(raw[k]), 4)
     df = pd.DataFrame([raw])

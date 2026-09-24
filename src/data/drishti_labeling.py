@@ -2,7 +2,7 @@
 Drishti Heuristic Labeling Pipeline
 =====================================
 Generates multi-label heuristic labels from production log features by
-reimplementing Drishti's 30 heuristic rules as vectorized pandas operations.
+computing Drishti diagnostic codes as vectorized pandas operations.
 
 This operates on the already-extracted production/features.parquet, not on
 raw .darshan files. A full labeling pass over 131K rows completes in seconds.
@@ -10,7 +10,7 @@ raw .darshan files. A full labeling pass over 131K rows completes in seconds.
 Terminology (per IOSage paper convention):
   - "heuristic labels" = Drishti rule-based labels on production logs
   - "ground-truth labels" = benchmark-derived labels (by construction)
-  - See docs/paper_materials.md Section 2.5.1 for rationale.
+  - See docs/1_strategy/paper_materials.md Section 2.5.1 for rationale.
 
 Drishti Insight Codes and Severity Levels:
     HIGH (critical issues):
@@ -67,31 +67,21 @@ References:
 """
 
 import argparse
-import hashlib
 import json
 import logging
-import os
 import sys
-import time
 from pathlib import Path
 
 import pandas as pd
 
-logger = logging.getLogger(__name__)
+from src.data.label_rules import (
+    DIMENSION_NAMES,
+    labels_from_features,
+    validity_from_features,
+)
+from src.utils.artifacts import sha256_file, write_atomic
 
-# ---------------------------------------------------------------------------
-# Taxonomy dimension names (order matters — matches label vector index)
-# ---------------------------------------------------------------------------
-DIMENSION_NAMES = [
-    'access_granularity',       # 0
-    'metadata_intensity',       # 1
-    'parallelism_efficiency',   # 2
-    'access_pattern',           # 3
-    'interface_choice',         # 4
-    'file_strategy',            # 5
-    'throughput_utilization',   # 6
-    'healthy',                  # 7
-]
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Drishti default thresholds (from drishti/includes/config.py)
@@ -119,7 +109,7 @@ SEVERITY_INFO = 0.3
 
 
 def compute_drishti_codes(df):
-    """Compute all 30 Drishti insight codes as boolean Series.
+    """Compute 32 Drishti insight-code columns as boolean Series.
 
     Parameters
     ----------
@@ -154,7 +144,7 @@ def compute_drishti_codes(df):
     codes['S01'] = (stdio_bytes / total_bytes_all) > t['interface_stdio']
 
     # -----------------------------------------------------------------------
-    # P01-P04: Read/write intensity (INFO only — not bottlenecks)
+    # P01-P04: Read/write intensity (INFO only, not bottlenecks)
     # -----------------------------------------------------------------------
     codes['P01'] = (
         (df['POSIX_WRITES'] > df['POSIX_READS']) &
@@ -228,23 +218,30 @@ def compute_drishti_codes(df):
         (random_reads / total_reads > t['random_operations']) &
         (random_reads > t['random_operations_absolute'])
     )
-    # P12: Sequential reads (OK — not a bottleneck)
+    # P12: Sequential reads (OK, not a bottleneck)
     codes['P12'] = ~codes['P11'] & (df['POSIX_READS'] > 0)
 
     codes['P13'] = (
         (random_writes / total_writes > t['random_operations']) &
         (random_writes > t['random_operations_absolute'])
     )
-    # P14: Sequential writes (OK — not a bottleneck)
+    # P14: Sequential writes (OK, not a bottleneck)
     codes['P14'] = ~codes['P13'] & (df['POSIX_WRITES'] > 0)
 
     # -----------------------------------------------------------------------
     # P15/P16: Small operations on shared files (HIGH)
-    # Approximation: if is_shared_file=1 AND the small ops threshold triggers
+    # The parser aggregates the request counts from shared POSIX records only.
     # -----------------------------------------------------------------------
-    is_shared = df['is_shared_file'] == 1
-    codes['P15'] = is_shared & codes['P05']
-    codes['P16'] = is_shared & codes['P06']
+    codes['P15'] = (
+        (df['SHARED_POSIX_SMALL_READS'] > t['small_requests_absolute'])
+        & (df['SHARED_POSIX_SMALL_READS']
+           / df['SHARED_POSIX_READS'].clip(lower=1) > t['small_requests'])
+    )
+    codes['P16'] = (
+        (df['SHARED_POSIX_SMALL_WRITES'] > t['small_requests_absolute'])
+        & (df['SHARED_POSIX_SMALL_WRITES']
+           / df['SHARED_POSIX_WRITES'].clip(lower=1) > t['small_requests'])
+    )
 
     # -----------------------------------------------------------------------
     # P17: High metadata time (HIGH)
@@ -295,7 +292,7 @@ def compute_drishti_codes(df):
         (total_mpiio_writes > t['collective_operations_absolute'])
     )
 
-    # M04/M05: Collective usage (OK — not a bottleneck)
+    # M04/M05: Collective usage (OK, not a bottleneck)
     codes['M04'] = (df['MPIIO_COLL_READS'] > 0)
     codes['M05'] = (df['MPIIO_COLL_WRITES'] > 0)
 
@@ -307,7 +304,7 @@ def compute_drishti_codes(df):
     codes['M06'] = has_mpiio & (df['MPIIO_NB_READS'] == 0)
     codes['M07'] = has_mpiio & (df['MPIIO_NB_WRITES'] == 0)
 
-    # M08/M09/M10: Aggregator checks — require sacct, not available
+    # M08/M09/M10: Aggregator checks require sacct, which is not available
     codes['M08'] = pd.Series(False, index=df.index)
     codes['M09'] = pd.Series(False, index=df.index)
     codes['M10'] = pd.Series(False, index=df.index)
@@ -315,99 +312,25 @@ def compute_drishti_codes(df):
     return codes
 
 
-def codes_to_labels(codes):
-    """Map Drishti insight codes to 8-dimensional taxonomy labels.
-
-    HIGH-severity codes trigger dimension labels. Of the WARN-level codes,
-    M01, M06 and M07 are recorded as individual Drishti codes but do NOT
-    activate dimension labels, because:
-
-    1. M01 (no MPI-IO): Many legitimate serial/Python jobs don't need
-       MPI-IO. Flagging all of them as "interface_choice" makes the label
-       uninformative (72.6% of jobs).
-    2. M06/M07 (blocking I/O): Most MPI-IO usage on Polaris is blocking.
-       This is normal, not a bottleneck.
-
-    P09/P10 (redundant traffic, WARN) are the only source of the
-    throughput_utilization label and are applied exactly as Drishti defines
-    them (max offset above the bytes moved); see the block below.
-
-    For access_granularity, P08 (file misalignment) alone triggers 93.8%
-    of jobs because most applications don't set explicit Lustre alignment.
-    We separate alignment issues from small-operation issues:
-    - access_granularity: only P05, P06 (small ops)
-    - A separate alignment flag is stored in the individual codes.
+def codes_to_labels(codes, features):
+    """Map feature rows to the taxonomy through the shared rule contract.
 
     Parameters
     ----------
     codes : dict[str, pd.Series]
         Boolean Series per Drishti code from compute_drishti_codes().
+    features : pd.DataFrame
+        Engineered feature rows used by the shared benchmark and production
+        rule implementation.
 
     Returns
     -------
     pd.DataFrame
         Columns: DIMENSION_NAMES (8 binary columns), one row per job.
     """
-    # Same index as the code Series, so assignment aligns row by row
-    index = next(iter(codes.values())).index
-    labels = pd.DataFrame(0, index=index, columns=DIMENSION_NAMES)
-
-    # Dimension 0: access_granularity
-    # Small operations only (P05, P06). Misalignment (P07, P08) excluded
-    # from dimension trigger because P08 alone covers 93.8% of jobs,
-    # making the label near-useless for classification. Misalignment
-    # information is preserved in the individual drishti_P07/P08 columns.
-    labels['access_granularity'] = (
-        codes['P05'] | codes['P06']
-    ).astype(int)
-
-    # Dimension 1: metadata_intensity
-    labels['metadata_intensity'] = codes['P17'].astype(int)
-
-    # Dimension 2: parallelism_efficiency
-    # Load imbalance: data (P18, P21, P22) + time (P19)
-    labels['parallelism_efficiency'] = (
-        codes['P18'] | codes['P19'] | codes['P21'] | codes['P22']
-    ).astype(int)
-
-    # Dimension 3: access_pattern
-    # Random access (P11, P13)
-    labels['access_pattern'] = (
-        codes['P11'] | codes['P13']
-    ).astype(int)
-
-    # Dimension 4: interface_choice
-    # M02 (no collective reads) + M03 (no collective writes) only.
-    # S01 (STDIO >10%) REMOVED: STDIO is the correct interface for Python/ML
-    # workloads (40% of Polaris). Labeling correct behavior as "bottleneck"
-    # creates systematic false positives and breaks alignment with benchmark
-    # ground-truth labels. S01 signal preserved as individual drishti_S01 column.
-    # Ref: Snorkel (VLDB'18) requires labeling functions and gold labels to
-    # define the same concept. See docs/SC2026_Training_Strategy.md.
-    labels['interface_choice'] = (
-        codes['M02'] | codes['M03']
-    ).astype(int)
-
-    # Dimension 5: file_strategy
-    # Small ops on shared files (P15, P16)
-    labels['file_strategy'] = (
-        codes['P15'] | codes['P16']
-    ).astype(int)
-
-    # Dimension 6: throughput_utilization
-    # Redundant traffic, P09 or P10, as Drishti computes them (WARN level,
-    # kept because no HIGH code describes throughput). Not tightened: the
-    # rule in force is Drishti's, and the label counts in the paper come
-    # from it.
-    labels['throughput_utilization'] = (
-        codes['P09'] | codes['P10']
-    ).astype(int)
-
-    # Dimension 7: healthy
-    # No issues in any dimension 0-6
-    any_issue = labels[DIMENSION_NAMES[:7]].any(axis=1)
-    labels['healthy'] = (~any_issue).astype(int)
-
+    if not codes:
+        raise ValueError("codes cannot be empty")
+    labels = labels_from_features(features)
     if labels.isna().any().any() or not labels.isin([0, 1]).all().all():
         raise AssertionError("labels must be binary and complete")
     return labels
@@ -447,7 +370,7 @@ def compute_confidence(codes, labels):
         'M01': SEVERITY_WARN,
         'M06': SEVERITY_WARN, 'M07': SEVERITY_WARN,
         'P09': SEVERITY_WARN, 'P10': SEVERITY_WARN,
-        # INFO severity (metadata, not bottlenecks — low confidence)
+        # INFO severity (metadata, not bottlenecks, low confidence)
         'P01': SEVERITY_INFO, 'P02': SEVERITY_INFO,
         'P03': SEVERITY_INFO, 'P04': SEVERITY_INFO,
         # OK codes (no issue detected)
@@ -495,7 +418,7 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     -------
     pd.DataFrame
         Heuristic labels DataFrame with _jobid, 8 dimension columns,
-        drishti_confidence, label_source, and all 30 Drishti code columns.
+        drishti_confidence, label_source, and all 32 Drishti code columns.
     """
     if not 0.0 <= min_confidence <= 1.0:
         raise ValueError(f"min_confidence must be in [0, 1], got {min_confidence}")
@@ -510,13 +433,14 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     df = pd.read_parquet(features_path)
     logger.info("Loaded %d rows, %d columns", len(df), len(df.columns))
 
-    # Compute all 30 Drishti codes
+    # Compute the Drishti diagnostic codes.
     logger.info("Computing Drishti insight codes...")
     codes = compute_drishti_codes(df)
 
     # Map codes to 8-dimensional labels
     logger.info("Mapping codes to taxonomy dimensions...")
-    labels = codes_to_labels(codes)
+    labels = codes_to_labels(codes, df)
+    validity = validity_from_features(df)
 
     # Compute confidence scores
     confidence = compute_confidence(codes, labels)
@@ -532,6 +456,7 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     # 8 dimension labels
     for dim_name in DIMENSION_NAMES:
         result[dim_name] = labels[dim_name].values
+        result[f'valid_{dim_name}'] = validity[dim_name].values
 
     # Confidence and source
     result['drishti_confidence'] = confidence.values
@@ -553,34 +478,28 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
                              "nothing written")
 
     # Write output and provenance without replacing prior evidence.
-    token = f"{os.getpid()}.{time.time_ns()}"
-    output_tmp = output_path.with_name(output_path.name + f'.tmp.{token}')
-    result.to_parquet(output_tmp, index=False, engine='pyarrow')
-    os.rename(output_tmp, output_path)
-
-    def sha256(path):
-        digest = hashlib.sha256()
-        with open(path, 'rb') as handle:
-            for block in iter(lambda: handle.read(1024 * 1024), b''):
-                digest.update(block)
-        return digest.hexdigest()
+    write_atomic(
+        output_path,
+        lambda path: result.to_parquet(path, index=False, engine='pyarrow'),
+    )
 
     manifest = {
-        'schema_version': 1,
+        'schema_version': 2,
         'status': 'passed',
         'method': 'drishti_heuristic',
         'min_confidence': min_confidence,
-        'features': {'path': str(features_path.resolve()), 'sha256': sha256(features_path)},
-        'labels': {'path': str(output_path.resolve()), 'sha256': sha256(output_path),
+        'features': {'path': str(features_path.resolve()), 'sha256': sha256_file(features_path)},
+        'labels': {'path': str(output_path.resolve()), 'sha256': sha256_file(output_path),
                    'rows': len(result), 'columns': len(result.columns)},
         'script': {'path': str(Path(__file__).resolve()),
-                   'sha256': sha256(Path(__file__).resolve())},
+                   'sha256': sha256_file(Path(__file__).resolve())},
     }
-    manifest_tmp = manifest_path.with_name(manifest_path.name + f'.tmp.{token}')
-    with open(manifest_tmp, 'x') as handle:
-        json.dump(manifest, handle, indent=2, sort_keys=True)
-        handle.write('\n')
-    os.rename(manifest_tmp, manifest_path)
+    def write_manifest(path):
+        with path.open('x') as handle:
+            json.dump(manifest, handle, indent=2, sort_keys=True)
+            handle.write('\n')
+
+    write_atomic(manifest_path, write_manifest)
     logger.info("Wrote heuristic labels to %s (%d rows, %.1f MB)",
                 output_path, len(result),
                 output_path.stat().st_size / 1e6)
@@ -626,10 +545,6 @@ def _log_summary(result):
     conf = result['drishti_confidence']
     logger.info("Confidence: mean=%.3f, median=%.3f, min=%.3f, max=%.3f",
                 conf.mean(), conf.median(), conf.min(), conf.max())
-
-
-# NOTE: Legacy alias 'generate_silver_labels' removed 2026-03-15.
-# Use generate_heuristic_labels() directly.
 
 
 # ---------------------------------------------------------------------------

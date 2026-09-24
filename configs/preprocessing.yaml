@@ -40,6 +40,9 @@ sentinel_handling:
   # -1 means "not applicable" (non-shared files or single-rank jobs).
   replace_negative_rank_with: 0
 
+  # Replace -1 for counters whose Darshan contract uses it as unavailable.
+  replace_unavailable_counter_with: 0
+
 # --- Stage 5: Normalization ---
 # Group-specific normalization strategies.
 # Options per group: "none", "log1p", "log1p_robust", "log10p1"
@@ -58,12 +61,13 @@ normalization:
   top4_counters: "log1p"
   timing_counters: "log1p_robust"
   timestamp_counters: "none"    # absolute timestamps; used for derived features only
-  categorical_counters: "none"  # MODE, ALIGNMENT — categorical, not continuous
-  rank_id_counters: "none"      # integer rank IDs — not performance metrics
+  categorical_counters: "none"  # MODE, ALIGNMENT: categorical, not continuous
+  rank_id_counters: "none"      # integer rank IDs: not performance metrics
   rank_stat_counters: "log1p"   # per-rank max, variance, count (heavy-tailed)
+  rank_stat_bounded_counters: "none"  # Gini and imbalance ratios in [0,1]
   conditional_size_counters: "log1p"
-  indicator_features: "none"    # binary 0/1 — no normalization needed
-  ratio_features: "none"        # bounded [0,1] ratios — no normalization
+  indicator_features: "none"    # binary 0/1: no normalization needed
+  ratio_features: "none"        # bounded [0,1] ratios: no normalization
   ratio_unbounded_features: "log1p"  # unbounded derived (bandwidth, avg_size, rw_ratio, etc.)
   derived_absolute: "log1p"     # io_duration, dominant_access_size, num_files
   metadata_features: "log1p"    # nprocs, runtime_seconds
@@ -94,7 +98,7 @@ feature_exclusion:
   # These were identified by post-normalization audit (Entry 72)
   drop_features:
     # Timestamps: absolute within-job timestamps (seconds from job start).
-    # Redundant — io_duration and io_active_fraction already capture the
+    # Redundant: io_duration and io_active_fraction already capture the
     # useful signal.  Raw timestamps have extreme scale (0 to 189K) and
     # skewness (up to 122) that normalization cannot fix without distortion.
     - POSIX_F_OPEN_START_TIMESTAMP
@@ -110,7 +114,7 @@ feature_exclusion:
     - POSIX_RENAMED_FROM     # hash of original filename (std = 3.9e17)
     - POSIX_MODE             # file permission bits (0/448), categorical
     - POSIX_FILE_ALIGNMENT   # system constant (0/4096/1048576), categorical
-    # Note: POSIX_MEM_ALIGNMENT is always 8 (constant) — auto-dropped
+    # Note: POSIX_MEM_ALIGNMENT is always 8 (constant), so it is auto-dropped
 
 # --- Feature Selection (applied AFTER EDA, INSIDE Pipeline) ---
 # These settings are used by the statistical analysis stage to FLAG
