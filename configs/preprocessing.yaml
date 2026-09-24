@@ -128,10 +128,6 @@ feature_selection:
   # e.g., 0.01 means features with >99% zeros are flagged.
   min_nonzero_fraction: 0.01
 
-  # Feature selection method for model pipeline.
-  # Options: "shap_select", "mutual_information", "model_importance", "none"
-  method: "none"  # Start with none; enable after EDA
-
 # --- Reproducibility ---
 random_seed: 42
 

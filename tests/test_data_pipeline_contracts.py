@@ -568,6 +568,66 @@ def test_cleaning_drops_negative_times_of_every_layer():
     assert cleaned['_jobid'].tolist() == [0, 3]
 
 
+def test_config_sections_are_strict_and_the_checked_in_config_passes():
+    from src.data.preprocessing import (
+        CONFIG_CONTRACT, drop_excluded_features, validate_preprocessing_config)
+    real = load_preprocessing_config('configs/preprocessing.yaml')
+    assert set(CONFIG_CONTRACT) <= set(real)
+    typo = deepcopy(real)
+    typo['feature_selection']['correlation_treshold'] = typo['feature_selection'].pop('correlation_threshold')
+    _raises(lambda: validate_preprocessing_config(typo), ValueError, 'correlation_threshold')
+    absent = deepcopy(real)
+    absent.pop('feature_exclusion')
+    _raises(lambda: validate_preprocessing_config(absent), ValueError, 'feature_exclusion')
+    frame = stage3_engineer(raw_frame(3), config=CONFIG)
+    misspelled = {'feature_exclusion': {'drop_constant': True, 'drop_feature': []}}
+    _raises(lambda: drop_excluded_features(frame, misspelled), ValueError, 'drop_features')
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / 'preprocessing.yaml'
+        path.write_text('cleaning: {min_duration_seconds: 1}\n')
+        _raises(lambda: load_preprocessing_config(path), ValueError, 'cleaning keys differ')
+
+
+def test_preprocessing_driver_runs_all_stages_and_samples_a_resumed_stage():
+    from unittest import mock
+    import scripts.run_preprocessing as driver
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        raw_path = root / 'raw_features.parquet'
+        raw_frame(30).to_parquet(raw_path, index=False)
+        first = root / 'first'
+        argv = ['run_preprocessing.py', '--input', str(raw_path), '--output-dir', str(first),
+                '--config', 'configs/preprocessing.yaml', '--min-rows', '5']
+        with mock.patch('sys.argv', argv):
+            driver.main()
+        manifest = json.loads((first / 'preprocessing_manifest.json').read_text())
+        assert manifest['stages'] == [2, 5] and manifest['sample'] is None
+        for name in ('cleaned_features.parquet', 'features.parquet', 'normalized_features.parquet',
+                     'eda_stats.parquet', 'eda_correlation.parquet', 'eda_report.json',
+                     'dropped_features.json', 'scalers.pkl', 'split_indices.pkl',
+                     'splits/train.parquet', 'splits/val.parquet', 'splits/test.parquet'):
+            assert name in manifest['artifacts'], name
+        assert manifest['artifacts']['features.parquet']['rows'] == 30
+        assert not list(first.glob('.*.tmp.*')) and not list((first / 'splits').glob('.*.tmp.*'))
+        # a resumed stage samples the frame it loads
+        second = root / 'second'
+        second.mkdir()
+        (second / 'features.parquet').write_bytes((first / 'features.parquet').read_bytes())
+        argv = ['run_preprocessing.py', '--output-dir', str(second), '--start-stage', '5',
+                '--config', 'configs/preprocessing.yaml', '--min-rows', '5', '--sample', '12']
+        with mock.patch('sys.argv', argv):
+            driver.main()
+        resumed = json.loads((second / 'preprocessing_stage_5_5_manifest.json').read_text())
+        assert resumed['sample'] == 12 and resumed['effective_min_rows'] == 5
+        assert resumed['input']['path'] == str(second / 'features.parquet')
+        assert resumed['artifacts']['normalized_features.parquet']['rows'] == 12
+        sizes = [resumed['artifacts'][f'splits/{name}.parquet']['rows'] for name in ('train', 'val', 'test')]
+        assert sum(sizes) == 12 and min(sizes) >= 1
+        # a rerun refuses to replace the artifacts it wrote
+        with mock.patch('sys.argv', argv):
+            _raises(driver.main, FileExistsError, 'refusing to replace')
+
+
 def test_missing_scaler_and_missing_config_are_errors():
     df = stage3_engineer(raw_frame(3))
     _raises(lambda: stage5_normalize(df, CONFIG, fit=False, scalers={}), ValueError, 'no fitted scaler')

@@ -53,6 +53,28 @@ _RANK_SENTINEL_COLUMNS = [
 _UNAVAILABLE_SENTINEL_COLUMNS = [
     'POSIX_MMAPS', 'POSIX_MEM_ALIGNMENT', 'POSIX_FILE_ALIGNMENT',
 ]
+# Normalization group -> key of the ``normalization`` section
+NORMALIZATION_CONFIG_KEYS = {
+    'volume': 'volume_counters', 'count': 'count_counters',
+    'histogram': 'histogram_counters', 'top4': 'top4_counters',
+    'timing': 'timing_counters', 'timestamp': 'timestamp_counters',
+    'categorical': 'categorical_counters', 'rank_id': 'rank_id_counters',
+    'rank_stat': 'rank_stat_counters',
+    'rank_stat_bounded': 'rank_stat_bounded_counters',
+    'conditional_size': 'conditional_size_counters',
+    'indicator': 'indicator_features', 'ratio': 'ratio_features',
+    'ratio_unbounded': 'ratio_unbounded_features',
+    'derived_absolute': 'derived_absolute', 'metadata': 'metadata_features',
+}
+# Sections the pipeline reads, with the exact keys each must hold
+CONFIG_CONTRACT = {
+    'cleaning': {'min_duration_seconds', 'min_total_bytes', 'min_io_ops', 'require_posix'},
+    'sentinel_handling': {'replace_negative_rank_with', 'replace_unavailable_counter_with'},
+    'normalization': set(NORMALIZATION_CONFIG_KEYS.values()),
+    'splits': {'method', 'test_fraction', 'val_fraction'},
+    'feature_exclusion': {'drop_constant', 'drop_features'},
+    'feature_selection': {'correlation_threshold', 'min_nonzero_fraction'},
+}
 CUMULATIVE_TIME_COLUMNS = [
     f'{layer}_F_{kind}_TIME'
     for layer in ('POSIX', 'MPIIO', 'STDIO')
@@ -63,6 +85,42 @@ CUMULATIVE_TIME_COLUMNS = [
 # ---------------------------------------------------------------------------
 # Input contracts
 # ---------------------------------------------------------------------------
+
+def _require_section(config, section):
+    """Require ``section`` with exactly the keys of ``CONFIG_CONTRACT``."""
+    expected = CONFIG_CONTRACT[section]
+    if section not in config or not isinstance(config[section], dict):
+        raise ValueError(f"preprocessing config lacks the {section} section")
+    present = set(config[section])
+    if present != expected:
+        raise ValueError(
+            f"{section} keys differ from the required contract: "
+            f"missing={sorted(expected - present)}, unknown={sorted(present - expected)}"
+        )
+
+
+def validate_preprocessing_config(config):
+    """Check every section the pipeline reads; a typo is an error, not a default."""
+    if not isinstance(config, dict):
+        raise ValueError("preprocessing config must be a mapping")
+    for section in CONFIG_CONTRACT:
+        _require_section(config, section)
+    if 'random_seed' not in config or isinstance(config['random_seed'], bool) \
+            or not isinstance(config['random_seed'], int):
+        raise ValueError("preprocessing config needs an integer random_seed")
+    exclusion = config['feature_exclusion']
+    if not isinstance(exclusion['drop_constant'], bool):
+        raise ValueError("feature_exclusion.drop_constant must be a boolean")
+    if not isinstance(exclusion['drop_features'], list) \
+            or any(not isinstance(name, str) for name in exclusion['drop_features']):
+        raise ValueError("feature_exclusion.drop_features must be a list of column names")
+    selection = config['feature_selection']
+    if not 0 < float(selection['correlation_threshold']) <= 1:
+        raise ValueError("feature_selection.correlation_threshold must be in (0, 1]")
+    if not 0 < float(selection['min_nonzero_fraction']) < 1:
+        raise ValueError("feature_selection.min_nonzero_fraction must be in (0, 1)")
+    return config
+
 
 def require_raw_schema(df, stage):
     """Refuse a frame that was not written by the current extractor.
@@ -85,14 +143,8 @@ def require_raw_schema(df, stage):
 
 def apply_sentinel_handling(df, config):
     """Replace documented Darshan sentinels and reject unexpected ones."""
+    _require_section(config, 'sentinel_handling')
     sentinel_config = config['sentinel_handling']
-    expected_keys = {'replace_negative_rank_with', 'replace_unavailable_counter_with'}
-    if set(sentinel_config) != expected_keys:
-        raise ValueError(
-            "sentinel_handling keys differ from the required contract: "
-            f"missing={sorted(expected_keys - set(sentinel_config))}, "
-            f"unknown={sorted(set(sentinel_config) - expected_keys)}"
-        )
     df = df.copy()
     replacements = {}
     for column in _RANK_SENTINEL_COLUMNS:
@@ -139,6 +191,7 @@ def stage2_clean(
         Cleaning report (counts of removed/modified rows).
     """
     require_raw_schema(df, 'stage2_clean')
+    _require_section(config, 'cleaning')
     cleaning = config['cleaning']
     report = {'initial_rows': len(df)}
 
@@ -504,11 +557,12 @@ def drop_excluded_features(df, config, train_df=None):
     list
         Names of dropped features (for logging/auditing).
     """
-    exclusion_cfg = config.get('feature_exclusion', {})
+    _require_section(config, 'feature_exclusion')
+    exclusion_cfg = config['feature_exclusion']
     dropped = []
 
     # 1. Manual exclusions from config
-    manual_drops = exclusion_cfg.get('drop_features', [])
+    manual_drops = exclusion_cfg['drop_features']
     present = [c for c in manual_drops if c in df.columns]
     if present:
         df = df.drop(columns=present)
@@ -517,7 +571,7 @@ def drop_excluded_features(df, config, train_df=None):
                      len(present), present[:5])
 
     # 2. Auto-drop constant features (zero variance on train set)
-    if exclusion_cfg.get('drop_constant', True):
+    if exclusion_cfg['drop_constant']:
         ref = train_df if train_df is not None else df
         feature_cols = [c for c in ref.columns
                         if not c.startswith('_') and c in df.columns]
@@ -577,25 +631,8 @@ def stage5_normalize(
     df = df.copy()
     feature_cols = [c for c in df.columns if not c.startswith('_')]
 
-    config_keys = {
-        'volume': 'volume_counters', 'count': 'count_counters',
-        'histogram': 'histogram_counters', 'top4': 'top4_counters',
-        'timing': 'timing_counters', 'timestamp': 'timestamp_counters',
-        'categorical': 'categorical_counters', 'rank_id': 'rank_id_counters',
-        'rank_stat': 'rank_stat_counters',
-        'rank_stat_bounded': 'rank_stat_bounded_counters',
-        'conditional_size': 'conditional_size_counters',
-        'indicator': 'indicator_features', 'ratio': 'ratio_features',
-        'ratio_unbounded': 'ratio_unbounded_features',
-        'derived_absolute': 'derived_absolute', 'metadata': 'metadata_features',
-    }
-    expected_keys = set(config_keys.values())
-    if set(norm_config) != expected_keys:
-        raise ValueError(
-            "normalization keys differ from the required contract: "
-            f"missing={sorted(expected_keys - set(norm_config))}, "
-            f"unknown={sorted(set(norm_config) - expected_keys)}"
-        )
+    config_keys = NORMALIZATION_CONFIG_KEYS
+    _require_section(config, 'normalization')
     allowed_methods = {'none', 'log1p', 'log1p_robust', 'log10p1'}
     invalid = {key: value for key, value in norm_config.items()
                if value not in allowed_methods}
@@ -662,6 +699,7 @@ def create_splits(df, config):
     dict
         ``{'train_idx': array, 'val_idx': array, 'test_idx': array}``
     """
+    _require_section(config, 'splits')
     split_config = config['splits']
     method = split_config['method']
     test_fraction = split_config['test_fraction']
@@ -800,4 +838,4 @@ def load_preprocessing_config(config_path=None):
     if not config_path.exists():
         raise FileNotFoundError(f"preprocessing config not found: {config_path}")
     with open(config_path) as fh:
-        return yaml.safe_load(fh)
+        return validate_preprocessing_config(yaml.safe_load(fh))

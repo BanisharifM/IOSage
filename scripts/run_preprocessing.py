@@ -96,6 +96,35 @@ def setup_logging(output_dir, level=logging.INFO):
     return log_file
 
 
+def write_parquet(df, path, index=False):
+    """Atomic parquet write; an existing file is an error."""
+    return write_atomic(path, lambda temporary: df.to_parquet(temporary, index=index))
+
+
+def write_json(payload, path):
+    def writer(temporary):
+        with open(temporary, 'w') as fh:
+            json.dump(payload, fh, indent=2)
+            fh.write('\n')
+    return write_atomic(path, writer)
+
+
+def write_pickle(payload, path):
+    def writer(temporary):
+        with open(temporary, 'wb') as fh:
+            pickle.dump(payload, fh)
+    return write_atomic(path, writer)
+
+
+def sample_rows(df, sample, seed):
+    """A seeded row sample of ``df`` (positions reset) or ``df`` unchanged."""
+    if sample is None or len(df) <= sample:
+        return df
+    positions = np.random.RandomState(seed).choice(len(df), sample, replace=False)
+    logger.info("Sampled %d of %d rows for testing", sample, len(df))
+    return df.iloc[np.sort(positions)].reset_index(drop=True)
+
+
 def validate_dataframe(df, stage_name, expected_min_rows):
     """Check a stage's output for NaN, infinity and a minimum row count.
 
@@ -151,7 +180,7 @@ def run_stage2(input_path, output_dir, config, min_rows):
 
     # Save
     out_path = output_dir / 'cleaned_features.parquet'
-    df_clean.to_parquet(out_path, index=False)
+    write_parquet(df_clean, out_path)
 
     elapsed = time.time() - t0
     logger.info("Stage 2 complete in %.1fs: %d -> %d rows (removed %d, %.1f%%)",
@@ -167,19 +196,13 @@ def run_stage2(input_path, output_dir, config, min_rows):
     return df_clean, report
 
 
-def run_stage3(df_or_path, output_dir, config, min_rows):
+def run_stage3(df, output_dir, config, min_rows):
     """Stage 3: Feature Engineering."""
     logger.info("=" * 60)
     logger.info("STAGE 3: FEATURE ENGINEERING")
     logger.info("=" * 60)
 
     t0 = time.time()
-    if isinstance(df_or_path, (str, Path)):
-        df = pd.read_parquet(df_or_path)
-        logger.info("Loaded %d rows from %s", len(df), df_or_path)
-    else:
-        df = df_or_path
-
     n_before = len(df.columns)
     df_eng = stage3_engineer(df, config=config)
     n_after = len(df_eng.columns)
@@ -187,7 +210,7 @@ def run_stage3(df_or_path, output_dir, config, min_rows):
 
     # Save
     out_path = output_dir / 'features.parquet'
-    df_eng.to_parquet(out_path, index=False)
+    write_parquet(df_eng, out_path)
 
     elapsed = time.time() - t0
     logger.info("Stage 3 complete in %.1fs: %d -> %d columns (+%d derived)",
@@ -198,36 +221,31 @@ def run_stage3(df_or_path, output_dir, config, min_rows):
     return df_eng
 
 
-def run_stage4(df_or_path, output_dir, config):
+def run_stage4(df, output_dir, config):
     """Stage 4: Statistical Analysis (EDA)."""
     logger.info("=" * 60)
     logger.info("STAGE 4: STATISTICAL ANALYSIS (EDA)")
     logger.info("=" * 60)
 
     t0 = time.time()
-    if isinstance(df_or_path, (str, Path)):
-        df = pd.read_parquet(df_or_path)
-        logger.info("Loaded %d rows from %s", len(df), df_or_path)
-    else:
-        df = df_or_path
 
     # Per-feature statistics
     logger.info("Computing per-feature statistics...")
     stats = compute_statistics(df)
     stats_path = output_dir / 'eda_stats.parquet'
-    stats.to_parquet(stats_path)
+    write_parquet(stats, stats_path, index=True)
     logger.info("Saved feature statistics: %s (%d features)", stats_path,
                 len(stats))
 
     # Correlation matrix (Spearman handles non-linear monotonic relationships)
     logger.info("Computing Spearman correlation matrix...")
-    feature_sel = config.get('feature_selection', {})
-    corr_threshold = feature_sel.get('correlation_threshold', 0.90)
-    min_nonzero = feature_sel.get('min_nonzero_fraction', 0.01)
+    feature_sel = config['feature_selection']
+    corr_threshold = feature_sel['correlation_threshold']
+    min_nonzero = feature_sel['min_nonzero_fraction']
 
     corr_matrix = compute_correlation_matrix(df, method='spearman')
     corr_path = output_dir / 'eda_correlation.parquet'
-    corr_matrix.to_parquet(corr_path)
+    write_parquet(corr_matrix, corr_path, index=True)
 
     # Redundant features
     redundant_pairs = find_redundant_features(corr_matrix, threshold=corr_threshold)
@@ -279,8 +297,7 @@ def run_stage4(df_or_path, output_dir, config):
         }
     }
     report_path = output_dir / 'eda_report.json'
-    with open(report_path, 'w') as fh:
-        json.dump(eda_report, fh, indent=2)
+    write_json(eda_report, report_path)
 
     elapsed = time.time() - t0
     logger.info("Stage 4 complete in %.1fs", elapsed)
@@ -290,18 +307,13 @@ def run_stage4(df_or_path, output_dir, config):
     return stats, eda_report
 
 
-def run_stage5(df_or_path, output_dir, config, min_rows):
+def run_stage5(df, output_dir, config, min_rows):
     """Stage 5: Normalization + Splits (split arrays are row positions)."""
     logger.info("=" * 60)
     logger.info("STAGE 5: NORMALIZATION + SPLITS")
     logger.info("=" * 60)
 
     t0 = time.time()
-    if isinstance(df_or_path, (str, Path)):
-        df = pd.read_parquet(df_or_path)
-        logger.info("Loaded %d rows from %s", len(df), df_or_path)
-    else:
-        df = df_or_path
 
     # Create splits before normalization so scalers see training rows only.
     logger.info("Creating train/val/test splits...")
@@ -325,12 +337,11 @@ def run_stage5(df_or_path, output_dir, config, min_rows):
 
     # Save dropped feature list for reference
     dropped_path = output_dir / 'dropped_features.json'
-    with open(dropped_path, 'w') as fh:
-        json.dump({
-            'dropped': dropped_features,
-            'count': len(dropped_features),
-            'remaining': n_after,
-        }, fh, indent=2)
+    write_json({
+        'dropped': dropped_features,
+        'count': len(dropped_features),
+        'remaining': n_after,
+    }, dropped_path)
 
     # Normalize TRAINING set (fit scalers)
     logger.info("Normalizing training set (fitting scalers)...")
@@ -363,26 +374,19 @@ def run_stage5(df_or_path, output_dir, config, min_rows):
     splits_dir = output_dir / 'splits'
     splits_dir.mkdir(parents=True, exist_ok=True)
 
-    df_train_norm.to_parquet(splits_dir / 'train.parquet', index=False)
-    df_val_norm.to_parquet(splits_dir / 'val.parquet', index=False)
-    df_test_norm.to_parquet(splits_dir / 'test.parquet', index=False)
+    write_parquet(df_train_norm, splits_dir / 'train.parquet')
+    write_parquet(df_val_norm, splits_dir / 'val.parquet')
+    write_parquet(df_test_norm, splits_dir / 'test.parquet')
 
-    # Save scalers
-    scaler_path = output_dir / 'scalers.pkl'
-    with open(scaler_path, 'wb') as fh:
-        pickle.dump(scalers, fh)
-
-    # Save split indices
-    split_path = output_dir / 'split_indices.pkl'
-    with open(split_path, 'wb') as fh:
-        pickle.dump(splits, fh)
+    # Save scalers and split indices
+    write_pickle(scalers, output_dir / 'scalers.pkl')
+    write_pickle(splits, output_dir / 'split_indices.pkl')
 
     # Also save the full normalized dataset (train scalers applied to all)
     logger.info("Creating full normalized dataset...")
     df_full_norm, _ = stage5_normalize(
         df.copy(), config, fit=False, scalers=scalers)
-    df_full_norm.to_parquet(output_dir / 'normalized_features.parquet',
-                            index=False)
+    write_parquet(df_full_norm, output_dir / 'normalized_features.parquet')
 
     elapsed = time.time() - t0
     logger.info("Stage 5 complete in %.1fs", elapsed)
@@ -485,59 +489,21 @@ def main():
 
     t_total = time.time()
 
-    # Determine starting data
-    df = None
+    # Starting frame: stage 2 reads the raw parquet; a later start stage reads
+    # its prerequisite. The optional sample is taken once, on that frame.
+    if args.start_stage == 2:
+        df, _ = run_stage2(input_path, output_dir, config, args.min_rows)
+    else:
+        df = pd.read_parquet(stage_input_path)
+        logger.info("Loaded %d rows from %s", len(df), stage_input_path)
+    df = sample_rows(df, args.sample, config['random_seed'])
 
-    # --- Stage 2: Cleaning ---
-    if args.start_stage <= 2 <= args.end_stage:
-        df_clean, clean_report = run_stage2(
-            input_path, output_dir, config, args.min_rows)
-        if args.sample and len(df_clean) > args.sample:
-            rng = np.random.RandomState(config.get('random_seed', 42))
-            idx = rng.choice(len(df_clean), args.sample, replace=False)
-            df_clean = df_clean.iloc[idx].reset_index(drop=True)
-            logger.info("Sampled %d rows for testing", args.sample)
-        df = df_clean
-    elif args.start_stage > 2:
-        # Load from previous stage output
-        cleaned_path = output_dir / 'cleaned_features.parquet'
-        if cleaned_path.exists():
-            df = pd.read_parquet(cleaned_path)
-            logger.info("Loaded cleaned features: %d rows", len(df))
-            if args.sample and len(df) > args.sample:
-                rng = np.random.RandomState(config.get('random_seed', 42))
-                idx = rng.choice(len(df), args.sample, replace=False)
-                df = df.iloc[idx].reset_index(drop=True)
-                logger.info("Sampled %d rows for testing", args.sample)
-
-    # --- Stage 3: Feature Engineering ---
     if args.start_stage <= 3 <= args.end_stage:
-        if df is not None:
-            df = run_stage3(df, output_dir, config, effective_min_rows)
-        else:
-            df = run_stage3(output_dir / 'cleaned_features.parquet',
-                           output_dir, config, effective_min_rows)
-    elif args.start_stage > 3:
-        eng_path = output_dir / 'features.parquet'
-        if eng_path.exists():
-            df = pd.read_parquet(eng_path)
-            logger.info("Loaded engineered features: %d rows", len(df))
-
-    # --- Stage 4: EDA ---
+        df = run_stage3(df, output_dir, config, effective_min_rows)
     if args.start_stage <= 4 <= args.end_stage:
-        if df is not None:
-            run_stage4(df, output_dir, config)
-        else:
-            run_stage4(output_dir / 'features.parquet',
-                      output_dir, config)
-
-    # --- Stage 5: Normalization + Splits ---
+        run_stage4(df, output_dir, config)
     if args.start_stage <= 5 <= args.end_stage:
-        if df is not None:
-            run_stage5(df, output_dir, config, effective_min_rows)
-        else:
-            run_stage5(output_dir / 'features.parquet',
-                      output_dir, config, effective_min_rows)
+        run_stage5(df, output_dir, config, effective_min_rows)
 
     total_elapsed = time.time() - t_total
     logger.info("=" * 60)
