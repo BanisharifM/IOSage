@@ -1,6 +1,6 @@
 # Preregistered application cases for the real-application study (docs/9_fresh_start).
-# Written before the scored runs of each application; the audit reads it. Labels use the
-# fresh-start definitions: file_strategy = file-per-process output at the registered scale.
+# Written before the scored runs of each application; the audit reads it. A case is classifier
+# ground truth only when classifier_supported is true and its counters meet a registered rule.
 version: 1
 
 protocol:
@@ -12,6 +12,10 @@ protocol:
   decision_rule: order_statistic_median_interval   # src/llm/closed_loop_metrics.evaluate_candidate
   decision_source: docs/8_real_applications/MEASUREMENT_ALIGNMENT.md
   null_check: results/apps/null_check/nek5000_N1_2026-09-21.json   # 11 + 11 same-case runs: no_significant_change
+  # WRF base input (both cases): nocolons = .true. (doc/README.netcdf4par: colons must be removed
+  # for pnetcdf), use_netcdf_classic = .true. (Registry/registry.io_boilerplate; otherwise io_netcdf
+  # writes NetCDF-4 with deflate level 2, wrf_io.F90 lines 2502-2504, a compression confound), the
+  # generated Thompson table qr_acr_qg_V4.dat present so no case computes and writes it.
 
 applications:
   nek5000:
@@ -66,12 +70,15 @@ applications:
         kind: constructed
         args: ["200", "50", "1", "yes"]   # numSteps writeInterval writeNFiles writeDoublePrecision
         knobs: {writeNFiles: 1}
-        expected_labels: []            # healthy: the detector should abstain
+        classifier_supported: false
+        expected_labels: []
         allowed_extra_labels: []
         source: >-
           Nek5000 documentation, case files, [GENERAL] writeNFiles: "By default a parallel
-          shared file is used" (https://nek5000.github.io/NekDoc/problem_setup/case_files.html);
-          core/prepost.f mfo_open_files opens one MPI-IO file when writeNFiles = 1.
+          shared file is used" (https://nek5000.github.io/NekDoc/problem_setup/case_files.html).
+          The local core/prepost.f mfo_open_files implementation opens one MPI-IO file when
+          writeNFiles = 1. This case is the intervention fix, not a full negative control for
+          all registered labels.
         io_structure: {files_per_checkpoint: 1, write_module: MPI-IO, shared_file: true}
       N2:
         role: problem
@@ -79,10 +86,82 @@ applications:
         fix_case: N1
         args: ["200", "50", "32", "yes"]
         knobs: {writeNFiles: 32}
-        expected_labels: [file_strategy]
+        classifier_supported: false
+        expected_labels: []
         allowed_extra_labels: []
         source: >-
           Same documentation: writeNFiles = N writes N files, one per I/O rank; with N = 32
-          on 32 ranks every rank writes its own file through byte_write (STDIO), which is the
-          file-per-process organization the fresh-start file_strategy label means.
+          on 32 ranks every rank writes its own file through byte_write (STDIO). The measured
+          layout has 32 files per checkpoint, below the registered file_strategy boundary of
+          more than 1,000 data files, so it is not classifier ground truth.
         io_structure: {files_per_checkpoint: 32, write_module: STDIO, shared_file: false}
+  wrf:
+    script: scripts/apps/wrf/run_conus12km.slurm
+    base_input: /work/hdd/bdau/mbanisharifdehkordi/apps/wrf/runs/conus12km_task02
+    resources: {nodes: 2, ntasks: 128, ntasks_per_node: 64, cpus_per_task: 1, time_limit: "00:30:00", partition: cpu}
+    secondary_metric: app_metric     # history_write_s: sum of WRF "Timing for Writing wrfout" seconds
+    # work that must be identical between the problem run and its fix run (manifest `work`);
+    # the restart, boundary and normalized-namelist checksums are compared across rows by the audit
+    work_invariant: {forecast_start: "2019-11-26_23:00:00", forecast_end: "2019-11-27_00:00:00", simulated_seconds: 3600,
+                     time_step_s: 72, expected_time_steps: 50, history_interval_m: 60, expected_history_frames: 1,
+                     frames_per_outfile: 1, grid_we: 425, grid_sn: 300, grid_vert: 50, ranks: 128, nodes: 2,
+                     physics_suite: conus, io_form_restart: 2, io_form_boundary: 2}
+    equivalence:
+      source: >-
+        Same binary (WRF v4.8.0 with the local subgrid_x initialization patch), restart, boundary
+        file, tables, namelist except io_form_history, rank count and node count; the history
+        output path does not enter the integration. Evidence used to set the rule: development
+        pair 22350653 (W1) and 22350654 (W2) of 2026-09-24 (files kept under
+        .codex-trash/wrf_dev_2026-09-24): identical dimensions, all 204 history variables
+        bitwise identical (per-variable SHA-256 of the raw values read with netCDF4 with masking
+        and scaling off), all 136 global attributes identical, and WRF's own diffwrf_nc
+        (external/io_netcdf/diffwrf.F90) lists no differing field. The rule therefore requires
+        exact equality of every variable, of the dimensions and of the global attributes of the
+        history file; no metadata field is excluded. The log fields are exact by construction.
+      exact_fields: [success_complete, final_time, completed_steps, history_frames, history_files]
+      exact_subtrees:
+        - history.wrfout_d01_2019-11-27_00_00_00.dimensions
+        - history.wrfout_d01_2019-11-27_00_00_00.variables
+        - history.wrfout_d01_2019-11-27_00_00_00.global_attributes
+    case_order: [W1, W2]              # problem first within every repeat
+    cases:
+      W1:
+        role: problem
+        kind: natural
+        fix_case: W2
+        args: ["2"]                    # io_form_history
+        knobs: {io_form_history: 2}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: >-
+          WRF Users' Guide, namelist variables, &time_control: "io_form_history: I/O format of
+          history output file(s); =2 : netCDF ... =11 : parallel netCDF"
+          (https://www2.mmm.ucar.edu/wrf/users/wrf_users_guide/build/html/namelist_variables.html);
+          local external/io_netcdf/wrf_io.F90: with use_netcdf_classic the file is created with
+          NF_64BIT_OFFSET and written by the rank that holds the gathered fields (one POSIX writer,
+          job 22350653). Phase 0 (results/apps/wrf/phase0/label_feasibility_2026-09-24.json): the
+          whole-job counters satisfy access_granularity, parallelism_efficiency and
+          request_alignment for reasons outside the history path (lookup tables and per-rank rsl
+          logs), so the case is an intervention baseline, not classifier ground truth.
+        io_structure: {write_module: POSIX, shared_file: false, writing_ranks: 1, collective: false,
+                       data_model: NETCDF3_64BIT_OFFSET, io_form_history: 2, history_files: 1}
+      W2:
+        role: fix
+        kind: natural
+        args: ["11"]
+        knobs: {io_form_history: 11}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: >-
+          Same Users' Guide entry (=11 parallel netCDF); NERSC WRF benchmark page
+          (https://docs.nersc.gov/applications/wrf/wrf_benchmark/): the parallel netCDF option
+          "shortens the time spent on writing the output file from 20-40 seconds to 3-5 seconds";
+          local external/io_pnetcdf/wrf_io.F90 line 1260: NFMPI_CREATE with NF_64BIT_OFFSET, so
+          all ranks write one shared file through collective MPI-IO (26,112 collective writes in
+          job 22350654). doc/README.netcdf4par: colons must be removed from the file name for
+          pnetcdf, hence nocolons in both cases. Not registered as healthy: the same three
+          whole-job rules hold for it (Phase 0), so it is the measured fix, not a negative control.
+        io_structure: {write_module: MPI-IO, shared_file: true, collective: true,
+                       data_model: NETCDF3_64BIT_OFFSET, io_form_history: 11, history_files: 1}

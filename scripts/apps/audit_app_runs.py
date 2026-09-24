@@ -74,8 +74,20 @@ def equivalent_results(problem, fixed, rule):
         return problem == fixed, None if problem == fixed else "correctness results differ"
     fields = rule.get("fields")
     exact = rule.get("exact_fields")
-    if (not isinstance(fields, dict) or not fields) and not exact:
-        return False, "equivalence rule must define mode=exact, exact_fields or numeric fields"
+    subtrees = rule.get("exact_subtrees")
+    if (not isinstance(fields, dict) or not fields) and not exact and not subtrees:
+        return False, "equivalence rule must define mode=exact, exact_fields, exact_subtrees or numeric fields"
+    for name in subtrees or []:
+        try:
+            left = nested_value(problem, name)
+            right = nested_value(fixed, name)
+        except KeyError as exc:
+            return False, f"cannot compare {name}: {exc}"
+        if not isinstance(left, dict) or not left:
+            return False, f"{name} is not a non-empty object"
+        if left != right:
+            differing = sorted(k for k in set(left) | set(right) if left.get(k) != right.get(k))
+            return False, f"{name} differs in {differing[:8]}" + (" ..." if len(differing) > 8 else "")
     for name in exact or []:
         try:
             left = nested_value(problem, name)
@@ -247,6 +259,12 @@ def main():
     for controls_missing in sorted(cases_in_series - {r.get("case") for r in rows if r.get("nodarshan")}):
         problems.append(f"{controls_missing}: no control run")
 
+    secondary = registered.get("secondary_metric") if registered is not None else None
+
+    def measurement(row, metric):
+        value = row["wall_s"] if metric == "wall_s" else row["app_metric"]["value"]
+        return {"walltime_s": value, "write_bw_mb_s": 0.0, "bytes_total": row.get("out_bytes") or 0}
+
     verdicts = {}
     for pair in args.pair:
         parts = pair.split(":")
@@ -286,25 +304,54 @@ def main():
                 break
         if work_note:
             problems.append(f"pair {pair_key}: {work_note}")
-        a = aggregate_repeats([{"walltime_s": r["wall_s"], "write_bw_mb_s": 0.0, "bytes_total": r.get("out_bytes") or 0}
-                               for r in prob], args.confidence)
-        b = aggregate_repeats([{"walltime_s": r["wall_s"], "write_bw_mb_s": 0.0, "bytes_total": r.get("out_bytes") or 0}
-                               for r in fix], args.confidence)
+        a = aggregate_repeats([measurement(r, "wall_s") for r in prob], args.confidence)
+        b = aggregate_repeats([measurement(r, "wall_s") for r in fix], args.confidence)
         v = evaluate_candidate(a, b, best_speedup=1.0)
         verdicts[pair] = {"verdict": v["verdict"], "speedup": v["speedup"], "speedup_ci": v["speedup_ci"],
-                          "problem_median_s": a["walltime_s"], "fix_median_s": b["walltime_s"], "work_note": work_note}
+                          "problem_median_s": a["walltime_s"], "fix_median_s": b["walltime_s"],
+                          "problem_ci_s": [a["ci_lower_s"], a["ci_upper_s"]], "fix_ci_s": [b["ci_lower_s"], b["ci_upper_s"]],
+                          "problem_rel_mad": a["rel_mad"], "fix_rel_mad": b["rel_mad"], "work_note": work_note}
         if required_verdict and v["verdict"] != required_verdict:
             problems.append(f"pair {pair_key}: verdict {v['verdict']}, required {required_verdict}")
         logger.info("%s: %s, %.2fx, CI %s%s", pair, v["verdict"], v["speedup"], v["speedup_ci"],
                     f" [{work_note}]" if work_note else "")
+        if secondary == "app_metric":
+            # same interval method on the application's own metric; explains the I/O phase, never
+            # replaces the primary verdict
+            names = {r["app_metric"]["name"] for r in prob + fix}
+            sa = aggregate_repeats([measurement(r, "app_metric") for r in prob], args.confidence)
+            sb = aggregate_repeats([measurement(r, "app_metric") for r in fix], args.confidence)
+            if sa is None or sb is None or len(names) != 1:
+                problems.append(f"pair {pair_key}: secondary metric missing or inconsistent ({sorted(names)})")
+            else:
+                sv = evaluate_candidate(sa, sb, best_speedup=1.0)
+                verdicts[pair]["secondary"] = {"metric": names.pop(), "verdict": sv["verdict"], "speedup": sv["speedup"],
+                                               "speedup_ci": sv["speedup_ci"], "problem_median": sa["walltime_s"],
+                                               "fix_median": sb["walltime_s"],
+                                               "problem_ci": [sa["ci_lower_s"], sa["ci_upper_s"]],
+                                               "fix_ci": [sb["ci_lower_s"], sb["ci_upper_s"]],
+                                               "problem_rel_mad": sa["rel_mad"], "fix_rel_mad": sb["rel_mad"]}
+                logger.info("%s secondary %s: %s, %.2fx, CI %s", pair, verdicts[pair]["secondary"]["metric"],
+                            sv["verdict"], sv["speedup"], sv["speedup_ci"])
 
     for p in problems:
         logger.warning("VIOLATION %s", p)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
+    classifier_support = None
+    if registered is not None:
+        classifier_support = {
+            case: {
+                "supported": spec["classifier_supported"],
+                "expected_labels": spec["expected_labels"],
+                "allowed_extra_labels": spec["allowed_extra_labels"],
+            }
+            for case, spec in registered["cases"].items()
+        }
     out.write_text(json.dumps({"manifest": str(args.manifest), "rows": len(rows), "repeats_required": args.repeats,
                                "cases": str(args.cases) if args.cases else None, "app": args.app,
-                               "groups": summary, "verdicts": verdicts, "violations": problems}, indent=2, default=str))
+                               "classifier_support": classifier_support, "groups": summary,
+                               "verdicts": verdicts, "violations": problems}, indent=2, default=str))
     logger.info("%d rows, %d groups, %d violations; wrote %s", len(rows), len(summary), len(problems), out)
     sys.exit(1 if problems else 0)
 

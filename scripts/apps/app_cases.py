@@ -12,12 +12,12 @@ import yaml
 
 ROLES = {"problem", "fix", "abstain"}
 KINDS = {"natural", "constructed"}
-REQUIRED_CASE = ("role", "kind", "args", "knobs", "expected_labels", "allowed_extra_labels",
-                 "source", "io_structure")
+REQUIRED_CASE = ("role", "kind", "args", "knobs", "classifier_supported",
+                 "expected_labels", "allowed_extra_labels", "source", "io_structure")
 REQUIRED_APP = ("script", "resources", "work_invariant", "equivalence", "cases", "case_order")
 REQUIRED_PROTOCOL = ("storage_tier", "repeats", "controls_per_case", "ordering", "confidence",
                      "decision_rule", "decision_source")
-REQUIRED_IO = ("files_per_checkpoint", "write_module", "shared_file")
+REQUIRED_IO = ("write_module", "shared_file")   # applications add their own structure keys
 
 
 def load(path):
@@ -57,8 +57,12 @@ def load(path):
         equivalence = spec.get("equivalence") or {}
         if not isinstance(equivalence.get("source"), str) or not equivalence.get("source"):
             problems.append(f"{prefix}.equivalence.source missing")
-        if not equivalence.get("exact_fields") and not equivalence.get("fields"):
-            problems.append(f"{prefix}.equivalence needs exact_fields or fields")
+        if not any(equivalence.get(k) for k in ("exact_fields", "fields", "exact_subtrees", "checkpoints")):
+            problems.append(f"{prefix}.equivalence needs exact_fields, exact_subtrees, fields or checkpoints")
+        if not isinstance(equivalence.get("exact_subtrees", []), list):
+            problems.append(f"{prefix}.equivalence.exact_subtrees must be a list of dotted paths")
+        if spec.get("secondary_metric") not in (None, "app_metric"):
+            problems.append(f"{prefix}.secondary_metric must be app_metric when given")
         for name, tolerance in (equivalence.get("fields") or {}).items():
             if not isinstance(tolerance, dict) or not {"absolute", "relative"} <= set(tolerance):
                 problems.append(f"{prefix}.equivalence.fields.{name} needs absolute and relative")
@@ -90,6 +94,19 @@ def load(path):
             for key in ("expected_labels", "allowed_extra_labels"):
                 if not isinstance(cspec.get(key), list):
                     problems.append(f"{cprefix}.{key} must be a list")
+            classifier_supported = cspec.get("classifier_supported")
+            if not isinstance(classifier_supported, bool):
+                problems.append(f"{cprefix}.classifier_supported must be Boolean")
+            elif not classifier_supported and (
+                    cspec.get("expected_labels") or cspec.get("allowed_extra_labels")):
+                problems.append(
+                    f"{cprefix} cannot register classifier labels when classifier_supported is false"
+                )
+            elif (classifier_supported and cspec.get("role") == "problem"
+                  and not cspec.get("expected_labels")):
+                problems.append(
+                    f"{cprefix} needs an expected label when classifier_supported is true"
+                )
             io = cspec.get("io_structure")
             if not isinstance(io, dict) or any(k not in io for k in REQUIRED_IO):
                 problems.append(f"{cprefix}.io_structure needs {REQUIRED_IO}")
@@ -123,6 +140,7 @@ def expand_rule(equivalence):
     tolerance entries, so the registration stays readable and the audit sees every name."""
     exact = list(equivalence.get("exact_fields") or [])
     fields = dict(equivalence.get("fields") or {})
+    subtrees = list(equivalence.get("exact_subtrees") or [])
     for block in equivalence.get("checkpoints") or []:
         for step in block["steps"]:
             for name in block.get("exact", []):
@@ -130,7 +148,10 @@ def expand_rule(equivalence):
             for component in block["components"]:
                 for stat, tolerance in block["stats"].items():
                     fields[f"checkpoints.step_{step}.variables.{component}.{stat}"] = dict(tolerance)
-    return {"exact_fields": exact, "fields": fields}
+    rule = {"exact_fields": exact, "fields": fields}
+    if subtrees:
+        rule["exact_subtrees"] = subtrees
+    return rule
 
 
 def pairs(doc, app):

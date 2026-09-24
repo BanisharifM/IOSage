@@ -38,8 +38,26 @@ def test_registered_nek5000_cases_load_and_expose_their_inputs():
                                                             "shared_file": False}
     assert app_cases.work_invariant(doc, "nek5000")["steps"] == 200
     assert (PROJECT_DIR / doc["applications"]["nek5000"]["script"]).is_file()
-    assert doc["applications"]["nek5000"]["cases"]["N2"]["expected_labels"] == ["file_strategy"]
-    assert doc["applications"]["nek5000"]["cases"]["N1"]["expected_labels"] == []
+    n1 = doc["applications"]["nek5000"]["cases"]["N1"]
+    n2 = doc["applications"]["nek5000"]["cases"]["N2"]
+    assert n1["classifier_supported"] is False and n1["expected_labels"] == []
+    assert n2["classifier_supported"] is False and n2["expected_labels"] == []
+
+
+def test_registered_wrf_cases_expose_their_inputs():
+    doc = app_cases.load(CASES)
+    assert app_cases.case_args(doc, "wrf", "W1") == ["2"] and app_cases.case_args(doc, "wrf", "W2") == ["11"]
+    rule = app_cases.pairs(doc, "wrf")["W1:W2"]
+    assert "history.wrfout_d01_2019-11-27_00_00_00.variables" in rule["exact_subtrees"]
+    assert "final_time" in rule["exact_fields"] and not rule["fields"]
+    assert doc["applications"]["wrf"]["secondary_metric"] == "app_metric"
+    assert doc["applications"]["wrf"]["case_order"] == ["W1", "W2"]
+    for case in ("W1", "W2"):
+        spec = doc["applications"]["wrf"]["cases"][case]
+        assert spec["classifier_supported"] is False and spec["expected_labels"] == []
+    assert app_cases.expected_io(doc, "wrf", "W2")["collective"] is True
+    assert app_cases.work_invariant(doc, "wrf")["expected_time_steps"] == 50
+    assert (PROJECT_DIR / doc["applications"]["wrf"]["script"]).is_file()
 
 
 def test_loader_rejects_incomplete_registrations():
@@ -50,12 +68,24 @@ def test_loader_rejects_incomplete_registrations():
     _rejects(doc, "args")
     doc = copy.deepcopy(base); doc["applications"]["nek5000"]["cases"]["N2"].pop("io_structure")
     _rejects(doc, "io_structure")
+    doc = copy.deepcopy(base); doc["applications"]["nek5000"]["cases"]["N2"].pop("classifier_supported")
+    _rejects(doc, "classifier_supported")
+    doc = copy.deepcopy(base); doc["applications"]["nek5000"]["cases"]["N2"]["classifier_supported"] = "no"
+    _rejects(doc, "classifier_supported must be Boolean")
+    doc = copy.deepcopy(base); doc["applications"]["nek5000"]["cases"]["N2"]["expected_labels"] = ["file_strategy"]
+    _rejects(doc, "cannot register classifier labels")
+    doc = copy.deepcopy(base); doc["applications"]["nek5000"]["cases"]["N2"]["classifier_supported"] = True
+    _rejects(doc, "needs an expected label")
     doc = copy.deepcopy(base); doc["applications"]["nek5000"]["equivalence"] = {"source": "x"}
-    _rejects(doc, "exact_fields or fields")
+    _rejects(doc, "equivalence needs")
     doc = copy.deepcopy(base); doc["protocol"]["repeats"] = 3
     _rejects(doc, "repeats")
     doc = copy.deepcopy(base); doc["applications"]["nek5000"]["case_order"] = ["N2"]
     _rejects(doc, "case_order")
+    doc = copy.deepcopy(base); doc["applications"]["wrf"]["cases"]["W1"]["expected_labels"] = ["interface_choice"]
+    _rejects(doc, "classifier_supported")
+    doc = copy.deepcopy(base); doc["applications"]["wrf"]["secondary_metric"] = "wall_s"
+    _rejects(doc, "secondary_metric")
 
 
 if __name__ == "__main__":
