@@ -57,6 +57,8 @@ def main():
     parser.add_argument("--attempt", required=True, help="new attempt name; its directory must not exist")
     parser.add_argument("--results-root", default=str(PROJECT_DIR / "results" / "apps"))
     parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "iterative.yaml"))
+    parser.add_argument("--job-timeout", type=int, default=43200,
+                        help="seconds to wait for one job, queue time included (default 12 h)")
     parser.add_argument("--dry-run", action="store_true", help="write the plan and submit nothing")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -82,7 +84,7 @@ def main():
     schedule = plan(doc, args.app)
     state = {"app": args.app, "attempt": args.attempt, "cases_file": str(Path(args.cases).resolve()),
              "script": str(script), "manifest": str(manifest_path),
-             "protocol": doc["protocol"], "plan": [dict(case=c, role=r, kind=k, repeat=n, control=ctl)
+             "protocol": doc["protocol"], "job_timeout_s": args.job_timeout, "plan": [dict(case=c, role=r, kind=k, repeat=n, control=ctl)
                                                     for c, r, k, n, ctl in schedule],
              "jobs": [], "status": "planned"}
     series_path.write_text(json.dumps(state, indent=2))
@@ -105,8 +107,8 @@ def main():
                   "submitted_iso": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "job_id": None, "outcome": None}
         state["jobs"].append(record)
         series_path.write_text(json.dumps(state, indent=2))
-        job_id = executor.submit_and_wait(str(script), poll_interval=10, sbatch_args=sbatch_args,
-                                          script_args=app_cases.case_args(doc, args.app, case))
+        job_id = executor.submit_and_wait(str(script), timeout_seconds=args.job_timeout, poll_interval=10,
+                                          sbatch_args=sbatch_args, script_args=app_cases.case_args(doc, args.app, case))
         record["job_id"] = job_id
         if job_id is None:
             record["outcome"] = "job_failed_or_not_completed"
