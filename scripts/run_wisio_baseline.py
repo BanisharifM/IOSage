@@ -1,5 +1,4 @@
-"""
-Run WisIO baseline on benchmark Darshan logs and compare against ground-truth labels.
+"""Run WisIO on benchmark traces with one prediction per label row.
 
 WisIO detects 6 rule-based bottlenecks:
   - excessive_metadata_access
@@ -19,17 +18,15 @@ We map these to our 8-dimension taxonomy:
   - throughput_utilization  <- (no WisIO mapping)
   - healthy                 <- none of the above detected
 
-Usage:
-    PYTHONPATH=/work/hdd/bdau/mbanisharifdehkordi/IOSage_runtime/python_pkgs:$PYTHONPATH \
-    /projects/bdau/envs/sc2026/bin/python scripts/run_wisio_baseline.py
 """
 
+import argparse
 import json
 import logging
 import os
+import re
 import sys
 import time
-import traceback
 import warnings
 from pathlib import Path
 
@@ -40,14 +37,8 @@ from sklearn.metrics import precision_recall_fscore_support
 warnings.filterwarnings("ignore")
 os.environ["DASK_DISTRIBUTED__LOGGING__DISTRIBUTED"] = "error"
 os.environ["DASK_LOGGING__DISTRIBUTED"] = "error"
-logging.disable(logging.WARNING)
 
-# ---------- configuration ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-BENCHMARK_LOGS_DIR = PROJECT_ROOT / "data" / "benchmark_logs"
-LABELS_PATH = PROJECT_ROOT / "data" / "processed" / "benchmark" / "labels.parquet"
-OUTPUT_DIR = PROJECT_ROOT / "results" / "wisio_baseline"
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 WISIO_RULES = [
     "excessive_metadata_access",
@@ -79,13 +70,48 @@ TAXONOMY_DIMS = [
 ]
 
 
-def find_darshan_file(job_id, benchmark):
-    """Find the darshan file for a given job_id in benchmark_logs."""
-    bench_dir = BENCHMARK_LOGS_DIR / benchmark
-    if not bench_dir.exists():
-        return None
-    matches = list(bench_dir.glob(f"*id{job_id}*"))
-    return str(matches[0]) if matches else None
+def assign_trace_paths(labels_df, benchmark_logs_dir):
+    """Assign every label row to one trace, enforcing group cardinality."""
+    required = {"job_id", "benchmark", "scenario", "n_darshan_files"}
+    missing = required - set(labels_df.columns)
+    if missing:
+        raise ValueError(f"labels table lacks columns: {sorted(missing)}")
+
+    log_root = Path(benchmark_logs_dir)
+    files_by_group = {}
+    for benchmark in labels_df["benchmark"].astype(str).unique():
+        bench_dir = log_root / benchmark
+        if not bench_dir.is_dir():
+            raise FileNotFoundError(f"benchmark log directory does not exist: {bench_dir}")
+        for path in bench_dir.glob("*.darshan"):
+            match = re.search(r"_id([^-]+)-", path.name)
+            if match:
+                files_by_group.setdefault((benchmark, match.group(1)), []).append(path)
+
+    assignments = {}
+    for (benchmark, job_id), group in labels_df.groupby(
+            ["benchmark", "job_id"], sort=False):
+        matches = sorted(files_by_group.get((str(benchmark), str(job_id)), []))
+        expected = group["n_darshan_files"].astype(int)
+        if (expected < 1).any():
+            raise ValueError(f"{benchmark}/{job_id}: invalid trace count")
+        if len(matches) != int(expected.sum()):
+            raise ValueError(
+                f"{benchmark}/{job_id}: labels require {int(expected.sum())} "
+                f"traces but {len(matches)} match")
+        offset = 0
+        for row_index, count in zip(group.index, expected):
+            assignments[row_index] = tuple(
+                path.resolve() for path in matches[offset:offset + count])
+            offset += count
+
+    if len(assignments) != len(labels_df):
+        raise ValueError(
+            f"assigned {len(assignments)} traces for {len(labels_df)} rows")
+    assigned_paths = [path for paths in assignments.values() for path in paths]
+    if len(set(assigned_paths)) != len(assigned_paths):
+        raise ValueError("a Darshan trace was assigned to more than one label row")
+    return assignments
 
 
 def wisio_rules_to_taxonomy(rule_flags):
@@ -157,101 +183,127 @@ def compute_metrics(y_true, y_pred, dim_names):
 
 
 def main():
-    print("=" * 70, flush=True)
-    print("WisIO Baseline Evaluation on Benchmark Ground-Truth Logs", flush=True)
-    print("=" * 70, flush=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--labels", default=str(
+            PROJECT_ROOT / "data/processed/resubmission/benchmark/labels.parquet"))
+    parser.add_argument(
+        "--benchmark-logs", default=str(PROJECT_ROOT / "data/benchmark_logs"))
+    parser.add_argument(
+        "--runtime-python",
+        help="optional package directory; omit after installing requirements-wisio.txt")
+    parser.add_argument(
+        "--output-dir", default=str(PROJECT_ROOT / "results/wisio_baseline"))
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    logger = logging.getLogger("wisio_baseline")
+    labels_path = Path(args.labels).resolve()
+    logs_dir = Path(args.benchmark_logs).resolve()
+    output_dir = Path(args.output_dir).resolve()
+    for path, description in (
+            (labels_path, "labels table"),
+            (logs_dir, "benchmark log directory")):
+        if not path.exists():
+            raise FileNotFoundError(f"{description} does not exist: {path}")
+    if args.runtime_python:
+        runtime_python = Path(args.runtime_python).resolve()
+        if not runtime_python.is_dir():
+            raise FileNotFoundError(f"WisIO Python package directory does not exist: {runtime_python}")
+        sys.path.insert(0, str(runtime_python))
 
     # Load ground-truth labels
-    labels_df = pd.read_parquet(LABELS_PATH)
-    print(f"\nLoaded {len(labels_df)} ground-truth labels", flush=True)
-    print(f"Unique job_ids: {labels_df['job_id'].nunique()}", flush=True)
-    print(f"Benchmarks: {labels_df['benchmark'].value_counts().to_dict()}", flush=True)
-
-    # Map job_ids to darshan files
-    file_map = {}
-    for _, row in labels_df.iterrows():
-        jid = row["job_id"]
-        if jid not in file_map:
-            fpath = find_darshan_file(jid, row["benchmark"])
-            if fpath:
-                file_map[jid] = fpath
-    print(f"Found darshan files for {len(file_map)}/{labels_df['job_id'].nunique()} unique jobs", flush=True)
+    labels_df = pd.read_parquet(labels_path)
+    assignments = assign_trace_paths(labels_df, logs_dir)
+    assigned_count = sum(len(paths) for paths in assignments.values())
+    logger.info("Assigned %d label rows to %d distinct traces",
+                len(labels_df), assigned_count)
 
     # Initialize Dask
-    from dask.distributed import LocalCluster, Client
-    from wisio.darshan import DarshanAnalyzer
+    try:
+        from dask.distributed import LocalCluster, Client
+        from wisio.darshan import DarshanAnalyzer
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "WisIO dependencies are missing; install requirements-wisio.txt "
+            "or pass --runtime-python"
+        ) from exc
 
     cluster = LocalCluster(
         n_workers=1, threads_per_worker=1, memory_limit="4GB", silence_logs=50
     )
     client = Client(cluster)
-    print(f"Dask client started", flush=True)
+    logger.info("Dask client started")
 
-    # Run WisIO: process unique job_ids to avoid redundant work
-    wisio_cache = {}  # job_id -> rule_flags
+    trace_results = {}
     errors = []
     t_start = time.time()
-    unique_jobs = list(file_map.keys())
+    items = list(assignments.items())
 
-    for idx, job_id in enumerate(unique_jobs):
-        fpath = file_map[job_id]
+    for position, (row_index, trace_paths) in enumerate(items, start=1):
         try:
-            analyzer = DarshanAnalyzer(
-                checkpoint=False, checkpoint_dir="",
-                bottleneck_dir="/tmp/wisio_baseline_bot", verbose=False,
-            )
-            result = analyzer.analyze_trace(
-                trace_path=fpath,
-                percentile=0.9,
-                view_types=["file_name", "proc_name"],
-                metrics=["iops"],
-                exclude_bottlenecks=[],
-                exclude_characteristics=[],
-            )
-            if result._bottlenecks is not None:
-                bot_df = result._bottlenecks.compute()
-                rule_flags = {}
-                for rule in WISIO_RULES:
-                    rule_flags[rule] = bool(bot_df[rule].any()) if rule in bot_df.columns else False
-            else:
-                rule_flags = {r: False for r in WISIO_RULES}
+            rule_flags = {rule: False for rule in WISIO_RULES}
+            for trace_path in trace_paths:
+                analyzer = DarshanAnalyzer(
+                    checkpoint=False, checkpoint_dir="",
+                    bottleneck_dir="/tmp/wisio_baseline_bot", verbose=False,
+                )
+                result = analyzer.analyze_trace(
+                    trace_path=str(trace_path),
+                    percentile=0.9,
+                    view_types=["file_name", "proc_name"],
+                    metrics=["iops"],
+                    exclude_bottlenecks=[],
+                    exclude_characteristics=[],
+                )
+                if result._bottlenecks is not None:
+                    bot_df = result._bottlenecks.compute()
+                    for rule in WISIO_RULES:
+                        detected = rule in bot_df.columns and bool(bot_df[rule].any())
+                        rule_flags[rule] = rule_flags[rule] or detected
 
-            wisio_cache[job_id] = rule_flags
+            trace_results[row_index] = rule_flags
 
-        except Exception as e:
-            errors.append({"job_id": int(job_id), "file": fpath, "error": str(e)})
-            wisio_cache[job_id] = {r: False for r in WISIO_RULES}
-            if len(errors) <= 10:
-                print(f"  ERROR {job_id}: {e}", flush=True)
+        except Exception as exc:
+            errors.append({
+                "row_index": int(row_index),
+                "job_id": int(labels_df.loc[row_index, "job_id"]),
+                "traces": [str(path) for path in trace_paths],
+                "error": str(exc),
+            })
+            logger.error("WisIO failed for row %s: %s", row_index, exc)
 
-        if (idx + 1) % 10 == 0:
+        if position % 10 == 0:
             elapsed = time.time() - t_start
-            rate = (idx + 1) / elapsed
-            eta = (len(unique_jobs) - idx - 1) / rate if rate > 0 else 0
-            print(
-                f"  [{idx+1}/{len(unique_jobs)}] "
-                f"{elapsed:.0f}s elapsed, {rate:.2f} jobs/s, "
-                f"ETA: {eta:.0f}s | errors so far: {len(errors)}",
-                flush=True,
-            )
+            rate = position / elapsed
+            eta = (len(items) - position) / rate if rate > 0 else 0
+            logger.info("%d/%d, %.2f traces/s, %.0fs remaining, %d errors",
+                        position, len(items), rate, eta, len(errors))
 
     elapsed_total = time.time() - t_start
-    print(f"\nProcessed {len(wisio_cache)} unique jobs, {len(errors)} errors in {elapsed_total:.1f}s", flush=True)
-
     client.close()
     cluster.close()
 
-    # Build results for all 623 label rows
+    if errors:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        error_path = output_dir / "wisio_errors.json"
+        error_path.write_text(json.dumps(errors, indent=2))
+        raise RuntimeError(
+            f"WisIO failed on {len(errors)} of {len(items)} traces; "
+            f"details: {error_path}")
+    if len(trace_results) != len(labels_df):
+        raise RuntimeError(
+            f"WisIO returned {len(trace_results)} results for {len(labels_df)} rows")
+
     all_results = []
-    for _, row in labels_df.iterrows():
-        job_id = row["job_id"]
-        if job_id not in wisio_cache:
-            continue
-        rule_flags = wisio_cache[job_id]
+    for row_index, row in labels_df.iterrows():
+        rule_flags = trace_results[row_index]
         taxonomy_preds = wisio_rules_to_taxonomy(rule_flags)
 
         record = {
-            "job_id": job_id,
+            "sample_id": f"{row['benchmark']}/{row['scenario']}/{row_index}",
+            "traces": [str(path) for path in assignments[row_index]],
+            "job_id": row["job_id"],
             "benchmark": row["benchmark"],
             "scenario": row["scenario"],
         }
@@ -263,14 +315,12 @@ def main():
             record[f"pred_{dim}"] = taxonomy_preds[dim]
         all_results.append(record)
 
-    if not all_results:
-        print("No results to evaluate!")
-        return
-
     results_df = pd.DataFrame(all_results)
-    results_df.to_parquet(OUTPUT_DIR / "wisio_predictions.parquet", index=False)
-    results_df.to_csv(OUTPUT_DIR / "wisio_predictions.csv", index=False)
-    print(f"\nSaved predictions ({len(results_df)} rows) to {OUTPUT_DIR}", flush=True)
+    if len(results_df) != len(labels_df) or not results_df["sample_id"].is_unique:
+        raise RuntimeError("prediction output is not one-to-one with label rows")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results_df.to_parquet(output_dir / "wisio_predictions.parquet", index=False)
+    results_df.to_csv(output_dir / "wisio_predictions.csv", index=False)
 
     # Evaluate
     dim_names = TAXONOMY_DIMS + ["healthy"]
@@ -340,8 +390,8 @@ def main():
         "per_dimension": {d: metrics[d] for d in dim_names},
         "per_benchmark": {},
         "errors_count": len(errors),
-        "total_unique_jobs": len(unique_jobs),
-        "successful_jobs": len(wisio_cache) - len(errors),
+        "total_traces": len(items),
+        "successful_traces": len(trace_results),
         "total_label_rows": len(results_df),
         "elapsed_seconds": elapsed_total,
     }
@@ -355,15 +405,11 @@ def main():
             "per_dimension": {d: bm[d] for d in dim_names},
         }
 
-    with open(OUTPUT_DIR / "wisio_metrics.json", "w") as f:
+    with open(output_dir / "wisio_metrics.json", "w") as f:
         json.dump(metrics_output, f, indent=2)
-    print(f"\nSaved metrics to {OUTPUT_DIR / 'wisio_metrics.json'}", flush=True)
-
-    if errors:
-        with open(OUTPUT_DIR / "wisio_errors.json", "w") as f:
-            json.dump(errors, f, indent=2)
-        print(f"Saved {len(errors)} errors to {OUTPUT_DIR / 'wisio_errors.json'}", flush=True)
+    logger.info("Saved complete WisIO evaluation to %s", output_dir)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

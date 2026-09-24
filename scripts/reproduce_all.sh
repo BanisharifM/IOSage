@@ -1,220 +1,221 @@
-#!/bin/bash
-# =============================================================================
-# IOSage — Reproduce All Paper Results
-# =============================================================================
-# One script to reproduce every result in the paper.
-# Assumes: conda env sc2026 activated, data in data/processed/
-#
-# Usage:
-#   bash scripts/reproduce_all.sh              # Run everything
-#   bash scripts/reproduce_all.sh --quick      # Skip long steps (benchmarks)
-#   bash scripts/reproduce_all.sh --step N     # Run only step N
-#
-# Step numbering matches the AD appendix (appendix_ad.pdf):
-#   T1 (--step 1-5): feature extraction + preprocessing
-#   T2 (--step 6):   ML training (biquality)
-#   T3 (--step 7):   SHAP feature attribution
-#   T4 (--step 8):   LLM recommendation evaluation
-#   T5 (--step 9):   Figure and table generation
-#
-# Expected runtime: ~1 hour on CPU (AMD EPYC 7763, 128 cores)
-# =============================================================================
+#!/usr/bin/env bash
+# Run the maintained resubmission pipeline with explicit artifact gates.
 
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "${PROJECT_DIR}"
+cd "$PROJECT_DIR"
 
-# Cap BLAS / XGBoost / sklearn worker threads. On large shared machines (e.g.
-# HPC login nodes with 64+ cores), unbounded thread counts (1) cause thread
-# oversubscription that slows training, and (2) can trip cgroup / abuse-
-# prevention killers (SIGKILL, exit 137). Bound to a sensible default;
-# override by exporting NTHREADS before invoking the script.
-NTHREADS="${NTHREADS:-8}"
-export OMP_NUM_THREADS="${NTHREADS}"
-export OPENBLAS_NUM_THREADS="${NTHREADS}"
-export MKL_NUM_THREADS="${NTHREADS}"
-
+PYTHON_BIN="${PYTHON_BIN:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/python}"
 QUICK=false
 STEP=0
-for arg in "$@"; do
-    case $arg in
-        --quick) QUICK=true ;;
-        --step) shift; STEP=$1 ;;
+RUN_ID="repro_$(date -u +%Y%m%dT%H%M%SZ)"
+
+usage() {
+    echo "Usage: bash scripts/reproduce_all.sh [--quick] [--step 1-10] [--run-id NAME]"
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --quick)
+            QUICK=true
+            shift
+            ;;
+        --step)
+            [ "$#" -ge 2 ] || { echo "ERROR: --step needs a value" >&2; exit 2; }
+            STEP=$2
+            shift 2
+            ;;
+        --run-id)
+            [ "$#" -ge 2 ] || { echo "ERROR: --run-id needs a value" >&2; exit 2; }
+            RUN_ID=$2
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: unknown option $1" >&2
+            usage >&2
+            exit 2
+            ;;
     esac
 done
 
-log() { echo "[$(date '+%H:%M:%S')] $1"; }
+case "$STEP" in
+    0|1|2|3|4|5|6|7|8|9|10) ;;
+    *) echo "ERROR: --step must be an integer from 1 through 10" >&2; exit 2 ;;
+esac
+case "$RUN_ID" in
+    ""|*/*|.|..) echo "ERROR: --run-id must be one directory name" >&2; exit 2 ;;
+esac
 
-# =============================================================================
-# Step 1: Verify environment
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 1 ]; then
-log "Step 1: Verifying environment..."
-python -c "
-import xgboost, lightgbm, shap, cleanlab, sklearn, pandas, numpy, yaml
-print(f'  xgboost={xgboost.__version__}')
-print(f'  lightgbm={lightgbm.__version__}')
-print(f'  shap={shap.__version__}')
-print(f'  cleanlab={cleanlab.__version__}')
-print(f'  sklearn={sklearn.__version__}')
-print('  Environment OK')
-"
+RUN_ROOT="$PROJECT_DIR/results/resubmission/reproduction/$RUN_ID"
+if [ -e "$RUN_ROOT" ]; then
+    echo "ERROR: reproduction run already exists: $RUN_ROOT" >&2
+    exit 1
 fi
+mkdir -p "$RUN_ROOT"
+RUN_LOG="$RUN_ROOT/stages.tsv"
+printf 'step\tstatus\tartifact\n' > "$RUN_LOG"
 
-# =============================================================================
-# Step 2: Verify data files exist
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 2 ]; then
-log "Step 2: Verifying data files..."
-for f in \
-    data/processed/production/features.parquet \
-    data/processed/production/labels.parquet \
-    data/processed/production/split_indices.pkl \
-    data/processed/benchmark/features.parquet \
-    data/processed/benchmark/labels.parquet \
-    data/processed/benchmark/split_indices.pkl; do
-    if [ ! -f "$f" ]; then
-        echo "  MISSING: $f"
-        echo "  Run: python scripts/extract_benchmark_features.py --bench-type all"
-        echo "  And: python scripts/prepare_phase2_data.py"
-        exit 1
-    fi
-    echo "  OK: $f"
-done
+NTHREADS="${NTHREADS:-8}"
+export OMP_NUM_THREADS="$NTHREADS"
+export OPENBLAS_NUM_THREADS="$NTHREADS"
+export MKL_NUM_THREADS="$NTHREADS"
+export PYTHONNOUSERSITE=1
+export MPLCONFIGDIR="$RUN_ROOT/matplotlib"
+mkdir -p "$MPLCONFIGDIR"
+
+selected() { [ "$STEP" -eq 0 ] || [ "$STEP" -eq "$1" ]; }
+require_file() { [ -s "$1" ] || { echo "ERROR: required file missing or empty: $1" >&2; exit 1; }; }
+record() { printf '%s\tpassed\t%s\n' "$1" "$2" >> "$RUN_LOG"; }
+
+if selected 1; then
+    "$PYTHON_BIN" - <<'PY'
+import cleanlab, lightgbm, numpy, pandas, shap, sklearn, xgboost, yaml
+print("environment imports passed")
+PY
+    record 1 "$PYTHON_BIN"
 fi
 
-# =============================================================================
-# Step 3: Extract benchmark features (if needed)
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 3 ]; then
-if [ "$QUICK" = false ]; then
-    log "Step 3: Extracting benchmark features..."
-    python scripts/extract_benchmark_features.py --bench-type all
-else
-    log "Step 3: SKIPPED (--quick mode)"
-fi
+if selected 2; then
+    require_file data/processed/resubmission/production/raw_features.parquet
+    require_file data/benchmark_labels/manifest.csv
+    [ -d data/benchmark_logs ] || { echo "ERROR: benchmark log directory is missing" >&2; exit 1; }
+    record 2 data/processed/resubmission/production/raw_features.parquet
 fi
 
-# =============================================================================
-# Step 4: Prepare Phase 2 data (iterative stratification)
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 4 ]; then
-log "Step 4: Preparing Phase 2 data splits..."
-python scripts/prepare_phase2_data.py
+MANIFEST="${LABEL_MANIFEST:-$RUN_ROOT/label_manifest.csv}"
+VERIFY_REPORT="${VERIFICATION_REPORT:-$RUN_ROOT/verification.csv}"
+BENCH_OUTPUT="${BENCH_DATA_DIR:-$RUN_ROOT/data/benchmark}"
+PROD_OUTPUT="${PROD_DATA_DIR:-$RUN_ROOT/data/production}"
+if selected 3; then
+    "$PYTHON_BIN" scripts/build_label_manifest.py --output "$MANIFEST"
+    require_file "$MANIFEST"
+    require_file "$MANIFEST.manifest.json"
+    "$PYTHON_BIN" scripts/verify_all_ground_truth.py --manifest "$MANIFEST" --report "$VERIFY_REPORT"
+    require_file "$VERIFY_REPORT"
+    record 3 "$VERIFY_REPORT"
 fi
 
-# =============================================================================
-# Step 5: Heuristic labeling + Phase 1 baseline (heuristic-only training)
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 5 ]; then
-log "Step 5: Heuristic labeling + Phase 1 baseline..."
-python -m src.models.train --config configs/training.yaml --model xgboost --n-seeds 1 --save
+if selected 4; then
+    require_file "$MANIFEST"
+    require_file "$VERIFY_REPORT"
+    "$PYTHON_BIN" scripts/extract_benchmark_features.py \
+        --manifest "$MANIFEST" --verification-report "$VERIFY_REPORT" \
+        --output-dir "$BENCH_OUTPUT" --bench-type all
+    require_file "$BENCH_OUTPUT/features.parquet"
+    require_file "$BENCH_OUTPUT/labels.parquet"
+    require_file "$BENCH_OUTPUT/dataset_manifest.json"
+    record 4 "$BENCH_OUTPUT/dataset_manifest.json"
 fi
 
-# =============================================================================
-# Step 6: IOSage biquality training  [AD: T2]
-# =============================================================================
-# IOSage = XGBoost + biquality learning (91K heuristic + 201 GT, w=100).
-# Trains all four model families (XGBoost, LightGBM, Random Forest, MLP) with
-# biquality (Table III rows 1, 3, 4, 5). Reads benchmark splits from
-# results/boost_experiment/new_splits/ (201 dev / 488 test, the paper's split).
-if [ "$STEP" = 0 ] || [ "$STEP" = 6 ]; then
-log "Step 6: IOSage biquality training (5 seeds, 4 model families)..."
-N_SEEDS=5
-[ "$QUICK" = true ] && N_SEEDS=1
-python results/boost_experiment/scripts/train_biquality_boost.py \
-    --model all --clean-weight 100 --n-seeds $N_SEEDS --save
-log "  Also: GT-only XGBoost ablation (Table III row 2, baseline at 0.909)"
-python results/boost_experiment/gt_only_xgboost_5seeds/train_gt_only_single_seed.py \
-    --n-seeds $N_SEEDS || log "  (gt-only ablation skipped)"
+if selected 5; then
+    "$PYTHON_BIN" scripts/run_preprocessing.py \
+        --input data/processed/resubmission/production/raw_features.parquet \
+        --output-dir "$PROD_OUTPUT"
+    "$PYTHON_BIN" -m src.data.drishti_labeling \
+        --features "$PROD_OUTPUT/features.parquet" \
+        --output "$PROD_OUTPUT/labels.parquet"
+    require_file "$PROD_OUTPUT/features.parquet"
+    require_file "$PROD_OUTPUT/labels.parquet"
+    require_file "$PROD_OUTPUT/split_indices.pkl"
+    require_file "$PROD_OUTPUT/preprocessing_manifest.json"
+    require_file "$PROD_OUTPUT/labels.parquet.manifest.json"
+    record 5 "$PROD_OUTPUT/labels.parquet.manifest.json"
 fi
 
-# =============================================================================
-# Step 7: SHAP feature attribution  [AD: T3]
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 7 ]; then
-log "Step 7: SHAP feature attribution..."
-python -m src.models.attribution
+TRAINING_CONFIG="${TRAINING_CONFIG:-configs/training_resubmission.yaml}"
+RUN_TRAINING_CONFIG="$RUN_ROOT/training_config.yaml"
+TRAIN_RUN_DIR="$RUN_ROOT/training/$RUN_ID"
+if selected 6; then
+    require_file "$PROD_OUTPUT/features.parquet"
+    require_file "$PROD_OUTPUT/labels.parquet"
+    require_file "$PROD_OUTPUT/split_indices.pkl"
+    require_file "$PROD_OUTPUT/preprocessing_manifest.json"
+    require_file "$PROD_OUTPUT/labels.parquet.manifest.json"
+    require_file "$BENCH_OUTPUT/features.parquet"
+    require_file "$BENCH_OUTPUT/labels.parquet"
+    require_file "$BENCH_OUTPUT/dataset_manifest.json"
+    "$PYTHON_BIN" - "$TRAINING_CONFIG" "$RUN_TRAINING_CONFIG" \
+        "$PROD_OUTPUT" "$BENCH_OUTPUT" "$RUN_ROOT/training" <<'PY'
+import sys
+from pathlib import Path
+import yaml
+
+source, target, production, benchmark, runs = map(Path, sys.argv[1:])
+with source.open() as handle:
+    config = yaml.safe_load(handle)
+config["paths"].update({
+    "production_features": str((production / "features.parquet").resolve()),
+    "production_labels": str((production / "labels.parquet").resolve()),
+    "production_splits": str((production / "split_indices.pkl").resolve()),
+    "benchmark_features": str((benchmark / "features.parquet").resolve()),
+    "benchmark_labels": str((benchmark / "labels.parquet").resolve()),
+    "runs_dir": str(runs.resolve()),
+})
+config["reproduction_source_config"] = str(source.resolve())
+with target.open("x") as handle:
+    yaml.safe_dump(config, handle, sort_keys=False)
+PY
+    seeds=(42 123 456 789 1024)
+    if [ "$QUICK" = true ]; then seeds=(42); fi
+    "$PYTHON_BIN" scripts/train_biquality.py \
+        --config "$RUN_TRAINING_CONFIG" --model xgboost --seeds "${seeds[@]}" \
+        --run-id "$RUN_ID" --final-evaluation
+    require_file "$TRAIN_RUN_DIR/manifest.json"
+    record 6 "$TRAIN_RUN_DIR/manifest.json"
 fi
 
-# =============================================================================
-# Step 8: LLM recommendation evaluation  [AD: T4]
-# =============================================================================
-# Reproduces Section VI-C (LLM quality on 488 traces, Table V LLM quality),
-# Table V (n=8 recommendation ablation), and Tables VIII-IX (TraceBench
-# cross-system). LLM cache (data/llm_cache/) is consulted automatically;
-# live inference requires OPENROUTER_API_KEY.
-if [ "$STEP" = 0 ] || [ "$STEP" = 8 ]; then
-log "Step 8: LLM recommendation evaluation..."
-N_RUNS=5
-[ "$QUICK" = true ] && N_RUNS=1
-log "  (a) Full 488-trace LLM quality (4 LLMs, Section VI-C)..."
-for model in claude-sonnet-4 gpt-4o gpt-4.1-mini llama-3.1-70b-instruct; do
-    python results/boost_experiment/iosage_full488_no_leak/run_iosage_no_leak.py \
-        --model "$model" \
-        --output-dir "results/boost_experiment/iosage_full488_no_leak/output_${model}" \
-        || log "  (${model} skipped — likely missing API key, cache may not cover this run)"
-done
-log "  (b) Recommendation ablation (Table V, n=8 workloads)..."
-python results/boost_experiment/scripts/run_fair_ablation.py
-log "  (c) TraceBench cross-system evaluation (Tables VIII-IX)..."
-python results/boost_experiment/scripts/run_tracebench_full_evaluation.py \
-    || log "  (TraceBench skipped — requires data/external/tracebench/)"
+MODEL_BUNDLE="${MODEL_BUNDLE:-$TRAIN_RUN_DIR/xgboost_w100_seed42.pkl}"
+if selected 7; then
+    require_file "$MODEL_BUNDLE"
+    SHAP_OUTPUT="$RUN_ROOT/shap"
+    "$PYTHON_BIN" -m src.models.attribution --bundle "$MODEL_BUNDLE" --output-dir "$SHAP_OUTPUT"
+    require_file "$SHAP_OUTPUT/domain_validation.json"
+    require_file "$SHAP_OUTPUT/shap_values.pkl"
+    record 7 "$SHAP_OUTPUT/domain_validation.json"
 fi
 
-# =============================================================================
-# Step 9: Generate all paper figures and tables  [AD: T5]
-# =============================================================================
-# Produces Figures 2-5 and the LaTeX tables that read from the JSON outputs
-# of steps 6-8.
-if [ "$STEP" = 0 ] || [ "$STEP" = 9 ]; then
-log "Step 9: Generating paper figures and tables..."
-python scripts/generate_results_figures.py
-python scripts/generate_labeling_figures.py
-python scripts/generate_evaluation_figures.py
-if [ "$QUICK" = false ]; then
-    python scripts/generate_paper_figures.py
-fi
-log "  Computing final aggregated metrics..."
-python results/boost_experiment/scripts/compute_final_metrics.py \
-    || log "  (compute_final_metrics skipped)"
-fi
-
-# =============================================================================
-# Step 10: Auxiliary checks (latency, ML ablations, weight sensitivity)
-# =============================================================================
-if [ "$STEP" = 0 ] || [ "$STEP" = 10 ]; then
-log "Step 10: Auxiliary measurements..."
-python results/boost_experiment/scripts/measure_latency.py \
-    || log "  (latency measurement skipped)"
-python results/boost_experiment/scripts/run_ml_ablations.py \
-    || log "  (ML ablations skipped)"
-python results/boost_experiment/scripts/run_weight_sensitivity.py \
-    || log "  (weight sensitivity skipped)"
+if selected 8; then
+    require_file "$MODEL_BUNDLE"
+    [ -n "${KNOWLEDGE_BASE:-}" ] || { echo "ERROR: KNOWLEDGE_BASE is required for step 8" >&2; exit 2; }
+    require_file "$KNOWLEDGE_BASE"
+    runs=5
+    if [ "$QUICK" = true ]; then runs=1; fi
+    "$PYTHON_BIN" scripts/run_llm_evaluation.py \
+        --model-bundle "$MODEL_BUNDLE" --knowledge-base "$KNOWLEDGE_BASE" \
+        --n-runs "$runs" --output-dir "$RUN_ROOT/llm_evaluation"
+    "$PYTHON_BIN" scripts/run_fair_ablation.py \
+        --model-bundle "$MODEL_BUNDLE" --knowledge-base "$KNOWLEDGE_BASE" \
+        --output-dir "$RUN_ROOT/ablation"
+    "$PYTHON_BIN" scripts/run_tracebench_full_evaluation.py \
+        --model-bundle "$MODEL_BUNDLE" --knowledge-base "$KNOWLEDGE_BASE" \
+        --output-dir "$RUN_ROOT/tracebench"
+    require_file "$RUN_ROOT/llm_evaluation/evaluation_summary.json"
+    require_file "$RUN_ROOT/llm_evaluation/evaluation_manifest.json"
+    require_file "$RUN_ROOT/ablation/fair_ablation_summary.json"
+    require_file "$RUN_ROOT/ablation/fair_ablation_manifest.json"
+    require_file "$RUN_ROOT/tracebench/tracebench_full_evaluation.json"
+    record 8 "$RUN_ROOT/llm_evaluation/evaluation_summary.json"
 fi
 
-# =============================================================================
-# Summary
-# =============================================================================
-log ""
-log "============================================================"
-log "REPRODUCTION COMPLETE"
-log "============================================================"
-log ""
-log "Key results (DIOBench 488-sample test set, 5 seeds):"
-log "  IOSage:                         Micro-F1=0.929+/-0.003"
-log "  XGBoost (GT-only ablation):     Micro-F1=0.909+/-0.001"
-log "  LightGBM:                       Micro-F1=0.925"
-log "  Random Forest:                  Micro-F1=0.916"
-log "  MLP:                            Micro-F1=0.767"
-log ""
-log "External baselines:"
-log "  Drishti:  Micro-F1=0.364 (IOSage 2.6x higher)"
-log "  WisIO:    Micro-F1=0.320 (IOSage 2.9x higher)"
-log "  IOAgent:  Micro-F1=0.331 (IOSage 2.8x higher)"
-log ""
-log "Figures saved to: paper/figures/"
-log "Models saved to:  results/boost_experiment/new_models/"
-log "Results saved to: results/boost_experiment/"
-log "============================================================"
+if selected 9; then
+    echo "ERROR: paper figure generation is blocked until the generators consume one validated result manifest; see REPRO-004" >&2
+    exit 3
+fi
+
+if selected 10; then
+    [ -n "${ITERATIVE_RESULTS_DIR:-}" ] || { echo "ERROR: ITERATIVE_RESULTS_DIR is required for step 10" >&2; exit 2; }
+    "$PYTHON_BIN" scripts/aggregate_trackc_results.py \
+        --results-dir "$ITERATIVE_RESULTS_DIR" \
+        --output "$RUN_ROOT/iterative_summary.json"
+    require_file "$RUN_ROOT/iterative_summary.json"
+    record 10 "$RUN_ROOT/iterative_summary.json"
+fi
+
+find "$RUN_ROOT" -type f ! -name artifacts.sha256 -print0 | sort -z | xargs -0 sha256sum > "$RUN_ROOT/artifacts.sha256"
+require_file "$RUN_ROOT/artifacts.sha256"
+echo "Requested reproduction steps completed. Evidence: $RUN_ROOT"

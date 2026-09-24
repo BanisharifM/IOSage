@@ -4,7 +4,7 @@ Generate Paper-Ready Figures for IOSage Labeling Section
 =========================================================
 Produces publication-quality figures for the heuristic labeling results.
 
-Output directory: paper/figures/labeling/
+Output directory: papers/IPDPS_2027/figures/labeling/
 
 Figure inventory:
   L1. fig_heuristic_label_distribution.pdf  — 8-dimension bar chart with counts/rates
@@ -25,7 +25,6 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -33,10 +32,9 @@ import seaborn as sns
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fig_config import (
-    apply_style, save_figure, add_panel_label, format_count,
-    SINGLE_COL, DOUBLE_COL, DOUBLE_COL_TALL,
-    PALETTE_8, COLORS, HATCHES,
-    DIMENSION_ORDER, DIMENSION_LABELS, DIMENSION_LABELS_SHORT,
+    apply_style, save_figure, format_count,
+    SINGLE_COL, PALETTE_8, COLORS, HATCHES,
+    DIMENSION_ORDER, DIMENSION_LABELS_SHORT,
 )
 
 logging.basicConfig(
@@ -48,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_DIR / 'data' / 'processed'
-OUTPUT_DIR = PROJECT_DIR / 'paper' / 'figures' / 'labeling'
+OUTPUT_DIR = PROJECT_DIR / 'papers' / 'IPDPS_2027' / 'figures' / 'labeling'
 
 # Drishti insight codes grouped by severity
 DRISHTI_CODES = {
@@ -241,8 +239,8 @@ def fig_L3_drishti_codes(df):
     y = np.arange(len(code_df))
     colors = [SEVERITY_COLORS[s] for s in code_df['severity']]
 
-    bars = ax.barh(y, code_df['rate'], color=colors, edgecolor='black',
-                   linewidth=0.3, height=0.7, zorder=3)
+    ax.barh(y, code_df['rate'], color=colors, edgecolor='black',
+            linewidth=0.3, height=0.7, zorder=3)
 
     # Labels: "P08: Misaligned file"
     labels = [f"{row['code']}: {row['description']}"

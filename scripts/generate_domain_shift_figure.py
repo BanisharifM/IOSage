@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 """
-Generate domain shift visualization (t-SNE / UMAP) between
+Generate domain shift visualization with t-SNE between
 Polaris production data and Delta benchmark data.
 
 Addresses reviewer weakness W9: domain shift between training
 and evaluation data.
 
 Outputs:
-  - paper/figures/fig_domain_shift_source.pdf
-  - paper/figures/fig_domain_shift_labels.pdf
+  - papers/IPDPS_2027/figures/fig_domain_shift_source.pdf
+  - papers/IPDPS_2027/figures/fig_domain_shift_labels.pdf
   - results/domain_shift_analysis.json
 """
 
 import argparse
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -26,6 +25,10 @@ import numpy as np
 import pandas as pd
 import yaml
 from scipy.stats import ks_2samp
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+from src.artifact_paths import checked_output_dir
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 
@@ -59,6 +62,12 @@ OI_PURPLE = "#CC79A7"
 OI_CYAN = "#56B4E9"
 OI_YELLOW = "#F0E442"
 OI_GRAY = "#999999"
+
+DIMENSIONS = [
+    "access_granularity", "metadata_intensity", "parallelism_efficiency",
+    "access_pattern", "interface_choice", "file_strategy",
+    "throughput_utilization", "healthy",
+]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -146,24 +155,42 @@ def compute_ks_tests(
 
 def main():
     parser = argparse.ArgumentParser(description="Domain shift visualization")
-    parser.add_argument("--config", default="configs/training.yaml")
-    parser.add_argument("--prod-features", default="data/processed/production/features.parquet")
-    parser.add_argument("--prod-labels", default="data/processed/production/labels.parquet")
-    parser.add_argument("--bench-features", default="data/processed/benchmark/features.parquet")
-    parser.add_argument("--bench-labels", default="data/processed/benchmark/labels.parquet")
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--prod-features", required=True)
+    parser.add_argument("--prod-labels", required=True)
+    parser.add_argument("--bench-features", required=True)
+    parser.add_argument("--bench-labels", required=True)
     parser.add_argument("--n-prod-samples", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--perplexity", type=float, default=30)
-    parser.add_argument("--out-dir", default="paper/figures")
-    parser.add_argument("--results-dir", default="results")
+    parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--results-dir", required=True)
     args = parser.parse_args()
+    out_dir = checked_output_dir(args.out_dir)
+    results_dir = checked_output_dir(args.results_dir)
+    if results_dir.exists():
+        raise FileExistsError(f"results directory already exists: {results_dir}")
+    inputs = [args.config, args.prod_features, args.prod_labels,
+              args.bench_features, args.bench_labels]
+    for input_path in inputs:
+        if not Path(input_path).is_file():
+            raise FileNotFoundError(f"required input does not exist: {input_path}")
+    figure_paths = [
+        out_dir / "fig_domain_shift_source.pdf",
+        out_dir / "fig_domain_shift_labels.pdf",
+    ]
+    existing_figures = [str(path) for path in figure_paths if path.exists()]
+    if existing_figures:
+        raise FileExistsError(f"figure outputs already exist: {existing_figures}")
+    if args.n_prod_samples < 1:
+        parser.error("--n-prod-samples must be positive")
 
     np.random.seed(args.seed)
 
     # --- Load config ---
     cfg = load_config(args.config)
     exclude = cfg.get("exclude_features", [])
-    dimensions = cfg.get("dimensions", [])
+    dimensions = DIMENSIONS
 
     # --- Load data ---
     logger.info("Loading production features (%s)", args.prod_features)
@@ -176,9 +203,19 @@ def main():
 
     prod_labels = pd.read_parquet(args.prod_labels)
     bench_labels = pd.read_parquet(args.bench_labels)
+    if len(prod_df) != len(prod_labels):
+        raise ValueError("production feature and label row counts differ")
+    if len(bench_df) != len(bench_labels):
+        raise ValueError("benchmark feature and label row counts differ")
+    if len(bench_df) < 2:
+        raise ValueError("benchmark data needs at least two rows")
+    if not 0 < args.perplexity < len(prod_df) + len(bench_df):
+        raise ValueError("t-SNE perplexity must be positive and smaller than the sample count")
 
     # --- Feature alignment ---
     features = get_model_features(prod_df.columns.tolist(), bench_df.columns.tolist(), exclude)
+    if not features:
+        raise ValueError("production and benchmark data share no model features")
     logger.info("Model features: %d", len(features))
 
     # --- Sample production data (stratified) ---
@@ -220,33 +257,20 @@ def main():
 
     n_prod = len(prod_feat)
     n_bench = len(bench_feat)
-    source_labels = ["Production"] * n_prod + ["Benchmark"] * n_bench
-
-    # --- Try UMAP first, fall back to t-SNE ---
-    try:
-        import umap
-        logger.info("Running UMAP (n_neighbors=15, min_dist=0.1)")
-        reducer = umap.UMAP(
-            n_neighbors=15, min_dist=0.1, metric="euclidean",
-            random_state=args.seed, n_components=2,
-        )
-        embedding = reducer.fit_transform(combined_scaled)
-        method_name = "UMAP"
-    except ImportError:
-        logger.info("UMAP not available, using t-SNE (perplexity=%d)", int(args.perplexity))
-        tsne = TSNE(
-            n_components=2, perplexity=args.perplexity,
-            random_state=args.seed, n_iter=1000, init="pca",
-            learning_rate="auto",
-        )
-        embedding = tsne.fit_transform(combined_scaled)
-        method_name = "t-SNE"
+    logger.info("Running t-SNE (perplexity=%d)", int(args.perplexity))
+    tsne = TSNE(
+        n_components=2, perplexity=args.perplexity,
+        random_state=args.seed, max_iter=1000, init="pca",
+        learning_rate="auto",
+    )
+    embedding = tsne.fit_transform(combined_scaled)
+    method_name = "t-SNE"
 
     emb_prod = embedding[:n_prod]
     emb_bench = embedding[n_prod:]
 
     # --- Figure 1: Colored by source ---
-    os.makedirs(args.out_dir, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(3.5, 3.0))
     ax.scatter(
@@ -266,7 +290,7 @@ def main():
     ax.set_xticks([])
     ax.set_yticks([])
 
-    fig1_path = os.path.join(args.out_dir, "fig_domain_shift_source.pdf")
+    fig1_path = figure_paths[0]
     fig.savefig(fig1_path)
     plt.close(fig)
     logger.info("Saved: %s", fig1_path)
@@ -276,7 +300,7 @@ def main():
     bottleneck_dims = [
         d for d in dimensions if d != "healthy" and d in bench_labels.columns
     ]
-    bench_label_vals = bench_labels[bottleneck_dims].values  # (623, 7)
+    bench_label_vals = bench_labels[bottleneck_dims].values
 
     # For each benchmark sample, pick the first active bottleneck or "healthy"
     dim_colors = {
@@ -337,13 +361,13 @@ def main():
     ax.set_xticks([])
     ax.set_yticks([])
 
-    fig2_path = os.path.join(args.out_dir, "fig_domain_shift_labels.pdf")
+    fig2_path = figure_paths[1]
     fig.savefig(fig2_path)
     plt.close(fig)
     logger.info("Saved: %s", fig2_path)
 
     # --- Save metrics ---
-    os.makedirs(args.results_dir, exist_ok=True)
+    results_dir.mkdir(parents=True)
     metrics = {
         "method": method_name,
         "n_production_samples": n_prod,
@@ -354,8 +378,8 @@ def main():
         "all_ks_results": ks_results,
         "seed": args.seed,
     }
-    metrics_path = os.path.join(args.results_dir, "domain_shift_analysis.json")
-    with open(metrics_path, "w") as f:
+    metrics_path = results_dir / "domain_shift_analysis.json"
+    with open(metrics_path, "x") as f:
         json.dump(metrics, f, indent=2)
     logger.info("Saved metrics: %s", metrics_path)
 

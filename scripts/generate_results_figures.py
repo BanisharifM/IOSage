@@ -21,7 +21,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -29,8 +29,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-FIG_DIR = PROJECT_DIR / "paper" / "figures" / "results"
-FIG_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures" / "results"
 
 DIMS = ["access_granularity", "metadata_intensity", "parallelism_efficiency",
         "access_pattern", "interface_choice", "file_strategy",
@@ -218,12 +217,12 @@ def fig_model_comparison():
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(3.5, 2.8))
-    bars1 = ax.bar(x - width/2, micro_means, width, yerr=micro_stds,
-                   label="Micro-F1", color=COLORS["blue"], capsize=3,
-                   edgecolor="black", linewidth=0.4, hatch="")
-    bars2 = ax.bar(x + width/2, macro_means, width, yerr=macro_stds,
-                   label="Macro-F1", color=COLORS["orange"], capsize=3,
-                   edgecolor="black", linewidth=0.4, hatch="//")
+    ax.bar(x - width/2, micro_means, width, yerr=micro_stds,
+           label="Micro-F1", color=COLORS["blue"], capsize=3,
+           edgecolor="black", linewidth=0.4, hatch="")
+    ax.bar(x + width/2, macro_means, width, yerr=macro_stds,
+           label="Macro-F1", color=COLORS["orange"], capsize=3,
+           edgecolor="black", linewidth=0.4, hatch="//")
 
     ax.set_ylabel("F1 Score")
     ax.set_title("Model Comparison (5 seeds, mean +/- std)")
@@ -274,7 +273,7 @@ def fig_confusion_matrices():
         y_pred = models[dim].predict(X_test)
         cm = confusion_matrix(y_test[:, idx], y_pred, labels=[0, 1])
 
-        im = ax.imshow(cm, cmap="Blues", interpolation="nearest")
+        ax.imshow(cm, cmap="Blues", interpolation="nearest")
         ax.set_title(DIM_SHORT[idx], fontsize=8, fontweight="bold")
 
         # Labels
@@ -302,10 +301,6 @@ def fig_confusion_matrices():
 
 
 if __name__ == "__main__":
-    apply_style()
-    logger.info("Generating results figures...")
-    fig_baseline_comparison()
-    fig_training_progression()
-    fig_model_comparison()
-    fig_confusion_matrices()
-    logger.info("All figures saved to %s", FIG_DIR)
+    raise SystemExit(
+        "disabled: this generator contains literal result values; regenerate it "
+        "from a validated final-evaluation manifest before use")

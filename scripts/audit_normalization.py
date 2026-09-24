@@ -6,26 +6,50 @@ Checks: integrity, distribution quality, covariate shift,
 extreme values, correlation preservation, range/scale.
 """
 
-import sys
+import argparse
 import warnings
+from pathlib import Path
 import numpy as np
 import pandas as pd
+import yaml
 from scipy import stats as sp_stats
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-BASE = "/work/hdd/bdau/mbanisharifdehkordi/IOSage"
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--config", default=str(PROJECT_DIR / "configs" / "training.yaml"))
+args = parser.parse_args()
+config_path = Path(args.config).resolve()
+with config_path.open() as config_file:
+    config = yaml.safe_load(config_file)
+paths = config["paths"]
+
+
+def project_path(value):
+    path = Path(value)
+    return path if path.is_absolute() else PROJECT_DIR / path
+
+
+features_path = project_path(paths["production_features"])
+split_dir = features_path.parent / "splits"
+eda_path = project_path(paths["eda_stats"])
+required_paths = [features_path, eda_path] + [split_dir / f"{name}.parquet"
+                                             for name in ("train", "val", "test")]
+missing = [str(path) for path in required_paths if not path.is_file()]
+if missing:
+    raise FileNotFoundError("normalization audit inputs are missing: " + ", ".join(missing))
 
 # ── Load data ────────────────────────────────────────────────────────────
 print("=" * 80)
 print("LOADING DATA")
 print("=" * 80)
 
-eng = pd.read_parquet(f"{BASE}/data/processed/production/features.parquet")
-train = pd.read_parquet(f"{BASE}/data/processed/splits/train.parquet")
-val = pd.read_parquet(f"{BASE}/data/processed/splits/val.parquet")
-test = pd.read_parquet(f"{BASE}/data/processed/splits/test.parquet")
-eda = pd.read_parquet(f"{BASE}/data/processed/production/eda/stats.parquet")
+eng = pd.read_parquet(features_path)
+train = pd.read_parquet(split_dir / "train.parquet")
+val = pd.read_parquet(split_dir / "val.parquet")
+test = pd.read_parquet(split_dir / "test.parquet")
+eda = pd.read_parquet(eda_path)
 
 # Identify feature columns (non-metadata)
 info_cols = [c for c in train.columns if c.startswith("_")]
@@ -58,7 +82,7 @@ for name, df in [("Train", train), ("Val", val), ("Test", test)]:
     print(f"\n--- {name} ({len(df)} rows) ---")
     print(f"  NaN: {nan_counts.sum()} total across {len(nan_feats)} features")
     if len(nan_feats) > 0:
-        print(f"  Top NaN features:")
+        print("  Top NaN features:")
         for f, c in nan_feats.sort_values(ascending=False).head(20).items():
             print(f"    {f}: {c} ({c/len(df)*100:.1f}%)")
 
@@ -108,7 +132,7 @@ dist_stats["p01"] = train_num.quantile(0.01)
 dist_stats["p99"] = train_num.quantile(0.99)
 
 print(f"\nTotal numeric features: {len(numeric_feats)}")
-print(f"\nOverall distribution summary:")
+print("\nOverall distribution summary:")
 print(f"  Mean of means: {dist_stats['mean'].mean():.4f}")
 print(f"  Mean of stds:  {dist_stats['std'].mean():.4f}")
 print(f"  Median skew:   {dist_stats['skewness'].median():.4f}")
@@ -162,13 +186,13 @@ if "skewness" in eda.columns:
 
     # Top improvements
     top_improve = comparison.sort_values("improvement", ascending=False).head(10)
-    print(f"\n  Top 10 improvements:")
+    print("\n  Top 10 improvements:")
     for f, row in top_improve.iterrows():
         print(f"    {f}: {row['skew_before']:.2f} -> {row['skew_after']:.2f} (delta={row['improvement']:.2f})")
 
     # Worst regressions
     worst = comparison.sort_values("improvement").head(10)
-    print(f"\n  Worst 10 regressions:")
+    print("\n  Worst 10 regressions:")
     for f, row in worst.iterrows():
         print(f"    {f}: {row['skew_before']:.2f} -> {row['skew_after']:.2f} (delta={row['improvement']:.2f})")
 else:
@@ -209,7 +233,7 @@ if len(shifted_test) > 0:
               f"(train={train_mean[f]:.3f}, test={test_mean[f]:.3f})")
 
 # KS test for top shifted features
-print(f"\n--- KS Test (top 30 features by mean shift) ---")
+print("\n--- KS Test (top 30 features by mean shift) ---")
 top_shift_feats = mean_shift_test.sort_values(ascending=False).head(30).index.tolist()
 ks_results = []
 for feat in top_shift_feats:
@@ -230,7 +254,7 @@ for _, row in ks_df.iterrows():
           f"{row['ks_train_test']:.4f}{sig_t:<5s}   {row['pval_train_test']:.2e}   {row['mean_shift_test']:.3f}")
 
 # Overall summary
-print(f"\nOverall shift summary:")
+print("\nOverall shift summary:")
 print(f"  Mean absolute shift (train-val):  {mean_shift_val.mean():.4f} std")
 print(f"  Mean absolute shift (train-test): {mean_shift_test.mean():.4f} std")
 print(f"  Median shift (train-val):  {mean_shift_val.median():.4f} std")
@@ -276,7 +300,7 @@ for f, r in high_outlier.head(20).items():
     print(f"  {f}: {r*100:.1f}% outliers  (mean={train_mean[f]:.3f}, std={train_std[f]:.3f}, skew={dist_stats.loc[f,'skewness']:.2f})")
 
 # Overall outlier summary
-print(f"\nOutlier ratio distribution:")
+print("\nOutlier ratio distribution:")
 print(f"  Mean:   {outlier_series.mean()*100:.2f}%")
 print(f"  Median: {outlier_series.median()*100:.2f}%")
 print(f"  Max:    {outlier_series.max()*100:.2f}% ({outlier_series.idxmax()})")
@@ -298,11 +322,21 @@ common = [f for f in eng_feats if f in numeric_feats]
 
 print(f"Common features for correlation comparison: {len(common)}")
 
-# Sample to speed up (50k rows from each)
-np.random.seed(42)
-n_sample = min(50000, len(eng), len(train))
-eng_sample = eng[common].sample(n=n_sample, random_state=42)
-train_sample = train_num[common].sample(n=n_sample, random_state=42)
+# Join by immutable identity before sampling so both matrices use the same rows.
+sample_id = "_source_path"
+if sample_id not in eng or sample_id not in train:
+    raise ValueError(f"correlation audit requires {sample_id} in both inputs")
+if eng[sample_id].duplicated().any() or train[sample_id].duplicated().any():
+    raise ValueError(f"correlation audit requires unique {sample_id} values")
+eng_by_id = eng.set_index(sample_id, verify_integrity=True)
+train_by_id = train.set_index(sample_id, verify_integrity=True)
+missing_ids = train_by_id.index.difference(eng_by_id.index)
+if len(missing_ids):
+    raise ValueError(f"{len(missing_ids)} normalized rows have no pre-normalization match")
+n_sample = min(50000, len(train_by_id))
+sample_ids = train_by_id.index.to_series().sample(n=n_sample, random_state=42).tolist()
+eng_sample = eng_by_id.loc[sample_ids, common]
+train_sample = train_by_id.loc[sample_ids, common]
 
 # Compute Spearman correlation matrices
 print("Computing pre-norm Spearman correlations...")
@@ -337,7 +371,7 @@ print(f"  Spearman correlation of correlation matrices: {r_spearman:.6f}")
 
 # Find feature pairs with biggest correlation change
 if (diff > 0.05).sum() > 0:
-    print(f"\n  Feature pairs with biggest correlation change (|diff| > 0.05):")
+    print("\n  Feature pairs with biggest correlation change (|diff| > 0.05):")
     rows, cols = np.where(mask)
     big_changes = []
     for idx in np.argsort(-diff)[:20]:
@@ -374,7 +408,7 @@ print(f"\nFeatures with 95th percentile in [-10, 10]: {n_good}/{len(numeric_feat
 
 bad_range = (~in_good_range)
 if bad_range.sum() > 0:
-    print(f"\n  Features OUTSIDE good range:")
+    print("\n  Features OUTSIDE good range:")
     for f in p95[bad_range].sort_values(ascending=False).index[:20]:
         print(f"    {f}: p05={p05[f]:.2f}, p95={p95[f]:.2f}, max={train_num[f].max():.2f}")
 

@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """Generate paper figures and LaTeX tables for Iterative iterative optimization results.
 
-Figures (saved to paper/figures/iterative/):
+Figures (saved to papers/IPDPS_2027/figures/iterative/):
   1. fig_convergence.pdf          -- Speedup vs iteration, per workload, faceted by model
   2. fig_single_vs_iterative.pdf  -- Single-shot vs Iterative grouped bar chart (log-scale)
   3. fig_iterative_ablation.pdf   -- Ablation conditions bar chart
   4. fig_cost_vs_speedup.pdf      -- Cost-effectiveness scatter plot
   5. fig_model_comparison_iterative.pdf -- Model comparison (speedup + iters + cost)
 
-Tables (saved to paper/tables/iterative/):
+Tables (saved to papers/IPDPS_2027/tables/iterative/):
   1. tab_iterative_results.tex    -- Per-workload detailed results
   2. tab_iterative_models.tex     -- Per-model summary
   3. tab_iterative_ablation.tex   -- Ablation summary
   4. tab_trackb_vs_trackc.tex     -- Single-shot vs Iterative comparison
 
 Usage:
-    python scripts/generate_iterative_figures.py
-    python scripts/generate_iterative_figures.py --results-dir results/iterative
-    python scripts/generate_iterative_figures.py --figures 1 3 5
+    python scripts/generate_iterative_figures.py \
+        --results-dir RUN_DIR --trackb-results SINGLE_SHOT_JSON
 """
 
 import argparse
@@ -32,12 +31,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 
-try:
-    import seaborn as sns
-    HAS_SEABORN = True
-except ImportError:
-    HAS_SEABORN = False
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -46,8 +39,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-FIG_DIR = PROJECT_DIR / "paper" / "figures" / "iterative"
-TAB_DIR = PROJECT_DIR / "paper" / "tables" / "iterative"
+sys.path.insert(0, str(PROJECT_DIR))
+from src.llm.iterative_result import load_iterative_results as load_primary_results  # noqa: E402
+
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures" / "iterative"
+TAB_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "tables" / "iterative"
 
 # ---------------------------------------------------------------------------
 # Style Configuration (IEEE paper, consistent with generate_paper_figures.py)
@@ -226,32 +222,8 @@ def load_iterative_results(results_dir):
     Returns a list of individual run records (flattened from arrays).
     Each record has keys: workload, run_id, model, iterations, best_speedup, etc.
     """
-    results_dir = Path(results_dir)
-    if not results_dir.exists():
-        logger.warning("Results directory does not exist: %s", results_dir)
-        return []
-
-    records = []
-    json_files = sorted(results_dir.glob("*.json"))
-    if not json_files:
-        logger.warning("No JSON files found in %s", results_dir)
-        return []
-
-    for jf in json_files:
-        try:
-            data = json.loads(jf.read_text())
-        except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("Skipping %s: %s", jf.name, exc)
-            continue
-
-        # Handle both single-object and array formats
-        if isinstance(data, list):
-            records.extend(data)
-        elif isinstance(data, dict):
-            records.append(data)
-
-    logger.info("Loaded %d run records from %d files in %s",
-                len(records), len(json_files), results_dir)
+    records = load_primary_results(results_dir)
+    logger.info("Loaded %d validated run records from %s", len(records), results_dir)
     return records
 
 
@@ -259,13 +231,13 @@ def load_trackb_results(path):
     """Load Single-shot closed-loop results."""
     path = Path(path)
     if not path.exists():
-        logger.warning("Single-shot results not found: %s", path)
-        return {}
+        raise FileNotFoundError(f"Single-shot results not found: {path}")
     try:
         data = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to load Single-shot results: %s", exc)
-        return {}
+        raise ValueError(f"failed to load Single-shot results: {exc}") from exc
+    if not isinstance(data, dict) or not data:
+        raise ValueError("Single-shot results must be a nonempty object")
     return data
 
 
@@ -285,8 +257,8 @@ def compute_summary(records):
 
     groups = defaultdict(list)
     for r in records:
-        workload = r.get("workload", "unknown")
-        model = r.get("model", "unknown")
+        workload = r["workload"]
+        model = r["model"]
         # Determine ablation from config flags
         ablation = _infer_ablation(r)
         key = (workload, model, ablation)
@@ -304,10 +276,7 @@ def compute_summary(records):
         curves = []
 
         for run in runs:
-            sp = run.get("best_speedup", 1.0)
-            if sp is None or sp <= 0:
-                sp = 1.0
-            speedups.append(sp)
+            speedups.append(run["best_speedup"])
 
             iters = run.get("iterations", [])
             n_iters = len(iters)
@@ -317,25 +286,22 @@ def compute_summary(records):
             if n_iters > 0:
                 parse_ok = sum(
                     1 for it in iters
-                    if it.get("parse_success", True)
-                    and it.get("llm_response") is not None
+                    if it.get("parse_error") is False
                 )
                 parse_successes.append(parse_ok / n_iters)
             else:
                 parse_successes.append(0.0)
 
-            costs.append(run.get("total_cost_usd", 0.0) or 0.0)
-            tokens.append(run.get("total_tokens", 0) or 0)
-            exec_times.append(run.get("total_execution_time_s", 0.0) or 0.0)
-            statuses.append(run.get("final_status", "unknown"))
+            costs.append(run["total_cost_usd"])
+            tokens.append(run["total_tokens"])
+            exec_times.append(run["total_execution_time_s"])
+            statuses.append(run["final_status"])
 
             # Build convergence curve: speedup at each iteration
             curve = []
             for it in iters:
-                it_sp = it.get("speedup", 1.0)
-                if it_sp is None or it_sp <= 0:
-                    it_sp = 1.0
-                curve.append(it_sp)
+                if it.get("executed") is True:
+                    curve.append(it["speedup"])
             curves.append(curve)
 
         sp_arr = np.array(speedups)
@@ -363,15 +329,13 @@ def compute_summary(records):
 
 def _infer_ablation(record):
     """Infer the ablation condition from a run record's config flags."""
-    cfg = record.get("config", {})
-    if not cfg:
-        return "full"
+    cfg = record["config"]
 
     use_ml = cfg.get("use_ml", True)
     use_shap = cfg.get("use_shap", True)
     use_kb = cfg.get("use_kb", True)
     use_feedback = cfg.get("use_feedback", True)
-    max_iter = record.get("max_iterations", 5)
+    max_iter = record["max_iterations"]
 
     if not use_ml and not use_shap:
         return "no_ml"
@@ -387,18 +351,18 @@ def _infer_ablation(record):
 
 
 def geomean(values):
-    """Geometric mean of positive values. Returns 1.0 for empty input."""
+    """Return the geometric mean of positive values."""
     vals = [v for v in values if v > 0]
     if not vals:
-        return 1.0
+        raise ValueError("geometric mean requires positive values")
     return float(np.exp(np.mean(np.log(vals))))
 
 
 def harmean(values):
-    """Harmonic mean of positive values. Returns 0.0 for empty input."""
+    """Return the harmonic mean of positive values."""
     vals = [v for v in values if v > 0]
     if not vals:
-        return 0.0
+        raise ValueError("harmonic mean requires positive values")
     return float(len(vals) / np.sum(1.0 / np.array(vals)))
 
 
@@ -412,8 +376,7 @@ def fig_convergence(summaries):
     # Group by model
     models_present = sorted(set(s["model"] for s in summaries if s["ablation"] == "full"))
     if not models_present:
-        logger.warning("No data for convergence figure. Skipping.")
-        return
+        raise ValueError("no full-system data for convergence figure")
 
     n_models = len(models_present)
     fig, axes = plt.subplots(1, n_models, figsize=(3.5 * n_models, 2.8),
@@ -488,8 +451,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
     # Get full-ablation results for the best model (or all if only one)
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums:
-        logger.warning("No full-ablation data. Skipping single_vs_iterative.")
-        return
+        raise ValueError("no full-system data for single versus iterative figure")
 
     # Pick the best model by geomean speedup
     model_geomeans = {}
@@ -514,13 +476,15 @@ def fig_single_vs_iterative(summaries, trackb_data):
             continue
         if tb_entry.get("status") == "complete_but_excluded":
             continue
+        if tc_entry is None:
+            continue
 
-        tc_sp = tc_entry["mean_speedup"] if tc_entry else None
-        tc_std = tc_entry["std_speedup"] if tc_entry else 0.0
+        tc_sp = tc_entry["mean_speedup"]
+        tc_std = tc_entry["std_speedup"]
 
         workloads.append(WORKLOAD_SHORT.get(wl, wl))
         trackb_speeds.append(tb_sp)
-        trackc_speeds.append(tc_sp if tc_sp else 1.0)
+        trackc_speeds.append(tc_sp)
         trackc_stds.append(tc_std)
 
     # Also add Iterative-only workloads
@@ -533,8 +497,7 @@ def fig_single_vs_iterative(summaries, trackb_data):
         trackc_stds.append(s["std_speedup"])
 
     if not workloads:
-        logger.warning("No overlapping workloads for Single-shot vs C. Skipping.")
-        return
+        raise ValueError("no workloads for single versus iterative figure")
 
     x = np.arange(len(workloads))
     width = 0.35
@@ -551,10 +514,10 @@ def fig_single_vs_iterative(summaries, trackb_data):
                     linewidth=0.5, hatch="//")
 
     # Iterative bars
-    bars_c = ax.bar(x + width / 2, trackc_speeds, width, yerr=trackc_stds,
-                    label="Iterative (iterative)",
-                    color=cfg["palette"]["primary"], edgecolor="black",
-                    linewidth=0.5, capsize=3, hatch="")
+    ax.bar(x + width / 2, trackc_speeds, width, yerr=trackc_stds,
+           label="Iterative (iterative)",
+           color=cfg["palette"]["primary"], edgecolor="black",
+           linewidth=0.5, capsize=3, hatch="")
 
     # Gray out missing Single-shot bars
     for i, present in enumerate(tb_mask):
@@ -616,8 +579,7 @@ def fig_iterative_ablation(summaries):
             errs_hi.append(0.0)
 
     if not labels:
-        logger.warning("No ablation data. Skipping.")
-        return
+        raise ValueError("no ablation data for iterative ablation figure")
 
     x = np.arange(len(labels))
     fig, ax = plt.subplots(figsize=STYLE_CONFIG["double_col"])
@@ -655,8 +617,7 @@ def fig_cost_vs_speedup(summaries):
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums:
-        logger.warning("No full-ablation data. Skipping cost_vs_speedup.")
-        return
+        raise ValueError("no full-system data for cost versus speedup figure")
 
     fig, ax = plt.subplots(figsize=STYLE_CONFIG["single_col"])
 
@@ -704,8 +665,7 @@ def fig_model_comparison_iterative(summaries):
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums:
-        logger.warning("No full-ablation data. Skipping model_comparison.")
-        return
+        raise ValueError("no full-system data for model comparison figure")
 
     # Aggregate per model
     from collections import defaultdict
@@ -717,8 +677,7 @@ def fig_model_comparison_iterative(summaries):
 
     models = sorted(model_data.keys())
     if not models:
-        logger.warning("No model data. Skipping.")
-        return
+        raise ValueError("no model data for model comparison figure")
 
     gm_speedups = [geomean(model_data[m]["speedups"]) for m in models]
     mean_iters = [float(np.mean(model_data[m]["iters"])) for m in models]
@@ -783,8 +742,7 @@ def tab_iterative_results(summaries):
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums:
-        logger.warning("No full-ablation data. Skipping tab_iterative_results.")
-        return
+        raise ValueError("no full-system data for iterative results table")
 
     # Pick best model by geomean
     from collections import defaultdict
@@ -861,8 +819,7 @@ def tab_iterative_models(summaries):
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums:
-        logger.warning("No full-ablation data. Skipping tab_iterative_models.")
-        return
+        raise ValueError("no full-system data for iterative model table")
 
     from collections import defaultdict
     model_data = defaultdict(lambda: {
@@ -920,8 +877,7 @@ def tab_iterative_ablation(summaries):
         abl_data[s["ablation"]]["statuses"].extend(s["final_statuses"])
 
     if not abl_data:
-        logger.warning("No ablation data. Skipping tab_iterative_ablation.")
-        return
+        raise ValueError("no ablation data for iterative ablation table")
 
     lines = []
     lines.append(r"\begin{table}[t]")
@@ -961,8 +917,7 @@ def tab_trackb_vs_trackc(summaries, trackb_data):
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     if not full_sums and not trackb_data:
-        logger.warning("No data for Single-shot vs C. Skipping.")
-        return
+        raise ValueError("no data for single versus iterative table")
 
     # Best model from Iterative
     from collections import defaultdict
@@ -1039,8 +994,7 @@ def print_summary(summaries, trackb_data):
     print("=" * 70)
 
     if not summaries:
-        print("No iterative results loaded.")
-        return
+        raise ValueError("no iterative results loaded")
 
     full_sums = [s for s in summaries if s["ablation"] == "full"]
     all_speedups = []
@@ -1054,7 +1008,7 @@ def print_summary(summaries, trackb_data):
     print(f"Unique ablations: {len(set(s['ablation'] for s in summaries))}")
 
     if all_speedups:
-        print(f"\n--- Full System (all models, all workloads) ---")
+        print("\n--- Full System (all models, all workloads) ---")
         print(f"Geometric mean speedup: {geomean(all_speedups):.2f}x")
         print(f"Harmonic mean speedup:  {harmean(all_speedups):.2f}x")
         print(f"Arithmetic mean:        {np.mean(all_speedups):.2f}x (for reference only)")
@@ -1067,7 +1021,7 @@ def print_summary(summaries, trackb_data):
         model_speeds[s["model"]].extend(s["speedups"])
 
     if model_speeds:
-        print(f"\n--- Per-Model Geometric Mean ---")
+        print("\n--- Per-Model Geometric Mean ---")
         for model in sorted(model_speeds):
             gm = geomean(model_speeds[model])
             print(f"  {MODEL_DISPLAY.get(model, model):20s}: {gm:.2f}x "
@@ -1079,7 +1033,7 @@ def print_summary(summaries, trackb_data):
         abl_speeds[s["ablation"]].extend(s["speedups"])
 
     if len(abl_speeds) > 1:
-        print(f"\n--- Per-Ablation Geometric Mean ---")
+        print("\n--- Per-Ablation Geometric Mean ---")
         for abl in ABLATION_ORDER:
             if abl in abl_speeds:
                 gm = geomean(abl_speeds[abl])
@@ -1090,7 +1044,7 @@ def print_summary(summaries, trackb_data):
     if trackb_data:
         tb_summary = trackb_data.get("summary", {})
         if tb_summary:
-            print(f"\n--- Single-shot Reference ---")
+            print("\n--- Single-shot Reference ---")
             print(f"Single-shot geometric mean: {tb_summary.get('geometric_mean_write', 'N/A')}x")
             print(f"Single-shot harmonic mean:  {tb_summary.get('harmonic_mean_write', 'N/A')}x")
             print(f"Single-shot range:          {tb_summary.get('range', 'N/A')}")
@@ -1101,7 +1055,7 @@ def print_summary(summaries, trackb_data):
         all_statuses.extend(s["final_statuses"])
     if all_statuses:
         from collections import Counter
-        print(f"\n--- Status Distribution (full ablation) ---")
+        print("\n--- Status Distribution (full ablation) ---")
         for status, count in Counter(all_statuses).most_common():
             print(f"  {status:20s}: {count}")
 
@@ -1115,11 +1069,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate Iterative iterative optimization figures and tables."
     )
-    parser.add_argument("--results-dir", type=str,
-                        default=str(PROJECT_DIR / "results" / "iterative"),
+    parser.add_argument("--results-dir", type=str, required=True,
                         help="Directory containing iterative result JSON files")
-    parser.add_argument("--trackb-results", type=str,
-                        default=str(PROJECT_DIR / "results" / "closed_loop" / "closed_loop_results.json"),
+    parser.add_argument("--trackb-results", type=str, required=True,
                         help="Path to Single-shot closed-loop results JSON")
     parser.add_argument("--figures", nargs="*", type=int, default=None,
                         help="Generate only specific figures (1-5). Default: all.")
@@ -1132,12 +1084,7 @@ def main():
     trackb_data = load_trackb_results(args.trackb_results)
 
     if not records:
-        logger.warning("No iterative results found. Generating empty placeholder outputs.")
-        # Still generate Single-shot tables if available
-        if trackb_data:
-            tab_trackb_vs_trackc([], trackb_data)
-        print_summary([], trackb_data)
-        return
+        raise ValueError("no validated iterative run records")
 
     # Compute summaries
     summaries = compute_summary(records)
@@ -1153,6 +1100,7 @@ def main():
     }
 
     figs_to_gen = args.figures if args.figures else list(fig_map.keys())
+    failures = []
     for fig_num in figs_to_gen:
         if fig_num in fig_map:
             try:
@@ -1160,29 +1108,37 @@ def main():
             except Exception as exc:
                 logger.error("Failed to generate figure %d: %s", fig_num, exc,
                              exc_info=True)
+                failures.append(f"figure {fig_num}: {exc}")
         else:
-            logger.warning("Unknown figure number: %d (valid: 1-5)", fig_num)
+            failures.append(f"unknown figure {fig_num}")
 
     # Generate tables
     try:
         tab_iterative_results(summaries)
     except Exception as exc:
         logger.error("Failed tab_iterative_results: %s", exc, exc_info=True)
+        failures.append(f"tab_iterative_results: {exc}")
 
     try:
         tab_iterative_models(summaries)
     except Exception as exc:
         logger.error("Failed tab_iterative_models: %s", exc, exc_info=True)
+        failures.append(f"tab_iterative_models: {exc}")
 
     try:
         tab_iterative_ablation(summaries)
     except Exception as exc:
         logger.error("Failed tab_iterative_ablation: %s", exc, exc_info=True)
+        failures.append(f"tab_iterative_ablation: {exc}")
 
     try:
         tab_trackb_vs_trackc(summaries, trackb_data)
     except Exception as exc:
         logger.error("Failed tab_trackb_vs_trackc: %s", exc, exc_info=True)
+        failures.append(f"tab_trackb_vs_trackc: {exc}")
+
+    if failures:
+        raise RuntimeError("iterative output generation failed: " + "; ".join(failures))
 
     # Print summary
     print_summary(summaries, trackb_data)

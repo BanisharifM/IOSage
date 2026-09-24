@@ -31,8 +31,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
-FIG_DIR = PROJECT_DIR / "paper" / "figures"
-FIG_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures"
 
 # ---------------------------------------------------------------------------
 # Style (from figure_style_guide.md)
@@ -288,13 +287,13 @@ def fig_gt_vs_heuristic():
     TOL_PINK  = "#EE6677"  # IOAgent
 
     # Order: weakest to strongest, so IOSage is rightmost (visually wins)
-    bars_ioa = ax.bar(x - 1.5 * width, ioagent_f1, width, label="IOAgent (GPT-4o)",
+    ax.bar(x - 1.5 * width, ioagent_f1, width, label="IOAgent (GPT-4o)",
                       color=TOL_PINK, edgecolor="black", linewidth=0.3)
-    bars_wis = ax.bar(x - 0.5 * width, wisio_f1, width, label="WisIO",
+    ax.bar(x - 0.5 * width, wisio_f1, width, label="WisIO",
                       color=TOL_GREEN, edgecolor="black", linewidth=0.3)
-    bars_dri = ax.bar(x + 0.5 * width, drishti_f1, width, label="Drishti",
+    ax.bar(x + 0.5 * width, drishti_f1, width, label="Drishti",
                       color=TOL_YELLOW, edgecolor="black", linewidth=0.3)
-    bars_ios = ax.bar(x + 1.5 * width, iosage_f1, width, label="IOSage (ours)",
+    ax.bar(x + 1.5 * width, iosage_f1, width, label="IOSage (ours)",
                       color=TOL_BLUE, edgecolor="black", linewidth=0.3)
 
     short_labels = ["Access Gran.", "Metadata Int.", "Parallelism Eff.",
@@ -500,8 +499,8 @@ def fig_facility_health():
 
     fig, ax = plt.subplots(figsize=(7.16, 3.0), constrained_layout=True)
     x = np.arange(len(dims))
-    bars = ax.bar(x, rates, width=0.55, color=PALETTE_8, edgecolor="white", linewidth=0.3,
-                  hatch=[HATCHES[i] for i in range(len(dims))])
+    ax.bar(x, rates, width=0.55, color=PALETTE_8, edgecolor="white", linewidth=0.3,
+           hatch=[HATCHES[i] for i in range(len(dims))])
 
     # Annotate with counts
     for i, (rate, count) in enumerate(zip(rates, counts)):
@@ -521,20 +520,9 @@ def fig_facility_health():
 # Main
 # ===========================================================================
 def main():
-    apply_style()
-    logger.info("=" * 60)
-    logger.info("Generating benchmark ground-truth and supplementary figures")
-    logger.info("=" * 60)
-
-    fig_gt_label_distribution()     # B1
-    fig_gt_vs_heuristic()           # B3
-    fig_domain_shift_tsne()         # B4
-    fig_benchmark_signatures()      # B5
-    fig_facility_health()           # Fig 15
-
-    logger.info("=" * 60)
-    logger.info("All figures generated.")
-    logger.info("=" * 60)
+    raise RuntimeError(
+        "disabled: this generator reads historical result layouts; convert it "
+        "to a validated resubmission manifest before generating paper figures")
 
 
 if __name__ == "__main__":

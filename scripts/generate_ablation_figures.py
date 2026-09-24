@@ -14,7 +14,6 @@ Usage:
 
 import json
 import logging
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -31,7 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-FIG_DIR = PROJECT_DIR / "paper" / "figures"
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 RESULTS_FILE = PROJECT_DIR / "results" / "ml_ablations.json"
@@ -172,12 +171,12 @@ def fig_lobo(data):
 
     fig, ax = plt.subplots(figsize=(3.5, 2.6))
 
-    bars_w = ax.bar(
+    ax.bar(
         x - width / 2, with_vals, width,
         color=OI["green"], edgecolor="black", linewidth=0.4,
         hatch="", label="With benchmark", zorder=3,
     )
-    bars_wo = ax.bar(
+    ax.bar(
         x + width / 2, without_vals, width,
         color=OI["vermilion"], edgecolor="black", linewidth=0.4,
         hatch="//", label="Without benchmark", zorder=3,
@@ -255,8 +254,6 @@ def fig_training_data_ablation(data):
 
     # Improvement annotation
     micro_improvement = (biquality_micro - gt_only_micro) / gt_only_micro * 100
-    macro_improvement = (biquality_macro - gt_only_macro) / gt_only_macro * 100
-
     # Draw arrow from GT-only micro bar to Biquality micro bar
     ax.annotate(
         f"+{micro_improvement:.1f}%",
@@ -296,4 +293,4 @@ if __name__ == "__main__":
     fig_training_data_ablation(data)
 
     logger.info("All ablation figures saved to %s", FIG_DIR)
-    logger.info("LaTeX table at paper/tables/tab_ml_ablations.tex")
+    logger.info("LaTeX table at papers/IPDPS_2027/tables/tab_ml_ablations.tex")

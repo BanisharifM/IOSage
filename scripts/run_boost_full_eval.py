@@ -16,9 +16,10 @@ Evaluations:
   8. Side-by-side comparison with old results for every metric
 
 Usage:
-    /projects/bdau/envs/sc2026/bin/python scripts/run_boost_full_eval.py
+    PYTHONNOUSERSITE=1 /work/nvme/bdau/mbanisharifdehkordi/envs/iosage/bin/python scripts/run_boost_full_eval.py
 """
 
+import argparse
 import gc
 import json
 import logging
@@ -42,7 +43,6 @@ sys.path.insert(0, str(PROJECT))
 
 EXPERIMENT_DIR = PROJECT / "results" / "boost_experiment"
 EVAL_DIR = EXPERIMENT_DIR / "full_evaluation"
-EVAL_DIR.mkdir(parents=True, exist_ok=True)
 
 DIMS = [
     "access_granularity", "metadata_intensity", "parallelism_efficiency",
@@ -181,25 +181,18 @@ def run_drishti_baseline(test_labels):
     # For benchmark logs, Drishti baseline = all zeros for dims it can't detect.
     logger.info("Computing Drishti baseline on new test set...")
 
-    from src.data.drishti_labeling import apply_drishti_rules
-    from src.data.feature_extraction import extract_raw_features
+    from src.data.drishti_labeling import codes_to_labels, compute_drishti_codes
 
     # Load test features (raw, before normalization)
     split_dir = EXPERIMENT_DIR / "new_splits"
     test_features = pd.read_parquet(split_dir / "test_features.parquet")
     y_test = test_labels[DIMS].values.astype(int)
 
-    # Apply Drishti rules to each test sample
-    y_drishti = np.zeros_like(y_test)
-    for idx in range(len(test_features)):
-        row = test_features.iloc[idx]
-        features_dict = row.to_dict()
-        try:
-            drishti_labels = apply_drishti_rules(features_dict)
-            for j, dim in enumerate(DIMS):
-                y_drishti[idx, j] = drishti_labels.get(dim, 0)
-        except Exception:
-            pass  # Leave as zeros
+    codes = compute_drishti_codes(test_features)
+    drishti_labels = codes_to_labels(codes)
+    if list(drishti_labels.columns) != DIMS or len(drishti_labels) != len(y_test):
+        raise ValueError("Drishti output does not align with the evaluation labels")
+    y_drishti = drishti_labels[DIMS].to_numpy(dtype=int)
 
     metrics = {
         "micro_f1": float(f1_score(y_test, y_drishti, average="micro", zero_division=0)),
@@ -458,7 +451,7 @@ def run_tracebench_eval(models, feature_cols):
         return None
 
     with open(label_map_path) as f:
-        label_mapping = json.load(f)
+        json.load(f)
 
     # Find all Darshan files
     darshan_files = list(tb_dir.glob("**/*.darshan"))
@@ -500,7 +493,7 @@ def run_tracebench_eval(models, feature_cols):
 # Main
 # ============================================================================
 
-def main():
+def _legacy_main():
     logger.info("=" * 70)
     logger.info("COMPREHENSIVE EVALUATION: Boost Experiment Models")
     logger.info("Output: %s", EVAL_DIR)
@@ -539,11 +532,8 @@ def main():
     baselines = {}
 
     # Drishti
-    try:
-        baselines["drishti"] = run_drishti_baseline(test_labels)
-        logger.info("  Drishti: Micro=%.4f", baselines["drishti"]["micro_f1"])
-    except Exception as e:
-        logger.warning("  Drishti baseline failed: %s", e)
+    baselines["drishti"] = run_drishti_baseline(test_labels)
+    logger.info("  Drishti: Micro=%.4f", baselines["drishti"]["micro_f1"])
 
     # Majority class
     baselines["majority_class"] = run_majority_baseline(y_test)
@@ -673,5 +663,13 @@ def main():
     logger.info("=" * 80)
 
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.parse_args()
+    parser.error(
+        "retired: train and evaluate through scripts/train_biquality.py; "
+        "the boost-experiment evaluator uses an obsolete artifact layout")
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

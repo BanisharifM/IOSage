@@ -4,6 +4,7 @@ Aggregate Iterative iterative optimization results into summary metrics.
 Computes per-workload, per-model, and ablation statistics for SC paper.
 """
 
+import argparse
 import json
 import logging
 import sys
@@ -16,26 +17,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-RESULTS_DIR = PROJECT_DIR / "results" / "iterative"
+sys.path.insert(0, str(PROJECT_DIR))
+from src.llm.iterative_result import load_iterative_results  # noqa: E402
+
+RESULTS_DIR = PROJECT_DIR / "results" / "resubmission" / "iterative"
 
 
-def load_all_results():
-    """Load all JSON result files from results/iterative/."""
-    all_results = []
-    for f in sorted(RESULTS_DIR.glob("*.json")):
-        try:
-            with open(f) as fh:
-                data = json.load(fh)
-            if isinstance(data, list):
-                for d in data:
-                    d["_source_file"] = f.name
-                all_results.extend(data)
-            elif isinstance(data, dict):
-                data["_source_file"] = f.name
-                all_results.append(data)
-        except Exception as e:
-            logger.warning("Failed to load %s: %s", f.name, e)
-    return all_results
+def load_all_results(results_dir=RESULTS_DIR):
+    """Load only versioned completed primary runs."""
+    return load_iterative_results(results_dir)
 
 
 def categorize_results(results):
@@ -46,12 +36,12 @@ def categorize_results(results):
 
     for r in results:
         src = r.get("_source_file", "")
-        if src.startswith("sweep_"):
-            sweep.append(r)
-        elif src.startswith("ablation_"):
-            ablation.append(r)
-        elif src.startswith("trackc_"):
+        if src.startswith("trackc_"):
             smoke.append(r)
+        elif r["condition"] == "full":
+            sweep.append(r)
+        else:
+            ablation.append(r)
 
     return sweep, ablation, smoke
 
@@ -61,42 +51,28 @@ def compute_sweep_metrics(sweep_results):
     # Group by (workload, model)
     groups = defaultdict(list)
     for r in sweep_results:
-        key = (r.get("workload", "?"), r.get("model", "?"))
+        key = (r["workload"], r["model"])
         groups[key].append(r)
 
     metrics = {}
     for (workload, model), runs in sorted(groups.items()):
-        # Filter out failed baselines
-        valid_runs = [r for r in runs if r.get("final_status") not in ("baseline_failed", "not_started")]
-        if not valid_runs:
-            metrics[(workload, model)] = {
-                "n_valid": 0,
-                "n_total": len(runs),
-                "mean_speedup": 0,
-                "std_speedup": 0,
-                "mean_iterations": 0,
-                "mean_cost": 0,
-                "statuses": [r.get("final_status") for r in runs],
-            }
-            continue
-
-        speedups = [r.get("best_speedup", 1.0) for r in valid_runs]
-        iterations = [r.get("total_iterations", 0) for r in valid_runs]
-        costs = [r.get("total_cost_usd", 0) for r in valid_runs]
+        speedups = [r["best_speedup"] for r in runs]
+        iterations = [r["total_iterations"] for r in runs]
+        costs = [r["total_cost_usd"] for r in runs]
 
         metrics[(workload, model)] = {
-            "n_valid": len(valid_runs),
+            "n_valid": len(runs),
             "n_total": len(runs),
             "mean_speedup": float(np.mean(speedups)),
             "std_speedup": float(np.std(speedups)),
             "median_speedup": float(np.median(speedups)),
             "min_speedup": float(np.min(speedups)),
             "max_speedup": float(np.max(speedups)),
-            "geo_mean_speedup": float(np.exp(np.mean(np.log(np.maximum(speedups, 0.01))))),
+            "geo_mean_speedup": float(np.exp(np.mean(np.log(speedups)))),
             "mean_iterations": float(np.mean(iterations)),
             "mean_cost": float(np.mean(costs)),
             "total_cost": float(np.sum(costs)),
-            "statuses": [r.get("final_status") for r in valid_runs],
+            "statuses": [r["final_status"] for r in runs],
             "speedups": speedups,
         }
 
@@ -122,7 +98,7 @@ def compute_model_summary(sweep_metrics):
 
         summary[model] = {
             "n_workloads": len(mlist),
-            "geo_mean_speedup": float(np.exp(np.mean(np.log(np.maximum(all_speedups, 0.01))))),
+            "geo_mean_speedup": float(np.exp(np.mean(np.log(all_speedups)))),
             "mean_speedup": float(np.mean(all_speedups)),
             "std_speedup": float(np.std(all_speedups)),
             "mean_iterations": float(np.mean(all_iterations)),
@@ -137,30 +113,16 @@ def compute_ablation_metrics(ablation_results):
     """Compute ablation condition effects."""
     groups = defaultdict(list)
     for r in ablation_results:
-        src = r.get("_source_file", "")
-        # Extract ablation type from filename: ablation_<condition>_<workload>.json
-        parts = src.replace("ablation_", "").replace(".json", "").split("_", 2)
-        if len(parts) >= 2:
-            condition = parts[0]
-            if parts[0] == "no":
-                condition = f"no_{parts[1]}"
-            elif parts[0] == "single":
-                condition = "single_shot"
-        else:
-            condition = "unknown"
-        groups[condition].append(r)
+        groups[r["condition"]].append(r)
 
     metrics = {}
     for condition, runs in sorted(groups.items()):
-        valid = [r for r in runs if r.get("final_status") not in ("baseline_failed", "not_started")]
-        if not valid:
-            continue
-        speedups = [r.get("best_speedup", 1.0) for r in valid]
+        speedups = [r["best_speedup"] for r in runs]
         metrics[condition] = {
-            "n_runs": len(valid),
+            "n_runs": len(runs),
             "mean_speedup": float(np.mean(speedups)),
             "std_speedup": float(np.std(speedups)),
-            "geo_mean_speedup": float(np.exp(np.mean(np.log(np.maximum(speedups, 0.01))))),
+            "geo_mean_speedup": float(np.exp(np.mean(np.log(speedups)))),
             "speedups": speedups,
         }
 
@@ -168,8 +130,14 @@ def compute_ablation_metrics(ablation_results):
 
 
 def main():
-    logger.info("Loading results from %s", RESULTS_DIR)
-    all_results = load_all_results()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results-dir", default=str(RESULTS_DIR))
+    parser.add_argument("--output", default=None)
+    args = parser.parse_args()
+    results_dir = Path(args.results_dir)
+    output_path = Path(args.output) if args.output else results_dir / "trackc_complete_results.json"
+    logger.info("Loading results from %s", results_dir)
+    all_results = load_all_results(results_dir)
     logger.info("Loaded %d total result records", len(all_results))
 
     sweep, ablation, smoke = categorize_results(all_results)
@@ -185,16 +153,18 @@ def main():
     # Smoke test summary
     smoke_summary = {}
     for r in smoke:
-        w = r.get("workload", "?")
-        smoke_summary[w] = {
-            "speedup": r.get("best_speedup", 1.0),
-            "iterations": r.get("total_iterations", 0),
-            "status": r.get("final_status", "?"),
-            "cost": r.get("total_cost_usd", 0),
+        smoke_summary[r["result_id"]] = {
+            "workload": r["workload"],
+            "speedup": r["best_speedup"],
+            "iterations": r["total_iterations"],
+            "status": r["final_status"],
+            "cost": r["total_cost_usd"],
         }
 
     # Build complete results
     complete = {
+        "schema_version": 1,
+        "source_result_ids": sorted(r["result_id"] for r in all_results),
         "phase1_smoke_test": smoke_summary,
         "phase2_sweep_per_workload_model": {
             f"{w}_{m}": {k: v for k, v in metrics.items() if k != "speedups"}
@@ -210,8 +180,8 @@ def main():
     print("=" * 80)
 
     print("\n--- Phase 1: Smoke Tests ---")
-    for w, s in sorted(smoke_summary.items()):
-        print(f"  {w:30s}  {s['speedup']:6.2f}x  iters={s['iterations']}  {s['status']:20s}  ${s['cost']:.4f}")
+    for result_key, s in sorted(smoke_summary.items()):
+        print(f"  {s['workload']:30s}  {s['speedup']:6.2f}x  iters={s['iterations']}  {s['status']:20s}  ${s['cost']:.4f}  {result_key}")
 
     print("\n--- Phase 2: Sweep Results (per workload x model) ---")
     for (w, m), s in sorted(sweep_metrics.items()):
@@ -236,13 +206,15 @@ def main():
     print("=" * 80)
 
     # Save
-    output_path = RESULTS_DIR / "trackc_complete_results.json"
+    if output_path.exists():
+        raise FileExistsError(f"aggregate output already exists: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(complete, f, indent=2, default=str)
     logger.info("Complete results saved to %s", output_path)
 
-    return complete
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

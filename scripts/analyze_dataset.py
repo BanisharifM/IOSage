@@ -24,7 +24,6 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import matplotlib
@@ -86,6 +85,21 @@ AI_SIGNAL_MODULES = {'STDIO,APMPI,HEATMAP', 'POSIX,STDIO,APMPI,HEATMAP'}
 # Analysis functions
 # ---------------------------------------------------------------------------
 
+def module_aware_io_bytes(df):
+    """Return per-row bytes without double counting translated I/O layers."""
+    totals = []
+    for module in ('POSIX', 'MPIIO', 'STDIO'):
+        read_col = module + '_BYTES_READ'
+        write_col = module + '_BYTES_WRITTEN'
+        read = df[read_col] if read_col in df else 0
+        written = df[write_col] if write_col in df else 0
+        value = read + written
+        if not hasattr(value, 'index'):
+            value = pd.Series(value, index=df.index, dtype=float)
+        totals.append(value.astype(float))
+    return pd.concat(totals, axis=1).max(axis=1)
+
+
 def compute_basic_stats(df):
     """Compute basic dataset statistics."""
     stats = {}
@@ -101,7 +115,6 @@ def compute_basic_stats(df):
         stats['date_max'] = str(pd.Timestamp(valid_ts.max(), unit='s').date())
     elif '_source_path' in df.columns:
         # Fallback: extract from file paths
-        import re
         pattern = r'Darshan_Logs/(\d{4})/(\d{1,2})/(\d{1,2})/'
         dates = df['_source_path'].str.extract(pattern)
         dates.columns = ['year', 'month', 'day']
@@ -133,12 +146,12 @@ def compute_basic_stats(df):
         stats['runtime_max_hr'] = float(valid_rt.max() / 3600)
 
     # I/O volume
-    total_bytes = (df.get('POSIX_BYTES_READ', 0) + df.get('POSIX_BYTES_WRITTEN', 0)
-                   + df.get('STDIO_BYTES_READ', 0) + df.get('STDIO_BYTES_WRITTEN', 0))
+    total_bytes = module_aware_io_bytes(df)
     if hasattr(total_bytes, 'sum'):
         stats['total_io_bytes'] = float(total_bytes.sum())
         stats['total_io_tb'] = float(total_bytes.sum() / 1e12)
         stats['zero_io_pct'] = float((total_bytes == 0).sum() / len(df) * 100)
+        stats['io_byte_accounting'] = 'maximum of POSIX, MPIIO, and STDIO totals per row'
 
     # Module distribution
     if '_modules' in df.columns:
@@ -179,11 +192,8 @@ def classify_workload_type(df):
     """
     labels = pd.Series('other', index=df.index)
 
-    posix_bytes = df.get('POSIX_BYTES_READ', 0) + df.get('POSIX_BYTES_WRITTEN', 0)
-    stdio_bytes = df.get('STDIO_BYTES_READ', 0) + df.get('STDIO_BYTES_WRITTEN', 0)
-    total_bytes = posix_bytes + stdio_bytes
+    total_bytes = module_aware_io_bytes(df)
     has_mpiio = df.get('has_mpiio', 0) == 1
-    has_posix = df.get('has_posix', 0) == 1
     has_stdio = df.get('has_stdio', 0) == 1
 
     # Minimal I/O: total bytes < 1 MB

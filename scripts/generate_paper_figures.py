@@ -24,7 +24,6 @@ Modify STYLE_CONFIG and individual plot functions to adjust appearance.
 import argparse
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import matplotlib
@@ -36,6 +35,9 @@ import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -182,9 +184,10 @@ def load_data(data_dir):
     logger.info("Loading data files...")
     data['raw'] = pd.read_parquet(data_dir / 'production/raw_features.parquet')
     data['engineered'] = pd.read_parquet(data_dir / 'production/features.parquet')
-    data['train'] = pd.read_parquet(data_dir / 'splits' / 'train.parquet')
-    data['val'] = pd.read_parquet(data_dir / 'splits' / 'val.parquet')
-    data['test'] = pd.read_parquet(data_dir / 'splits' / 'test.parquet')
+    split_dir = data_dir / 'production' / 'splits'
+    data['train'] = pd.read_parquet(split_dir / 'train.parquet')
+    data['val'] = pd.read_parquet(split_dir / 'val.parquet')
+    data['test'] = pd.read_parquet(split_dir / 'test.parquet')
     data['eda_stats'] = pd.read_parquet(data_dir / 'production/eda/stats.parquet')
 
     for name, df in data.items():
@@ -723,8 +726,8 @@ def main():
         help='Path to processed data directory (default: data/processed)'
     )
     parser.add_argument(
-        '--output-dir', type=str, default='paper/figures/preprocessing',
-        help='Output directory for figures (default: paper/figures/preprocessing)'
+        '--output-dir', type=str, default='papers/IPDPS_2027/figures/preprocessing',
+        help='Output directory for figures (default: papers/IPDPS_2027/figures/preprocessing)'
     )
     parser.add_argument(
         '--figures', type=int, nargs='*', default=None,
@@ -740,6 +743,9 @@ def main():
     )
     args = parser.parse_args()
 
+    from src.artifact_paths import checked_output_dir
+    args.output_dir = str(checked_output_dir(args.output_dir))
+
     apply_style()
 
     data = load_data(args.data_dir)
@@ -749,8 +755,7 @@ def main():
 
     for fig_id in fig_ids:
         if fig_id not in FIGURE_REGISTRY:
-            logger.warning(f"Unknown figure ID: {fig_id}. Skipping.")
-            continue
+            parser.error(f"unknown figure ID: {fig_id}")
         name, func = FIGURE_REGISTRY[fig_id]
         func(data, args.output_dir)
 

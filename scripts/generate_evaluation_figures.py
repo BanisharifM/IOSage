@@ -12,7 +12,6 @@ Usage:
 """
 
 import logging
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -31,8 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-FIG_DIR = PROJECT_DIR / "paper" / "figures"
-FIG_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures"
 
 # ---------------------------------------------------------------------------
 # Colorblind-safe Okabe-Ito palette
@@ -148,12 +146,12 @@ def fig_closed_loop_speedup():
 
     fig, ax = plt.subplots(figsize=(3.5, 2.5))
 
-    bars_b = ax.bar(x - width / 2, before, width,
-                    color=OI["vermilion"], edgecolor="black", linewidth=0.4,
-                    hatch="//", label="Before fix", zorder=3)
-    bars_a = ax.bar(x + width / 2, after, width,
-                    color=OI["green"], edgecolor="black", linewidth=0.4,
-                    hatch="", label="After fix", zorder=3)
+    ax.bar(x - width / 2, before, width,
+           color=OI["vermilion"], edgecolor="black", linewidth=0.4,
+           hatch="//", label="Before fix", zorder=3)
+    ax.bar(x + width / 2, after, width,
+           color=OI["green"], edgecolor="black", linewidth=0.4,
+           hatch="", label="After fix", zorder=3)
 
     # Log scale
     ax.set_yscale("log")
@@ -452,7 +450,6 @@ def fig_pipeline_walkthrough():
     for i in range(n_panels - 1):
         x_start = panel_positions[i][0] + panel_positions[i][2] + 0.003
         x_end = panel_positions[i + 1][0] - 0.003
-        x_mid = (x_start + x_end) / 2
         y_mid = y_base + panel_h / 2
 
         fig.patches.append(FancyArrowPatch(
@@ -586,11 +583,6 @@ def fig_iterative_speedup_comparison():
 # ===========================================================================
 
 if __name__ == "__main__":
-    apply_style()
-    fig_closed_loop_speedup()
-    fig_llm_groundedness()
-    fig_ablation_trackb()
-    fig_pipeline_walkthrough()
-    fig_ioagent_overgeneration()
-    fig_iterative_speedup_comparison()
-    logger.info("All 6 evaluation figures saved to %s", FIG_DIR)
+    raise SystemExit(
+        "disabled: this generator contains literal result values; regenerate it "
+        "from validated evaluation manifests before use")

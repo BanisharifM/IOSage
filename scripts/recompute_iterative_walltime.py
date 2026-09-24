@@ -187,12 +187,19 @@ def locate_stage(workload, model_short, stage, recorded_bw):
         rel = abs(bw - recorded_bw) / max(abs(recorded_bw), 1e-9)
         matches.append((rel, job_id, out, logs, bw))
     if not matches:
-        return None
-    matches.sort(key=lambda x: x[0])
-    rel, job_id, out, logs, bw = matches[0]
-    if rel > BW_REL_TOL:
-        logger.warning("  %s/%s/%s: best bw match off by %.1f%% (job %s)",
-                       workload, model_short, stage, 100 * rel, job_id)
+        raise ValueError(f"{workload}/{model_short}/{stage}: no candidate jobs")
+    accepted = [match for match in matches if match[0] <= BW_REL_TOL]
+    if not accepted:
+        best = min(matches, key=lambda match: match[0])
+        raise ValueError(
+            f"{workload}/{model_short}/{stage}: no job within "
+            f"{100 * BW_REL_TOL:.1f}%; nearest is {100 * best[0]:.1f}% "
+            f"(job {best[1]})")
+    if len(accepted) != 1:
+        raise ValueError(
+            f"{workload}/{model_short}/{stage}: {len(accepted)} jobs fall within "
+            f"{100 * BW_REL_TOL:.1f}%; identity is ambiguous")
+    rel, job_id, out, logs, bw = accepted[0]
     return {"job_id": job_id, "out": out, "logs": logs,
             "recomputed_bw": bw, "bw_match_rel_err": rel}
 
@@ -289,9 +296,6 @@ def recompute_run(hist, workloads_cfg):
         return rec
 
     base_loc = locate_stage(workload, ms, "baseline", hist["baseline_bw"])
-    if not base_loc:
-        rec["note"] = "baseline job not located"
-        return rec
     base = stage_measurements(base_loc)
     rec["baseline"] = base
 
@@ -306,6 +310,9 @@ def recompute_run(hist, workloads_cfg):
             loc = locate_stage(workload, ms, f"i{k}", it["new_bw"])
             if loc:
                 m = stage_measurements(loc)
+                if m is None:
+                    raise ValueError(
+                        f"{workload}/{model}/i{k}: matched job has no parsed logs")
                 row.update(m)
                 row["speedup_walltime"] = ratio(base["walltime_s"], m["walltime_s"])
                 row["speedup_walltime_span_int"] = ratio(base["walltime_span_int_s"], m["walltime_span_int_s"])
@@ -336,8 +343,6 @@ def recompute_run(hist, workloads_cfg):
                     disagreements.append({"iteration": k, "bw": bw_s, "walltime": w_s})
                 if w_s > best_wall:
                     best_wall, best_wall_iter = w_s, k
-            else:
-                row["note"] = "iteration job not located"
         rec["iterations"].append(row)
 
     rec["best_speedup_walltime"] = best_wall
@@ -377,11 +382,14 @@ def main():
     ap.add_argument("--output-dir", default=str(OUT_DIR_DEFAULT))
     args = ap.parse_args()
     out_dir = Path(args.output_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    if out_dir.exists():
+        raise FileExistsError(f"output directory already exists: {out_dir}")
 
     with open(PROJECT_DIR / "configs" / "iterative.yaml") as fh:
         workloads_cfg = yaml.safe_load(fh)["workloads"]
     files = sorted(TRACKC_DIR.glob("trackc_*.json"))
+    if not files:
+        raise FileNotFoundError(f"no trackc result files in {TRACKC_DIR}")
     logger.info("Recomputing %d runs from %s", len(files), TRACKC_DIR)
     records = []
     for f in files:
@@ -392,7 +400,11 @@ def main():
         rec = recompute_run(hist, workloads_cfg)
         rec["source_file"] = f.name
         records.append(rec)
-        with open(out_dir / f.name.replace("trackc_", "walltime_"), "w") as fh:
+
+    out_dir.mkdir(parents=True)
+    for rec in records:
+        output_name = rec["source_file"].replace("trackc_", "walltime_")
+        with open(out_dir / output_name, "w") as fh:
             json.dump(rec, fh, indent=2, default=str)
 
     # Summary table
@@ -462,4 +474,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

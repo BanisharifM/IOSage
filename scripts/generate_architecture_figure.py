@@ -19,11 +19,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, Circle, Ellipse, Arc
 import matplotlib.patheffects as pe
-import numpy as np
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-FIG_DIR = PROJECT_DIR / "paper" / "figures"
+FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures"
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -164,6 +163,12 @@ def draw_code_icon(ax, cx, cy, s=0.025):
 
 
 def main():
+    raise RuntimeError(
+        "disabled: the diagram contains literal result values; supply a "
+        "validated architecture manifest before enabling generation")
+
+
+def _draw_architecture():
     fig, ax = plt.subplots(figsize=(7.16, 4.2))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -181,7 +186,7 @@ def main():
     ax.text(0.12, 0.915, "Darshan Dataset", fontsize=8.5, fontweight="bold",
             ha="center", color=COL_TEXT, zorder=6)
     draw_cylinder(ax, 0.12, 0.80, 0.06, 0.045)
-    ax.text(0.12, 0.735, "1.37M logs\nALCF Polaris\n22 months",
+    ax.text(0.12, 0.735, "Darshan logs\nALCF Polaris\nproduction corpus",
             fontsize=5.5, ha="center", color=COL_SUB, linespacing=1.3, zorder=6)
 
     # Box B: ML Classifier Training (merged: feat ext + biquality)
@@ -190,10 +195,10 @@ def main():
             fontweight="bold", ha="center", color=COL_TEXT, zorder=6)
     draw_tree_icon(ax, 0.34, 0.81, s=0.032)
     ax.text(0.45, 0.82, r"$\mathbf{x} \in \mathbb{R}^{157}$" + "\n"
-            "XGBoost, biquality\n91K heuristic + 187 GT",
+            "XGBoost, biquality\nheuristic + construction labels",
             fontsize=5.5, ha="center", va="center", color=COL_SUB,
             linespacing=1.3, zorder=6)
-    ax.text(0.39, 0.735, "8 dimensions, 5-seed, F1 = 0.923",
+    ax.text(0.39, 0.735, "grouped train, validation, and test protocol",
             fontsize=5.5, ha="center", color="#1565C0",
             fontstyle="italic", zorder=6)
 
@@ -202,7 +207,7 @@ def main():
     ax.text(0.70, 0.915, "Benchmark Knowledge Base", fontsize=8.5,
             fontweight="bold", ha="center", color=COL_TEXT, zorder=6)
     draw_doc_icon(ax, 0.64, 0.82, s=0.028)
-    ax.text(0.76, 0.82, "6 suites, 623 configs\nDarshan signature\n+ cause + validated fix",
+    ax.text(0.76, 0.82, "accepted development evidence\nDarshan signature\n+ cause + measured fix",
             fontsize=5.5, ha="center", va="center", color=COL_SUB,
             linespacing=1.3, zorder=6)
     ax.text(0.70, 0.735, "IOR / mdtest / DLIO / h5bench / HACC-IO / custom",
@@ -213,7 +218,7 @@ def main():
     rbox(ax, 0.87, 0.735, 0.11, 0.13, BG["out"], BG["bd_out"])
     ax.text(0.925, 0.845, "Trained\nModel", fontsize=7.5,
             fontweight="bold", ha="center", va="center", color=COL_TEXT, zorder=6)
-    ax.text(0.925, 0.755, "F1=0.923", fontsize=6, ha="center",
+    ax.text(0.925, 0.755, "versioned bundle", fontsize=6, ha="center",
             color="#00695C", fontweight="bold", zorder=6)
 
     # Phase 1 arrows
@@ -242,7 +247,7 @@ def main():
     ax.text(0.245, r2y + bh2 - 0.025, "ML Detect", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
     draw_tree_icon(ax, 0.245, r2y + 0.11, s=0.025)
-    ax.text(0.245, r2y + 0.02, "8-dim, 3.9 ms",
+    ax.text(0.245, r2y + 0.02, "multi-label decision",
             fontsize=5.5, ha="center", color=COL_SUB, zorder=6)
 
     # Step 2: KB Retrieval
@@ -251,7 +256,7 @@ def main():
     ax.text(0.465, r2y + bh2 - 0.025, "KB Retrieve", fontsize=8,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
     draw_doc_icon(ax, 0.465, r2y + 0.11, s=0.022)
-    ax.text(0.465, r2y + 0.02, "623 entries",
+    ax.text(0.465, r2y + 0.02, "filtered evidence",
             fontsize=5.5, ha="center", color=COL_SUB, zorder=6)
 
     # Step 3: LLM Recommendation
@@ -320,7 +325,7 @@ def main():
     rbox(ax, 0.79, r3y, 0.17, bh3, BG["out"], BG["bd_out"])
     ax.text(0.875, r3y + bh3 - 0.02, "Validated Result", fontsize=7.5,
             fontweight="bold", ha="center", va="top", color=COL_TEXT, zorder=6)
-    ax.text(0.875, r3y + 0.055, "33/33 runs\n6 benchmarks",
+    ax.text(0.875, r3y + 0.055, "repeated runs\nacross workloads",
             fontsize=5.5, ha="center", va="center", color=COL_SUB, zorder=6)
     ax.text(0.875, r3y + 0.015, "feedback-driven mode",
             fontsize=5, ha="center", color=COL_LOOP,
