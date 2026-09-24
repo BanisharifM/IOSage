@@ -8,11 +8,12 @@ WisIO detects 6 rule-based bottlenecks:
   - small_reads
   - small_writes
 
-We map these to our 8-dimension taxonomy:
+We map these to the registered IOSage taxonomy:
   - access_granularity      <- small_reads OR small_writes
   - metadata_intensity      <- excessive_metadata_access
   - parallelism_efficiency  <- operation_imbalance OR size_imbalance (approximate)
   - access_pattern          <- random_operations
+  - request_alignment       <- (no WisIO mapping)
   - interface_choice        <- (no WisIO mapping)
   - file_strategy           <- (no WisIO mapping)
   - throughput_utilization  <- (no WisIO mapping)
@@ -54,6 +55,7 @@ WISIO_TO_TAXONOMY = {
     "metadata_intensity": ["excessive_metadata_access"],
     "parallelism_efficiency": ["operation_imbalance", "size_imbalance"],
     "access_pattern": ["random_operations"],
+    "request_alignment": [],
     "interface_choice": [],
     "file_strategy": [],
     "throughput_utilization": [],
@@ -64,6 +66,7 @@ TAXONOMY_DIMS = [
     "metadata_intensity",
     "parallelism_efficiency",
     "access_pattern",
+    "request_alignment",
     "interface_choice",
     "file_strategy",
     "throughput_utilization",
@@ -115,7 +118,7 @@ def assign_trace_paths(labels_df, benchmark_logs_dir):
 
 
 def wisio_rules_to_taxonomy(rule_flags):
-    """Convert WisIO rule flags to our 8-dimension taxonomy predictions."""
+    """Convert WisIO rule flags to registered IOSage predictions."""
     preds = {}
     for dim, rules in WISIO_TO_TAXONOMY.items():
         preds[dim] = int(any(rule_flags.get(r, False) for r in rules))

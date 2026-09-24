@@ -40,15 +40,12 @@ logger = logging.getLogger(__name__)
 
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT))
+from src.data.label_rules import DIMENSION_NAMES
 
 EXPERIMENT_DIR = PROJECT / "results" / "boost_experiment"
 EVAL_DIR = EXPERIMENT_DIR / "full_evaluation"
 
-DIMS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMS = list(DIMENSION_NAMES)
 
 SEEDS = [42, 123, 456, 789, 1024]
 

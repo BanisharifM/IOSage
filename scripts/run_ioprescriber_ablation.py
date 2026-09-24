@@ -43,22 +43,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 from src.models.biquality import load_final_benchmark_test_frames  # noqa: E402
+from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 DIM_DESCRIPTIONS = {
-    "access_granularity": "Small I/O operations (<1MB transfer size)",
-    "metadata_intensity": "Excessive metadata operations",
+    "access_granularity": "Many requests no larger than 1 MiB",
+    "metadata_intensity": "Metadata calls dominate recorded I/O time",
     "parallelism_efficiency": "Load imbalance across ranks",
-    "access_pattern": "Random (non-sequential) access",
-    "interface_choice": "Wrong I/O interface (POSIX instead of MPI-IO)",
-    "file_strategy": "File-per-process explosion",
-    "throughput_utilization": "Low throughput (excessive sync/single-OST)",
-    "healthy": "No bottleneck detected",
+    "access_pattern": "Nonsequential POSIX access",
+    "request_alignment": "File-offset misalignment",
+    "interface_choice": "Independent MPI-IO without collective calls",
+    "file_strategy": "Many small data files",
+    "throughput_utilization": "A synchronous durability call after each write",
+    "healthy": "All registered patterns are absent and observable",
 }
 
 

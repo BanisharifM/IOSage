@@ -9,7 +9,7 @@ Computes TreeSHAP values per label dimension and generates paper figures:
 The model is a bundle from ``scripts/train_biquality.py``; the samples are
 the benchmark test rows of that bundle's run (``splits.npz`` next to it), so
 attribution never sees a row the model was fitted on. Healthy is derived from
-the seven decisions and has no model, so it has no SHAP values.
+the problem decisions and has no model, so it has no SHAP values.
 
 Usage:
     python -m src.models.attribution --bundle results/resubmission/training/<run>/xgboost_w100_seed42.pkl \
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
-# The seven modeled labels; healthy is derived and has no attribution
+# The modeled problem labels; healthy is derived and has no attribution
 DIMENSIONS = list(BOTTLENECK_DIMENSIONS)
 
 # Short display names for figures
@@ -48,6 +48,7 @@ DIM_SHORT = {
     "metadata_intensity": "Metadata",
     "parallelism_efficiency": "Parallelism",
     "access_pattern": "Pattern",
+    "request_alignment": "Alignment",
     "interface_choice": "Interface",
     "file_strategy": "File Strategy",
     "throughput_utilization": "Throughput",
@@ -240,11 +241,12 @@ EXPECTED_FEATURES = {
                                "byte_imbalance", "time_imbalance"],
     "access_pattern": ["seq_read_ratio", "seq_write_ratio", "POSIX_SEQ_READS", "POSIX_SEQ_WRITES",
                        "consec_read_ratio", "consec_write_ratio"],
-    "interface_choice": ["collective_ratio", "MPIIO_COLL_WRITES", "MPIIO_COLL_READS", "MPIIO_INDEP_WRITES",
-                         "MPIIO_INDEP_READS", "has_mpiio", "is_shared_file"],
-    "file_strategy": ["num_files", "POSIX_FILENOS", "nprocs", "POSIX_OPENS", "opens_per_mb"],
-    "throughput_utilization": ["fsync_ratio", "POSIX_FSYNCS", "total_bw_mb_s", "write_bw_mb_s",
-                               "POSIX_MAX_BYTE_READ", "POSIX_MAX_BYTE_WRITTEN"],
+    "request_alignment": ["POSIX_FILE_NOT_ALIGNED", "POSIX_READS", "POSIX_WRITES"],
+    "interface_choice": ["collective_ratio", "MPIIO_COLL_WRITES", "MPIIO_COLL_READS",
+                         "MPIIO_INDEP_WRITES", "MPIIO_INDEP_READS"],
+    "file_strategy": ["num_data_files", "io_bytes_all", "POSIX_OPENS"],
+    "throughput_utilization": ["fsync_ratio", "POSIX_FSYNCS", "POSIX_FDSYNCS",
+                               "POSIX_WRITES"],
 }
 
 

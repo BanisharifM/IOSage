@@ -13,13 +13,11 @@ import logging
 import numpy as np
 import shap
 
+from src.data.label_rules import DIMENSION_NAMES
+
 logger = logging.getLogger(__name__)
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 
 class Explainer:

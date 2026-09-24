@@ -45,14 +45,15 @@ MODELS = {
 }
 
 DIM_DESCRIPTIONS = {
-    "access_granularity": "I/O operations with very small transfer sizes (<1MB), causing excessive syscall overhead",
-    "metadata_intensity": "Excessive file metadata operations (open/stat/close) relative to data I/O",
+    "access_granularity": "Many requests no larger than 1 MiB",
+    "metadata_intensity": "Metadata calls consume at least half of recorded I/O time",
     "parallelism_efficiency": "Uneven I/O load distribution across MPI ranks",
-    "access_pattern": "Random (non-sequential) file access, defeating OS read-ahead and storage prefetching",
-    "interface_choice": "Using suboptimal I/O interface (POSIX instead of MPI-IO collective for shared files)",
-    "file_strategy": "Suboptimal file strategy (file-per-process explosion or shared-file contention)",
-    "throughput_utilization": "Throughput below achievable (excessive sync, single-OST, redundant traffic)",
-    "healthy": "No significant I/O bottleneck detected",
+    "access_pattern": "Many POSIX requests are nonsequential",
+    "request_alignment": "Many POSIX requests begin at file-misaligned offsets",
+    "interface_choice": "Many independent MPI-IO calls occur without collective calls",
+    "file_strategy": "More than 1000 small data files are accessed",
+    "throughput_utilization": "A synchronous durability call occurs after each write",
+    "healthy": "All registered patterns are absent and observable",
 }
 
 

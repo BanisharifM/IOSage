@@ -130,10 +130,8 @@ def main():
     feat = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "production" / "features.parquet")
     lab = pd.read_parquet(PROJECT_DIR / "data" / "processed" / "production" / "labels.parquet")
 
-    bottleneck_cols = [
-        "access_granularity", "metadata_intensity", "parallelism_efficiency",
-        "access_pattern", "interface_choice", "file_strategy", "throughput_utilization",
-    ]
+    from src.data.label_rules import BOTTLENECK_DIMENSIONS
+    bottleneck_cols = list(BOTTLENECK_DIMENSIONS)
 
     logger.info("Selecting representative production jobs...")
     candidates = select_candidates(feat, lab, bottleneck_cols)

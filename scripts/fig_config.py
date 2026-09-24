@@ -19,8 +19,8 @@ DOUBLE_COL = (7.0, 2.8)
 DOUBLE_COL_TALL = (7.0, 4.5)
 TRIPLE_PANEL = (7.0, 2.4)
 
-# Okabe-Ito colorblind-safe palette (8 colors)
-PALETTE_8 = [
+# Dimension palette
+DIMENSION_PALETTE = [
     '#0072B2',  # blue
     '#E69F00',  # orange
     '#009E73',  # green
@@ -29,6 +29,7 @@ PALETTE_8 = [
     '#56B4E9',  # sky blue
     '#F0E442',  # yellow
     '#BBBBBB',  # gray
+    '#000000',  # black
 ]
 
 COLORS = {
@@ -44,12 +45,12 @@ COLORS = {
 }
 
 # Hatching patterns for B&W readability
-HATCHES = ['', '//', '\\\\', 'xx', '..', '++', 'oo', '**']
+HATCHES = ['', '//', '\\\\', 'xx', '..', '++', 'oo', '**', '||']
 
 # I/O health dimension labels (consistent across all figures)
 DIMENSION_ORDER = [
     'access_granularity', 'metadata_intensity', 'parallelism_efficiency',
-    'access_pattern', 'interface_choice', 'file_strategy',
+    'access_pattern', 'request_alignment', 'interface_choice', 'file_strategy',
     'throughput_utilization', 'healthy',
 ]
 
@@ -58,6 +59,7 @@ DIMENSION_LABELS = {
     'metadata_intensity':     'Metadata\nIntensity',
     'parallelism_efficiency': 'Parallelism\nEfficiency',
     'access_pattern':         'Access\nPattern',
+    'request_alignment':      'Request\nAlignment',
     'interface_choice':       'Interface\nChoice',
     'file_strategy':          'File\nStrategy',
     'throughput_utilization':  'Throughput\nUtilization',
@@ -69,6 +71,7 @@ DIMENSION_LABELS_SHORT = {
     'metadata_intensity':     'Meta. Int.',
     'parallelism_efficiency': 'Par. Eff.',
     'access_pattern':         'Acc. Pat.',
+    'request_alignment':      'Req. Align.',
     'interface_choice':       'Iface. Ch.',
     'file_strategy':          'File Str.',
     'throughput_utilization':  'Thr. Util.',

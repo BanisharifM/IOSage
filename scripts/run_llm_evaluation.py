@@ -37,15 +37,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 from src.ioprescriber.contracts import validate_pipeline_result  # noqa: E402
+from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 from src.models.biquality import load_final_benchmark_test_frames  # noqa: E402
 
 MODELS = ["claude-sonnet", "gpt-4o", "llama-70b"]
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 
 def select_diverse_workloads(test_feat, test_labels, n_workloads=12):

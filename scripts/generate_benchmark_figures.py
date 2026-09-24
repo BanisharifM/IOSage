@@ -48,10 +48,10 @@ COLORS = {
     "black":     "#000000",
 }
 
-PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
-             "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB"]
+DIMENSION_PALETTE = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
+                     "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB", "#000000"]
 
-HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
+HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**", "||"]
 
 RCPARAMS_SC2026 = {
     # Fonts — IEEE guideline: ~9-10pt for readability in two-column format
@@ -95,6 +95,7 @@ DIMENSION_LABELS = {
     "metadata_intensity":     "Metadata\nIntensity",
     "parallelism_efficiency": "Parallelism\nEfficiency",
     "access_pattern":         "Access\nPattern",
+    "request_alignment":      "Request\nAlignment",
     "interface_choice":       "Interface\nChoice",
     "file_strategy":          "File\nStrategy",
     "throughput_utilization":  "Throughput\nUtilization",
@@ -103,7 +104,7 @@ DIMENSION_LABELS = {
 
 DIMENSION_ORDER = [
     "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
+    "access_pattern", "request_alignment", "interface_choice", "file_strategy",
     "throughput_utilization", "healthy",
 ]
 
@@ -499,7 +500,7 @@ def fig_facility_health():
 
     fig, ax = plt.subplots(figsize=(7.16, 3.0), constrained_layout=True)
     x = np.arange(len(dims))
-    ax.bar(x, rates, width=0.55, color=PALETTE_8, edgecolor="white", linewidth=0.3,
+    ax.bar(x, rates, width=0.55, color=DIMENSION_PALETTE, edgecolor="white", linewidth=0.3,
            hatch=[HATCHES[i] for i in range(len(dims))])
 
     # Annotate with counts

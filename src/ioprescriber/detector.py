@@ -1,13 +1,13 @@
 """
 IOPrescriber Step 1: ML Bottleneck Detection.
 
-Loads a model bundle written by ``src.models.biquality`` (seven bottleneck
-classifiers with their ordered feature contract and decision threshold) and
-predicts the eight dimensions of a Darshan log; healthy is derived from the
-seven decisions.
+Loads a model bundle written by ``src.models.biquality`` (one classifier per
+problem label with its ordered feature contract and decision threshold) and
+predicts every registered dimension of a Darshan log. Healthy is derived from
+the problem decisions.
 
 Input: Darshan log path OR pre-extracted feature dict
-Output: {dimension: confidence} for all 8 dimensions + detected list
+Output: {dimension: confidence} for all dimensions + detected list
 """
 
 import logging

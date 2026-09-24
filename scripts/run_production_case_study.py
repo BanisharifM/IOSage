@@ -51,6 +51,8 @@ if env_path.exists():
 import numpy as np
 import pandas as pd
 
+from src.data.label_rules import DIMENSION_NAMES
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -59,11 +61,7 @@ logger = logging.getLogger("production_case_study")
 
 OUTPUT_DIR = PROJECT_DIR / "results" / "production_case_study"
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 BOTTLENECK_DIMS = [d for d in DIMENSIONS if d != "healthy"]
 
 SEED = 42

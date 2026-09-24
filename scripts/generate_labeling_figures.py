@@ -7,7 +7,7 @@ Produces publication-quality figures for the heuristic labeling results.
 Output directory: papers/IPDPS_2027/figures/labeling/
 
 Figure inventory:
-  L1. fig_heuristic_label_distribution.pdf  — 8-dimension bar chart with counts/rates
+  L1. fig_heuristic_label_distribution.pdf: label counts and rates
   L2. fig_multilabel_cooccurrence.pdf       — Co-occurrence heatmap (which bottlenecks co-occur)
   L3. fig_drishti_code_rates.pdf            — All 30 Drishti codes trigger rates (sorted)
   L4. fig_confidence_histogram.pdf          — Confidence score distribution
@@ -33,7 +33,7 @@ import seaborn as sns
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fig_config import (
     apply_style, save_figure, format_count,
-    SINGLE_COL, PALETTE_8, COLORS, HATCHES,
+    SINGLE_COL, DIMENSION_PALETTE, COLORS, HATCHES,
     DIMENSION_ORDER, DIMENSION_LABELS_SHORT,
 )
 
@@ -113,7 +113,7 @@ def load_heuristic_labels():
 
 
 # ===================================================================
-# L1: Heuristic Label Distribution (8 Dimensions)
+# L1: Heuristic label distribution
 # ===================================================================
 def fig_L1_label_distribution(df):
     """Bar chart showing positive rate and count for each dimension."""
@@ -133,7 +133,7 @@ def fig_L1_label_distribution(df):
         rates.append(r)
 
     x = np.arange(len(DIMENSION_ORDER))
-    bars = ax.bar(x, rates, color=PALETTE_8, edgecolor='black',
+    bars = ax.bar(x, rates, color=DIMENSION_PALETTE, edgecolor='black',
                   linewidth=0.3, zorder=3)
 
     # Add hatching for B&W readability

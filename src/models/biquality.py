@@ -11,7 +11,7 @@ requested final evaluation.
 This module owns everything the audit found duplicated or unguarded across
 the older entry points: sample alignment by a unique id, split validation,
 grouped benchmark partitions, the feature contract, weighting, fitting with
-real early stopping, healthy derived from the seven bottleneck decisions,
+real early stopping, healthy derived from the problem decisions,
 group bootstrap intervals, and an immutable run directory with a manifest.
 The entry point is ``scripts/train_biquality.py``.
 """
@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
-from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
 from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_feature_names, get_raw_feature_names
@@ -72,7 +72,7 @@ def _resolve(config, key):
 @dataclass
 class ProductionData:
     X: np.ndarray
-    y: np.ndarray            # seven bottleneck labels
+    y: np.ndarray            # modeled problem labels
     valid: np.ndarray        # target validity for incomplete module records
     ids: np.ndarray          # _source_path
     start_time: np.ndarray
@@ -85,8 +85,8 @@ class ProductionData:
 @dataclass
 class BenchmarkData:
     X: np.ndarray
-    y: np.ndarray            # seven bottleneck labels
-    valid: np.ndarray        # construction labels are valid for every target
+    y: np.ndarray            # modeled problem labels
+    valid: np.ndarray        # per-target construction validity
     ids: np.ndarray          # "<benchmark>/<job_id>/<log basename>"
     groups: np.ndarray       # "<benchmark>/<job_id>"
     benchmark: np.ndarray    # benchmark type per row
@@ -128,8 +128,17 @@ def _label_validity(labels, what, required):
     values = labels[columns]
     if not values.isin([0, 1]).all().all():
         raise ValueError(f"{what} validity columns must be binary and complete")
-    return values[[f'valid_{dimension}' for dimension in BOTTLENECK_DIMENSIONS]].to_numpy(
-        dtype=bool)
+    problem_columns = [f'valid_{dimension}' for dimension in BOTTLENECK_DIMENSIONS]
+    expected_healthy = values[problem_columns].all(axis=1).astype(int)
+    if not np.array_equal(values['valid_healthy'].to_numpy(dtype=int), expected_healthy.to_numpy()):
+        raise ValueError(f"{what} valid_healthy is inconsistent with problem-target validity")
+    invalid_positive = np.column_stack([
+        (labels[dimension] == 1) & (values[f'valid_{dimension}'] == 0)
+        for dimension in BOTTLENECK_DIMENSIONS
+    ])
+    if invalid_positive.any():
+        raise ValueError(f"{what} contain a positive label for an invalid target")
+    return values[problem_columns].to_numpy(dtype=bool)
 
 
 def _finite_matrix(frame, columns, what):
@@ -236,7 +245,7 @@ def load_production(config, feature_set='full'):
         train_idx=train_idx, val_idx=val_idx, test_idx=test_idx, feature_names=names)
 
 
-def grouped_benchmark_split(labels, groups, test_ratio, seed):
+def grouped_benchmark_split(labels, groups, test_ratio, seed, validity=None):
     """Development and test rows with whole jobs on one side.
 
     Iterative stratification (Sechidis et al. 2011, ``iterstrat``) runs on the
@@ -248,8 +257,17 @@ def grouped_benchmark_split(labels, groups, test_ratio, seed):
     unique_groups, inverse = np.unique(groups, return_inverse=True)
     if len(unique_groups) < 2:
         raise ValueError("benchmark split needs at least two job groups")
-    group_labels = np.zeros((len(unique_groups), labels.shape[1]), dtype=int)
-    np.maximum.at(group_labels, inverse, labels.astype(int))
+    if validity is None:
+        split_labels = labels.astype(int)
+    else:
+        if validity.shape != labels.shape:
+            raise ValueError("benchmark split validity shape differs from labels")
+        split_labels = np.column_stack([
+            validity & (labels == 1),
+            validity & (labels == 0),
+        ]).astype(int)
+    group_labels = np.zeros((len(unique_groups), split_labels.shape[1]), dtype=int)
+    np.maximum.at(group_labels, inverse, split_labels)
     splitter = MultilabelStratifiedShuffleSplit(n_splits=1, test_size=test_ratio, random_state=seed)
     dev_groups, test_groups = next(splitter.split(np.zeros((len(unique_groups), 1)), group_labels))
     in_test = np.isin(inverse, test_groups)
@@ -261,11 +279,15 @@ def grouped_benchmark_split(labels, groups, test_ratio, seed):
     return dev_idx, test_idx
 
 
-def grouped_benchmark_partitions(labels, groups, test_ratio, validation_ratio, seed):
+def grouped_benchmark_partitions(
+    labels, groups, test_ratio, validation_ratio, seed, validity=None,
+):
     """Group-disjoint benchmark train, validation, and test row positions."""
-    remaining, test_idx = grouped_benchmark_split(labels, groups, test_ratio, seed)
+    remaining, test_idx = grouped_benchmark_split(
+        labels, groups, test_ratio, seed, validity=validity)
     train_local, val_local = grouped_benchmark_split(
-        labels[remaining], groups[remaining], validation_ratio, seed + 1)
+        labels[remaining], groups[remaining], validation_ratio, seed + 1,
+        validity=None if validity is None else validity[remaining])
     train_idx, val_idx = remaining[train_local], remaining[val_local]
     group_sets = [set(groups[idx]) for idx in (train_idx, val_idx, test_idx)]
     if any(group_sets[i] & group_sets[j] for i, j in ((0, 1), (0, 2), (1, 2))):
@@ -293,7 +315,7 @@ def load_benchmark(config, feature_names):
     if missing:
         raise ValueError(f"benchmark features lack {len(missing)} contract columns, first {missing[:5]}")
     y = _label_matrix(labels, 'benchmark labels')
-    valid = _label_validity(labels, 'benchmark labels', required=False)
+    valid = _label_validity(labels, 'benchmark labels', required=True)
 
     groups = (features['_benchmark'] + '/' + features['_ground_truth_job_id'].astype(str)).to_numpy()
     ids = (groups + '/' + features['_source_path'].map(lambda p: Path(p).name)).to_numpy()
@@ -301,7 +323,8 @@ def load_benchmark(config, feature_names):
         raise ValueError("benchmark sample ids are not unique")
     split = config['benchmark_split']
     train_idx, val_idx, test_idx = grouped_benchmark_partitions(
-        y, groups, split['test_ratio'], split['validation_ratio'], split['seed'])
+        y, groups, split['test_ratio'], split['validation_ratio'], split['seed'],
+        validity=valid)
     X = _finite_matrix(features, feature_names, 'benchmark features')
     return BenchmarkData(X=X, y=y, valid=valid, ids=ids,
                          groups=groups, benchmark=features['_benchmark'].to_numpy(),
@@ -521,7 +544,7 @@ def load_final_benchmark_test_frames(bundle_path):
 
 
 def predict(bundle, X):
-    """Probabilities of the seven bottleneck labels and the eight decisions.
+    """Probabilities of the problem labels and all label decisions.
 
     Healthy is derived: it is 1 exactly when no bottleneck probability
     reaches the bundle's decision threshold, so a prediction can never be
@@ -548,37 +571,72 @@ def predict(bundle, X):
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def evaluate(y_true8, y_pred8, groups, config):
+def evaluate(y_true8, y_pred8, groups, config, validity=None):
     """Micro and macro F1, Hamming loss, per-label scores, and bootstrap
     intervals that resample whole groups (jobs), not rows."""
     boot = config['evaluation']['bootstrap']
     y_true8 = np.asarray(y_true8)
     y_pred8 = np.asarray(y_pred8)
     groups = np.asarray(groups)
-    if y_true8.shape != y_pred8.shape or y_true8.ndim != 2 or y_true8.shape[1] != len(DIMENSION_NAMES):
-        raise ValueError("evaluation label matrices must have the same eight-column shape")
+    if (y_true8.shape != y_pred8.shape or y_true8.ndim != 2
+            or y_true8.shape[1] != len(DIMENSION_NAMES)):
+        raise ValueError("evaluation label matrices have the wrong shape")
     if len(groups) != len(y_true8) or len(groups) == 0:
         raise ValueError("evaluation groups must provide one nonempty value per row")
     if not (np.isin(y_true8, [0, 1]).all() and np.isin(y_pred8, [0, 1]).all()):
         raise ValueError("evaluation labels and decisions must be binary")
+    if validity is None:
+        validity8 = np.ones_like(y_true8, dtype=bool)
+    else:
+        validity = np.asarray(validity, dtype=bool)
+        if validity.shape != y_true8[:, :len(BOTTLENECK_DIMENSIONS)].shape:
+            raise ValueError("evaluation validity shape differs from bottleneck labels")
+        validity8 = np.column_stack([validity, validity.all(axis=1)])
+    if not validity8[:, :len(BOTTLENECK_DIMENSIONS)].any(axis=0).all():
+        raise ValueError("every problem target needs at least one valid evaluation row")
     if int(boot['n_resamples']) <= 0:
         raise ValueError("bootstrap n_resamples must be positive")
     if not 0 < float(boot['confidence_level']) < 1:
         raise ValueError("bootstrap confidence_level must be in (0, 1)")
+    def scores(row_indices):
+        true = y_true8[row_indices]
+        pred = y_pred8[row_indices]
+        valid = validity8[row_indices]
+        micro = f1_score(true[valid], pred[valid], zero_division=0)
+        per_target = [
+            f1_score(true[valid[:, i], i], pred[valid[:, i], i], zero_division=0)
+            for i in range(len(DIMENSION_NAMES)) if valid[:, i].any()
+        ]
+        return float(micro), float(np.mean(per_target)), float((true[valid] != pred[valid]).mean())
+
+    all_rows = np.arange(len(y_true8))
+    micro_score, macro_score, masked_hamming = scores(all_rows)
     metrics = {
-        'micro_f1': float(f1_score(y_true8, y_pred8, average='micro', zero_division=0)),
-        'macro_f1': float(f1_score(y_true8, y_pred8, average='macro', zero_division=0)),
-        'hamming_loss': float(hamming_loss(y_true8, y_pred8)),
+        'micro_f1': micro_score,
+        'macro_f1': macro_score,
+        'hamming_loss': masked_hamming,
         'n_samples': int(len(y_true8)), 'n_groups': int(len(np.unique(groups))),
         'per_label': {},
     }
     for i, dim in enumerate(DIMENSION_NAMES):
-        metrics['per_label'][dim] = {
-            'f1': float(f1_score(y_true8[:, i], y_pred8[:, i], zero_division=0)),
-            'precision': float(precision_score(y_true8[:, i], y_pred8[:, i], zero_division=0)),
-            'recall': float(recall_score(y_true8[:, i], y_pred8[:, i], zero_division=0)),
-            'support': int(y_true8[:, i].sum()),
-        }
+        target_rows = validity8[:, i]
+        if target_rows.any():
+            label_metrics = {
+                'f1': float(f1_score(y_true8[target_rows, i], y_pred8[target_rows, i],
+                                     zero_division=0)),
+                'precision': float(precision_score(
+                    y_true8[target_rows, i], y_pred8[target_rows, i], zero_division=0)),
+                'recall': float(recall_score(y_true8[target_rows, i], y_pred8[target_rows, i],
+                                             zero_division=0)),
+                'support': int(y_true8[target_rows, i].sum()),
+                'valid_rows': int(target_rows.sum()),
+            }
+        else:
+            label_metrics = {
+                'f1': None, 'precision': None, 'recall': None,
+                'support': 0, 'valid_rows': 0,
+            }
+        metrics['per_label'][dim] = label_metrics
     rng = np.random.RandomState(boot['seed'])
     unique_groups, inverse = np.unique(groups, return_inverse=True)
     rows_of = [np.flatnonzero(inverse == g) for g in range(len(unique_groups))]
@@ -586,8 +644,9 @@ def evaluate(y_true8, y_pred8, groups, config):
     for _ in range(int(boot['n_resamples'])):
         chosen = rng.choice(len(unique_groups), len(unique_groups), replace=True)
         idx = np.concatenate([rows_of[g] for g in chosen])
-        micro.append(f1_score(y_true8[idx], y_pred8[idx], average='micro', zero_division=0))
-        macro.append(f1_score(y_true8[idx], y_pred8[idx], average='macro', zero_division=0))
+        micro_value, macro_value, _ = scores(idx)
+        micro.append(micro_value)
+        macro.append(macro_value)
     alpha = (1 - boot['confidence_level']) / 2 * 100
     metrics['micro_f1_ci'] = [float(np.percentile(micro, alpha)), float(np.percentile(micro, 100 - alpha))]
     metrics['macro_f1_ci'] = [float(np.percentile(macro, alpha)), float(np.percentile(macro, 100 - alpha))]
@@ -595,7 +654,7 @@ def evaluate(y_true8, y_pred8, groups, config):
 
 
 def with_healthy(y7):
-    """The eight-column label matrix: healthy is the complement of the seven."""
+    """Append healthy as the complement of the modeled problem labels."""
     return np.column_stack([y7, (y7.sum(axis=1) == 0).astype(y7.dtype)])
 
 
@@ -733,18 +792,22 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
         validate_bundle(bundle)
         _, val_pred = predict(bundle, bench.X[bench.val_idx])
         per_seed[seed] = {
-            'validation': evaluate(y_val8, val_pred, bench.groups[bench.val_idx], config),
+            'validation': evaluate(
+                y_val8, val_pred, bench.groups[bench.val_idx], config,
+                validity=bench.valid[bench.val_idx]),
             'best_iteration': best_iteration, 'fit_seconds': round(time.time() - t0, 1),
         }
         if final_evaluation:
             _, test_pred = predict(bundle, bench.X[bench.test_idx])
             per_seed[seed]['test'] = evaluate(
-                y_test8, test_pred, bench.groups[bench.test_idx], config)
+                y_test8, test_pred, bench.groups[bench.test_idx], config,
+                validity=bench.valid[bench.test_idx])
         if final_evaluation and excluded_test is not None and len(excluded_test):
             _, excluded_pred = predict(bundle, bench.X[excluded_test])
             per_seed[seed]['test_excluded_benchmark'] = evaluate(
                 with_healthy(bench.y[excluded_test]), excluded_pred,
-                bench.groups[excluded_test], config)
+                bench.groups[excluded_test], config,
+                validity=bench.valid[excluded_test])
         weight_tag = format(float(clean_weight), 'g').replace('.', 'p')
         with open(work_dir / f'{model_type}_w{weight_tag}_seed{seed}.pkl', 'wb') as fh:
             pickle.dump(bundle, fh)

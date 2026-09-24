@@ -86,6 +86,7 @@ OUR_DIMENSIONS = [
     "metadata_intensity",
     "parallelism_efficiency",
     "access_pattern",
+    "request_alignment",
     "interface_choice",
     "file_strategy",
     "throughput_utilization",
@@ -94,7 +95,7 @@ OUR_DIMENSIONS = [
 
 def load_tracebench_labels():
     """Load TraceBench labels and mapping, return per-trace ground-truth
-    mapped to our 8-dimension taxonomy."""
+    mapped to the registered IOSage taxonomy."""
     with open(LABEL_FILE) as f:
         raw_labels = json.load(f)
     with open(LABEL_MAPPING_FILE) as f:

@@ -29,6 +29,7 @@ from scipy.stats import ks_2samp
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 from src.artifact_paths import checked_output_dir
+from src.data.label_rules import DIMENSION_NAMES
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 
@@ -63,11 +64,7 @@ OI_CYAN = "#56B4E9"
 OI_YELLOW = "#F0E442"
 OI_GRAY = "#999999"
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -308,6 +305,7 @@ def main():
         "metadata_intensity": OI_GREEN,
         "parallelism_efficiency": OI_RED,
         "access_pattern": OI_PURPLE,
+        "request_alignment": "#8C564B",
         "interface_choice": OI_CYAN,
         "file_strategy": OI_YELLOW,
         "throughput_utilization": "#D55E00",  # vermillion
@@ -337,6 +335,7 @@ def main():
         "metadata_intensity": "Metadata",
         "parallelism_efficiency": "Parallelism",
         "access_pattern": "Pattern",
+        "request_alignment": "Alignment",
         "interface_choice": "Interface",
         "file_strategy": "File Strat.",
         "throughput_utilization": "Throughput",

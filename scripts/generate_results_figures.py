@@ -32,10 +32,10 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 FIG_DIR = PROJECT_DIR / "papers" / "IPDPS_2027" / "figures" / "results"
 
 DIMS = ["access_granularity", "metadata_intensity", "parallelism_efficiency",
-        "access_pattern", "interface_choice", "file_strategy",
+        "access_pattern", "request_alignment", "interface_choice", "file_strategy",
         "throughput_utilization", "healthy"]
 DIM_SHORT = ["Access\nGranularity", "Metadata\nIntensity", "Parallelism\nEfficiency",
-             "Access\nPattern", "Interface\nChoice", "File\nStrategy",
+             "Access\nPattern", "Request\nAlignment", "Interface\nChoice", "File\nStrategy",
              "Throughput\nUtilization", "Healthy"]
 
 # ---------------------------------------------------------------------------
@@ -52,11 +52,6 @@ COLORS = {
     "gray":      "#BBBBBB",
     "black":     "#000000",
 }
-
-PALETTE_8 = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
-             "#CC79A7", "#56B4E9", "#F0E442", "#BBBBBB"]
-
-HATCHES = ["", "//", "\\\\", "xx", "..", "++", "oo", "**"]
 
 RCPARAMS_SC2026 = {
     # Fonts — serif to match IEEE body text

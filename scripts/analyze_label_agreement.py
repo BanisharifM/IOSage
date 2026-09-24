@@ -29,6 +29,7 @@ from sklearn.metrics import (
     f1_score, precision_score, recall_score,
     cohen_kappa_score, confusion_matrix,
 )
+from src.data.label_rules import DIMENSION_NAMES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,11 +39,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
-DIMENSIONS = [
-    "access_granularity", "metadata_intensity", "parallelism_efficiency",
-    "access_pattern", "interface_choice", "file_strategy",
-    "throughput_utilization", "healthy",
-]
+DIMENSIONS = list(DIMENSION_NAMES)
 
 
 def load_benchmark_data():
@@ -58,7 +55,7 @@ def load_benchmark_data():
 def apply_drishti_to_benchmark(features):
     """Apply vectorized Drishti rules to benchmark features.
 
-    Returns DataFrame with same 8 dimension columns.
+    Returns a DataFrame with the registered dimension columns.
     """
     from src.data.drishti_labeling import compute_drishti_codes, codes_to_labels
 

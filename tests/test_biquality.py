@@ -65,6 +65,8 @@ def _benchmark(tmp, n=40):
     for j, dim in enumerate(BOTTLENECK_DIMENSIONS):
         labels[dim] = ((np.arange(n) + j) % (j + 2) == 0).astype(int)
     labels['healthy'] = (labels[BOTTLENECK_DIMENSIONS].sum(axis=1) == 0).astype(int)
+    for dimension in DIMENSION_NAMES:
+        labels[f'valid_{dimension}'] = 1
     labels['job_id'] = df['_ground_truth_job_id']
     labels['benchmark'] = 'ior'
     labels['scenario'] = df['_scenario']
@@ -90,7 +92,7 @@ def _raises(fn, exc, text=''):
 
 
 def test_grouped_split_keeps_jobs_together():
-    y = RNG.randint(0, 2, (40, 7)).astype(float)
+    y = RNG.randint(0, 2, (40, len(BOTTLENECK_DIMENSIONS))).astype(float)
     groups = np.array([f'ior/{i // 2}' for i in range(40)])
     dev, test = biquality.grouped_benchmark_split(y, groups, 0.5, 3)
     assert not set(groups[dev]) & set(groups[test])
@@ -102,7 +104,7 @@ def test_grouped_split_keeps_jobs_together():
     assert sorted(np.concatenate([train, val, test])) == list(range(40))
 
 
-def test_healthy_is_derived_from_the_seven_decisions():
+def test_healthy_is_derived_from_the_problem_decisions():
     class _P:
         def __init__(self, p):
             self.p = p
@@ -129,11 +131,57 @@ def test_healthy_is_derived_from_the_seven_decisions():
         },
     }
     _, dec = biquality.predict(bundle, np.zeros((3, 2)))
-    assert dec[:, 7].tolist() == [1, 1, 1] and dec[:, :7].sum() == 0
+    healthy_index = len(BOTTLENECK_DIMENSIONS)
+    assert dec[:, healthy_index].tolist() == [1, 1, 1]
+    assert dec[:, :healthy_index].sum() == 0
     bundle['models']['access_pattern'] = _P(0.9)
     _, dec = biquality.predict(bundle, np.zeros((3, 2)))
-    assert dec[:, 7].tolist() == [0, 0, 0] and dec[:, 3].tolist() == [1, 1, 1]
+    assert dec[:, healthy_index].tolist() == [0, 0, 0]
+    assert dec[:, BOTTLENECK_DIMENSIONS.index('access_pattern')].tolist() == [1, 1, 1]
     _raises(lambda: biquality.predict(bundle, np.zeros((3, 5))), ValueError, 'expected 2 features')
+
+
+def test_evaluation_ignores_uncontrolled_targets():
+    n_problem = len(BOTTLENECK_DIMENSIONS)
+    y_true = np.zeros((4, len(DIMENSION_NAMES)), dtype=int)
+    y_true[:, -1] = 1
+    y_pred = y_true.copy()
+    validity = np.ones((4, n_problem), dtype=bool)
+    validity[0, 0] = False
+    y_pred[0, 0] = 1
+    y_pred[0, -1] = 0
+    metrics = biquality.evaluate(
+        y_true, y_pred, np.array(['a', 'b', 'c', 'd']),
+        {'evaluation': {'bootstrap': {
+            'n_resamples': 10, 'confidence_level': 0.95, 'seed': 0,
+        }}},
+        validity=validity,
+    )
+    assert metrics['micro_f1'] == 1.0
+    assert metrics['hamming_loss'] == 0.0
+    assert metrics['per_label']['access_granularity']['valid_rows'] == 3
+    assert metrics['per_label']['healthy']['valid_rows'] == 3
+
+
+def test_evaluation_reports_unavailable_healthy_target():
+    n_problem = len(BOTTLENECK_DIMENSIONS)
+    y_true = np.zeros((4, len(DIMENSION_NAMES)), dtype=int)
+    validity = np.eye(4, n_problem, dtype=bool)
+    validity[:, 4:] = True
+    problem_labels = y_true[:, :n_problem]
+    problem_labels[validity] = 1
+    metrics = biquality.evaluate(
+        y_true, y_true, np.array(['a', 'b', 'c', 'd']),
+        {'evaluation': {'bootstrap': {
+            'n_resamples': 10, 'confidence_level': 0.95, 'seed': 0,
+        }}},
+        validity=validity,
+    )
+    assert metrics['micro_f1'] == 1.0
+    assert metrics['per_label']['healthy'] == {
+        'f1': None, 'precision': None, 'recall': None,
+        'support': 0, 'valid_rows': 0,
+    }
 
 
 def test_production_alignment_uses_source_path_and_checks_time_order():

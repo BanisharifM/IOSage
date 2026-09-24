@@ -62,19 +62,20 @@ OUR_DIMENSIONS = [
     "metadata_intensity",
     "parallelism_efficiency",
     "access_pattern",
+    "request_alignment",
     "interface_choice",
     "file_strategy",
     "throughput_utilization",
 ]
 
-# Dimensions TraceBench actually labels (excludes throughput_utilization)
+# Dimensions with an exact mapping from TraceBench labels
 TRACEBENCH_DIMS = [
     "access_granularity",
     "metadata_intensity",
     "parallelism_efficiency",
     "access_pattern",
+    "request_alignment",
     "interface_choice",
-    "file_strategy",
 ]
 
 
@@ -82,7 +83,7 @@ TRACEBENCH_DIMS = [
 # Label loading
 # ---------------------------------------------------------------------------
 def load_label_mapping():
-    """Load TraceBench 16-label to our 8-dimension mapping."""
+    """Load exact TraceBench-to-IOSage label mappings."""
     with open(LABEL_MAPPING_FILE) as f:
         mapping = json.load(f)
     tb_to_dim = {}
@@ -245,18 +246,13 @@ POSITIVE_PATTERN = re.compile(
 )
 
 ION_SECTION_KEYWORDS = {
-    "access_granularity": [r"small\s+(i/o|io|read|write)", r"misalign"],
+    "access_granularity": [r"small\s+(i/o|io|read|write)"],
+    "request_alignment": [r"misalign"],
     "access_pattern": [r"random\s+(i/o|io|access|read|write)", r"non.?sequential"],
-    "interface_choice": [r"non.?collective", r"collective\s+i/o", r"low.?level\s+library",
-                          r"without\s+mpi", r"no\s+collective", r"posix\s+instead"],
-    "parallelism_efficiency": [r"load\s+imbalanc", r"server\s+load", r"rank\s+load",
-                                r"imbalance"],
+    "interface_choice": [r"non.?collective", r"collective\s+i/o", r"no\s+collective"],
+    "parallelism_efficiency": [r"rank\s+load", r"rank\s+imbalanc"],
     "metadata_intensity": [r"metadata\s+(i/o|io|load|overhead|time|operations?)",
                             r"high\s+metadata"],
-    "file_strategy": [r"shared\s+file", r"file.?per.?process", r"contention",
-                       r"lock\s+contention"],
-    "throughput_utilization": [r"low\s+throughput", r"bandwidth", r"underutiliz",
-                                r"low\s+bandwidth", r"peak\s+performance"],
 }
 
 
@@ -301,8 +297,9 @@ def parse_drishti_detections(drishti_text):
     drishti_patterns = {
         "access_granularity": [
             r"small\s+(read|write)\s+requests",
+        ],
+        "request_alignment": [
             r"misaligned\s+file\s+requests",
-            r"misaligned\s+memory",
         ],
         "parallelism_efficiency": [
             r"load\s+imbalance.*detected",
@@ -312,10 +309,6 @@ def parse_drishti_detections(drishti_text):
             r"does\s+not\s+use\s+collective\s+(read|write)",
             r"no\s+collective",
         ],
-        "file_strategy": [
-            r"small\s+(read|write)\s+requests\s+to\s+a\s+shared\s+file",
-            r"shared\s+file.*contention",
-        ],
         "metadata_intensity": [
             r"high\s+metadata",
             r"metadata.*time.*high",
@@ -323,9 +316,6 @@ def parse_drishti_detections(drishti_text):
         "access_pattern": [
             r"random\s+(read|write)\s+operations",
             r"random\s+access",
-        ],
-        "throughput_utilization": [
-            r"redundant\s+(read|write)\s+traffic",
         ],
     }
 
@@ -720,7 +710,10 @@ def main():
                 "path": str(LABEL_MAPPING_FILE.resolve()),
                 "sha256": sha256_file(LABEL_MAPPING_FILE),
             },
-            "note": "throughput_utilization excluded from eval (TraceBench does not label it)",
+            "note": (
+                "file_strategy and throughput_utilization excluded because "
+                "TraceBench has no exact matching labels"
+            ),
         },
         "aggregate_comparison": aggregates,
         "per_dimension_comparison": per_dim_results,
