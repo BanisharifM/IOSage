@@ -237,6 +237,11 @@ def test_present_module_contract_is_strict_and_partial_state_is_explicit():
     invalid_processes = _parsed_row()
     invalid_processes['job']['nprocs'] = 0
     _raises(lambda: extract_raw_features(invalid_processes), ValueError, 'nprocs')
+    for bad_runtime in (-5.0, float('nan')):
+        invalid_runtime = _parsed_row()
+        invalid_runtime['job']['runtime'] = bad_runtime
+        _raises(lambda: extract_raw_features(invalid_runtime), ValueError, 'runtime')
+    assert extract_raw_features(_parsed_row(runtime=0.0))['runtime_seconds'] == 0.0
 
 
 # --- DATA-008: verification is a gate ------------------------------------
@@ -550,6 +555,17 @@ def test_preprocessing_refuses_old_or_incomplete_schema():
     partial = df.drop(columns=['RANK_BYTES_MAX'])
     _raises(lambda: stage3_engineer(partial), ValueError, 'RANK_BYTES_MAX')
     assert len(stage3_engineer(df)) == 3
+
+
+def test_cleaning_drops_negative_times_of_every_layer():
+    from src.data.preprocessing import CUMULATIVE_TIME_COLUMNS
+    assert len(CUMULATIVE_TIME_COLUMNS) == 9
+    df = raw_frame(4)
+    df.loc[1, 'STDIO_F_META_TIME'] = -0.5
+    df.loc[2, 'MPIIO_F_WRITE_TIME'] = -1.0
+    cleaned, report = stage2_clean(df, CONFIG)
+    assert report['after_timing_filter'] == 2
+    assert cleaned['_jobid'].tolist() == [0, 3]
 
 
 def test_missing_scaler_and_missing_config_are_errors():

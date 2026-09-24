@@ -434,8 +434,11 @@ def extract_raw_features(parsed_log: dict[str, object]) -> dict[str, object]:
         raise ValueError(f"invalid or missing nprocs: {job.get('nprocs')}")
     if 'runtime' not in job:
         raise ValueError("parsed job lacks runtime")
+    runtime = float(job['runtime'])
+    if not np.isfinite(runtime) or runtime < 0:
+        raise ValueError(f"invalid job runtime: {job['runtime']}")
     features['nprocs'] = int(job['nprocs'])
-    features['runtime_seconds'] = max(float(job['runtime']), 0.0)
+    features['runtime_seconds'] = runtime
 
     # --- Module counters: zero-fill absent modules, require present schemas ---
     for module, counters in MODULE_COUNTERS.items():

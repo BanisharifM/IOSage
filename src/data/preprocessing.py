@@ -53,6 +53,11 @@ _RANK_SENTINEL_COLUMNS = [
 _UNAVAILABLE_SENTINEL_COLUMNS = [
     'POSIX_MMAPS', 'POSIX_MEM_ALIGNMENT', 'POSIX_FILE_ALIGNMENT',
 ]
+CUMULATIVE_TIME_COLUMNS = [
+    f'{layer}_F_{kind}_TIME'
+    for layer in ('POSIX', 'MPIIO', 'STDIO')
+    for kind in ('READ', 'WRITE', 'META')
+]
 
 
 # ---------------------------------------------------------------------------
@@ -179,8 +184,9 @@ def stage2_clean(
     df = df[mask].copy()
     report['after_min_ops'] = len(df)
 
-    # --- Filter: non-negative timing ---
-    for col in ['POSIX_F_READ_TIME', 'POSIX_F_WRITE_TIME', 'POSIX_F_META_TIME']:
+    # --- Filter: non-negative cumulative times of every layer the derived
+    # features sum (compute_layer_and_rank_features, the MPI-IO ratios) ---
+    for col in CUMULATIVE_TIME_COLUMNS:
         mask = df[col] >= 0
         n_dropped = (~mask).sum()
         if n_dropped > 0:
