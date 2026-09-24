@@ -1,0 +1,99 @@
+schema_version: 2
+
+thresholds:
+  small_request_max_bytes: 1048576
+  small_request_count: 1000
+  small_request_share: 0.10
+  metadata_time_share: 0.50
+  rank_imbalance_range_ratio: 0.30
+  shared_straggler_share: 0.15
+  random_request_count: 1000
+  random_request_share: 0.20
+  file_misalignment_share: 0.10
+  collective_min_operations: 1000
+  many_small_files_count: 1000
+  small_file_mean_bytes: 1048576
+  sync_write_count: 1000
+  syncs_per_write: 1.00
+
+dimensions:
+  access_granularity:
+    definition: The application issues a material number of read or write requests in Darshan histogram bins no larger than 1 MiB.
+    criterion: In either direction, more than 1000 requests are in bins through 1 MiB and their share exceeds 0.10. Use MPI-IO aggregate-request histograms when MPI-IO operations are present in that direction; otherwise use POSIX histograms.
+    impact: Fine-grained requests can increase call and storage-operation overhead and can prevent bandwidth saturation.
+    canonical_fix: Aggregate requests, increase transfer size, or use collective buffering.
+    when_not_to_apply: Keep the request size when record semantics, latency requirements, or the file format require it, or when a lower layer already aggregates the requests effectively.
+    sources:
+      - "Drishti P05/P06 defaults: https://escholarship.org/uc/item/3820k9sn, Table III"
+      - "Darshan histogram semantics: https://darshan.readthedocs.io/en/stable/_modules/darshan/experimental/aggregators/print_module_records.html"
+  metadata_intensity:
+    definition: Metadata calls consume at least half of the cumulative POSIX and STDIO I/O time recorded by Darshan.
+    criterion: Metadata time divided by the sum of metadata, read, and write time is at least 0.50.
+    impact: Namespace and metadata-server work can dominate jobs that create, open, stat, or remove many files.
+    canonical_fix: Reuse files, batch metadata operations, reduce file count, or use a container format.
+    when_not_to_apply: Keep the layout when independent files are required for recovery, ownership, or downstream access.
+    sources:
+      - "WisIO excessive-metadata rule: https://cs.iit.edu/~scs/assets/files/yildirim2025wisio.pdf, Table 1"
+      - "Darshan cumulative-time semantics: https://darshan.readthedocs.io/en/stable/_modules/darshan/experimental/aggregators/print_module_records.html"
+  parallelism_efficiency:
+    definition: I/O bytes or I/O time are uneven across ranks.
+    criterion: For more than one process, the job-level rank byte range divided by the maximum exceeds 0.30, a shared-file byte or time difference exceeds 0.15, or a per-file read or write byte difference exceeds 0.30.
+    impact: A slow or overloaded rank can determine phase completion time and leave other ranks idle.
+    canonical_fix: Redistribute I/O work, balance partitions, or use collective aggregation.
+    when_not_to_apply: Keep the distribution when application work or ownership is intentionally uneven and measurement shows that it does not delay the critical path.
+    sources:
+      - "Drishti P18/P19/P21/P22 defaults: https://escholarship.org/uc/item/3820k9sn, Table III"
+      - "IOSage controlled construction: benchmarks/custom/load_imbalance.py"
+  access_pattern:
+    definition: POSIX reads or writes contain a material nonsequential component according to Darshan's offset-history counter.
+    criterion: In either direction, operations minus Darshan sequential operations exceeds 1000 and exceeds 0.20 of the operations in that direction.
+    impact: Random access can reduce locality and increase seek, locking, and request-scheduling costs.
+    canonical_fix: Reorder access, buffer and coalesce requests, or reorganize the file layout.
+    when_not_to_apply: Keep random access when indexed lookup or sparse data semantics require it.
+    sources:
+      - "Darshan sequential-counter implementation: https://github.com/darshan-hpc/darshan/blob/main/darshan-runtime/lib/darshan-posix.c"
+      - "Drishti P11/P13 defaults: https://escholarship.org/uc/item/3820k9sn, Table III"
+  request_alignment:
+    definition: A material share of POSIX requests begins at an offset that is not a multiple of Darshan's recorded file-alignment value.
+    criterion: POSIX_FILE_NOT_ALIGNED divided by POSIX reads plus writes exceeds 0.10.
+    impact: File-offset misalignment can split storage requests across alignment or stripe boundaries.
+    canonical_fix: Align file offsets and transfer extents to the recorded file-system alignment, or use collective buffering that produces aligned lower-layer requests.
+    when_not_to_apply: Keep the layout when the file format fixes the offsets or when measured performance does not improve after alignment.
+    sources:
+      - "Darshan POSIX_FILE_NOT_ALIGNED semantics: https://darshan.readthedocs.io/en/latest/darshan-util/doc/darshan-util.html"
+      - "Drishti P08 default: https://escholarship.org/uc/item/3820k9sn, Table III"
+  interface_choice:
+    definition: An MPI-IO workload issues many operations in a direction without using a collective data-access operation in that direction.
+    criterion: In reads or writes, the sum of independent and collective MPI-IO operations exceeds 1000 and the collective-operation count is zero.
+    impact: Independent access can miss collective buffering and data-sieving opportunities for small or noncontiguous requests.
+    canonical_fix: Use collective MPI-IO or a high-level parallel I/O interface with collective transfer.
+    when_not_to_apply: Keep independent access when requests are large and disjoint or when measurement shows that collective coordination costs more than it saves. POSIX shared-file access alone does not satisfy this label.
+    sources:
+      - "Drishti M02/M03 rules: https://github.com/hpc-io/drishti-io"
+      - "MPI collective-buffering hints: https://www.mpi-forum.org/docs/mpi-4.1/mpi41-report/node359.htm"
+  file_strategy:
+    definition: A job moves data through more than 1000 files whose mean transferred bytes per file are no larger than 1 MiB.
+    criterion: The number of files that moved data exceeds 1000 and total POSIX plus STDIO bytes divided by that count is no larger than 1 MiB.
+    impact: Large populations of small files add namespace work and make efficient bulk transfer difficult.
+    canonical_fix: Aggregate records into fewer files, use a container format, or use a bounded set of I/O aggregators.
+    when_not_to_apply: Keep separate files when restart isolation, ownership, or independent downstream access requires them and measurement supports the layout.
+    sources:
+      - "NERSC I/O guidance: https://docs.nersc.gov/performance/io/"
+      - "NERSC directory guidance: https://docs.nersc.gov/jobs/workflow/gnuparallel/"
+  throughput_utilization:
+    definition: A write-intensive POSIX workload performs a synchronous durability operation after each write on average.
+    criterion: More than 1000 POSIX writes are recorded and fsync plus fdatasync divided by writes is at least 1.00.
+    impact: Per-write synchronization prevents normal write buffering and can serialize progress.
+    canonical_fix: Batch durability operations or move synchronization to a phase or checkpoint boundary.
+    when_not_to_apply: Keep each synchronization required by correctness, durability, or external visibility semantics.
+    sources:
+      - "IOR fsyncPerWrite definition: https://github.com/hpc/ior/blob/main/doc/USER_GUIDE"
+      - "IOSage construction: IOR -Y in benchmarks/ior/run_ior_sweep.sh"
+  healthy:
+    definition: None of the eight registered risk-pattern criteria is present and every required target is valid.
+    criterion: All eight rules evaluate false and the Darshan records required by those rules are complete.
+    impact: The detector abstains from recommending a registered I/O change.
+    canonical_fix: No registered I/O fix is recommended.
+    when_not_to_apply: Report an unknown result when any required target is uncontrolled or its Darshan module is incomplete. Absence of these patterns does not prove that no other I/O problem exists.
+    sources:
+      - Complement of the eight registered IOSage label rules

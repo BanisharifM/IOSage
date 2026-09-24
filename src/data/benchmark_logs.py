@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.label_rules import DIMENSION_NAMES
+from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
 from src.data.parse_darshan import parse_benchmark_job, parse_darshan_log
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,11 @@ def iter_benchmark_samples(bench_type, log_dir):
 
 DEFAULT_MANIFEST = Path(__file__).resolve().parents[2] / "data" / "benchmark_labels" / "manifest.csv"
 MANIFEST_KEYS = ["benchmark", "job_id", "log_file"]
-MANIFEST_COLUMNS = MANIFEST_KEYS + ["scenario", "source", "note"] + DIMENSION_NAMES
+VALIDITY_COLUMNS = [f"valid_{dimension}" for dimension in DIMENSION_NAMES]
+MANIFEST_COLUMNS = (
+    MANIFEST_KEYS + ["scenario", "source", "note"]
+    + DIMENSION_NAMES + VALIDITY_COLUMNS
+)
 LABEL_SOURCES = {"slurm_out", "step_mapping", "none"}
 VERIFICATION_COLUMNS = {
     "benchmark", "job_id", "first_file", "scenario", "source", "status"
@@ -127,8 +131,23 @@ def load_manifest(path=DEFAULT_MANIFEST):
     labeled = manifest[manifest["source"] != "none"]
     if not labeled[DIMENSION_NAMES].isin([0, 1]).all().all():
         raise ValueError(f"manifest {path} has non-binary labels")
-    if (labeled[DIMENSION_NAMES].sum(axis=1) == 0).any():
-        raise ValueError(f"manifest {path} has labeled rows without any dimension")
+    if not labeled[VALIDITY_COLUMNS].isin([0, 1]).all().all():
+        raise ValueError(f"manifest {path} has non-binary validity values")
+    valid_problem = [f"valid_{dimension}" for dimension in BOTTLENECK_DIMENSIONS]
+    if (labeled[valid_problem].sum(axis=1) == 0).any():
+        raise ValueError(f"manifest {path} has labeled rows without a valid problem target")
+    for dimension in BOTTLENECK_DIMENSIONS:
+        invalid_positive = (
+            (labeled[dimension] == 1) & (labeled[f"valid_{dimension}"] == 0)
+        )
+        if invalid_positive.any():
+            raise ValueError(f"manifest {path} labels invalid targets for {dimension}")
+    expected_healthy = (labeled[BOTTLENECK_DIMENSIONS].sum(axis=1) == 0).astype(int)
+    if not (labeled["healthy"] == expected_healthy).all():
+        raise ValueError(f"manifest {path} has inconsistent healthy labels")
+    expected_valid_healthy = labeled[valid_problem].all(axis=1).astype(int)
+    if not (labeled["valid_healthy"] == expected_valid_healthy).all():
+        raise ValueError(f"manifest {path} has inconsistent healthy validity")
     return manifest
 
 

@@ -17,16 +17,17 @@ expected_counts:
   custom:
     slurm_out: 89
   dlio:
-    slurm_out: 60
+    none: 60
   h5bench:
-    none: 36
-    slurm_out: 87
-  hacc_io:
     none: 27
-    slurm_out: 57
+    slurm_out: 96
+  hacc_io:
+    none: 75
+    slurm_out: 9
   ior:
-    none: 37
-    slurm_out: 147
-    step_mapping: 66
+    none: 58
+    slurm_out: 144
+    step_mapping: 48
   mdtest:
-    slurm_out: 120
+    none: 46
+    slurm_out: 74

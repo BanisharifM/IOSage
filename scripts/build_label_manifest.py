@@ -8,8 +8,8 @@ one job for the per-process DLIO and custom runs). Two label sources exist:
 - ``slurm_out``: the ``Label:`` line of the job's SLURM stdout in
   ``data/benchmark_results/<benchmark>/<scenario>_<jobid>.out``.
 - ``step_mapping``: the April 2026 IOR boost job 17310653, whose 66 steps
-  were mapped to labels by SLURM step times in
-  ``scripts/run_boost_experiment.py`` and recorded in
+  were mapped to labels by SLURM step times using the source at Git commit
+  ``83083ed:scripts/run_boost_experiment.py`` and recorded in
   ``results/boost_experiment/new_gt/{new_features,new_labels}.parquet``
   (row i of the one is row i of the other).
 
@@ -25,8 +25,9 @@ import argparse
 import glob
 import json
 import logging
-import sys
 import os
+import re
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -36,42 +37,37 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 from src.data.benchmark_logs import (  # noqa: E402
     AGGREGATED_BENCHMARKS, MANIFEST_COLUMNS, PER_RANK_BENCHMARKS,
-    group_logs_by_job, job_id_of)
-from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES  # noqa: E402
+    VALIDITY_COLUMNS, group_logs_by_job, job_id_of)
+from src.data.label_rules import (  # noqa: E402
+    BOTTLENECK_DIMENSIONS, DIMENSION_NAMES, LABEL_DEFINITIONS_PATH,
+)
 from src.utils.artifacts import sha256_file, write_atomic  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = PROJECT_DIR / "configs" / "benchmarks.yaml"
-
-# These completed jobs changed more factors than their recorded label vector
-# describes. They remain listed in the manifest with source=none and cannot
-# enter training. The corrected generators apply only to new runs.
-INVALID_SCENARIO_PREFIXES = {
-    "h5bench": {
-        "h5b_indep_small_n": "small requests and single-OST placement were not labeled",
-        "h5b_indep_interleaved_": "interface case used the single-OST directory",
-        "h5b_interleaved_access_": "healthy label used the single-OST directory",
-    },
-    "hacc_io": {
-        "hacc_posix_shared_large_": "interface case used the single-OST directory",
-        "hacc_posix_shared_small_p": "interface case used the single-OST directory",
-        "hacc_posix_shared_single_ost_": "duplicate workload carried an incomplete label vector",
-    },
-}
-
+EXCLUDED_LABEL = "classifier_excluded"
 
 def label_string_to_dims(label_str):
-    """``'access_pattern=1,file_strategy=1'`` to the eight binary columns;
+    """``'access_pattern=1,file_strategy=1'`` to the binary label columns;
     healthy is 1 exactly when no bottleneck dimension is."""
     dims = {d: 0 for d in DIMENSION_NAMES}
+    stated_healthy = None
     for part in label_str.split(","):
         key, _, val = part.strip().partition("=")
         if key not in DIMENSION_NAMES:
             raise ValueError(f"unknown dimension {key!r} in {label_str!r}")
-        dims[key] = int(val)
-    dims["healthy"] = int(sum(dims[d] for d in BOTTLENECK_DIMENSIONS) == 0)
+        if val not in {"0", "1"}:
+            raise ValueError(f"dimension {key!r} is not binary in {label_str!r}")
+        if key == "healthy":
+            stated_healthy = int(val)
+        else:
+            dims[key] = int(val)
+    derived_healthy = int(sum(dims[d] for d in BOTTLENECK_DIMENSIONS) == 0)
+    if stated_healthy is not None and stated_healthy != derived_healthy:
+        raise ValueError(f"healthy is inconsistent with problem labels in {label_str!r}")
+    dims["healthy"] = derived_healthy
     return dims
 
 
@@ -92,16 +88,146 @@ def slurm_out_label(results_dir, job_id):
     return scenario, labels[0]
 
 
-def invalid_scenario_reason(benchmark, scenario):
-    for prefix, reason in INVALID_SCENARIO_PREFIXES.get(benchmark, {}).items():
-        if scenario.startswith(prefix):
-            return reason
-    return None
+def _contract(positives=(), negatives=()):
+    """Create labels and validity for explicitly controlled targets."""
+    positives = set(positives)
+    negatives = set(negatives)
+    overlap = positives & negatives
+    if overlap:
+        raise ValueError(f"targets cannot be both positive and negative: {sorted(overlap)}")
+    unknown = (positives | negatives) - set(BOTTLENECK_DIMENSIONS)
+    if unknown:
+        raise ValueError(f"unknown contract targets: {sorted(unknown)}")
+    labels = {dimension: int(dimension in positives) for dimension in BOTTLENECK_DIMENSIONS}
+    labels["healthy"] = int(not positives)
+    validity = {
+        f"valid_{dimension}": int(dimension in positives or dimension in negatives)
+        for dimension in BOTTLENECK_DIMENSIONS
+    }
+    validity["valid_healthy"] = int(all(
+        validity[f"valid_{dimension}"] for dimension in BOTTLENECK_DIMENSIONS
+    ))
+    return labels, validity
+
+
+def _scenario_rank(scenario):
+    match = re.search(r"_n(\d+)(?:_|$)", scenario)
+    return int(match.group(1)) if match else None
+
+
+def apply_manifest_policy(benchmark, scenario, dimensions=None):
+    """Return the audited target contract for one constructed sample.
+
+    The stdout label is accepted as provenance but is not treated as a full
+    negative vector. Only targets controlled by the generator are valid.
+    """
+    del dimensions
+    positive = ()
+    negative = ()
+    reason = ""
+
+    if benchmark == "custom":
+        if scenario.startswith("custom_imbalance_"):
+            positive = ("parallelism_efficiency",)
+        elif scenario.startswith("custom_balanced_"):
+            negative = ("parallelism_efficiency",)
+    elif benchmark == "dlio":
+        reason = "DLIO aggregate counters do not distinguish the registered scenario target"
+    elif benchmark == "h5bench":
+        rank = _scenario_rank(scenario)
+        if scenario.startswith("h5b_collective_small_"):
+            positive = ("access_granularity",)
+            negative = ("interface_choice",)
+        elif scenario.startswith("h5b_collective_large_healthy_"):
+            negative = ("access_granularity", "metadata_intensity", "interface_choice")
+        elif scenario.startswith("h5b_indep_large_healthy_"):
+            negative = ("access_granularity",)
+        elif scenario.startswith("h5b_interleaved_access_"):
+            negative = ("access_pattern",)
+        elif scenario.startswith("h5b_indep_small_interleaved_") and rank == 64:
+            positive = ("access_granularity", "interface_choice")
+        elif scenario.startswith("h5b_indep_small_") \
+                and not scenario.startswith("h5b_indep_small_single_ost_"):
+            positive = ("access_granularity", "interface_choice")
+        else:
+            reason = "scenario does not meet a registered target rule or has a storage-layout confound"
+    elif benchmark == "hacc_io":
+        if scenario.startswith("hacc_fpp_healthy_"):
+            negative = ("file_strategy",)
+        else:
+            reason = "HACC construction does not isolate a registered target"
+    elif benchmark == "ior":
+        if scenario.startswith(("ior_small_posix_", "ior_small_direct_")):
+            positive = ("access_granularity",)
+        elif scenario.startswith("ior_misaligned_"):
+            positive = ("access_granularity", "request_alignment")
+        elif scenario.startswith("ior_random_small_"):
+            positive = ("access_granularity", "access_pattern")
+        elif scenario.startswith("ior_random_posix_"):
+            positive = ("access_pattern",)
+        elif scenario.startswith("ior_interface_mpiio_indep_"):
+            positive = ("interface_choice",)
+        elif scenario.startswith("ior_fsync_per_write_"):
+            positive = ("throughput_utilization",)
+        elif scenario.startswith("ior_healthy_collective_"):
+            negative = ("access_granularity", "metadata_intensity", "interface_choice")
+        elif scenario.startswith("ior_healthy_posix_fpp_"):
+            negative = ("access_granularity", "metadata_intensity", "access_pattern",
+                        "file_strategy", "throughput_utilization")
+        elif scenario.startswith("ior_healthy_large_seq_"):
+            negative = ("access_granularity", "metadata_intensity", "access_pattern",
+                        "file_strategy", "throughput_utilization")
+        elif scenario.startswith("ior_e2e_mpiio_coll_"):
+            negative = ("interface_choice",)
+        elif scenario.startswith("ior_io500_hard_"):
+            positive = ("access_granularity",)
+        elif scenario.startswith("17310653."):
+            step = int(scenario.rsplit(".", 1)[1])
+            if step < 24:
+                positive = ("access_pattern",)
+            elif step < 42:
+                reason = "file-per-process run has too few files for the many-small-files class"
+            elif step < 60:
+                positive = ("throughput_utilization",)
+            else:
+                negative = ("access_granularity", "access_pattern", "request_alignment",
+                            "interface_choice", "throughput_utilization")
+        else:
+            reason = "scenario has no audited target contract"
+    elif benchmark == "mdtest":
+        if scenario.startswith(("mdtest_meta_shared_", "mdtest_meta_unique_configured_",
+                                "mdtest_deep_tree_", "mdtest_io500_easy_")):
+            positive = ("metadata_intensity",)
+        elif scenario.startswith("mdtest_meta_unique_"):
+            reason = "stored run has a partial POSIX record set"
+        elif scenario.startswith("mdtest_io500_hard_"):
+            positive = ("metadata_intensity", "file_strategy")
+        elif scenario.startswith("mdtest_fpp_explosion_"):
+            positive = ("file_strategy",)
+        elif scenario.startswith("mdtest_healthy_"):
+            negative = ("metadata_intensity",)
+        else:
+            reason = "metadata construction is not a stable registered control"
+
+    if not positive and not negative:
+        return None, None, reason or "scenario has no audited target contract"
+    labels, validity = _contract(positive, negative)
+    controlled = ",".join(sorted(set(positive) | set(negative)))
+    return labels, validity, f"audited targets: {controlled}"
 
 
 def _project_path(value):
     path = Path(value)
     return path if path.is_absolute() else PROJECT_DIR / path
+
+
+def _recorded_path(value):
+    """Use a repository-relative path when the artifact is inside the project."""
+    path = Path(value).resolve()
+    try:
+        return str(path.relative_to(PROJECT_DIR))
+    except ValueError:
+        return str(path)
 
 
 def load_benchmark_config(path):
@@ -135,7 +261,8 @@ def boost_rows(features_path, labels_path):
         raise ValueError("boost features and labels differ in length")
     rows = {}
     for src, (_, lab) in zip(feats["_source_path"], labs.iterrows()):
-        dims = {d: int(lab[d]) for d in DIMENSION_NAMES}
+        dims = {d: int(lab[d]) if d in lab else 0 for d in DIMENSION_NAMES}
+        dims["healthy"] = int(not any(dims[d] for d in BOTTLENECK_DIMENSIONS))
         rows[os.path.basename(src)] = (str(lab["job_id"]), str(lab["scenario"]), dims)
     return rows
 
@@ -156,20 +283,41 @@ def build(log_base, results_base, benchmarks, boost_features, boost_labels):
             found = slurm_out_label(results_dir, job_id) if job_id else None
             if found is not None:
                 scenario, label_str = found
-                invalid_reason = invalid_scenario_reason(bench, scenario)
-                if invalid_reason:
-                    row.update(scenario=scenario, source="none", note=invalid_reason,
-                               **{d: 0 for d in DIMENSION_NAMES})
+                if label_str == EXCLUDED_LABEL:
+                    dims, validity = None, None
+                    note = "generator marks scenario as excluded from classifier ground truth"
                 else:
-                    row.update(scenario=scenario, source="slurm_out", note="",
-                               **label_string_to_dims(label_str))
+                    recorded_dims = label_string_to_dims(label_str)
+                    dims, validity, note = apply_manifest_policy(
+                        bench, scenario, recorded_dims
+                    )
+                if dims is None:
+                    row.update(scenario=scenario, source="none", note=note,
+                               **{d: 0 for d in DIMENSION_NAMES},
+                               **{d: 0 for d in VALIDITY_COLUMNS})
+                else:
+                    row.update(scenario=scenario, source="slurm_out", note=note,
+                               **dims, **validity)
             elif log_file in boost:
                 _, scenario, dims = boost[log_file]
-                row.update(scenario=scenario, source="step_mapping",
-                           note="SLURM step times, scripts/run_boost_experiment.py", **dims)
+                dims, validity, note = apply_manifest_policy(bench, scenario, dims)
+                if dims is None:
+                    row.update(scenario=scenario, source="none", note=note,
+                               **{d: 0 for d in DIMENSION_NAMES},
+                               **{d: 0 for d in VALIDITY_COLUMNS})
+                else:
+                    provenance = (
+                        "SLURM step mapping from results/boost_experiment/new_gt; "
+                        "source at Git commit 83083ed:scripts/run_boost_experiment.py"
+                    )
+                    row.update(scenario=scenario, source="step_mapping",
+                               note="; ".join(filter(None, (provenance, note))),
+                               **dims, **validity)
             else:
                 row.update(scenario="", source="none",
-                           note="no SLURM stdout and no step mapping", **{d: 0 for d in DIMENSION_NAMES})
+                           note="no SLURM stdout and no step mapping",
+                           **{d: 0 for d in DIMENSION_NAMES},
+                           **{d: 0 for d in VALIDITY_COLUMNS})
             rows.append(row)
     return pd.DataFrame(rows, columns=MANIFEST_COLUMNS)
 
@@ -213,17 +361,22 @@ def main():
     provenance = {
         "schema_version": 1,
         "status": "passed",
-        "config": {"path": str(Path(args.config).resolve()), "sha256": sha256_file(args.config)},
-        "script": {"path": str(Path(__file__).resolve()),
+        "config": {"path": _recorded_path(args.config), "sha256": sha256_file(args.config)},
+        "label_definitions": {
+            "path": _recorded_path(LABEL_DEFINITIONS_PATH),
+            "sha256": sha256_file(LABEL_DEFINITIONS_PATH),
+        },
+        "script": {"path": _recorded_path(__file__),
                    "sha256": sha256_file(Path(__file__).resolve())},
         "inputs": {
-            "log_dir": str(log_dir.resolve()),
-            "results_dir": str(results_dir.resolve()),
-            "boost_features": str(_project_path(paths["boost_features"]).resolve()),
-            "boost_labels": str(_project_path(paths["boost_labels"]).resolve()),
+            "log_dir": _recorded_path(log_dir),
+            "results_dir": _recorded_path(results_dir),
+            "boost_features": _recorded_path(_project_path(paths["boost_features"])),
+            "boost_labels": _recorded_path(_project_path(paths["boost_labels"])),
         },
         "counts": actual_counts,
-        "output": {"path": str(output), "sha256": sha256_file(output), "rows": len(manifest)},
+        "output": {"path": _recorded_path(output),
+                   "sha256": sha256_file(output), "rows": len(manifest)},
     }
     def write_provenance(path):
         with path.open("x") as handle:

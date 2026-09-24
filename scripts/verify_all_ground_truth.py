@@ -54,14 +54,18 @@ def verify_benchmark(bench_type, log_dir, manifest, config):
                              cleaning_rule="", checks="", error=""))
             continue
         labels = {d: int(row[d]) for d in DIMENSION_NAMES}
+        validity = {d: int(row[f"valid_{d}"]) for d in DIMENSION_NAMES}
         base.update(scenario=row["scenario"], source=row["source"],
-                    labels=",".join(d for d in DIMENSION_NAMES if labels[d]))
+                    labels=",".join(
+                        f"{d}={labels[d]}" for d in DIMENSION_NAMES if validity[d]
+                    ))
         if parsed is None:
             rows.append(dict(base, status="unparsed", cleaning_rule="", checks="",
                              error=error or "unknown parse failure"))
             continue
         features = engineer_one(parsed, config=config)
-        passed, report = verify_benchmark_log(features, labels, config['cleaning'])
+        passed, report = verify_benchmark_log(
+            features, labels, config['cleaning'], intended_validity=validity)
         checks = "; ".join(f"{name}={c['status']} ({c['value']})" for name, c in report["checks"].items())
         cleaning = "pass" if report["cleaning_rule"] else "below: " + report["cleaning_reason"]
         rows.append(dict(base, status="pass" if passed else "fail", cleaning_rule=cleaning,

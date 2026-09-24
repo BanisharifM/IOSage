@@ -8,14 +8,21 @@ import numpy as np
 import pandas as pd
 
 import src.data.batch_extract as batch_extract
-from src.data.benchmark_logs import load_manifest, manifest_row, validate_verification_report
+from scripts.build_label_manifest import apply_manifest_policy, label_string_to_dims
+from src.data.benchmark_logs import (
+    VALIDITY_COLUMNS, load_manifest, manifest_row, validate_verification_report,
+)
 from src.data.benchmark_verify import DIMENSION_NAMES, verify_benchmark_log
 from src.data.drishti_labeling import (
     codes_to_labels, compute_drishti_codes, generate_heuristic_labels,
 )
 from src.data.feature_extraction import (
     ALL_RAW_COUNTERS, FEATURE_SCHEMA_VERSION, extract_raw_features, get_feature_names)
-from src.data.label_rules import labels_from_features, validity_from_features
+from src.data.label_rules import labels_from_features, rule_details, validity_from_features
+from src.data.label_rules import (
+    LABEL_DEFINITIONS, LABEL_DEFINITIONS_PATH, MANY_SMALL_FILES_COUNT,
+    SMALL_FILE_MEAN_BYTES,
+)
 from src.data.parse_darshan import _partial_feature_modules, _read_module_frames, parse_darshan_log
 from src.data.preprocessing import (
     create_splits, engineer_one, load_preprocessing_config, stage2_clean, stage3_engineer,
@@ -163,7 +170,8 @@ def test_present_module_contract_is_strict_and_partial_state_is_explicit():
     assert features['partial_posix'] == 1 and features['partial_mpiio'] == 0
     engineered = stage3_engineer(pd.DataFrame([features]), config=CONFIG)
     validity = validity_from_features(engineered).iloc[0]
-    assert not validity[list(DIMENSION_NAMES)].any()
+    assert validity['interface_choice'] == 1
+    assert not validity[[d for d in DIMENSION_NAMES if d != 'interface_choice']].any()
 
     missing = _parsed_row()
     missing['counters'].pop('POSIX_FSYNCS')
@@ -180,7 +188,8 @@ def _features(**over):
     f = engineer_one(_parsed_row(), config=CONFIG)
     f.update(nprocs=4, runtime_seconds=30.0, POSIX_READS=0.0, POSIX_WRITES=2000.0,
              POSIX_BYTES_WRITTEN=2000 * 4 * 1048576.0, POSIX_SIZE_WRITE_4M_10M=2000.0,
-             POSIX_SEQ_WRITES=2000.0, metadata_time_ratio=0.01, rank_byte_range_ratio=0.0,
+             POSIX_SEQ_WRITES=2000.0,
+             metadata_time_ratio=0.01, rank_byte_range_ratio=0.0,
              SHARED_BYTE_IMBALANCE=0.0, num_files=2, num_data_files=2,
              is_shared_file=0, POSIX_FSYNCS=0.0,
              io_bytes_all=2000 * 4 * 1048576.0, io_ops_all=2000.0,
@@ -192,13 +201,13 @@ def _features(**over):
 def test_verification_rejects_empty_labels_and_checks_every_healthy_condition():
     _raises(lambda: verify_benchmark_log(
         _features(), {d: 0 for d in DIMENSION_NAMES}, CONFIG['cleaning']),
-            ValueError, 'no dimension')
+            ValueError, 'no valid problem target')
     healthy = {d: int(d == 'healthy') for d in DIMENSION_NAMES}
     passed, report = verify_benchmark_log(_features(), healthy, CONFIG['cleaning'])
-    assert passed and report['total_checks'] == 8
+    assert passed and report['total_checks'] == 9
     passed, report = verify_benchmark_log(
         _features(POSIX_FSYNCS=2000.0), healthy, CONFIG['cleaning'])
-    assert not passed and report['checks']['healthy/no_throughput_utilization']['status'] == 'fail'
+    assert not passed and report['checks']['throughput_utilization/rule']['status'] == 'fail'
     # one fsync per rank at close (IOR -e) is not a sync-per-write construction
     assert verify_benchmark_log(
         _features(POSIX_FSYNCS=4.0), healthy, CONFIG['cleaning'])[0]
@@ -215,8 +224,9 @@ def test_verification_has_a_rule_for_every_bottleneck_dimension():
         'metadata_intensity': dict(metadata_time_ratio_all=0.5),
         'parallelism_efficiency': dict(rank_byte_range_ratio=0.9),
         'access_pattern': dict(POSIX_SEQ_WRITES=100.0),
-        'interface_choice': dict(is_shared_file=1),
-        'file_strategy': dict(num_data_files=4),
+        'request_alignment': dict(POSIX_FILE_NOT_ALIGNED=1000.0),
+        'interface_choice': dict(MPIIO_INDEP_WRITES=2000.0),
+        'file_strategy': dict(num_data_files=1001, io_bytes_all=1001 * 4096.0),
         'throughput_utilization': dict(POSIX_FSYNCS=2000.0),
     }
     for dim, over in cases.items():
@@ -225,7 +235,7 @@ def test_verification_has_a_rule_for_every_bottleneck_dimension():
             _features(**over), labels, CONFIG['cleaning'])[0], dim
         assert not verify_benchmark_log(
             _features(), labels, CONFIG['cleaning'])[0], dim
-    # a read-only job is not a metadata-only job
+    # Read-only access does not imply metadata intensity.
     labels = {d: int(d == 'metadata_intensity') for d in DIMENSION_NAMES}
     assert not verify_benchmark_log(
         _features(POSIX_BYTES_WRITTEN=0.0, POSIX_BYTES_READ=1e9,
@@ -250,12 +260,25 @@ def test_rules_follow_the_application_layer_for_mpiio_jobs():
     few = dict(indep, MPIIO_INDEP_WRITES=145.0, MPIIO_SIZE_WRITE_AGG_4M_10M=145.0)
     assert verify_benchmark_log(_features(**few), healthy, CONFIG['cleaning'])[0]
 
+    # Layer selection is per direction: MPI-IO writes must not hide POSIX-only reads.
+    mixed = dict(
+        mpiio,
+        POSIX_READS=2000.0,
+        POSIX_SEQ_READS=2000.0,
+        POSIX_SIZE_READ_1K_10K=2000.0,
+    )
+    labels = {d: int(d == 'access_granularity') for d in DIMENSION_NAMES}
+    assert verify_benchmark_log(_features(**mixed), labels, CONFIG['cleaning'])[0]
+    detail = rule_details(_features(**mixed))['access_granularity']
+    assert 'read_posix_small=2000/2000' in detail
+    assert 'write_mpiio_small=0/2000' in detail
+
 
 def test_production_and_benchmark_labels_use_the_same_rules():
     rows = pd.DataFrame([
         _features(),
         _features(POSIX_SIZE_WRITE_4M_10M=0.0, POSIX_SIZE_WRITE_1K_10K=2000.0),
-        _features(num_data_files=4),
+        _features(num_data_files=1001, io_bytes_all=1001 * 4096.0),
         _features(POSIX_FSYNCS=2000.0),
     ])
     expected = labels_from_features(rows)
@@ -266,15 +289,118 @@ def test_production_and_benchmark_labels_use_the_same_rules():
         assert passed, report
 
 
+def test_label_definition_contract_is_complete_and_controls_file_scale():
+    assert LABEL_DEFINITIONS_PATH.exists()
+    assert list(LABEL_DEFINITIONS['dimensions']) == DIMENSION_NAMES
+    assert MANY_SMALL_FILES_COUNT == 1000
+    assert SMALL_FILE_MEAN_BYTES == 1048576
+    required = {
+        'definition', 'criterion', 'impact', 'canonical_fix',
+        'when_not_to_apply', 'sources',
+    }
+    assert all(set(row) == required for row in LABEL_DEFINITIONS['dimensions'].values())
+    assert not labels_from_features(
+        _features(num_data_files=1000, io_bytes_all=1000 * 4096.0)
+    ).iloc[0][
+        'file_strategy'
+    ]
+    assert labels_from_features(
+        _features(num_data_files=1001, io_bytes_all=1001 * 4096.0)
+    ).iloc[0][
+        'file_strategy'
+    ]
+
+
+def test_tracebench_mapping_keeps_distinct_expert_classes_separate():
+    mapping = json.loads(Path(
+        'data/external/tracebench/label_mapping.json'
+    ).read_text())['tracebench_to_our_taxonomy']
+    assert mapping['SML-R']['our_dimension'] == 'access_granularity'
+    assert mapping['MSL-R']['our_dimension'] == 'request_alignment'
+    assert mapping['NC-R']['our_dimension'] == 'interface_choice'
+    for label in ('SHF', 'LLL-R', 'LLL-W', 'MPNM', 'SLIM', 'RDA-R'):
+        assert mapping[label]['our_dimension'] is None
+
+
+def test_manifest_policy_matches_registered_label_definitions():
+    single_ost = label_string_to_dims(
+        'access_granularity=1,interface_choice=1,throughput_utilization=1'
+    )
+    revised, validity, note = apply_manifest_policy(
+        'h5bench', 'h5b_indep_small_single_ost_n32_r1', single_ost
+    )
+    assert revised is None and validity is None
+    assert 'storage-layout confound' in note
+
+    unsupported, validity, reason = apply_manifest_policy(
+        'hacc_io', 'hacc_posix_shared_single_ost_n32_r1',
+        label_string_to_dims('throughput_utilization=1'),
+    )
+    assert unsupported is None and validity is None
+    assert 'does not isolate' in reason
+
+    checkpoint, validity, reason = apply_manifest_policy(
+        'dlio', 'dlio_ckpt_ms100000000_n4_rep1',
+        label_string_to_dims('throughput_utilization=1'),
+    )
+    assert checkpoint is None and validity is None
+    assert 'do not distinguish' in reason
+
+    misaligned, validity, note = apply_manifest_policy(
+        'ior', 'ior_misaligned_n16_r1',
+        label_string_to_dims('access_granularity=1'),
+    )
+    assert misaligned['access_granularity'] == 1
+    assert misaligned['request_alignment'] == 1
+    assert validity['valid_access_granularity'] == 1
+    assert validity['valid_request_alignment'] == 1
+    assert validity['valid_metadata_intensity'] == 0
+    assert 'request_alignment' in note
+
+    incomplete, validity, reason = apply_manifest_policy(
+        'mdtest', 'mdtest_meta_unique_n5000_r4_rep1',
+        label_string_to_dims('metadata_intensity=1'),
+    )
+    assert incomplete is None and validity is None
+    assert 'partial POSIX' in reason
+
+    configured, validity, _ = apply_manifest_policy(
+        'mdtest', 'mdtest_meta_unique_configured_n5000_r4_rep1',
+        label_string_to_dims('metadata_intensity=1'),
+    )
+    assert configured['metadata_intensity'] == 1
+    assert validity['valid_metadata_intensity'] == 1
+
+
+def test_verification_rejects_incomplete_module_records():
+    healthy = {d: int(d == 'healthy') for d in DIMENSION_NAMES}
+    passed, report = verify_benchmark_log(
+        _features(partial_posix=1), healthy, CONFIG['cleaning']
+    )
+    assert not passed
+    assert report['checks']['module_records_complete'] == {
+        'status': 'fail', 'value': 'incomplete=POSIX',
+    }
+
+
 # --- DATA-007: manifest lookups are exact ---------------------------------
 
 def test_manifest_requires_exactly_one_row_per_sample():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / 'manifest.csv'
-        cols = ['benchmark', 'job_id', 'log_file', 'scenario', 'source', 'note'] + DIMENSION_NAMES
-        rows = [['ior', '1', 'a.darshan', 's', 'slurm_out', ''] + [1, 0, 0, 0, 0, 0, 0, 0],
-                ['ior', '2', 'b.darshan', '', 'none', 'no label'] + [0] * 8,
-                ['custom', '3', '', 'c', 'slurm_out', ''] + [0, 0, 1, 0, 0, 0, 0, 0]]
+        cols = (
+            ['benchmark', 'job_id', 'log_file', 'scenario', 'source', 'note']
+            + DIMENSION_NAMES + VALIDITY_COLUMNS
+        )
+        rows = [
+            ['ior', '1', 'a.darshan', 's', 'slurm_out', '']
+            + [1, 0, 0, 0, 0, 0, 0, 0, 0]
+            + [1, 0, 0, 0, 0, 0, 0, 0, 0],
+            ['ior', '2', 'b.darshan', '', 'none', 'no label'] + [0] * 18,
+            ['custom', '3', '', 'c', 'slurm_out', '']
+            + [0, 0, 1, 0, 0, 0, 0, 0, 0]
+            + [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        ]
         pd.DataFrame(rows, columns=cols).to_csv(path, index=False)
         m = load_manifest(path)
         assert manifest_row(m, 'ior', '1', ['/x/a.darshan'])['access_granularity'] == 1
@@ -423,6 +549,7 @@ def test_codes_to_labels_keeps_index_and_stays_binary():
 
 def test_shared_labels_and_drishti_baseline_remain_distinct():
     df = stage3_engineer(raw_frame(1))
+    df['POSIX_WRITES'] = 2000.0
     df['POSIX_FSYNCS'] = df['POSIX_WRITES']
     shared = labels_from_features(df)
     drishti = codes_to_labels(compute_drishti_codes(df))

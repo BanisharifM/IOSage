@@ -50,15 +50,16 @@ Drishti Insight Codes and Severity Levels:
         M04  - Collective read usage
         M05  - Collective write usage
 
-Taxonomy Dimensions (8-dimensional binary vector):
+Taxonomy Dimensions (9-dimensional binary vector):
     0: access_granularity   - Small operations
     1: metadata_intensity   - High metadata time relative to I/O time
     2: parallelism_efficiency - Load imbalance across ranks
     3: access_pattern       - Random (non-sequential) access
-    4: interface_choice     - Low collective use or POSIX shared-file access
-    5: file_strategy        - Data files at least equal to process count
-    6: throughput_utilization - Excessive synchronous writes
-    7: healthy              - No issues detected in dimensions 0-6
+    4: request_alignment    - File-offset misalignment
+    5: interface_choice     - Missing MPI-IO collective data access
+    6: file_strategy        - Many small data files
+    7: throughput_utilization - Excessive synchronous writes
+    8: healthy              - No issue detected in dimensions 0-7
 
 References:
     Drishti v0.8: https://github.com/hpc-io/drishti-io
@@ -78,6 +79,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.data.label_rules import (
+    BOTTLENECK_DIMENSIONS,
     DIMENSION_NAMES,
     labels_from_features,
     validity_from_features,
@@ -316,7 +318,7 @@ def compute_drishti_codes(df):
 
 
 def codes_to_labels(codes: Mapping[str, pd.Series]) -> pd.DataFrame:
-    """Map Drishti insight codes to the eight taxonomy dimensions.
+    """Map Drishti insight codes to the IOSage taxonomy dimensions.
 
     Parameters
     ----------
@@ -325,12 +327,12 @@ def codes_to_labels(codes: Mapping[str, pd.Series]) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Columns: DIMENSION_NAMES (8 binary columns), one row per job.
+        Columns: DIMENSION_NAMES, one row per job.
     """
     if not codes:
         raise ValueError("codes cannot be empty")
     required = {
-        'P05', 'P06', 'P09', 'P10', 'P11', 'P13', 'P15', 'P16', 'P17',
+        'P05', 'P06', 'P08', 'P11', 'P13', 'P17',
         'P18', 'P19', 'P21', 'P22', 'M02', 'M03',
     }
     missing = required - set(codes)
@@ -346,10 +348,9 @@ def codes_to_labels(codes: Mapping[str, pd.Series]) -> pd.DataFrame:
         codes['P18'] | codes['P19'] | codes['P21'] | codes['P22']
     ).astype(int)
     labels['access_pattern'] = (codes['P11'] | codes['P13']).astype(int)
+    labels['request_alignment'] = codes['P08'].astype(int)
     labels['interface_choice'] = (codes['M02'] | codes['M03']).astype(int)
-    labels['file_strategy'] = (codes['P15'] | codes['P16']).astype(int)
-    labels['throughput_utilization'] = (codes['P09'] | codes['P10']).astype(int)
-    labels['healthy'] = (~labels[DIMENSION_NAMES[:7]].any(axis=1)).astype(int)
+    labels['healthy'] = (~labels[BOTTLENECK_DIMENSIONS].any(axis=1)).astype(int)
     if labels.isna().any().any() or not labels.isin([0, 1]).all().all():
         raise AssertionError("labels must be binary and complete")
     return labels
@@ -475,7 +476,7 @@ def generate_heuristic_labels(
     result['_source_path'] = df['_source_path'].values
     result['_jobid'] = df['_jobid'].values
 
-    # 8 dimension labels
+    # Taxonomy labels and per-target validity
     for dim_name in DIMENSION_NAMES:
         result[dim_name] = labels[dim_name].values
         result[f'valid_{dim_name}'] = validity[dim_name].values
@@ -534,10 +535,10 @@ def _log_summary(result):
         logger.info("  %-25s %6d (%5.1f%%)", dim_name, count, 100 * count / n)
 
     # Multi-label statistics
-    issue_dims = DIMENSION_NAMES[:7]
+    issue_dims = BOTTLENECK_DIMENSIONS
     n_issues = result[issue_dims].sum(axis=1)
     logger.info("Issue count distribution:")
-    for k in range(8):
+    for k in range(len(BOTTLENECK_DIMENSIONS) + 1):
         count = (n_issues == k).sum()
         if count > 0:
             logger.info("  %d issues: %6d (%5.1f%%)", k, count, 100 * count / n)

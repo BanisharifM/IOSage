@@ -15,7 +15,7 @@ labeled sample before either output is written.
 
 Output:
     <output-dir>/features.parquet   same columns as production/features.parquet
-    <output-dir>/labels.parquet     8 binary label dimensions + metadata
+    <output-dir>/labels.parquet     labels, per-target validity, and metadata
 
 Exit status: 0 when every labeled sample was extracted, 1 on a verification,
 manifest, parsing, or pipeline error.
@@ -75,6 +75,7 @@ def extract_benchmark(bench_type, log_dir, manifest):
                   "n_ranks": features["nprocs"], "n_darshan_files": len(files),
                   "label_source": row["source"]}
         labels.update({d: int(row[d]) for d in DIMENSION_NAMES})
+        labels.update({f"valid_{d}": int(row[f"valid_{d}"]) for d in DIMENSION_NAMES})
         label_rows.append(labels)
         counts["extracted"] += 1
     logger.info("  %s: %d extracted, %d unlabeled (left out), %d unparsed (left out)",
@@ -122,7 +123,8 @@ def main():
     info_cols = get_info_columns()
     feature_cols = [c for c in features_df.columns if c not in info_cols and c not in EXTRA_COLUMNS]
     features_df = features_df[feature_cols + info_cols + EXTRA_COLUMNS]
-    labels_df = pd.DataFrame(all_labels)[LABEL_META + DIMENSION_NAMES]
+    validity_columns = [f"valid_{dimension}" for dimension in DIMENSION_NAMES]
+    labels_df = pd.DataFrame(all_labels)[LABEL_META + DIMENSION_NAMES + validity_columns]
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

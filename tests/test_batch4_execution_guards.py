@@ -10,7 +10,7 @@ from scripts.apps.audit_app_runs import (
 from scripts.apps.null_check import correctness_passed as null_correctness_passed
 from scripts.verify_app_smoke_runs import move_job_files
 from scripts.verify_smoke_scenario import parse_labels
-from scripts.build_label_manifest import invalid_scenario_reason
+from scripts.build_label_manifest import apply_manifest_policy
 
 
 def _raises(call, exception):
@@ -55,13 +55,28 @@ def test_smoke_label_parser_rejects_unknown_or_zero_labels():
     _raises(lambda: parse_labels("healthy=0"), ValueError)
 
 
-def test_confounded_historical_scenarios_are_excluded_by_prefix():
-    assert invalid_scenario_reason("h5bench", "h5b_interleaved_access_n16_r1")
-    assert invalid_scenario_reason("h5bench", "h5b_indep_small_n32_r2")
-    assert invalid_scenario_reason("h5bench", "h5b_indep_interleaved_n32_r2")
-    assert not invalid_scenario_reason("h5bench", "h5b_indep_small_single_ost_n32_r2")
-    assert invalid_scenario_reason("hacc_io", "hacc_posix_shared_single_ost_p500000_n64_r1")
-    assert not invalid_scenario_reason("hacc_io", "hacc_posix_shared_many_single_ost_p500000_n64_r1")
+def test_audited_scenarios_have_explicit_target_contracts():
+    interleaved, validity, _ = apply_manifest_policy(
+        "h5bench", "h5b_interleaved_access_n16_r1")
+    assert interleaved["access_pattern"] == 0
+    assert validity["valid_access_pattern"] == 1
+
+    independent, validity, _ = apply_manifest_policy(
+        "h5bench", "h5b_indep_small_n32_r2")
+    assert independent["access_granularity"] == 1
+    assert independent["interface_choice"] == 1
+    assert validity["valid_interface_choice"] == 1
+
+    excluded, validity, _ = apply_manifest_policy(
+        "h5bench", "h5b_indep_small_single_ost_n32_r2")
+    assert excluded is None and validity is None
+
+    for scenario in (
+        "hacc_posix_shared_single_ost_p500000_n64_r1",
+        "hacc_posix_shared_many_single_ost_p500000_n64_r1",
+    ):
+        excluded, validity, _ = apply_manifest_policy("hacc_io", scenario)
+        assert excluded is None and validity is None
 
 
 def test_passed_smoke_evidence_is_moved_with_hashes():

@@ -15,9 +15,6 @@ from src.data.label_rules import (
 
 logger = logging.getLogger(__name__)
 
-HEALTHY_MIN_BYTES_PER_S = 1024.0
-
-
 def rank_imbalance_present(features: Mapping[str, object]) -> bool:
     """Return the shared parallelism rule for one feature row."""
     return bool(parallelism_present(features))
@@ -26,7 +23,7 @@ def rank_imbalance_present(features: Mapping[str, object]) -> bool:
 def bottleneck_rules(
     features: Mapping[str, object],
 ) -> dict[str, tuple[bool, str]]:
-    """Return the seven shared rule decisions and their observed values."""
+    """Return the shared rule decisions and their observed values."""
     decisions = rule_frame(features).iloc[0]
     details = rule_details(features)
     return {
@@ -61,18 +58,32 @@ def verify_benchmark_log(
     features: Mapping[str, object],
     intended_labels: Mapping[str, int],
     cleaning: Mapping[str, object],
+    intended_validity: Mapping[str, int] | None = None,
 ) -> tuple[bool, dict[str, object]]:
-    """Check that one sample's features match its intended labels."""
+    """Check each controlled target against its intended binary label."""
     report: dict[str, object] = {'checks': {}, 'passed_checks': 0, 'total_checks': 0}
     unknown = set(intended_labels) - set(DIMENSION_NAMES)
     if unknown:
         raise ValueError(f"intended labels contain unknown dimensions {sorted(unknown)}")
-    positives = [dimension for dimension in DIMENSION_NAMES
-                 if intended_labels.get(dimension, 0) == 1]
-    if not positives:
-        raise ValueError("intended labels name no dimension")
-    if 'healthy' in positives and len(positives) > 1:
-        raise ValueError(f"healthy cannot be combined with {positives}")
+    if intended_validity is None:
+        if intended_labels.get('healthy', 0) == 1:
+            valid_dimensions = list(BOTTLENECK_DIMENSIONS)
+        else:
+            valid_dimensions = [
+                dimension for dimension in BOTTLENECK_DIMENSIONS
+                if intended_labels.get(dimension, 0) == 1
+            ]
+    else:
+        unknown_validity = set(intended_validity) - set(DIMENSION_NAMES)
+        if unknown_validity:
+            raise ValueError(
+                f"intended validity contains unknown dimensions {sorted(unknown_validity)}")
+        valid_dimensions = [
+            dimension for dimension in BOTTLENECK_DIMENSIONS
+            if intended_validity.get(dimension, 0) == 1
+        ]
+    if not valid_dimensions:
+        raise ValueError("intended labels have no valid problem target")
 
     clean_passed, clean_reason = cleaning_rule(features, cleaning)
     report['cleaning_rule'] = clean_passed
@@ -88,16 +99,21 @@ def verify_benchmark_log(
         if passed:
             report['passed_checks'] += 1
 
-    if 'healthy' in positives:
-        rate = float(features['io_bytes_all']) / max(float(features['runtime_seconds']), 1e-9)
-        record('healthy/data_rate', rate >= HEALTHY_MIN_BYTES_PER_S,
-               f"bytes_per_s={rate:.0f}")
-        for dimension, (present, detail) in rules.items():
-            record(f'healthy/no_{dimension}', not present, detail)
-    else:
-        for dimension in positives:
-            present, detail = rules[dimension]
-            record(f'{dimension}/rule', present, detail)
+    incomplete_modules = [
+        module.upper() for module in ('posix', 'mpiio', 'stdio')
+        if bool(features[f'partial_{module}'])
+    ]
+    record(
+        'module_records_complete',
+        not incomplete_modules,
+        ('incomplete=' + ','.join(incomplete_modules)) if incomplete_modules else 'complete',
+    )
+
+    for dimension in valid_dimensions:
+        present, detail = rules[dimension]
+        expected = bool(intended_labels.get(dimension, 0))
+        record(f'{dimension}/rule', present == expected,
+               f"expected={int(expected)} observed={int(present)} {detail}")
 
     if report['total_checks'] == 0:
         raise AssertionError("no rule evaluated")
