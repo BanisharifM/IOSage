@@ -1,14 +1,14 @@
 """
-Drishti Heuristic Labeling Pipeline
-=====================================
-Generates multi-label heuristic labels from production log features by
-computing Drishti diagnostic codes as vectorized pandas operations.
+Production Labeling and Drishti Diagnostic Pipeline
+====================================================
+Generates production labels with the shared IOSage rule contract and keeps
+Drishti diagnostic codes for a separate baseline and diagnostic analysis.
 
-This operates on the already-extracted production/features.parquet, not on
-raw .darshan files. A full labeling pass over 131K rows completes in seconds.
+This operates on engineered production features, not on raw Darshan logs.
 
 Terminology (per IOSage paper convention):
-  - "heuristic labels" = Drishti rule-based labels on production logs
+  - "heuristic labels" = shared IOSage rules applied to production logs
+  - "Drishti baseline" = taxonomy labels mapped from Drishti insight codes
   - "ground-truth labels" = benchmark-derived labels (by construction)
   - See docs/1_strategy/paper_materials.md Section 2.5.1 for rationale.
 
@@ -51,13 +51,13 @@ Drishti Insight Codes and Severity Levels:
         M05  - Collective write usage
 
 Taxonomy Dimensions (8-dimensional binary vector):
-    0: access_granularity   - Small operations, misalignment
+    0: access_granularity   - Small operations
     1: metadata_intensity   - High metadata time relative to I/O time
     2: parallelism_efficiency - Load imbalance across ranks
     3: access_pattern       - Random (non-sequential) access
-    4: interface_choice     - No collective MPI-IO when appropriate (M02/M03)
-    5: file_strategy        - Shared-file contention patterns
-    6: throughput_utilization - Redundant traffic, low throughput
+    4: interface_choice     - Low collective use or POSIX shared-file access
+    5: file_strategy        - Data files at least equal to process count
+    6: throughput_utilization - Excessive synchronous writes
     7: healthy              - No issues detected in dimensions 0-6
 
 References:
@@ -66,10 +66,13 @@ References:
     Rules: drishti/includes/module.py (check_* functions)
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 import pandas as pd
@@ -312,17 +315,13 @@ def compute_drishti_codes(df):
     return codes
 
 
-def codes_to_labels(codes, features):
-    """Map feature rows to the taxonomy through the shared rule contract.
+def codes_to_labels(codes: Mapping[str, pd.Series]) -> pd.DataFrame:
+    """Map Drishti insight codes to the eight taxonomy dimensions.
 
     Parameters
     ----------
     codes : dict[str, pd.Series]
         Boolean Series per Drishti code from compute_drishti_codes().
-    features : pd.DataFrame
-        Engineered feature rows used by the shared benchmark and production
-        rule implementation.
-
     Returns
     -------
     pd.DataFrame
@@ -330,13 +329,35 @@ def codes_to_labels(codes, features):
     """
     if not codes:
         raise ValueError("codes cannot be empty")
-    labels = labels_from_features(features)
+    required = {
+        'P05', 'P06', 'P09', 'P10', 'P11', 'P13', 'P15', 'P16', 'P17',
+        'P18', 'P19', 'P21', 'P22', 'M02', 'M03',
+    }
+    missing = required - set(codes)
+    if missing:
+        raise ValueError(f"Drishti codes lack {sorted(missing)}")
+    index = next(iter(codes.values())).index
+    if any(not series.index.equals(index) for series in codes.values()):
+        raise ValueError("Drishti code indices do not align")
+    labels = pd.DataFrame(0, index=index, columns=DIMENSION_NAMES)
+    labels['access_granularity'] = (codes['P05'] | codes['P06']).astype(int)
+    labels['metadata_intensity'] = codes['P17'].astype(int)
+    labels['parallelism_efficiency'] = (
+        codes['P18'] | codes['P19'] | codes['P21'] | codes['P22']
+    ).astype(int)
+    labels['access_pattern'] = (codes['P11'] | codes['P13']).astype(int)
+    labels['interface_choice'] = (codes['M02'] | codes['M03']).astype(int)
+    labels['file_strategy'] = (codes['P15'] | codes['P16']).astype(int)
+    labels['throughput_utilization'] = (codes['P09'] | codes['P10']).astype(int)
+    labels['healthy'] = (~labels[DIMENSION_NAMES[:7]].any(axis=1)).astype(int)
     if labels.isna().any().any() or not labels.isin([0, 1]).all().all():
         raise AssertionError("labels must be binary and complete")
     return labels
 
 
-def compute_confidence(codes, labels):
+def compute_confidence(
+    codes: Mapping[str, pd.Series], labels: pd.DataFrame,
+) -> pd.Series:
     """Compute per-sample labeling confidence based on severity and coverage.
 
     Confidence is computed as the mean severity of triggered codes, weighted
@@ -347,7 +368,7 @@ def compute_confidence(codes, labels):
     codes : dict[str, pd.Series]
         Boolean Series per Drishti code.
     labels : pd.DataFrame
-        Label DataFrame from codes_to_labels().
+        Drishti baseline labels from ``codes_to_labels``.
 
     Returns
     -------
@@ -402,8 +423,10 @@ def compute_confidence(codes, labels):
     return confidence
 
 
-def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
-    """Generate heuristic labels from engineered features using Drishti rules.
+def generate_heuristic_labels(
+    features_path: str | Path, output_path: str | Path,
+) -> pd.DataFrame:
+    """Generate shared-rule labels and Drishti diagnostics from features.
 
     Parameters
     ----------
@@ -411,17 +434,13 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
         Path to production/features.parquet.
     output_path : str or Path
         Output path for heuristic labels parquet file.
-    min_confidence : float
-        Minimum confidence to include a sample (default: 0.0 = keep all).
-
     Returns
     -------
     pd.DataFrame
         Heuristic labels DataFrame with _jobid, 8 dimension columns,
-        drishti_confidence, label_source, and all 32 Drishti code columns.
+        Drishti diagnostic confidence, label source, validity columns, and all
+        32 Drishti code columns.
     """
-    if not 0.0 <= min_confidence <= 1.0:
-        raise ValueError(f"min_confidence must be in [0, 1], got {min_confidence}")
     features_path = Path(features_path)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -432,18 +451,21 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     logger.info("Loading features from %s", features_path)
     df = pd.read_parquet(features_path)
     logger.info("Loaded %d rows, %d columns", len(df), len(df.columns))
+    if df.empty:
+        raise ValueError("features contain no rows; nothing written")
 
     # Compute the Drishti diagnostic codes.
     logger.info("Computing Drishti insight codes...")
     codes = compute_drishti_codes(df)
 
-    # Map codes to 8-dimensional labels
-    logger.info("Mapping codes to taxonomy dimensions...")
-    labels = codes_to_labels(codes, df)
+    # Production and benchmark verification use the same observable rules.
+    logger.info("Applying the shared taxonomy rules...")
+    labels = labels_from_features(df)
     validity = validity_from_features(df)
 
-    # Compute confidence scores
-    confidence = compute_confidence(codes, labels)
+    # Keep the Drishti baseline and its confidence as separate diagnostics.
+    drishti_labels = codes_to_labels(codes)
+    confidence = compute_confidence(codes, drishti_labels)
 
     # Build output DataFrame; _source_path is the unique sample id that the
     # trainer joins on (_jobid repeats: one SLURM job holds many launches)
@@ -460,22 +482,11 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
 
     # Confidence and source
     result['drishti_confidence'] = confidence.values
-    result['label_source'] = 'drishti_heuristic'
+    result['label_source'] = 'iosage_shared_rules'
 
     # Individual Drishti codes (for debugging, analysis, and Drishti baseline)
     for code_name, code_series in sorted(codes.items()):
         result[f'drishti_{code_name}'] = code_series.astype(int).values
-
-    # Filter by confidence if requested
-    if min_confidence > 0:
-        before = len(result)
-        result = result[result['drishti_confidence'] >= min_confidence]
-        logger.info("Confidence filter (>= %.2f): %d -> %d rows (%.1f%% kept)",
-                     min_confidence, before, len(result),
-                     100 * len(result) / max(before, 1))
-        if result.empty:
-            raise ValueError(f"confidence filter >= {min_confidence} left no rows; "
-                             "nothing written")
 
     # Write output and provenance without replacing prior evidence.
     write_atomic(
@@ -484,10 +495,10 @@ def generate_heuristic_labels(features_path, output_path, min_confidence=0.0):
     )
 
     manifest = {
-        'schema_version': 2,
+        'schema_version': 3,
         'status': 'passed',
-        'method': 'drishti_heuristic',
-        'min_confidence': min_confidence,
+        'method': 'iosage_shared_rules',
+        'diagnostics': 'drishti_codes_and_confidence',
         'features': {'path': str(features_path.resolve()), 'sha256': sha256_file(features_path)},
         'labels': {'path': str(output_path.resolve()), 'sha256': sha256_file(output_path),
                    'rows': len(result), 'columns': len(result.columns)},
@@ -554,7 +565,7 @@ def _log_summary(result):
 def main():
     """CLI entry point for heuristic label generation."""
     parser = argparse.ArgumentParser(
-        description='Generate Drishti heuristic labels from engineered features'
+        description='Generate shared-rule labels and Drishti diagnostics'
     )
     parser.add_argument(
         '--features', required=True,
@@ -563,10 +574,6 @@ def main():
     parser.add_argument(
         '--output', required=True,
         help='Output path for heuristic labels parquet'
-    )
-    parser.add_argument(
-        '--min-confidence', type=float, default=0.0,
-        help='Minimum confidence threshold (default: 0.0 = keep all)'
     )
     parser.add_argument(
         '--log-level', default='INFO',
@@ -583,7 +590,6 @@ def main():
     generate_heuristic_labels(
         features_path=args.features,
         output_path=args.output,
-        min_confidence=args.min_confidence,
     )
 
 

@@ -1,4 +1,5 @@
 """Contracts of the data pipeline (Codex audit batch 1, items DATA-001 to DATA-016)."""
+import json
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -9,7 +10,9 @@ import pandas as pd
 import src.data.batch_extract as batch_extract
 from src.data.benchmark_logs import load_manifest, manifest_row, validate_verification_report
 from src.data.benchmark_verify import DIMENSION_NAMES, verify_benchmark_log
-from src.data.drishti_labeling import codes_to_labels, compute_drishti_codes
+from src.data.drishti_labeling import (
+    codes_to_labels, compute_drishti_codes, generate_heuristic_labels,
+)
 from src.data.feature_extraction import (
     ALL_RAW_COUNTERS, FEATURE_SCHEMA_VERSION, extract_raw_features, get_feature_names)
 from src.data.label_rules import labels_from_features, validity_from_features
@@ -256,8 +259,11 @@ def test_production_and_benchmark_labels_use_the_same_rules():
         _features(POSIX_FSYNCS=2000.0),
     ])
     expected = labels_from_features(rows)
-    actual = codes_to_labels(compute_drishti_codes(rows), rows)
-    pd.testing.assert_frame_equal(actual, expected)
+    for position, feature_row in rows.iterrows():
+        intended = expected.loc[position].to_dict()
+        passed, report = verify_benchmark_log(
+            feature_row.to_dict(), intended, CONFIG['cleaning'])
+        assert passed, report
 
 
 # --- DATA-007: manifest lookups are exact ---------------------------------
@@ -410,6 +416,46 @@ def test_temporal_split_returns_positions_for_any_index():
 
 def test_codes_to_labels_keeps_index_and_stays_binary():
     df = stage3_engineer(raw_frame(2)).set_index(pd.Index([10, 20]))
-    labels = codes_to_labels(compute_drishti_codes(df), df)
+    labels = codes_to_labels(compute_drishti_codes(df))
     assert list(labels.index) == [10, 20]
     assert labels.isin([0, 1]).all().all() and labels['healthy'].tolist() == [1, 1]
+
+
+def test_shared_labels_and_drishti_baseline_remain_distinct():
+    df = stage3_engineer(raw_frame(1))
+    df['POSIX_FSYNCS'] = df['POSIX_WRITES']
+    shared = labels_from_features(df)
+    drishti = codes_to_labels(compute_drishti_codes(df))
+    assert shared['throughput_utilization'].iloc[0] == 1
+    assert drishti['throughput_utilization'].iloc[0] == 0
+
+
+def test_label_artifact_records_shared_rule_source():
+    with tempfile.TemporaryDirectory() as tmp:
+        features_path = Path(tmp) / 'features.parquet'
+        labels_path = Path(tmp) / 'labels.parquet'
+        features = stage3_engineer(raw_frame(2))
+        features.to_parquet(features_path, index=False)
+        result = generate_heuristic_labels(features_path, labels_path)
+        expected = labels_from_features(features)
+        pd.testing.assert_frame_equal(
+            result[DIMENSION_NAMES].reset_index(drop=True),
+            expected.reset_index(drop=True),
+        )
+        assert set(result['label_source']) == {'iosage_shared_rules'}
+        manifest = json.loads((Path(str(labels_path) + '.manifest.json')).read_text())
+        assert manifest['schema_version'] == 3
+        assert manifest['method'] == 'iosage_shared_rules'
+
+
+def test_label_artifact_refuses_empty_features():
+    with tempfile.TemporaryDirectory() as tmp:
+        features_path = Path(tmp) / 'features.parquet'
+        labels_path = Path(tmp) / 'labels.parquet'
+        stage3_engineer(raw_frame(1)).iloc[:0].to_parquet(features_path, index=False)
+        _raises(
+            lambda: generate_heuristic_labels(features_path, labels_path),
+            ValueError,
+            'no rows',
+        )
+        assert not labels_path.exists()
