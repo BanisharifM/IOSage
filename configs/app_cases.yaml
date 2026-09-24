@@ -1,0 +1,88 @@
+# Preregistered application cases for the real-application study (docs/9_fresh_start).
+# Written before the scored runs of each application; the audit reads it. Labels use the
+# fresh-start definitions: file_strategy = file-per-process output at the registered scale.
+version: 1
+
+protocol:
+  storage_tier: /work/hdd
+  repeats: 11                       # traced runs per case; 11 on /work/hdd (MEASUREMENT_ALIGNMENT.md)
+  controls_per_case: 1              # one uninstrumented run per case (no Darshan preload)
+  ordering: round_robin_by_repeat   # repeat k: problem then fix, so drift hits both arms
+  confidence: 0.90
+  decision_rule: order_statistic_median_interval   # src/llm/closed_loop_metrics.evaluate_candidate
+  decision_source: docs/8_real_applications/MEASUREMENT_ALIGNMENT.md
+  null_check: results/apps/null_check/nek5000_N1_2026-09-21.json   # 11 + 11 same-case runs: no_significant_change
+
+applications:
+  nek5000:
+    script: scripts/apps/nek5000/run_turbchannel.slurm
+    case_dir: /work/hdd/bdau/mbanisharifdehkordi/apps/nek5000/runs/turbChannel_baseline
+    resources: {nodes: 1, ntasks: 32, cpus_per_task: 1, time_limit: "00:15:00", partition: cpu}   # as the null check
+    # work that must be identical between a problem run and its fix run (manifest `work`)
+    work_invariant: {steps: 200, checkpoint_interval: 50, expected_checkpoints: 5, precision: double, ranks: 32, nodes: 1}
+    equivalence:
+      source: >-
+        Same binary, mesh, partition, input and rank count; only the output organization
+        differs, which does not enter the computation. Evidence used to set the rule: the 22
+        runs of the null check (results/apps/null_check) printed identical t, DT, Courant
+        number and Volflow X at step 200; the development pair of 2026-09-24 (jobs 22349085
+        N1 and 22349086 N2, files kept under .codex-trash/nek_dev_2026-09-24) has bitwise
+        identical mesh and step-0 fields, while velocity and pressure from step 50 on differ
+        at the 1e-12 relative level (sums agree to 15 digits, per-element minima and maxima
+        to 12), so hash equality is not the criterion and tolerances are. Field files are
+        reassembled into global element order (scripts/apps/nek5000/fld.py, format from
+        Nek5000 core/prepost.f) and every variable component is compared through its sum,
+        minimum and maximum per checkpoint; the per-element minimum/maximum metadata is
+        stored as real*4 by Nek5000, hence its looser tolerance. Log quantities are printed
+        with 7 significant digits, hence 1e-6.
+      exact_fields: [final_step, run_successful, volflow_step]
+      fields:
+        final_time: {absolute: 0.0, relative: 1.0e-6}
+        final_dt: {absolute: 0.0, relative: 1.0e-6}
+        final_courant: {absolute: 0.0, relative: 1.0e-6}
+        volflow.0: {absolute: 0.0, relative: 1.0e-6}    # time
+        volflow.1: {absolute: 1.0e-6, relative: 1.0e-4} # printed with 5 digits, near zero
+        volflow.2: {absolute: 1.0e-6, relative: 1.0e-4}
+        volflow.3: {absolute: 0.0, relative: 1.0e-6}    # measured flow rate
+        volflow.4: {absolute: 0.0, relative: 1.0e-6}    # target flow rate
+      checkpoints:
+        - steps: [0, 50, 100, 150, 200]
+          exact: [istep, nelog, varcode, nxyz, wdsize]
+          components: [X0, X1, X2, U0, U1, U2, P0]
+          stats:
+            sum: {absolute: 1.0e-6, relative: 1.0e-8}
+            min: {absolute: 1.0e-9, relative: 1.0e-8}
+            max: {absolute: 1.0e-9, relative: 1.0e-8}
+        - steps: [0, 50, 100, 150, 200]
+          components: [X_minmax0, U_minmax0, P_minmax0]
+          stats:
+            sum: {absolute: 1.0e-3, relative: 1.0e-6}
+            min: {absolute: 1.0e-6, relative: 1.0e-6}
+            max: {absolute: 1.0e-6, relative: 1.0e-6}
+    case_order: [N2, N1]              # problem first within every repeat
+    cases:
+      N1:
+        role: fix
+        kind: constructed
+        args: ["200", "50", "1", "yes"]   # numSteps writeInterval writeNFiles writeDoublePrecision
+        knobs: {writeNFiles: 1}
+        expected_labels: []            # healthy: the detector should abstain
+        allowed_extra_labels: []
+        source: >-
+          Nek5000 documentation, case files, [GENERAL] writeNFiles: "By default a parallel
+          shared file is used" (https://nek5000.github.io/NekDoc/problem_setup/case_files.html);
+          core/prepost.f mfo_open_files opens one MPI-IO file when writeNFiles = 1.
+        io_structure: {files_per_checkpoint: 1, write_module: MPI-IO, shared_file: true}
+      N2:
+        role: problem
+        kind: constructed
+        fix_case: N1
+        args: ["200", "50", "32", "yes"]
+        knobs: {writeNFiles: 32}
+        expected_labels: [file_strategy]
+        allowed_extra_labels: []
+        source: >-
+          Same documentation: writeNFiles = N writes N files, one per I/O rank; with N = 32
+          on 32 ranks every rank writes its own file through byte_write (STDIO), which is the
+          file-per-process organization the fresh-start file_strategy label means.
+        io_structure: {files_per_checkpoint: 32, write_module: STDIO, shared_file: false}

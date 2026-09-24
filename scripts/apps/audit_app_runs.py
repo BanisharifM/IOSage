@@ -1,19 +1,26 @@
 """Audit the application run manifests against the verification gates (EXECUTION_ROADMAP section 9).
 
-Reads one manifest.jsonl (written by apps/common/run_lib.sh), groups the rows by (case, role,
-control flag) and checks, per row and per group:
+Reads one manifest.jsonl (rows written by the application's evidence builder, contract in
+scripts/apps/manifest.py), groups the rows by (case, role, control flag) and checks, per row
+and per group:
   1. exit code 0 and an explicit named correctness check that passed;
   2. a Darshan log for every traced run, which opens with PyDarshan;
-  3. an explicit per-file I/O validation comparing like quantities;
+  3. an explicit per-file I/O validation, whose expected organization equals the registered one;
   4. record cap not hit (PyDarshan partial flag);
-  5. identical typed work signatures and preregistered correctness equivalence;
-  6. at least the required number of repeats, and round-robin order (no case runs twice in a
-     row within a series); verdicts through evaluate_candidate.
-Every violation is listed; the exit code is 1 if any occurred. Nothing is filtered out.
+  5. identical typed work signatures across the series (and equal to the registered work
+     invariant) and the preregistered correctness equivalence between problem and fix;
+  6. exactly the required number of traced repeats and one control per case, round-robin
+     order by repeat (problem and fix alternate); verdicts through evaluate_candidate,
+     reported as produced.
+Every violation is listed; the exit code is 1 if any occurred. Nothing is filtered out. A
+verdict of no_significant_change or slower is a result, not a violation, unless a required
+verdict was given explicitly (PROBLEM:FIX:VERDICT).
 
 Usage:
-    python scripts/apps/audit_app_runs.py --manifest results/apps/nek5000/manifest.jsonl \
-        --repeats 11 --pair N2:N2fix --pair N4:N5 --output results/apps/nek5000/audit.json
+    python scripts/apps/audit_app_runs.py --manifest results/apps/nek5000/<attempt>/manifest.jsonl \
+        --cases configs/app_cases.yaml --app nek5000 --output results/apps/nek5000/<attempt>/audit.json
+    python scripts/apps/audit_app_runs.py --manifest ... --repeats 11 --pair N2:N1 \
+        --equivalence-config equivalence.json --output ...
 """
 import argparse
 import json
@@ -26,6 +33,7 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
+from scripts.apps import app_cases  # noqa: E402
 from src.llm.closed_loop_metrics import aggregate_repeats, evaluate_candidate  # noqa: E402
 
 logger = logging.getLogger("audit_app_runs")
@@ -50,7 +58,11 @@ def io_validation_passed(row):
 
 
 def nested_value(value, dotted_name):
+    """Value at a dotted path; a numeric part indexes a list."""
     for part in dotted_name.split("."):
+        if isinstance(value, list) and part.isdigit() and int(part) < len(value):
+            value = value[int(part)]
+            continue
         if not isinstance(value, dict) or part not in value:
             raise KeyError(dotted_name)
         value = value[part]
@@ -61,9 +73,18 @@ def equivalent_results(problem, fixed, rule):
     if rule.get("mode") == "exact":
         return problem == fixed, None if problem == fixed else "correctness results differ"
     fields = rule.get("fields")
-    if not isinstance(fields, dict) or not fields:
-        return False, "equivalence rule must define mode=exact or numeric fields"
-    for name, tolerance in fields.items():
+    exact = rule.get("exact_fields")
+    if (not isinstance(fields, dict) or not fields) and not exact:
+        return False, "equivalence rule must define mode=exact, exact_fields or numeric fields"
+    for name in exact or []:
+        try:
+            left = nested_value(problem, name)
+            right = nested_value(fixed, name)
+        except KeyError as exc:
+            return False, f"cannot compare {name}: {exc}"
+        if left != right:
+            return False, f"{name} differs: problem {left!r}, fix {right!r}"
+    for name, tolerance in (fields or {}).items():
         if not isinstance(tolerance, dict):
             return False, f"invalid tolerance for {name}"
         try:
@@ -128,7 +149,9 @@ def check_row(row, problems):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--manifest", required=True)
-    parser.add_argument("--repeats", type=int, required=True, help="Required traced runs per (case, role)")
+    parser.add_argument("--repeats", type=int, help="Required traced runs per case (default: protocol.repeats of --cases)")
+    parser.add_argument("--cases", help="preregistration YAML; with --app it supplies repeats, pairs, rules and structure")
+    parser.add_argument("--app", help="application name inside --cases")
     parser.add_argument("--confidence", type=float, default=0.90)
     parser.add_argument("--pair", action="append", default=[], metavar="PROBLEM:FIX",
                         help="problem and fix case ids, optionally followed by the required verdict")
@@ -137,13 +160,27 @@ def main():
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    equivalence = {}
+    registered = None
+    if args.cases:
+        if not args.app:
+            parser.error("--app is required with --cases")
+        doc = app_cases.load(args.cases)
+        registered = app_cases.application(doc, args.app)
+        registered_work = app_cases.work_invariant(doc, args.app)
+        equivalence = app_cases.pairs(doc, args.app)
+        if args.repeats is None:
+            args.repeats = int(doc["protocol"]["repeats"])
+        if not args.pair:
+            args.pair = list(equivalence)
+    if args.repeats is None:
+        parser.error("--repeats is required without --cases")
     if args.repeats < 2:
         parser.error("--repeats must be at least 2")
-    equivalence = {}
-    if args.pair:
-        if not args.equivalence_config:
-            parser.error("--equivalence-config is required when --pair is used")
+    if args.pair and args.equivalence_config:
         equivalence = json.loads(Path(args.equivalence_config).read_text()).get("pairs", {})
+    elif args.pair and not equivalence:
+        parser.error("--equivalence-config or --cases is required when --pair is used")
 
     rows = [json.loads(line) for line in Path(args.manifest).read_text().splitlines() if line.strip()]
     if not rows:
@@ -152,6 +189,26 @@ def main():
     problems = []
     for row in rows:
         check_row(row, problems)
+        key = f"{row.get('case')}/{row.get('role')} job {row.get('jobid')}"
+        if not isinstance(row.get("work"), dict) or not row["work"]:
+            problems.append(f"{key}: typed work signature is missing")
+        if registered is not None:
+            case = registered["cases"].get(row.get("case"))
+            if case is None:
+                problems.append(f"{key}: case is not registered")
+                continue
+            if not row.get("nodarshan"):
+                expected = (row.get("io_validation") or {}).get("expected") or {}
+                for name, value in case["io_structure"].items():
+                    if expected.get(name) != value:
+                        problems.append(f"{key}: io_validation.expected.{name} is {expected.get(name)!r}, "
+                                        f"registered {value!r}")
+            for name, value in registered_work.items():
+                if row["work"].get(name) != value:
+                    problems.append(f"{key}: work.{name} is {row['work'].get(name)!r}, registered {value!r}")
+    works = {json.dumps(r["work"], sort_keys=True) for r in rows if isinstance(r.get("work"), dict) and r["work"]}
+    if len(works) > 1:
+        problems.append(f"work signatures differ across the series ({len(works)} distinct)")
 
     groups = defaultdict(list)
     for row in rows:
@@ -163,6 +220,8 @@ def main():
         label = f"{case}/{role}" + ("/control" if control else "")
         if not control and len(ok) != args.repeats:
             problems.append(f"{label}: {len(ok)} usable runs, exactly {args.repeats} required")
+        if control and len(ok) != 1:
+            problems.append(f"{label}: {len(ok)} usable control runs, exactly 1 required")
         agg = aggregate_repeats([{"walltime_s": r["wall_s"], "write_bw_mb_s": 0.0,
                                   "bytes_total": r.get("out_bytes") or 0} for r in ok], args.confidence)
         summary[label] = {"runs": len(grp), "usable": len(ok), "jobids": [r.get("jobid") for r in grp],
@@ -171,13 +230,22 @@ def main():
                           "ci_coverage": agg and agg["ci_coverage"], "rel_mad": agg and round(agg["rel_mad"], 4),
                           "runs_s": agg and [round(w, 3) for w in agg["walltime_runs_s"]]}
 
-    # round-robin: within the traced runs, sorted by start time, the same case never runs twice in a row
+    # round-robin: traced runs in start order alternate the cases within every repeat and the
+    # repeat index never goes backwards
     traced = sorted((r for r in rows if not r.get("nodarshan") and r.get("start_iso")), key=lambda r: r["start_iso"])
+    cases_in_series = {r.get("case") for r in traced}
     for prev, cur in zip(traced, traced[1:]):
-        if (prev.get("case"), prev.get("role")) == (cur.get("case"), cur.get("role")) and len(groups) > 1:
+        if (prev.get("case"), prev.get("role")) == (cur.get("case"), cur.get("role")) and len(cases_in_series) > 1:
             problems.append(f"order: {cur.get('case')}/{cur.get('role')} ran twice in a row "
                             f"(jobs {prev.get('jobid')}, {cur.get('jobid')})")
             break
+        if isinstance(prev.get("repeat"), int) and isinstance(cur.get("repeat"), int) \
+                and cur["repeat"] < prev["repeat"]:
+            problems.append(f"order: repeat {cur['repeat']} (job {cur.get('jobid')}) started after repeat "
+                            f"{prev['repeat']} (job {prev.get('jobid')})")
+            break
+    for controls_missing in sorted(cases_in_series - {r.get("case") for r in rows if r.get("nodarshan")}):
+        problems.append(f"{controls_missing}: no control run")
 
     verdicts = {}
     for pair in args.pair:
@@ -185,7 +253,7 @@ def main():
         if len(parts) not in (2, 3):
             parser.error(f"invalid --pair value: {pair}")
         prob_id, fix_id = parts[:2]
-        required_verdict = parts[2] if len(parts) == 3 else "faster"
+        required_verdict = parts[2] if len(parts) == 3 else None
         pair_key = f"{prob_id}:{fix_id}"
         rule = equivalence.get(pair_key)
         if not isinstance(rule, dict):
@@ -225,7 +293,7 @@ def main():
         v = evaluate_candidate(a, b, best_speedup=1.0)
         verdicts[pair] = {"verdict": v["verdict"], "speedup": v["speedup"], "speedup_ci": v["speedup_ci"],
                           "problem_median_s": a["walltime_s"], "fix_median_s": b["walltime_s"], "work_note": work_note}
-        if v["verdict"] != required_verdict:
+        if required_verdict and v["verdict"] != required_verdict:
             problems.append(f"pair {pair_key}: verdict {v['verdict']}, required {required_verdict}")
         logger.info("%s: %s, %.2fx, CI %s%s", pair, v["verdict"], v["speedup"], v["speedup_ci"],
                     f" [{work_note}]" if work_note else "")
@@ -235,6 +303,7 @@ def main():
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"manifest": str(args.manifest), "rows": len(rows), "repeats_required": args.repeats,
+                               "cases": str(args.cases) if args.cases else None, "app": args.app,
                                "groups": summary, "verdicts": verdicts, "violations": problems}, indent=2, default=str))
     logger.info("%d rows, %d groups, %d violations; wrote %s", len(rows), len(summary), len(problems), out)
     sys.exit(1 if problems else 0)
