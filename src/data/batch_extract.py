@@ -9,7 +9,10 @@ and metadata of ``extract_raw_features`` plus ``_source_path``.
 Designed for scale (1M+ files):
   - multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
   - maxtasksperchild for automatic worker recycling (bounds C library growth)
-  - Per-file signal.alarm timeout (prevents hung PyDarshan C calls)
+  - Every file is parsed in a disposable forked child of the worker
+    (``src.utils.isolation.run_in_child``): a crash inside libdarshan-util,
+    a timeout, or an exception is a recorded failure for that path, and the
+    worker itself never dies, so the pool cannot lose a task
   - Atomic writes (write to .tmp, rename to final)
   - Resume by identity: a rerun skips every path already present in a part
     file and retries the rest, so no input is processed twice or lost
@@ -36,7 +39,6 @@ import logging
 import multiprocessing
 import os
 import random
-import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -50,6 +52,7 @@ from src.data.feature_extraction import (
 )
 from src.data.parse_darshan import parse_darshan_log
 from src.utils.artifacts import write_atomic
+from src.utils.isolation import ChildFailure, run_in_child
 
 logger = logging.getLogger(__name__)
 
@@ -74,14 +77,6 @@ class ExtractionIncomplete(ExtractionError):
 # Per-file extraction (runs in worker processes)
 # ---------------------------------------------------------------------------
 
-class _FileTimeout(Exception):
-    """Raised when a single file exceeds the timeout."""
-
-
-def _alarm_handler(signum, frame):
-    raise _FileTimeout("File processing timed out")
-
-
 def extract_single_log(darshan_path):
     """Raw features of one .darshan file; raises on any parse failure."""
     parsed = parse_darshan_log(darshan_path, strict=True)
@@ -91,26 +86,16 @@ def extract_single_log(darshan_path):
 
 
 def _extract_with_timeout(args):
-    """Run ``extract_single_log`` under a per-file alarm in a worker process.
+    """Run ``extract_single_log`` in a disposable child of the worker.
 
     Returns ``(features_or_None, error_or_None, path)``; the error is the
-    original exception text.
+    child's exception text, its fatal signal, or ``timeout_after_<N>s``.
     """
     darshan_path, timeout_sec = args
-    old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
     try:
-        signal.alarm(timeout_sec)
-        result = extract_single_log(darshan_path)
-        signal.alarm(0)
-        return result, None, darshan_path
-    except _FileTimeout:
-        return None, f"timeout_after_{timeout_sec}s", darshan_path
-    except Exception as exc:
-        signal.alarm(0)
-        return None, f"{type(exc).__name__}: {str(exc)[:300]}", darshan_path
-    finally:
-        signal.signal(signal.SIGALRM, old_handler)
-        signal.alarm(0)
+        return run_in_child(extract_single_log, darshan_path, timeout=timeout_sec), None, darshan_path
+    except ChildFailure as exc:
+        return None, str(exc), darshan_path
 
 
 # ---------------------------------------------------------------------------

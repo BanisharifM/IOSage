@@ -1,6 +1,9 @@
 """Contracts of the data pipeline (Codex audit batch 1, items DATA-001 to DATA-016)."""
 import json
+import os
+import signal
 import tempfile
+import time
 from copy import deepcopy
 from pathlib import Path
 
@@ -121,6 +124,53 @@ def test_batch_extract_resumes_by_identity_and_accounts_for_every_path():
             assert errors['file_path'].tolist() == [files[3]] and 'synthetic failure' in errors['error'][0]
     finally:
         batch_extract.extract_single_log = real
+
+
+def _fake_extract_or_die(path):
+    if 'die' in path:
+        os.kill(os.getpid(), signal.SIGBUS)   # what libdarshan-util does on a truncated log
+    if 'slow' in path:
+        time.sleep(30)
+    return _raw_row(path)
+
+
+def test_batch_extract_records_a_crashed_or_stuck_parse_and_finishes():
+    real = batch_extract.extract_single_log
+    batch_extract.extract_single_log = _fake_extract_or_die
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            files = [f'/logs/{n}.darshan' for n in ('a', 'die_b', 'slow_c', 'd')]
+            lst = Path(tmp) / 'list.txt'
+            lst.write_text('\n'.join(files) + '\n')
+            out = Path(tmp) / 'chunk.parquet'
+            started = time.monotonic()
+            _raises(lambda: batch_extract.batch_extract(
+                file_list=lst, output_path=out, max_workers=2, timeout_per_file=2,
+                chunk_size=10, shuffle=False),
+                batch_extract.ExtractionIncomplete, '2 requested paths failed')
+            assert time.monotonic() - started < 25
+            errors = pd.read_csv(sorted(Path(tmp).glob('chunk_attempt_*_errors.csv'))[0])
+            recorded = dict(zip(errors['file_path'], errors['error']))
+            assert 'SIGBUS' in recorded['/logs/die_b.darshan']
+            assert recorded['/logs/slow_c.darshan'].startswith('timeout_after_2s')
+            parts = sorted(Path(tmp).glob('chunk_part_*.parquet'))
+            assert sorted(pd.read_parquet(parts[0])['_source_path']) == ['/logs/a.darshan', '/logs/d.darshan']
+    finally:
+        batch_extract.extract_single_log = real
+
+
+def test_benchmark_samples_record_the_parse_cause_for_every_layout():
+    from src.data.benchmark_logs import iter_benchmark_samples
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ('u_ior_id11-1_1-1-1-1_1.darshan', 'u_python_id22-1_1-1-1-1_1.darshan'):
+            (Path(tmp) / name).write_bytes(b'not a darshan log')
+        samples = list(iter_benchmark_samples('ior', tmp))
+        assert [job for job, _, _, _ in samples] == ['11', '22']
+        assert all(parsed is None for _, _, parsed, _ in samples)
+        assert all(error.startswith('RuntimeError: ') for _, _, _, error in samples), samples
+        merged = list(iter_benchmark_samples('custom', tmp))
+        assert [job for job, _, _, _ in merged] == ['11', '22']
+        assert all(error.startswith('ValueError: cannot open per-rank log') for _, _, _, error in merged)
 
 
 def test_batch_extract_refuses_empty_input_and_total_failure():

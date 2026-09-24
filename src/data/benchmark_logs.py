@@ -24,6 +24,7 @@ import pandas as pd
 
 from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
 from src.data.parse_darshan import parse_benchmark_job, parse_darshan_log
+from src.utils.isolation import ChildFailure, run_in_child
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +63,15 @@ def group_logs_by_job(log_dir, bench_type):
     return dict(jobs)
 
 
-def iter_benchmark_samples(bench_type, log_dir):
+def iter_benchmark_samples(bench_type, log_dir, timeout=None):
     """Yield ``(job_id, files, parsed, error)`` for every benchmark sample.
 
     A sample is one merged job for the per-process benchmarks and one log
-    for the others. ``parsed`` is None when the sample could not be parsed;
-    ``error`` contains the parse failure text when ``parsed`` is None.
+    for the others. Each sample is parsed in a disposable child process, so
+    a crash inside the Darshan library or a timeout (``timeout`` seconds,
+    None for no limit) is reported like any other parse failure: ``parsed``
+    is None and ``error`` holds the cause (the exception text of the strict
+    parser, the fatal signal, or the timeout).
     """
     if bench_type in PER_RANK_BENCHMARKS:
         groups = sorted(group_logs_by_job(log_dir, bench_type).items())
@@ -79,15 +83,13 @@ def iter_benchmark_samples(bench_type, log_dir):
         error = None
         try:
             if bench_type in PER_RANK_BENCHMARKS:
-                parsed = parse_benchmark_job(files)
+                parsed = run_in_child(parse_benchmark_job, files, timeout=timeout)
             else:
-                parsed = parse_darshan_log(files[0])
-                if parsed is None:
-                    raise ValueError("parse_darshan_log returned None")
-        except ValueError as exc:
-            error = f"{type(exc).__name__}: {exc}"
+                parsed = run_in_child(parse_darshan_log, files[0], strict=True, timeout=timeout)
+        except ChildFailure as exc:
+            error = str(exc)
             logger.error("Cannot parse %s job %s (%d files): %s",
-                         bench_type, job_id, len(files), exc)
+                         bench_type, job_id, len(files), error)
             parsed = None
         yield job_id, files, parsed, error
 

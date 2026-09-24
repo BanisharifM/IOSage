@@ -10,7 +10,8 @@
 # Each array task runs batch_extract.py which:
 #   - Uses multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
 #   - Recycles workers every 500 tasks (maxtasksperchild bounds C library growth)
-#   - Has per-file 120s timeout via signal.alarm (prevents hung PyDarshan)
+#   - Parses each file in a disposable child process with a 120s limit, so a
+#     crash inside libdarshan-util or a stuck read is a recorded failure
 #   - Writes atomic sub-chunk files with _part_ prefix (no SLURM collision)
 #   - Supports checkpoint/resume by exact source-path identity
 #   - Keeps one error CSV per attempt for diagnosis
