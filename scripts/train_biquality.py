@@ -8,6 +8,7 @@ Usage:
     python scripts/train_biquality.py --feature-set raw --run-id ...            # no derived features
     python scripts/train_biquality.py --no-production --run-id ...             # benchmark dev only
     python scripts/train_biquality.py --hold-out-benchmark custom --run-id ... # leave one benchmark out
+    python scripts/train_biquality.py --final-evaluation --run-id ...           # one final test run
 
 The run directory (``paths.runs_dir/<run-id>`` from the config) receives one
 model bundle per seed, ``splits.npz`` and ``manifest.json`` (resolved config,
@@ -35,16 +36,23 @@ def main():
     parser.add_argument("--clean-weight", type=float, help="default: biquality.clean_weight of the config")
     parser.add_argument("--run-id", required=True, help="name of the run directory under paths.runs_dir")
     parser.add_argument("--feature-set", default="full", choices=["full", "raw"])
-    parser.add_argument("--no-production", action="store_true", help="train on benchmark dev rows only")
-    parser.add_argument("--hold-out-benchmark", help="benchmark type removed from the dev rows")
+    parser.add_argument("--no-production", action="store_true",
+                        help="train on benchmark training rows only")
+    parser.add_argument("--hold-out-benchmark", help="benchmark type removed from training rows")
+    parser.add_argument("--final-evaluation", action="store_true",
+                        help="evaluate the untouched benchmark test partition")
     args = parser.parse_args()
+
+    if Path(args.run_id).name != args.run_id or args.run_id in ('.', '..'):
+        raise ValueError("run-id must be one directory name")
 
     config = load_config(args.config)
     seeds = args.seeds or config["biquality"]["seeds"]
     clean_weight = args.clean_weight if args.clean_weight is not None else config["biquality"]["clean_weight"]
     run_dir = _PD / config["paths"]["runs_dir"] / args.run_id
     train_run(config, args.model, seeds, clean_weight, run_dir, feature_set=args.feature_set,
-              use_production=not args.no_production, hold_out_benchmark=args.hold_out_benchmark)
+              use_production=not args.no_production, hold_out_benchmark=args.hold_out_benchmark,
+              final_evaluation=args.final_evaluation)
     return 0
 
 

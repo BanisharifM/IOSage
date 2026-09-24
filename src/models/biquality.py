@@ -4,8 +4,9 @@ Biquality training: one path from the two data sources to a model bundle.
 Framework: biquality learning (Nodet et al., Machine Learning 2023). The
 production logs carry heuristic (untrusted) labels, the benchmark logs carry
 construction (trusted) labels; both share one feature space and one label
-set. The benchmark development rows enter training with a higher sample
-weight; the benchmark test rows are evaluated once, after every choice.
+set. Benchmark training rows enter training with a higher sample weight,
+validation rows guide choices, and test rows are read only for an explicitly
+requested final evaluation.
 
 This module owns everything the audit found duplicated or unguarded across
 the older entry points: sample alignment by a unique id, split validation,
@@ -18,6 +19,7 @@ The entry point is ``scripts/train_biquality.py``.
 import hashlib
 import json
 import logging
+import os
 import pickle
 import subprocess
 import time
@@ -31,12 +33,12 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
 
 from src.data.benchmark_verify import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
-from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_raw_feature_names
+from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_feature_names, get_raw_feature_names
 
 logger = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-BUNDLE_FORMAT = 1
+BUNDLE_FORMAT = 3
 SUPPORTED_MODELS = ('xgboost', 'lightgbm', 'random_forest')
 
 
@@ -46,7 +48,7 @@ SUPPORTED_MODELS = ('xgboost', 'lightgbm', 'random_forest')
 
 def load_config(path):
     """The training configuration; every key the module reads must exist."""
-    path = Path(path)
+    path = Path(path).resolve()
     if not path.exists():
         raise FileNotFoundError(f"training config not found: {path}")
     with open(path) as fh:
@@ -86,7 +88,8 @@ class BenchmarkData:
     ids: np.ndarray          # "<benchmark>/<job_id>/<log basename>"
     groups: np.ndarray       # "<benchmark>/<job_id>"
     benchmark: np.ndarray    # benchmark type per row
-    dev_idx: np.ndarray
+    train_idx: np.ndarray
+    val_idx: np.ndarray
     test_idx: np.ndarray
 
 
@@ -96,6 +99,26 @@ def _check_schema(df, what):
     versions = set(pd.unique(df['_schema_version']))
     if versions != {FEATURE_SCHEMA_VERSION}:
         raise ValueError(f"{what} schema {sorted(versions)}, expected {FEATURE_SCHEMA_VERSION}")
+
+
+def _label_matrix(labels, what):
+    missing = [name for name in DIMENSION_NAMES if name not in labels.columns]
+    if missing:
+        raise ValueError(f"{what} lack label columns {missing}")
+    values = labels[DIMENSION_NAMES]
+    if not values.isin([0, 1]).all().all():
+        raise ValueError(f"{what} labels must be binary and complete")
+    expected_healthy = (values[BOTTLENECK_DIMENSIONS].sum(axis=1) == 0).astype(int)
+    if not np.array_equal(values['healthy'].to_numpy(dtype=int), expected_healthy.to_numpy()):
+        raise ValueError(f"{what} healthy labels are inconsistent with bottleneck labels")
+    return values[BOTTLENECK_DIMENSIONS].to_numpy(dtype=np.float32)
+
+
+def _finite_matrix(frame, columns, what):
+    matrix = frame[columns].to_numpy(dtype=np.float32)
+    if not np.isfinite(matrix).all():
+        raise ValueError(f"{what} contain a non-finite feature value")
+    return matrix
 
 
 def feature_columns(features, config, feature_set='full'):
@@ -118,13 +141,28 @@ def feature_columns(features, config, feature_set='full'):
 
 
 def _positions_valid(splits, n):
+    missing = [key for key in ('train_idx', 'val_idx', 'test_idx') if key not in splits]
+    if missing:
+        raise ValueError(f"production split lacks {missing}")
     parts = [np.asarray(splits[k]) for k in ('train_idx', 'val_idx', 'test_idx')]
+    if any(not np.issubdtype(part.dtype, np.integer) for part in parts):
+        raise ValueError("production split positions must be integers")
     joined = np.concatenate(parts)
     if any(len(p) == 0 for p in parts):
         raise ValueError("a production split partition is empty")
     if len(np.unique(joined)) != n or joined.min() != 0 or joined.max() != n - 1:
         raise ValueError("production split positions must be disjoint and cover every row")
     return parts
+
+
+def _production_groups(features):
+    required = ['_uid', '_jobid', '_start_time', '_source_path']
+    missing = [name for name in required if name not in features.columns]
+    if missing:
+        raise ValueError(f"production features lack grouping columns {missing}")
+    return [(uid, jobid) if jobid != 0 else ('path', path)
+            for uid, jobid, path in zip(
+                features['_uid'], features['_jobid'], features['_source_path'])]
 
 
 def load_production(config, feature_set='full'):
@@ -137,6 +175,10 @@ def load_production(config, feature_set='full'):
     features = pd.read_parquet(_resolve(config, 'production_features'))
     labels = pd.read_parquet(_resolve(config, 'production_labels'))
     _check_schema(features, 'production features')
+    missing_features = [name for name in get_feature_names() if name not in features.columns]
+    if missing_features:
+        raise ValueError(f"production features lack {len(missing_features)} schema columns, "
+                         f"first {missing_features[:5]}")
     for name, df in (('features', features), ('labels', labels)):
         if '_source_path' not in df.columns:
             raise ValueError(f"production {name} lack _source_path")
@@ -153,13 +195,23 @@ def load_production(config, feature_set='full'):
         splits = pickle.load(fh)
     train_idx, val_idx, test_idx = _positions_valid(splits, len(features))
     start = features['_start_time'].to_numpy()
-    if not (start[train_idx].max() <= start[val_idx].min() <= start[val_idx].max()
-            <= start[test_idx].min()):
-        raise ValueError("production split is not in time order (train < val < test)")
+    group_values = _production_groups(features)
+    group_sets = [{group_values[pos] for pos in idx} for idx in (train_idx, val_idx, test_idx)]
+    if any(group_sets[i] & group_sets[j] for i, j in ((0, 1), (0, 2), (1, 2))):
+        raise ValueError("a production job appears in more than one split partition")
+    group_first = {}
+    for group, timestamp in zip(group_values, start):
+        group_first[group] = min(group_first.get(group, timestamp), timestamp)
+    first_by_part = [np.asarray([group_first[group] for group in groups]) for groups in group_sets]
+    if not (first_by_part[0].max() <= first_by_part[1].min()
+            <= first_by_part[1].max() <= first_by_part[2].min()):
+        raise ValueError("production job groups are not in time order (train < val < test)")
+
+    y = _label_matrix(labels.reset_index(), 'production labels')
+    X = _finite_matrix(features, names, 'production features')
 
     return ProductionData(
-        X=features[names].to_numpy(dtype=np.float32),
-        y=labels[BOTTLENECK_DIMENSIONS].to_numpy(dtype=np.float32),
+        X=X, y=y,
         ids=features['_source_path'].to_numpy(), start_time=start,
         train_idx=train_idx, val_idx=val_idx, test_idx=test_idx, feature_names=names)
 
@@ -171,7 +223,11 @@ def grouped_benchmark_split(labels, groups, test_ratio, seed):
     groups, each described by the union of its rows' labels, then the group
     assignment is expanded to rows. No group appears on both sides.
     """
+    if not 0 < test_ratio < 1:
+        raise ValueError(f"benchmark split ratio must be in (0, 1), got {test_ratio}")
     unique_groups, inverse = np.unique(groups, return_inverse=True)
+    if len(unique_groups) < 2:
+        raise ValueError("benchmark split needs at least two job groups")
     group_labels = np.zeros((len(unique_groups), labels.shape[1]), dtype=int)
     np.maximum.at(group_labels, inverse, labels.astype(int))
     splitter = MultilabelStratifiedShuffleSplit(n_splits=1, test_size=test_ratio, random_state=seed)
@@ -185,6 +241,18 @@ def grouped_benchmark_split(labels, groups, test_ratio, seed):
     return dev_idx, test_idx
 
 
+def grouped_benchmark_partitions(labels, groups, test_ratio, validation_ratio, seed):
+    """Group-disjoint benchmark train, validation, and test row positions."""
+    remaining, test_idx = grouped_benchmark_split(labels, groups, test_ratio, seed)
+    train_local, val_local = grouped_benchmark_split(
+        labels[remaining], groups[remaining], validation_ratio, seed + 1)
+    train_idx, val_idx = remaining[train_local], remaining[val_local]
+    group_sets = [set(groups[idx]) for idx in (train_idx, val_idx, test_idx)]
+    if any(group_sets[i] & group_sets[j] for i, j in ((0, 1), (0, 2), (1, 2))):
+        raise AssertionError("benchmark partitions share a job")
+    return train_idx, val_idx, test_idx
+
+
 def load_benchmark(config, feature_names):
     """Benchmark features and labels (row-aligned outputs of
     ``extract_benchmark_features.py``), with the grouped split."""
@@ -196,25 +264,27 @@ def load_benchmark(config, feature_names):
     same = (features['_ground_truth_job_id'].astype(str).to_numpy() == labels['job_id'].astype(str).to_numpy())
     if not same.all() or not (features['_benchmark'].to_numpy() == labels['benchmark'].to_numpy()).all():
         raise ValueError("benchmark features and labels are not row-aligned")
+    if '_scenario' not in features.columns or 'scenario' not in labels.columns:
+        raise ValueError("benchmark features and labels need scenario columns")
+    if not (features['_scenario'].astype(str).to_numpy()
+            == labels['scenario'].astype(str).to_numpy()).all():
+        raise ValueError("benchmark feature and label scenarios are not row-aligned")
     missing = [c for c in feature_names if c not in features.columns]
     if missing:
         raise ValueError(f"benchmark features lack {len(missing)} contract columns, first {missing[:5]}")
-    if (labels[DIMENSION_NAMES].sum(axis=1) == 0).any():
-        raise ValueError("a benchmark row has no label")
-    healthy_and_bottleneck = (labels['healthy'] == 1) & (labels[BOTTLENECK_DIMENSIONS].sum(axis=1) > 0)
-    if healthy_and_bottleneck.any():
-        raise ValueError("a benchmark row is healthy and bottlenecked at once")
+    y = _label_matrix(labels, 'benchmark labels')
 
     groups = (features['_benchmark'] + '/' + features['_ground_truth_job_id'].astype(str)).to_numpy()
     ids = (groups + '/' + features['_source_path'].map(lambda p: Path(p).name)).to_numpy()
     if len(set(ids)) != len(ids):
         raise ValueError("benchmark sample ids are not unique")
-    y = labels[BOTTLENECK_DIMENSIONS].to_numpy(dtype=np.float32)
     split = config['benchmark_split']
-    dev_idx, test_idx = grouped_benchmark_split(y, groups, split['test_ratio'], split['seed'])
-    return BenchmarkData(X=features[feature_names].to_numpy(dtype=np.float32), y=y, ids=ids,
+    train_idx, val_idx, test_idx = grouped_benchmark_partitions(
+        y, groups, split['test_ratio'], split['validation_ratio'], split['seed'])
+    X = _finite_matrix(features, feature_names, 'benchmark features')
+    return BenchmarkData(X=X, y=y, ids=ids,
                          groups=groups, benchmark=features['_benchmark'].to_numpy(),
-                         dev_idx=dev_idx, test_idx=test_idx)
+                         train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
 
 
 # ---------------------------------------------------------------------------
@@ -223,8 +293,16 @@ def load_benchmark(config, feature_names):
 
 def scale_pos_weights(y, max_weight):
     """Per-label negative/positive ratio, capped."""
-    return [min((len(y) - y[:, i].sum()) / max(y[:, i].sum(), 1), max_weight)
-            for i in range(y.shape[1])]
+    if max_weight <= 0:
+        raise ValueError("max_weight must be positive")
+    weights = []
+    for i, dim in enumerate(BOTTLENECK_DIMENSIONS):
+        positives = y[:, i].sum()
+        negatives = len(y) - positives
+        if positives == 0 or negatives == 0:
+            raise ValueError(f"training rows need both classes for {dim}")
+        weights.append(min(negatives / positives, max_weight))
+    return weights
 
 
 def fit_models(X, y, weights, X_val, y_val, model_type, config, seed):
@@ -237,6 +315,17 @@ def fit_models(X, y, weights, X_val, y_val, model_type, config, seed):
     if model_type not in SUPPORTED_MODELS:
         raise ValueError(f"model {model_type!r} is not supported; choose from {SUPPORTED_MODELS} "
                          "(the sklearn MLP cannot take sample weights, so a weighted MLP is not offered)")
+    if len(X) == 0 or len(X_val) == 0:
+        raise ValueError("training and early-stopping rows must be nonempty")
+    if X.shape[0] != y.shape[0] or len(weights) != len(X):
+        raise ValueError("training features, labels, and weights differ in length")
+    if X_val.shape[0] != y_val.shape[0] or X.shape[1] != X_val.shape[1]:
+        raise ValueError("validation features and labels differ or feature counts changed")
+    if not (np.isfinite(X).all() and np.isfinite(y).all() and np.isfinite(weights).all()
+            and np.isfinite(X_val).all() and np.isfinite(y_val).all()):
+        raise ValueError("training inputs contain non-finite values")
+    if (weights <= 0).any():
+        raise ValueError("sample weights must be positive")
     params = dict(config['models'][model_type]['params'])
     spw = scale_pos_weights(y, config['imbalance']['max_weight'])
     rounds = int(config['early_stopping']['rounds'])
@@ -263,6 +352,130 @@ def fit_models(X, y, weights, X_val, y_val, model_type, config, seed):
     return models, best_iteration
 
 
+def validate_bundle(bundle):
+    """Validate the fields required for prediction and provenance."""
+    if not isinstance(bundle, dict) or bundle.get('bundle_format') != BUNDLE_FORMAT:
+        raise ValueError(f"model is not a bundle of format {BUNDLE_FORMAT}")
+    required = {
+        'feature_schema_version', 'feature_names', 'dimensions', 'bottleneck_dimensions',
+        'decision_threshold', 'model_type', 'seed', 'models', 'input_hashes',
+        'config', 'config_sha256', 'git_revision', 'git_clean', 'final_evaluation',
+        'benchmark_partitions',
+    }
+    missing = required - set(bundle)
+    if missing:
+        raise ValueError(f"model bundle lacks fields {sorted(missing)}")
+    if bundle['feature_schema_version'] != FEATURE_SCHEMA_VERSION:
+        raise ValueError(f"bundle schema {bundle['feature_schema_version']}, "
+                         f"code expects {FEATURE_SCHEMA_VERSION}")
+    if list(bundle['dimensions']) != list(DIMENSION_NAMES):
+        raise ValueError("bundle label order differs from the code")
+    if list(bundle['bottleneck_dimensions']) != list(BOTTLENECK_DIMENSIONS):
+        raise ValueError("bundle bottleneck order differs from the code")
+    if set(bundle['models']) != set(BOTTLENECK_DIMENSIONS):
+        raise ValueError("bundle model keys differ from the bottleneck dimensions")
+    if len(bundle['feature_names']) != len(set(bundle['feature_names'])):
+        raise ValueError("bundle has duplicate feature names")
+    if not 0 < float(bundle['decision_threshold']) < 1:
+        raise ValueError("bundle decision threshold must be in (0, 1)")
+    if not bundle['git_clean']:
+        raise ValueError("bundle was not produced from a clean Git worktree")
+    if bundle['model_type'] not in SUPPORTED_MODELS:
+        raise ValueError(f"bundle has unsupported model type {bundle['model_type']!r}")
+    if not isinstance(bundle['seed'], int):
+        raise ValueError("bundle seed must be an integer")
+    if not isinstance(bundle['final_evaluation'], bool):
+        raise ValueError("bundle final_evaluation must be boolean")
+    partitions = bundle['benchmark_partitions']
+    expected_partitions = {'train', 'validation', 'test'}
+    if not isinstance(partitions, dict) or set(partitions) != expected_partitions:
+        raise ValueError("bundle benchmark partitions have an invalid contract")
+    partition_sets = []
+    for name in ('train', 'validation', 'test'):
+        values = partitions[name]
+        if (not isinstance(values, list) or not all(isinstance(value, str) and value
+                                                    for value in values)
+                or len(values) != len(set(values))):
+            raise ValueError(f"bundle benchmark partition {name} has invalid ids")
+        partition_sets.append(set(values))
+    if any(partition_sets[i] & partition_sets[j]
+           for i, j in ((0, 1), (0, 2), (1, 2))):
+        raise ValueError("bundle benchmark partitions share sample ids")
+    if not partition_sets[0] or not partition_sets[1]:
+        raise ValueError("bundle benchmark training and validation partitions must be nonempty")
+    if bool(partition_sets[2]) != bundle['final_evaluation']:
+        raise ValueError("bundle benchmark test partition differs from final-evaluation mode")
+    expected_inputs = {'production_features', 'production_labels', 'production_splits',
+                       'benchmark_features', 'benchmark_labels'}
+    if set(bundle['input_hashes']) != expected_inputs:
+        raise ValueError("bundle input hashes do not cover the five training inputs")
+    return bundle
+
+
+def verify_bundle_inputs(bundle):
+    """Check that the configuration and datasets still match the bundle."""
+    validate_bundle(bundle)
+    if _sha256(bundle['config_path']) != bundle['config_sha256']:
+        raise ValueError("training configuration differs from the bundle hash")
+    for name, record in bundle['input_hashes'].items():
+        if set(record) != {'path', 'sha256'}:
+            raise ValueError(f"bundle input record {name} has an invalid contract")
+        if _sha256(record['path']) != record['sha256']:
+            raise ValueError(f"training input {name} differs from the bundle hash")
+
+
+def load_final_benchmark_test_frames(bundle_path):
+    """Load the exact benchmark test rows declared inside a final bundle."""
+    bundle_path = Path(bundle_path)
+    with bundle_path.open('rb') as handle:
+        bundle = pickle.load(handle)
+    validate_bundle(bundle)
+    verify_bundle_inputs(bundle)
+    if not bundle['final_evaluation']:
+        raise ValueError("benchmark evaluation requires a final-evaluation bundle")
+
+    splits_path = bundle_path.parent / 'splits.npz'
+    if not splits_path.is_file():
+        raise FileNotFoundError(f"training split artifact is missing: {splits_path}")
+    splits = np.load(splits_path, allow_pickle=False)
+    required = {'bench_train', 'bench_val', 'bench_test', 'bench_ids', 'bench_groups'}
+    if not required.issubset(splits.files):
+        raise ValueError(f"training split artifact lacks {sorted(required - set(splits.files))}")
+
+    config = load_config(bundle['config_path'])
+    benchmark = load_benchmark(config, bundle['feature_names'])
+    if not np.array_equal(benchmark.ids.astype(str), splits['bench_ids'].astype(str)):
+        raise ValueError("benchmark sample ids differ from the training split artifact")
+    for split_key, bundle_key in (
+            ('bench_train', 'train'), ('bench_val', 'validation'), ('bench_test', 'test')):
+        positions = np.asarray(splits[split_key])
+        if positions.ndim != 1 or not np.issubdtype(positions.dtype, np.integer):
+            raise ValueError(f"training split {split_key} is not an integer vector")
+        if len(positions) and (positions.min() < 0 or positions.max() >= len(benchmark.ids)):
+            raise ValueError(f"training split {split_key} has an out-of-range position")
+        ids = benchmark.ids[positions].astype(str).tolist()
+        if ids != bundle['benchmark_partitions'][bundle_key]:
+            raise ValueError(f"training split {split_key} differs from the model bundle")
+
+    features_path = Path(bundle['input_hashes']['benchmark_features']['path'])
+    labels_path = Path(bundle['input_hashes']['benchmark_labels']['path'])
+    features = pd.read_parquet(features_path)
+    labels = pd.read_parquet(labels_path)
+    if len(features) != len(benchmark.ids) or len(labels) != len(benchmark.ids):
+        raise ValueError("benchmark frame lengths differ from the verified bundle input")
+    test_positions = np.asarray(splits['bench_test'])
+    test_features = features.iloc[test_positions].reset_index(drop=True)
+    test_labels = labels.iloc[test_positions].reset_index(drop=True)
+    frame_ids = (
+        test_features['_benchmark'].astype(str) + '/'
+        + test_features['_ground_truth_job_id'].astype(str) + '/'
+        + test_features['_source_path'].map(lambda value: Path(str(value)).name)
+    ).tolist()
+    if frame_ids != bundle['benchmark_partitions']['test']:
+        raise ValueError("selected benchmark test rows differ from the model bundle")
+    return bundle, test_features, test_labels, frame_ids
+
+
 def predict(bundle, X):
     """Probabilities of the seven bottleneck labels and the eight decisions.
 
@@ -270,9 +483,18 @@ def predict(bundle, X):
     reaches the bundle's decision threshold, so a prediction can never be
     healthy and bottlenecked at once, nor neither.
     """
+    validate_bundle(bundle)
+    X = np.asarray(X, dtype=np.float32)
+    if X.ndim != 2:
+        raise ValueError("prediction input must be a two-dimensional matrix")
     if X.shape[1] != len(bundle['feature_names']):
         raise ValueError(f"expected {len(bundle['feature_names'])} features, got {X.shape[1]}")
-    proba = np.column_stack([bundle['models'][d].predict_proba(X)[:, 1] for d in BOTTLENECK_DIMENSIONS])
+    if not np.isfinite(X).all():
+        raise ValueError("prediction input contains non-finite values")
+    proba = np.column_stack([bundle['models'][d].predict_proba(X)[:, 1]
+                             for d in BOTTLENECK_DIMENSIONS])
+    if not np.isfinite(proba).all() or ((proba < 0) | (proba > 1)).any():
+        raise ValueError("model returned an invalid probability")
     decisions = (proba >= bundle['decision_threshold']).astype(int)
     healthy = (decisions.sum(axis=1) == 0).astype(int)
     return proba, np.column_stack([decisions, healthy])
@@ -286,6 +508,19 @@ def evaluate(y_true8, y_pred8, groups, config):
     """Micro and macro F1, Hamming loss, per-label scores, and bootstrap
     intervals that resample whole groups (jobs), not rows."""
     boot = config['evaluation']['bootstrap']
+    y_true8 = np.asarray(y_true8)
+    y_pred8 = np.asarray(y_pred8)
+    groups = np.asarray(groups)
+    if y_true8.shape != y_pred8.shape or y_true8.ndim != 2 or y_true8.shape[1] != len(DIMENSION_NAMES):
+        raise ValueError("evaluation label matrices must have the same eight-column shape")
+    if len(groups) != len(y_true8) or len(groups) == 0:
+        raise ValueError("evaluation groups must provide one nonempty value per row")
+    if not (np.isin(y_true8, [0, 1]).all() and np.isin(y_pred8, [0, 1]).all()):
+        raise ValueError("evaluation labels and decisions must be binary")
+    if int(boot['n_resamples']) <= 0:
+        raise ValueError("bootstrap n_resamples must be positive")
+    if not 0 < float(boot['confidence_level']) < 1:
+        raise ValueError("bootstrap confidence_level must be in (0, 1)")
     metrics = {
         'micro_f1': float(f1_score(y_true8, y_pred8, average='micro', zero_division=0)),
         'macro_f1': float(f1_score(y_true8, y_pred8, average='macro', zero_division=0)),
@@ -337,56 +572,109 @@ def _git_revision():
     return out.stdout.strip() if out.returncode == 0 else 'unknown'
 
 
+def _git_state():
+    revision = _git_revision()
+    if revision == 'unknown':
+        raise RuntimeError("cannot identify the Git revision")
+    status = subprocess.run(
+        ['git', 'status', '--porcelain', '--untracked-files=all'], cwd=PROJECT_DIR,
+        capture_output=True, text=True)
+    if status.returncode != 0:
+        raise RuntimeError(f"cannot inspect Git state: {status.stderr.strip()}")
+    return revision, not bool(status.stdout.strip())
+
+
+def _input_hashes(config):
+    keys = ('production_features', 'production_labels', 'production_splits',
+            'benchmark_features', 'benchmark_labels')
+    return {key: {'path': str(_resolve(config, key)), 'sha256': _sha256(_resolve(config, key))}
+            for key in keys}
+
+
 def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='full',
-              use_production=True, hold_out_benchmark=None):
+              use_production=True, hold_out_benchmark=None, final_evaluation=False):
     """Train ``model_type`` for every seed and write an immutable run directory.
 
-    Protocol: production training rows (weight 1) plus benchmark development
+    Protocol: production training rows (weight 1) plus benchmark training
     rows (weight ``clean_weight``); early stopping on the production
-    validation rows; benchmark development metrics for choices; benchmark
-    test metrics once per seed, reported as mean and standard deviation
-    over seeds. Nothing is chosen on the test rows.
+    validation rows; separate benchmark validation metrics for choices. Test
+    metrics are computed only when ``final_evaluation`` is true, after every
+    choice is fixed.
 
     Ablations, recorded in the manifest: ``feature_set='raw'`` drops the
     derived features; ``use_production=False`` trains on the benchmark
-    development rows alone; ``hold_out_benchmark`` removes one benchmark
-    type from the development rows and reports the test metrics on that
+    training rows alone and early-stops on benchmark validation;
+    ``hold_out_benchmark`` removes one benchmark type from the training rows
+    and, for a final run, reports the test metrics on that
     type's rows as well (``test_excluded_benchmark``).
     """
     run_dir = Path(run_dir)
     if run_dir.exists():
         raise FileExistsError(f"run directory exists, runs are immutable: {run_dir}")
+    seeds = list(seeds)
+    if not seeds or len(seeds) != len(set(seeds)) or any(not isinstance(seed, int) for seed in seeds):
+        raise ValueError("seeds must be a nonempty list of unique integers")
+    if clean_weight <= 0:
+        raise ValueError("clean_weight must be positive")
+    if not 0 < float(config['decision_threshold']) < 1:
+        raise ValueError("decision_threshold must be in (0, 1)")
+    revision, git_clean = _git_state()
+    if not git_clean:
+        raise RuntimeError("training requires a clean Git worktree")
+    input_hashes = _input_hashes(config)
+    config_sha256 = _sha256(config['_path'])
+
     prod = load_production(config, feature_set)
     bench = load_benchmark(config, prod.feature_names)
     if hold_out_benchmark is not None and hold_out_benchmark not in set(bench.benchmark):
         raise ValueError(f"no benchmark rows of type {hold_out_benchmark!r}")
-    run_dir.mkdir(parents=True)
-
-    dev_idx = bench.dev_idx
+    train_idx = bench.train_idx
     if hold_out_benchmark is not None:
-        dev_idx = dev_idx[bench.benchmark[dev_idx] != hold_out_benchmark]
+        train_idx = train_idx[bench.benchmark[train_idx] != hold_out_benchmark]
+    if len(train_idx) == 0:
+        raise ValueError("benchmark filtering left no training rows")
+    run_dir.parent.mkdir(parents=True, exist_ok=True)
+    work_dir = run_dir.parent / f'.{run_dir.name}.incomplete.{os.getpid()}.{time.time_ns()}'
+    work_dir.mkdir()
     prod_train = prod.train_idx if use_production else prod.train_idx[:0]
-    X_train = np.vstack([prod.X[prod_train], bench.X[dev_idx]])
-    y_train = np.vstack([prod.y[prod_train], bench.y[dev_idx]])
-    weights = np.concatenate([np.ones(len(prod_train)), np.full(len(dev_idx), clean_weight)])
-    X_val, y_val = prod.X[prod.val_idx], prod.y[prod.val_idx]
+    if use_production:
+        X_train = np.vstack([prod.X[prod_train], bench.X[train_idx]])
+        y_train = np.vstack([prod.y[prod_train], bench.y[train_idx]])
+        weights = np.concatenate([np.ones(len(prod_train)), np.full(len(train_idx), clean_weight)])
+        X_early, y_early = prod.X[prod.val_idx], prod.y[prod.val_idx]
+        early_stopping_source = 'production_validation'
+    else:
+        X_train, y_train = bench.X[train_idx], bench.y[train_idx]
+        weights = np.ones(len(train_idx))
+        X_early, y_early = bench.X[bench.val_idx], bench.y[bench.val_idx]
+        early_stopping_source = 'benchmark_validation'
     excluded_test = (bench.test_idx[bench.benchmark[bench.test_idx] == hold_out_benchmark]
                  if hold_out_benchmark is not None else None)
-    logger.info("Training rows: %d production (w=1) + %d benchmark dev (w=%.0f); validation %d; "
-                "benchmark test %d rows in %d jobs; feature set %s (%d features)",
-                len(prod_train), len(dev_idx), clean_weight, len(prod.val_idx), len(bench.test_idx),
-                len(np.unique(bench.groups[bench.test_idx])), feature_set, len(prod.feature_names))
+    logger.info("Training rows: %d production (w=1) + %d benchmark train (w=%.0f); "
+                "benchmark validation %d; test %s; feature set %s (%d features)",
+                len(prod_train), len(train_idx), clean_weight, len(bench.val_idx),
+                len(bench.test_idx) if final_evaluation else 'not evaluated',
+                feature_set, len(prod.feature_names))
 
-    np.savez(run_dir / 'splits.npz', prod_train=prod_train, prod_val=prod.val_idx,
-             prod_test=prod.test_idx, bench_dev=dev_idx, bench_test=bench.test_idx,
-             bench_ids=bench.ids, bench_groups=bench.groups)
+    np.savez(work_dir / 'splits.npz', prod_train=prod_train, prod_val=prod.val_idx,
+             prod_test=prod.test_idx, bench_train=train_idx, bench_val=bench.val_idx,
+             bench_test=bench.test_idx if final_evaluation else np.array([], dtype=int),
+             bench_ids=bench.ids.astype(str), bench_groups=bench.groups.astype(str))
+    benchmark_partitions = {
+        'train': bench.ids[train_idx].astype(str).tolist(),
+        'validation': bench.ids[bench.val_idx].astype(str).tolist(),
+        'test': (bench.ids[bench.test_idx].astype(str).tolist()
+                 if final_evaluation else []),
+    }
 
-    y_dev8 = with_healthy(bench.y[dev_idx])
-    y_test8 = with_healthy(bench.y[bench.test_idx])
+    y_val8 = with_healthy(bench.y[bench.val_idx])
+    y_test8 = with_healthy(bench.y[bench.test_idx]) if final_evaluation else None
+    resolved_config = {k: v for k, v in config.items() if not k.startswith('_')}
     per_seed = {}
     for seed in seeds:
         t0 = time.time()
-        models, best_iteration = fit_models(X_train, y_train, weights, X_val, y_val, model_type, config, seed)
+        models, best_iteration = fit_models(
+            X_train, y_train, weights, X_early, y_early, model_type, config, seed)
         bundle = {
             'bundle_format': BUNDLE_FORMAT, 'feature_schema_version': FEATURE_SCHEMA_VERSION,
             'feature_names': list(prod.feature_names), 'dimensions': list(DIMENSION_NAMES),
@@ -394,51 +682,75 @@ def train_run(config, model_type, seeds, clean_weight, run_dir, feature_set='ful
             'decision_threshold': float(config['decision_threshold']),
             'model_type': model_type, 'seed': seed, 'clean_weight': clean_weight,
             'best_iteration': best_iteration, 'models': models,
-            'config_path': config['_path'], 'git_revision': _git_revision(),
+            'config_path': config['_path'], 'config': resolved_config,
+            'config_sha256': config_sha256, 'input_hashes': input_hashes,
+            'git_revision': revision, 'git_clean': git_clean,
+            'final_evaluation': bool(final_evaluation),
+            'benchmark_partitions': benchmark_partitions,
             'created': time.strftime('%Y-%m-%dT%H:%M:%S'),
         }
-        _, dev_pred = predict(bundle, bench.X[dev_idx])
-        _, test_pred = predict(bundle, bench.X[bench.test_idx])
+        validate_bundle(bundle)
+        _, val_pred = predict(bundle, bench.X[bench.val_idx])
         per_seed[seed] = {
-            'dev': evaluate(y_dev8, dev_pred, bench.groups[dev_idx], config),
-            'test': evaluate(y_test8, test_pred, bench.groups[bench.test_idx], config),
+            'validation': evaluate(y_val8, val_pred, bench.groups[bench.val_idx], config),
             'best_iteration': best_iteration, 'fit_seconds': round(time.time() - t0, 1),
         }
-        if excluded_test is not None and len(excluded_test):
-            _, held_pred = predict(bundle, bench.X[excluded_test])
-            per_seed[seed]['test_excluded_benchmark'] = evaluate(with_healthy(bench.y[excluded_test]), held_pred,
-                                                       bench.groups[excluded_test], config)
-        with open(run_dir / f'{model_type}_w{int(clean_weight)}_seed{seed}.pkl', 'wb') as fh:
+        if final_evaluation:
+            _, test_pred = predict(bundle, bench.X[bench.test_idx])
+            per_seed[seed]['test'] = evaluate(
+                y_test8, test_pred, bench.groups[bench.test_idx], config)
+        if final_evaluation and excluded_test is not None and len(excluded_test):
+            _, excluded_pred = predict(bundle, bench.X[excluded_test])
+            per_seed[seed]['test_excluded_benchmark'] = evaluate(
+                with_healthy(bench.y[excluded_test]), excluded_pred,
+                bench.groups[excluded_test], config)
+        weight_tag = format(float(clean_weight), 'g').replace('.', 'p')
+        with open(work_dir / f'{model_type}_w{weight_tag}_seed{seed}.pkl', 'wb') as fh:
             pickle.dump(bundle, fh)
-        logger.info("seed %d: dev micro-F1 %.4f, test micro-F1 %.4f [%.4f, %.4f], macro %.4f",
-                    seed, per_seed[seed]['dev']['micro_f1'], per_seed[seed]['test']['micro_f1'],
-                    *per_seed[seed]['test']['micro_f1_ci'], per_seed[seed]['test']['macro_f1'])
+        message = "seed %d: validation micro-F1 %.4f"
+        values = [seed, per_seed[seed]['validation']['micro_f1']]
+        if final_evaluation:
+            message += ", test micro-F1 %.4f [%.4f, %.4f], macro %.4f"
+            values.extend([per_seed[seed]['test']['micro_f1'],
+                           *per_seed[seed]['test']['micro_f1_ci'],
+                           per_seed[seed]['test']['macro_f1']])
+        logger.info(message, *values)
+
+    final_revision, final_clean = _git_state()
+    if final_revision != revision or not final_clean:
+        raise RuntimeError("Git revision or worktree state changed during the run")
+    if _input_hashes(config) != input_hashes or _sha256(config['_path']) != config_sha256:
+        raise RuntimeError("a training input or configuration changed during the run")
 
     summary = {}
-    for split in ('dev', 'test'):
+    metric_splits = ['validation'] + (['test'] if final_evaluation else [])
+    for split in metric_splits:
         for metric in ('micro_f1', 'macro_f1', 'hamming_loss'):
             values = [per_seed[s][split][metric] for s in seeds]
             summary[f'{split}_{metric}_mean'] = float(np.mean(values))
             summary[f'{split}_{metric}_std'] = float(np.std(values))
     manifest = {
-        'model_type': model_type, 'seeds': list(seeds), 'clean_weight': clean_weight,
+        'model_type': model_type, 'seeds': seeds, 'clean_weight': clean_weight,
         'feature_set': feature_set, 'use_production': use_production,
-        'hold_out_benchmark': hold_out_benchmark, 'feature_names': list(prod.feature_names),
-        'config': {k: v for k, v in config.items() if not k.startswith('_')},
-        'config_path': config['_path'], 'git_revision': _git_revision(),
+        'hold_out_benchmark': hold_out_benchmark, 'final_evaluation': bool(final_evaluation),
+        'early_stopping_source': early_stopping_source,
+        'feature_names': list(prod.feature_names), 'config': resolved_config,
+        'config_path': config['_path'], 'config_sha256': config_sha256,
+        'git_revision': revision, 'git_clean': git_clean,
         'feature_schema_version': FEATURE_SCHEMA_VERSION, 'n_features': len(prod.feature_names),
-        'inputs': {k: {'path': str(_resolve(config, k)), 'sha256': _sha256(_resolve(config, k))}
-                   for k in ('production_features', 'production_labels', 'production_splits',
-                             'benchmark_features', 'benchmark_labels')},
+        'inputs': input_hashes,
         'sizes': {'prod_train': int(len(prod_train)), 'prod_val': int(len(prod.val_idx)),
-                  'prod_test': int(len(prod.test_idx)), 'bench_dev': int(len(dev_idx)),
-                  'bench_test': int(len(bench.test_idx)),
-                  'bench_test_excluded': int(len(excluded_test)) if excluded_test is not None else 0},
+                  'prod_test': int(len(prod.test_idx)), 'bench_train': int(len(train_idx)),
+                  'bench_validation': int(len(bench.val_idx)),
+                  'bench_test': int(len(bench.test_idx)) if final_evaluation else 0,
+                  'bench_test_excluded': int(len(excluded_test))
+                  if final_evaluation and excluded_test is not None else 0},
         'summary': summary, 'per_seed': {str(s): per_seed[s] for s in seeds},
         'created': time.strftime('%Y-%m-%dT%H:%M:%S'),
     }
-    with open(run_dir / 'manifest.json', 'w') as fh:
+    with open(work_dir / 'manifest.json', 'w') as fh:
         json.dump(manifest, fh, indent=2)
-    logger.info("Run written: %s (test micro-F1 %.4f +/- %.4f over %d seeds)", run_dir,
-                summary['test_micro_f1_mean'], summary['test_micro_f1_std'], len(seeds))
+    os.rename(work_dir, run_dir)
+    logger.info("Run written: %s (validation micro-F1 %.4f +/- %.4f over %d seeds)", run_dir,
+                summary['validation_micro_f1_mean'], summary['validation_micro_f1_std'], len(seeds))
     return manifest

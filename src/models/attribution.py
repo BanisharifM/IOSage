@@ -27,7 +27,9 @@ import numpy as np
 import shap
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from src.models.biquality import BOTTLENECK_DIMENSIONS, BUNDLE_FORMAT, load_benchmark, load_config  # noqa: E402
+from src.models.biquality import (  # noqa: E402
+    BOTTLENECK_DIMENSIONS, load_final_benchmark_test_frames,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,25 +57,16 @@ DIM_SHORT = {
 def load_bundle_and_test_rows(bundle_path):
     """The bundle's models and feature names, and the benchmark test rows of
     its run (from ``splits.npz`` in the same directory)."""
-    bundle_path = Path(bundle_path)
-    with open(bundle_path, "rb") as f:
-        bundle = pickle.load(f)
-    if not isinstance(bundle, dict) or bundle.get("bundle_format") != BUNDLE_FORMAT:
-        raise ValueError(f"{bundle_path} is not a model bundle; train with scripts/train_biquality.py")
-    splits_path = bundle_path.parent / "splits.npz"
-    if not splits_path.exists():
-        raise FileNotFoundError(f"{splits_path} missing: the bundle must stay in its run directory")
-    splits = np.load(splits_path, allow_pickle=True)
-    config = load_config(bundle["config_path"])
-    bench = load_benchmark(config, bundle["feature_names"])
-    if not np.array_equal(bench.ids, splits["bench_ids"]):
-        raise ValueError("benchmark data changed since the run; ids differ from splits.npz")
-    test_idx = splits["bench_test"]
-    return bundle, bench.X[test_idx], bench.y[test_idx], list(bundle["feature_names"])
+    bundle, features, labels, sample_ids = load_final_benchmark_test_frames(bundle_path)
+    X = features[bundle['feature_names']].to_numpy(dtype=np.float32)
+    y = labels[BOTTLENECK_DIMENSIONS].to_numpy(dtype=int)
+    return bundle, X, y, list(bundle['feature_names']), np.asarray(sample_ids)
 
 
 def compute_shap_values(models, X, feature_names, max_samples=500):
     """Compute SHAP values for each label dimension using TreeSHAP."""
+    if max_samples <= 0 or len(X) == 0:
+        raise ValueError("SHAP needs at least one sample")
     n_samples = min(len(X), max_samples)
     X_sample = X[:n_samples]
 
@@ -109,6 +102,7 @@ def plot_feature_label_heatmap(shap_dict, feature_names, output_path, top_k=20):
         if dim in shap_dict:
             importance_matrix[:, j] = np.abs(shap_dict[dim]).mean(axis=0)
 
+    top_k = min(top_k, n_features)
     # Select top-K features by max importance across any label
     max_importance = importance_matrix.max(axis=1)
     top_idx = np.argsort(max_importance)[-top_k:][::-1]
@@ -127,7 +121,7 @@ def plot_feature_label_heatmap(shap_dict, feature_names, output_path, top_k=20):
 
     ax.set_xlabel("Bottleneck Dimension", fontsize=11)
     ax.set_ylabel("Feature", fontsize=11)
-    ax.set_title(f"Mean |SHAP| Value — Top {top_k} Features", fontsize=12)
+    ax.set_title(f"Mean |SHAP| Value: Top {top_k} Features", fontsize=12)
 
     plt.colorbar(im, ax=ax, label="Mean |SHAP|", shrink=0.8)
     plt.tight_layout()
@@ -146,6 +140,7 @@ def plot_per_label_beeswarm(shap_dict, X_sample, feature_names, output_dir, top_
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    top_k = min(top_k, len(feature_names))
     for dim in DIMENSIONS:
         if dim not in shap_dict:
             continue
@@ -159,7 +154,7 @@ def plot_per_label_beeswarm(shap_dict, X_sample, feature_names, output_dir, top_
 
         fig, ax = plt.subplots(figsize=(8, 6))
         shap.plots.beeswarm(explanation, max_display=top_k, show=False)
-        ax.set_title(f"SHAP — {DIM_SHORT[dim]}", fontsize=12)
+        ax.set_title(f"SHAP: {DIM_SHORT[dim]}", fontsize=12)
         plt.tight_layout()
 
         path = output_dir / f"shap_beeswarm_{dim}.png"
@@ -181,11 +176,12 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
         if dim in shap_dict:
             contributions[:, j] = np.abs(shap_dict[dim]).mean(axis=0)
 
+    top_k = min(top_k, n_features)
     # Top K by total importance
     total = contributions.sum(axis=1)
     top_idx = np.argsort(total)[-top_k:]
 
-    # Single-column figure — native size so fonts aren't scaled down
+    # Single-column figure at native size so fonts are not scaled down
     fig, ax = plt.subplots(figsize=(3.5, 3.2))
 
     y_pos = np.arange(top_k)
@@ -205,14 +201,14 @@ def plot_global_bar(shap_dict, feature_names, output_path, top_k=20):
     max_bar_total = float(left.max())
     ax.set_xlim(0, max_bar_total * 1.02)
 
-    # Feature names — readable monospace font (+1pt for legibility)
+    # Feature names in a readable monospace font (+1pt for legibility)
     ax.set_yticks(y_pos)
     ax.set_yticklabels([feature_names[i] for i in top_idx], fontsize=7,
                        fontfamily="monospace")
     ax.set_xlabel("Mean |SHAP| Value", fontsize=9)
     ax.tick_params(axis="x", labelsize=7)
 
-    # Legend inside chart — lower-right has space (short bars there)
+    # Legend inside chart; lower-right has space because the bars are short there
     ax.legend(loc="lower right", bbox_to_anchor=(0.99, 0.01),
               fontsize=6, ncol=2, frameon=True, framealpha=0.95,
               edgecolor="#cccccc", borderpad=0.4,
@@ -292,15 +288,18 @@ def main():
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir.exists():
+        raise FileExistsError(f"attribution output directory already exists: {output_dir}")
+    output_dir.mkdir(parents=True)
 
-    bundle, X_test, y_test, feature_cols = load_bundle_and_test_rows(args.bundle)
+    bundle, X_test, y_test, feature_cols, test_ids = load_bundle_and_test_rows(args.bundle)
     logger.info("Bundle %s seed %s: %d test samples, %d features",
                 bundle["model_type"], bundle["seed"], len(X_test), len(feature_cols))
 
     shap_dict, X_sample = compute_shap_values(bundle["models"], X_test, feature_cols,
                                               max_samples=args.max_samples)
     y_sample = y_test[:len(X_sample)]
+    sample_ids = test_ids[:len(X_sample)]
 
     plot_feature_label_heatmap(shap_dict, feature_cols, output_dir / "fig_shap_heatmap.pdf", top_k=args.top_k)
     plot_per_label_beeswarm(shap_dict, X_sample, feature_cols, output_dir, top_k=15)
@@ -312,7 +311,8 @@ def main():
 
     with open(output_dir / "shap_values.pkl", "wb") as f:
         pickle.dump({"shap_dict": shap_dict, "feature_names": feature_cols, "X_sample": X_sample,
-                     "y_sample": y_sample, "bundle": str(args.bundle)}, f)
+                     "y_sample": y_sample, "sample_ids": sample_ids,
+                     "bundle": str(args.bundle)}, f)
     logger.info("SHAP values, figures and domain_validation.json saved to %s", output_dir)
     return 0
 

@@ -7,7 +7,7 @@ features extracted from Darshan logs.
 Pipeline stages (each saves an intermediate parquet):
   Stage 1: Raw extraction (batch_extract.py --raw) -> raw_features.parquet
   Stage 2: Cleaning -> cleaned_features.parquet
-  Stage 3: Feature engineering -> engineered_features.parquet
+  Stage 3: Feature engineering -> features.parquet
   Stage 4: Statistical analysis (EDA) -> stats report (no parquet)
   Stage 5: Normalization -> normalized_features.parquet
 
@@ -347,7 +347,7 @@ def engineer_one(parsed_log):
 # ---------------------------------------------------------------------------
 
 def compute_statistics(df):
-    """Compute comprehensive statistics for EDA.
+    """Compute the statistics used for EDA.
 
     Run this on Stage 2 (cleaned) or Stage 3 (engineered) features to
     inform decisions about feature exclusion and normalization.
@@ -606,13 +606,14 @@ def stage5_normalize(df, config, fit=True, scalers=None):
 # ---------------------------------------------------------------------------
 
 def create_splits(df, config):
-    """Create train/val/test splits as row positions of ``df``.
+    """Create job-grouped train/val/test splits as row positions of ``df``.
 
     ``splits.method`` is ``temporal`` (sort by ``_start_time``, the oldest
     rows train and the newest test) or ``random`` (seeded shuffle). Both
     return positions, so consumers index the frame, or a parquet written
-    from it, with ``iloc``. The three partitions are checked to be disjoint,
-    to cover every row, and to be non-empty.
+    from it, with ``iloc``. Rows from one ``(_uid, _jobid)`` group stay in one
+    partition. The three partitions are checked to be disjoint, to cover
+    every row, and to be non-empty.
 
     Returns
     -------
@@ -636,25 +637,57 @@ def create_splits(df, config):
         raise ValueError(f"{n} rows give an empty partition at fractions "
                          f"test={test_fraction}, val={val_fraction}")
 
+    required = ['_uid', '_jobid', '_start_time']
+    missing = [name for name in required if name not in df.columns]
+    if missing:
+        raise ValueError(f"grouped split lacks columns {missing}")
+    group_rows = {}
+    row_keys = []
+    for pos, (uid, jobid) in enumerate(zip(df['_uid'], df['_jobid'])):
+        if jobid != 0:
+            key = (uid, jobid)
+        elif '_source_path' in df.columns:
+            key = ('path', df['_source_path'].iloc[pos])
+        else:
+            key = ('row', pos)
+        group_rows.setdefault(key, []).append(pos)
+        row_keys.append(key)
+    if len(group_rows) < 3:
+        raise ValueError("grouped split needs at least three job groups")
+
     if method == 'temporal':
-        order = np.argsort(df['_start_time'].to_numpy(), kind='stable')
-        logger.info("Temporal split: train=%d, val=%d, test=%d",
-                    n - n_test - n_val, n_val, n_test)
+        group_order = sorted(group_rows, key=lambda key: (
+            min(df['_start_time'].iloc[group_rows[key]]), group_rows[key][0]))
     elif method == 'random':
-        order = np.random.RandomState(seed).permutation(n)
-        logger.info("Random split (seed=%d): train=%d, val=%d, test=%d",
-                    seed, n - n_test - n_val, n_val, n_test)
+        group_order = list(group_rows)
+        np.random.RandomState(seed).shuffle(group_order)
     else:
         raise ValueError(f"unknown split method {method!r}")
 
+    sizes = np.array([len(group_rows[key]) for key in group_order])
+    cumulative = np.cumsum(sizes)
+    train_target = n - n_test - n_val
+    train_cut = min(range(1, len(group_order) - 1),
+                    key=lambda cut: abs(cumulative[cut - 1] - train_target))
+    val_target_end = n - n_test
+    val_cut = min(range(train_cut + 1, len(group_order)),
+                  key=lambda cut: abs(cumulative[cut - 1] - val_target_end))
+    ordered_rows = [np.asarray(group_rows[key], dtype=int) for key in group_order]
     splits = {
-        'train_idx': order[:n - n_test - n_val],
-        'val_idx': order[n - n_test - n_val:n - n_test],
-        'test_idx': order[n - n_test:],
+        'train_idx': np.concatenate(ordered_rows[:train_cut]),
+        'val_idx': np.concatenate(ordered_rows[train_cut:val_cut]),
+        'test_idx': np.concatenate(ordered_rows[val_cut:]),
     }
     parts = np.concatenate(list(splits.values()))
     if len(np.unique(parts)) != n or parts.min() != 0 or parts.max() != n - 1:
         raise AssertionError("split partitions must be disjoint and cover every row")
+    keys_by_part = []
+    for idx in splits.values():
+        keys_by_part.append({row_keys[pos] for pos in idx})
+    if any(keys_by_part[i] & keys_by_part[j] for i, j in ((0, 1), (0, 2), (1, 2))):
+        raise AssertionError("a production job appears in more than one partition")
+    logger.info("%s grouped split: train=%d, val=%d, test=%d (%d jobs)",
+                method.capitalize(), *(len(idx) for idx in splits.values()), len(group_rows))
     return splits
 
 

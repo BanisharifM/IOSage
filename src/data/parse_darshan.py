@@ -24,9 +24,11 @@ Usage::
     # }
 """
 
+import datetime
 import logging
 
 import darshan
+import darshan.backend.cffi_backend as darshan_backend
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -102,13 +104,58 @@ def _read_module_frames(report, module_name, path):
         raise ValueError(f"cannot read module {module_name} of {path}: {exc}") from exc
 
 
+def _reject_partial_feature_modules(report, path):
+    partial = [mod for mod, _ in FEATURE_MODULES
+               if mod in report.modules and report.modules[mod].get('partial_flag', False)]
+    if partial:
+        raise ValueError(f"incomplete feature module data in {path}: {', '.join(partial)}")
+
+
+def _open_report(path):
+    """Open a report, tolerating only an invalid unused mount type string.
+
+    Darshan 3.4.x could write stray bytes at the end of the mount table. The
+    feature pipeline does not use mount metadata. All other metadata and
+    module reads still use libdarshan-util and keep their normal errors.
+    """
+    try:
+        return darshan.DarshanReport(path, read_all=False)
+    except UnicodeDecodeError as original_error:
+        log = darshan_backend.log_open(path)
+        if not bool(log['handle']):
+            raise RuntimeError(f"failed to open {path}") from original_error
+        try:
+            darshan_backend.log_get_mounts(log)
+        except UnicodeDecodeError:
+            pass
+        else:
+            darshan_backend.log_close(log)
+            raise original_error
+
+        report = darshan.DarshanReport()
+        report.filename = path
+        report.log = log
+        report.metadata['job'] = darshan_backend.log_get_job(log)
+        report.metadata['exe'] = darshan_backend.log_get_exe(log)
+        job = report.metadata['job']
+        report.start_time = datetime.datetime.fromtimestamp(job['start_time_sec'])
+        report.end_time = datetime.datetime.fromtimestamp(job['end_time_sec'])
+        report.data['mounts'] = []
+        report.mounts = []
+        report.data['modules'] = darshan_backend.log_get_modules(log)
+        report._modules = report.data['modules']
+        logger.warning("Ignoring invalid unused mount metadata in %s", path)
+        return report
+
+
 def _parse_with_pydarshan(path):
     """Parse using the PyDarshan library.
 
     Opens with read_all=False (PyDarshan cannot decode APMPI/HEATMAP records)
     and reads only the feature modules.
     """
-    report = darshan.DarshanReport(path, read_all=False)
+    report = _open_report(path)
+    _reject_partial_feature_modules(report, path)
     job = _job_metadata(report)
     modules = list(report.modules.keys())
     job['modules'] = modules
@@ -635,7 +682,8 @@ def parse_benchmark_job(rank_files):
 
     for rank_idx, fpath in enumerate(sorted(rank_files)):
         try:
-            report = darshan.DarshanReport(str(fpath), read_all=False)
+            report = _open_report(str(fpath))
+            _reject_partial_feature_modules(report, fpath)
         except Exception as exc:
             raise ValueError(f"cannot open per-rank log {fpath}: {exc}") from exc
 

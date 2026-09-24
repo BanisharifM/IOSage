@@ -99,6 +99,9 @@ DEFAULT_MANIFEST = Path(__file__).resolve().parents[2] / "data" / "benchmark_lab
 MANIFEST_KEYS = ["benchmark", "job_id", "log_file"]
 MANIFEST_COLUMNS = MANIFEST_KEYS + ["scenario", "source", "note"] + DIMENSION_NAMES
 LABEL_SOURCES = {"slurm_out", "step_mapping", "none"}
+VERIFICATION_COLUMNS = {
+    "benchmark", "job_id", "first_file", "scenario", "source", "status"
+}
 
 
 def load_manifest(path=DEFAULT_MANIFEST):
@@ -126,6 +129,58 @@ def load_manifest(path=DEFAULT_MANIFEST):
     if (labeled[DIMENSION_NAMES].sum(axis=1) == 0).any():
         raise ValueError(f"manifest {path} has labeled rows without any dimension")
     return manifest
+
+
+def validate_verification_report(manifest, report_path, bench_types=None):
+    """Require one passing verification row for every labeled manifest row."""
+    report = pd.read_csv(report_path, dtype=str, keep_default_na=False)
+    missing_columns = VERIFICATION_COLUMNS - set(report.columns)
+    if missing_columns:
+        raise ValueError(f"verification report {report_path} lacks columns "
+                         f"{sorted(missing_columns)}")
+    unknown_benchmarks = set(report['benchmark']) - set(manifest['benchmark'])
+    if unknown_benchmarks:
+        raise ValueError(f"verification report has unknown benchmarks {sorted(unknown_benchmarks)}")
+    selected = set(bench_types) if bench_types is not None else set(manifest['benchmark'])
+    expected = manifest[manifest['benchmark'].isin(selected)].copy()
+    actual = report[report['benchmark'].isin(selected)].copy()
+
+    expected['_sample_file'] = expected.apply(
+        lambda row: row['log_file'] if row['benchmark'] in AGGREGATED_BENCHMARKS else '', axis=1)
+    actual['_sample_file'] = actual.apply(
+        lambda row: row['first_file'] if row['benchmark'] in AGGREGATED_BENCHMARKS else '', axis=1)
+    keys = ['benchmark', 'job_id', '_sample_file']
+    if actual.duplicated(keys).any():
+        row = actual[actual.duplicated(keys, keep=False)].iloc[0]
+        raise ValueError(f"verification report has duplicate sample {row[keys].tolist()}")
+
+    expected_keys = set(map(tuple, expected[keys].to_numpy()))
+    actual_keys = set(map(tuple, actual[keys].to_numpy()))
+    if expected_keys != actual_keys:
+        raise ValueError(
+            f"verification report sample set differs from manifest: "
+            f"missing={len(expected_keys - actual_keys)}, extra={len(actual_keys - expected_keys)}")
+
+    joined = expected.merge(actual, on=keys, suffixes=('_manifest', '_report'), validate='one_to_one')
+    mismatched = joined[
+        (joined['scenario_manifest'] != joined['scenario_report'])
+        | (joined['source_manifest'] != joined['source_report'])
+    ]
+    if not mismatched.empty:
+        row = mismatched.iloc[0]
+        raise ValueError(f"verification metadata differs for {row[keys].tolist()}")
+    excluded = joined['source_manifest'] == 'none'
+    bad_excluded = joined[excluded & (joined['status'] != 'excluded')]
+    if not bad_excluded.empty:
+        raise ValueError("a manifest exclusion is not marked excluded in the verification report")
+    bad_labeled = joined[~excluded & (joined['status'] != 'pass')]
+    if not bad_labeled.empty:
+        counts = bad_labeled['status'].value_counts().to_dict()
+        first = bad_labeled.iloc[0]
+        raise ValueError(
+            f"{len(bad_labeled)} labeled samples did not pass verification {counts}; "
+            f"first: {first[keys].tolist()}")
+    return {'labeled_pass': int((~excluded).sum()), 'excluded': int(excluded.sum())}
 
 
 def manifest_row(manifest, bench_type, job_id, files):

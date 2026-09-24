@@ -5,16 +5,16 @@ Orchestrates Stages 2-5 of the preprocessing pipeline on raw_features.parquet.
 
 Stages:
   2. Cleaning        -> data/processed/production/cleaned_features.parquet
-  3. Engineering      -> data/processed/production/features.parquet
+  3. Engineering      -> data/processed/resubmission/production/features.parquet
   4. EDA / Statistics -> data/processed/production/eda/stats.parquet + eda_report.json
-  5. Normalization    -> data/processed/normalized_{train,val,test}.parquet
-                      + data/processed/scalers.pkl
+  5. Normalization    -> data/processed/resubmission/production/splits/*.parquet
+                      + data/processed/resubmission/production/scalers.pkl
 
 Usage::
 
     python scripts/run_preprocessing.py \
-        --input data/processed/raw_features.parquet \
-        --output-dir data/processed \
+        --input data/processed/resubmission/production/raw_features.parquet \
+        --output-dir data/processed/resubmission/production \
         --config configs/preprocessing.yaml
 
     # Resume from a specific stage (skip earlier stages if outputs exist)
@@ -31,8 +31,10 @@ Usage::
 """
 
 import argparse
+import hashlib
 import json
 import logging
+import os
 import pickle
 import sys
 import time
@@ -57,6 +59,7 @@ from src.data.preprocessing import (
     stage3_engineer,
     stage5_normalize,
 )
+from src.data.feature_extraction import FEATURE_SCHEMA_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +188,7 @@ def run_stage3(df_or_path, output_dir, min_rows):
     validate_dataframe(df_eng, "Stage 3", expected_min_rows=min_rows)
 
     # Save
-    out_path = output_dir / 'engineered_features.parquet'
+    out_path = output_dir / 'features.parquet'
     df_eng.to_parquet(out_path, index=False)
 
     elapsed = time.time() - t0
@@ -404,10 +407,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='Run preprocessing pipeline (Stages 2-5)')
     parser.add_argument('--input', type=str,
-                        default='data/processed/production/raw_features.parquet',
+                        default='data/processed/resubmission/production/raw_features.parquet',
                         help='Input parquet from Stage 1')
     parser.add_argument('--output-dir', type=str,
-                        default='data/processed',
+                        default='data/processed/resubmission/production',
                         help='Output directory for all stages')
     parser.add_argument('--config', type=str,
                         default='configs/preprocessing.yaml',
@@ -422,10 +425,37 @@ def main():
                         help='Rows every stage output must keep (validation)')
     args = parser.parse_args()
 
+    if not 2 <= args.start_stage <= args.end_stage <= 5:
+        parser.error("stages must satisfy 2 <= start-stage <= end-stage <= 5")
+    input_path = Path(args.input).resolve()
+    config_path = Path(args.config).resolve()
+    if not input_path.is_file():
+        parser.error(f"input file not found: {input_path}")
+    if not config_path.is_file():
+        parser.error(f"configuration file not found: {config_path}")
+
     # Setup
-    output_dir = Path(args.output_dir)
+    output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    log_file = setup_logging(output_dir)
+    stage_outputs = {
+        2: [output_dir / 'cleaned_features.parquet'],
+        3: [output_dir / 'features.parquet'],
+        4: [output_dir / 'eda_stats.parquet', output_dir / 'eda_correlation.parquet',
+            output_dir / 'eda_report.json'],
+        5: [output_dir / 'dropped_features.json', output_dir / 'normalized_features.parquet',
+            output_dir / 'scalers.pkl', output_dir / 'split_indices.pkl',
+            output_dir / 'splits' / 'train.parquet', output_dir / 'splits' / 'val.parquet',
+            output_dir / 'splits' / 'test.parquet'],
+    }
+    manifest_name = ('preprocessing_manifest.json' if (args.start_stage, args.end_stage) == (2, 5)
+                     else f'preprocessing_stage_{args.start_stage}_{args.end_stage}_manifest.json')
+    manifest_path = output_dir / manifest_name
+    selected_outputs = [path for stage in range(args.start_stage, args.end_stage + 1)
+                        for path in stage_outputs[stage]]
+    existing = [str(path) for path in selected_outputs + [manifest_path] if path.exists()]
+    if existing:
+        raise FileExistsError(f"refusing to replace preprocessing artifacts: {existing}")
+    setup_logging(output_dir)
 
     logger.info("=" * 60)
     logger.info("PREPROCESSING PIPELINE")
@@ -437,8 +467,8 @@ def main():
     if args.sample:
         logger.info("Sample:     %d rows", args.sample)
 
-    config = load_preprocessing_config(args.config)
-    logger.info("Config loaded: %s", args.config)
+    config = load_preprocessing_config(config_path)
+    logger.info("Config loaded: %s", config_path)
 
     t_total = time.time()
 
@@ -448,7 +478,7 @@ def main():
     # --- Stage 2: Cleaning ---
     if args.start_stage <= 2 <= args.end_stage:
         df_clean, clean_report = run_stage2(
-            Path(args.input), output_dir, config, args.min_rows)
+            input_path, output_dir, config, args.min_rows)
         if args.sample and len(df_clean) > args.sample:
             rng = np.random.RandomState(config.get('random_seed', 42))
             idx = rng.choice(len(df_clean), args.sample, replace=False)
@@ -475,7 +505,7 @@ def main():
             df = run_stage3(output_dir / 'cleaned_features.parquet',
                            output_dir, args.min_rows)
     elif args.start_stage > 3:
-        eng_path = output_dir / 'engineered_features.parquet'
+        eng_path = output_dir / 'features.parquet'
         if eng_path.exists():
             df = pd.read_parquet(eng_path)
             logger.info("Loaded engineered features: %d rows", len(df))
@@ -485,7 +515,7 @@ def main():
         if df is not None:
             run_stage4(df, output_dir, config)
         else:
-            run_stage4(output_dir / 'engineered_features.parquet',
+            run_stage4(output_dir / 'features.parquet',
                       output_dir, config)
 
     # --- Stage 5: Normalization + Splits ---
@@ -493,7 +523,7 @@ def main():
         if df is not None:
             run_stage5(df, output_dir, config, args.min_rows)
         else:
-            run_stage5(output_dir / 'engineered_features.parquet',
+            run_stage5(output_dir / 'features.parquet',
                       output_dir, config, args.min_rows)
 
     total_elapsed = time.time() - t_total
@@ -504,7 +534,7 @@ def main():
 
     # Final output summary
     logger.info("\nOutput files:")
-    for name in ['cleaned_features.parquet', 'engineered_features.parquet',
+    for name in ['cleaned_features.parquet', 'features.parquet',
                  'normalized_features.parquet', 'eda_stats.parquet',
                  'eda_report.json', 'scalers.pkl', 'split_indices.pkl']:
         p = output_dir / name
@@ -514,6 +544,42 @@ def main():
         p = output_dir / 'splits' / name
         if p.exists():
             logger.info("  splits/%s (%.1f MB)", name, p.stat().st_size / 1e6)
+
+    def sha256(path):
+        digest = hashlib.sha256()
+        with open(path, 'rb') as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b''):
+                digest.update(block)
+        return digest.hexdigest()
+
+    artifacts = {}
+    for path in selected_outputs:
+        if not path.is_file() or path.stat().st_size == 0:
+            raise RuntimeError(f"required preprocessing output missing or empty: {path}")
+        record = {'path': str(path), 'sha256': sha256(path), 'bytes': path.stat().st_size}
+        if path.suffix == '.parquet':
+            frame = pd.read_parquet(path)
+            record.update(rows=len(frame), columns=len(frame.columns))
+        artifacts[path.relative_to(output_dir).as_posix()] = record
+    manifest = {
+        'schema_version': 1,
+        'status': 'passed',
+        'feature_schema_version': FEATURE_SCHEMA_VERSION,
+        'stages': [args.start_stage, args.end_stage],
+        'sample': args.sample,
+        'min_rows': args.min_rows,
+        'input': {'path': str(input_path), 'sha256': sha256(input_path)},
+        'config': {'path': str(config_path), 'sha256': sha256(config_path)},
+        'script': {'path': str(Path(__file__).resolve()),
+                   'sha256': sha256(Path(__file__).resolve())},
+        'artifacts': artifacts,
+    }
+    manifest_tmp = output_dir / f'.{manifest_name}.tmp.{os.getpid()}'
+    with open(manifest_tmp, 'x') as handle:
+        json.dump(manifest, handle, indent=2, sort_keys=True)
+        handle.write('\n')
+    os.rename(manifest_tmp, manifest_path)
+    logger.info("Manifest: %s", manifest_path)
 
 
 if __name__ == '__main__':

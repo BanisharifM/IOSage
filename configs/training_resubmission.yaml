@@ -28,13 +28,14 @@ exclude_features:
   - POSIX_FILE_ALIGNMENT
   - POSIX_RENAMED_FROM
 
-# Benchmark development / test split: whole jobs on one side, iterative
-# stratification over jobs (same 30 / 70 ratio and seed as the SC 2026 protocol)
+# Benchmark train / validation / test split: whole jobs in one partition,
+# with 70 percent for final testing and 20 percent of the remainder for validation.
 benchmark_split:
   test_ratio: 0.7
+  validation_ratio: 0.2  # fraction of the remaining 30 percent reserved for choices
   seed: 42
 
-# Biquality weighting: production rows weight 1, benchmark development rows this weight
+# Biquality weighting: production rows weight 1, benchmark training rows this weight
 biquality:
   clean_weight: 100.0
   seeds: [42, 123, 456, 789, 1024]

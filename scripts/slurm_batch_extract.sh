@@ -5,7 +5,7 @@
 # Architecture:
 #   Step 1: Discover and split files into N chunks (one per array task)
 #   Step 2: SLURM array job: each task processes its chunk with 100 workers
-#   Step 3: Merge job (afterany): combines all chunk parquets into one file
+#   Step 3: Merge job validates every requested path and combines all chunks
 #
 # Each array task runs batch_extract.py which:
 #   - Uses multiprocessing.Pool with imap_unordered (lazy, memory-efficient)
@@ -13,11 +13,12 @@
 #   - Has per-file 120s timeout via signal.alarm (prevents hung PyDarshan)
 #   - Writes atomic sub-chunk files with _part_ prefix (no SLURM collision)
 #   - Supports checkpoint/resume (skip completed sub-chunks on restart)
-#   - Logs errors to CSV for post-hoc diagnosis
+#   - Keeps one error CSV per attempt for diagnosis
 #
 # Submit:
 #   bash scripts/slurm_batch_extract.sh            # writes under data/processed/resubmission/production
 #   OUTPUT_DIR=<dir> bash scripts/slurm_batch_extract.sh
+#   RESUME=1 OUTPUT_DIR=<dir> bash scripts/slurm_batch_extract.sh
 #   DEPENDENCY=afterany:<jobid> bash scripts/slurm_batch_extract.sh   # start after timed runs end
 #
 # Monitor:
@@ -26,7 +27,7 @@
 #   tail -f $OUTPUT_DIR/logs/extract_JOBID_0.out
 #   wc -l $OUTPUT_DIR/chunks/*_errors.csv
 #
-# The output directory must not hold an earlier run (refused rather than overwritten).
+# A new run refuses prior file lists. RESUME=1 reuses their exact request sets.
 # =============================================================================
 
 set -euo pipefail
@@ -44,11 +45,14 @@ LOG_DIR="${OUTPUT_DIR}/logs"
 # Reading 1.4M small files from 20 nodes loads the metadata servers of the shared file
 # system; never run this next to timed benchmark or application runs.
 DEPENDENCY="${DEPENDENCY:-}"
+RESUME="${RESUME:-0}"
 
 N_CHUNKS=20              # Number of array tasks (one per node)
 WORKERS_PER_TASK=100     # Workers per node (128 CPUs, leave 28 for OS/IO)
 TIMEOUT_PER_FILE=120     # Seconds before killing a stuck file
 CHUNK_SIZE=10000         # Rows per internal sub-chunk file
+RETRY_WORKERS=4          # Reduce storage contention for files that exceeded the first limit
+RETRY_TIMEOUT=1800       # Slow large logs get a full 30 minutes on retry
 
 echo "================================================================="
 echo "  Batch Feature Extraction $(date)"
@@ -60,54 +64,53 @@ echo "Workers:     ${WORKERS_PER_TASK} per task"
 echo "Timeout:     ${TIMEOUT_PER_FILE}s per file"
 echo ""
 
-# --- Step 1: Create file lists ---
-if [ -e "${FINAL_OUTPUT}" ] || ls "${FILELIST_DIR}"/chunk_*.txt >/dev/null 2>&1; then
-    echo "ERROR: ${OUTPUT_DIR} already holds a run (raw_features.parquet or file lists); choose another OUTPUT_DIR"
+# --- Step 1: Create or reuse file lists ---
+if [ -e "${FINAL_OUTPUT}" ]; then
+    echo "ERROR: final output already exists: ${FINAL_OUTPUT}"
     exit 1
 fi
 mkdir -p "${FILELIST_DIR}" "${CHUNK_DIR}" "${OUTPUT_DIR}" "${LOG_DIR}"
 
-echo "[Step 1] Discovering .darshan files..."
-
 ALLFILES="${FILELIST_DIR}/all_darshan_files.txt"
-
-# Use lfs find on Lustre for faster metadata lookup, fall back to GNU find
-if lfs find "${INPUT_DIR}" -name "*.darshan" -type f > "${ALLFILES}" 2>/dev/null; then
-    echo "  Used lfs find (Lustre-optimized)"
-else
-    echo "  lfs find unavailable, using GNU find"
-    find "${INPUT_DIR}" -name "*.darshan" -type f > "${ALLFILES}"
-fi
-
-TOTAL=$(wc -l < "${ALLFILES}")
-echo "  Found ${TOTAL} .darshan files"
-
-# Zero-file guard
-if [ "${TOTAL}" -eq 0 ]; then
-    echo "ERROR: No .darshan files found in ${INPUT_DIR}"
-    echo "Check that Darshan logs have been unpacked."
-    exit 1
-fi
-
-# Split into N chunks
-LINES_PER_CHUNK=$(( (TOTAL + N_CHUNKS - 1) / N_CHUNKS ))
-echo "  Splitting into ${N_CHUNKS} chunks of ~${LINES_PER_CHUNK} files each"
-
-split -l "${LINES_PER_CHUNK}" -d -a 3 "${ALLFILES}" "${FILELIST_DIR}/chunk_"
-
-# Rename split output to .txt
-for f in "${FILELIST_DIR}"/chunk_*; do
-    if [[ ! "$f" == *.txt ]]; then
-        mv "$f" "${f}.txt"
+if [ "${RESUME}" = "1" ]; then
+    if ! ls "${FILELIST_DIR}"/chunk_[0-9][0-9][0-9].txt >/dev/null 2>&1; then
+        echo "ERROR: RESUME=1 requires existing chunk file lists in ${FILELIST_DIR}"
+        exit 1
     fi
-done
-
-# Shuffle each chunk for Lustre MDT load balancing
-# (Files are organized by date/user; sequential access hammers the same MDT)
-for f in "${FILELIST_DIR}"/chunk_*.txt; do
-    shuf "$f" -o "$f"
-done
-echo "  Shuffled file lists for MDT load balancing"
+    echo "[Step 1] Reusing existing file lists"
+    TOTAL=$(cat "${FILELIST_DIR}"/chunk_[0-9][0-9][0-9].txt | wc -l)
+else
+    if ls "${FILELIST_DIR}"/chunk_*.txt >/dev/null 2>&1; then
+        echo "ERROR: file lists already exist; set RESUME=1 or choose another OUTPUT_DIR"
+        exit 1
+    fi
+    echo "[Step 1] Discovering .darshan files..."
+    # Use lfs find on Lustre for faster metadata lookup, fall back to GNU find
+    if lfs find "${INPUT_DIR}" -name "*.darshan" -type f > "${ALLFILES}" 2>/dev/null; then
+        echo "  Used lfs find (Lustre-optimized)"
+    else
+        echo "  lfs find unavailable, using GNU find"
+        find "${INPUT_DIR}" -name "*.darshan" -type f > "${ALLFILES}"
+    fi
+    TOTAL=$(wc -l < "${ALLFILES}")
+    echo "  Found ${TOTAL} .darshan files"
+    if [ "${TOTAL}" -eq 0 ]; then
+        echo "ERROR: No .darshan files found in ${INPUT_DIR}"
+        exit 1
+    fi
+    LINES_PER_CHUNK=$(( (TOTAL + N_CHUNKS - 1) / N_CHUNKS ))
+    echo "  Splitting into ${N_CHUNKS} chunks of ~${LINES_PER_CHUNK} files each"
+    split -l "${LINES_PER_CHUNK}" -d -a 3 "${ALLFILES}" "${FILELIST_DIR}/chunk_"
+    for f in "${FILELIST_DIR}"/chunk_*; do
+        if [[ ! "$f" == *.txt ]]; then
+            mv "$f" "${f}.txt"
+        fi
+    done
+    for f in "${FILELIST_DIR}"/chunk_*.txt; do
+        shuf "$f" -o "$f"
+    done
+    echo "  Shuffled file lists for MDT load balancing"
+fi
 
 # Count actual chunks created (may be < N_CHUNKS if fewer files)
 ACTUAL_CHUNKS=$(ls "${FILELIST_DIR}"/chunk_*.txt 2>/dev/null | wc -l)
@@ -136,6 +139,7 @@ ARRAY_JOBID=$(sbatch --parsable ${DEPENDENCY:+--dependency=$DEPENDENCY} <<SBATCH
 #SBATCH --export=NONE
 #SBATCH --output=${LOG_DIR}/extract_%A_%a.out
 #SBATCH --error=${LOG_DIR}/extract_%A_%a.err
+source /etc/profile
 export PYTHONNOUSERSITE=1
 
 # ---- Per-task header ----
@@ -168,8 +172,9 @@ echo "Processing \${N_FILES} files from \${FILELIST}"
 echo "Output: \${CHUNK_OUTPUT}"
 echo ""
 
-# Run extraction (exit 0: all files, 3: some files failed with complete
-# accounting, 1: nothing published). --no-shuffle: the lists are pre-shuffled.
+# Run extraction. Exit 3 means the saved parts are valid but some paths need
+# another attempt. --no-shuffle keeps the already shuffled request order.
+set +e
 ${PYTHON} -m src.data.batch_extract \
     --file-list "\${FILELIST}" \
     --output "\${CHUNK_OUTPUT}" \
@@ -178,8 +183,23 @@ ${PYTHON} -m src.data.batch_extract \
     --timeout ${TIMEOUT_PER_FILE} \
     --no-shuffle \
     --log-level INFO
-
 EXIT_CODE=\$?
+set -e
+
+if [ "\${EXIT_CODE}" -eq 3 ]; then
+    echo "Retrying remaining paths with ${RETRY_WORKERS} workers and ${RETRY_TIMEOUT}s timeout"
+    set +e
+    ${PYTHON} -m src.data.batch_extract \
+        --file-list "\${FILELIST}" \
+        --output "\${CHUNK_OUTPUT}" \
+        --workers ${RETRY_WORKERS} \
+        --chunk-size ${CHUNK_SIZE} \
+        --timeout ${RETRY_TIMEOUT} \
+        --no-shuffle \
+        --log-level INFO
+    EXIT_CODE=\$?
+    set -e
+fi
 
 echo ""
 echo "================================================================="
@@ -187,12 +207,7 @@ echo "  Chunk \${SLURM_ARRAY_TASK_ID} finished (exit code: \${EXIT_CODE})"
 echo "  End: \$(date)"
 echo "================================================================="
 
-# Report error count if error file exists
-ERROR_FILE="${CHUNK_DIR}/chunk_\${CHUNK_ID}_errors.csv"
-if [ -f "\${ERROR_FILE}" ]; then
-    N_ERRORS=\$(( \$(wc -l < "\${ERROR_FILE}") - 1 ))  # minus header
-    echo "  Errors: \${N_ERRORS} files (see \${ERROR_FILE})"
-fi
+echo "  Attempt reports: ${CHUNK_DIR}/chunk_\${CHUNK_ID}_attempt_*_errors.csv"
 
 exit \${EXIT_CODE}
 SBATCH
@@ -200,9 +215,9 @@ SBATCH
 
 echo "  Array job submitted: ${ARRAY_JOBID}"
 
-# --- Step 3: Submit merge job (runs after array, even if some tasks fail) ---
+# --- Step 3: Submit validation and merge job ---
 echo ""
-echo "[Step 3] Submitting merge job (afterany:${ARRAY_JOBID})..."
+echo "[Step 3] Submitting validation and merge job (afterany:${ARRAY_JOBID})..."
 
 MERGE_JOBID=$(sbatch --parsable --dependency=afterany:${ARRAY_JOBID} <<SBATCH
 #!/bin/bash
@@ -217,6 +232,7 @@ MERGE_JOBID=$(sbatch --parsable --dependency=afterany:${ARRAY_JOBID} <<SBATCH
 #SBATCH --export=NONE
 #SBATCH --output=${LOG_DIR}/merge_%j.out
 #SBATCH --error=${LOG_DIR}/merge_%j.err
+source /etc/profile
 export PYTHONNOUSERSITE=1
 
 echo "================================================================="
@@ -231,71 +247,11 @@ echo ""
 cd ${PROJECT_DIR}
 
 ${PYTHON} - <<PYEOF
-import os
-import sys
-import time
-from pathlib import Path
+from src.data.batch_extract import merge_extraction_chunks
 
-import pandas as pd
-
-chunk_dir = Path('${CHUNK_DIR}')
-filelist_dir = Path('${FILELIST_DIR}')
-output_path = Path('${FINAL_OUTPUT}')
-expected_chunks = ${ACTUAL_CHUNKS}
-
-# Every chunk must be published and every requested path must have one
-# terminal record (a row or an error) before the final file is written.
-chunks = sorted(chunk_dir.glob('chunk_[0-9][0-9][0-9].parquet'))
-found_ids = {int(c.stem.split('_')[1]) for c in chunks}
-missing = [i for i in range(expected_chunks) if i not in found_ids]
-if missing:
-    print(f'ERROR: {len(missing)} of {expected_chunks} chunks were not published: {missing}')
-    print('Resubmit those array tasks (resume skips the parts already written).')
-    sys.exit(1)
-
-requested = set()
-for lst in sorted(filelist_dir.glob('chunk_*.txt')):
-    requested.update(line.strip() for line in open(lst) if line.strip())
-
-t0 = time.time()
-frames = []
-for cp in chunks:
-    df = pd.read_parquet(cp)
-    frames.append(df)
-    print(f'  {cp.name}: {len(df):>8,} rows  ({cp.stat().st_size / 1e6:.1f} MB)')
-merged = pd.concat(frames, ignore_index=True)
-
-failed = set()
-for ef in sorted(chunk_dir.glob('chunk_*_errors.csv')):
-    failed.update(pd.read_csv(ef)['file_path'])
-done = set(merged['_source_path'])
-problems = []
-if merged['_source_path'].duplicated().any():
-    problems.append(f"{int(merged['_source_path'].duplicated().sum())} duplicate paths")
-if done - requested:
-    problems.append(f'{len(done - requested)} rows for paths that were not requested')
-unaccounted = requested - done - failed
-if unaccounted:
-    problems.append(f'{len(unaccounted)} requested paths with no row and no error')
-if problems:
-    print('ERROR: accounting failed: ' + '; '.join(problems))
-    sys.exit(1)
-
-tmp_path = output_path.with_suffix('.parquet.tmp')
-merged.to_parquet(tmp_path, index=False, engine='pyarrow')
-os.rename(tmp_path, output_path)
-
-print()
-print('=' * 60)
-print(f'Merged: {len(merged):,} rows x {len(merged.columns)} columns')
-print(f'Requested paths: {len(requested):,}; failed (see errors CSVs): {len(failed - done):,}')
-print(f'Output: {output_path}')
-print(f'Size:   {output_path.stat().st_size / 1e9:.2f} GB')
-print(f'Time:   {time.time() - t0:.1f}s')
-print(f'Schema version: {sorted(merged["_schema_version"].unique().tolist())}')
-print('Module combinations (top 10):')
-for mod, cnt in merged['_modules'].value_counts().head(10).items():
-    print(f'  {mod}: {cnt:,}')
+summary = merge_extraction_chunks(
+    '${CHUNK_DIR}', '${FILELIST_DIR}', '${FINAL_OUTPUT}', ${ACTUAL_CHUNKS})
+print(f'Merge complete: {summary}')
 PYEOF
 MERGE_RC=\$?
 echo "merge rc=\${MERGE_RC}"
@@ -317,7 +273,7 @@ echo "  Submission Summary"
 echo "================================================================="
 echo "Total files:  ${TOTAL}"
 echo "Array job:    ${ARRAY_JOBID} (${ACTUAL_CHUNKS} tasks, 128 CPUs + 240GB each)"
-echo "Merge job:    ${MERGE_JOBID} (afterany: runs even if some tasks fail)"
+echo "Merge job:    ${MERGE_JOBID} (publishes only after complete validation)"
 echo "Output:       ${FINAL_OUTPUT}"
 echo ""
 echo "Monitor:"

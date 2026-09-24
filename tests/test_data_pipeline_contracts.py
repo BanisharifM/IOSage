@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 
 import src.data.batch_extract as batch_extract
-from src.data.benchmark_logs import load_manifest, manifest_row
+from src.data.benchmark_logs import load_manifest, manifest_row, validate_verification_report
 from src.data.benchmark_verify import DIMENSION_NAMES, verify_benchmark_log
 from src.data.drishti_labeling import codes_to_labels, compute_drishti_codes
-from src.data.feature_extraction import get_feature_names
+from src.data.feature_extraction import FEATURE_SCHEMA_VERSION, get_feature_names
 from src.data.parse_darshan import _read_module_frames, parse_darshan_log
 from src.data.preprocessing import (
     create_splits, engineer_one, load_preprocessing_config, stage2_clean, stage3_engineer,
@@ -38,7 +38,20 @@ def _raises(fn, exc, text=''):
 def _fake_extract(path):
     if 'bad' in path:
         raise ValueError(f'synthetic failure for {path}')
-    return {'_source_path': path, 'nprocs': 1, 'POSIX_WRITES': 1.0}
+    return _raw_row(path)
+
+
+def _fake_extract_all(path):
+    return _raw_row(path)
+
+
+def _raw_row(path):
+    row = batch_extract.extract_raw_features({
+        'job': {'nprocs': 1, 'runtime': 1.0}, 'counters': {},
+        'modules': [], 'shared_file_flags': {},
+    })
+    row['_source_path'] = path
+    return row
 
 
 def test_batch_extract_resumes_by_identity_and_accounts_for_every_path():
@@ -48,25 +61,29 @@ def test_batch_extract_resumes_by_identity_and_accounts_for_every_path():
         with tempfile.TemporaryDirectory() as tmp:
             files = [f'/logs/{n}.darshan' for n in ('a', 'b', 'c', 'bad_d')]
             lst = Path(tmp) / 'list.txt'
-            lst.write_text('\n'.join(files[:2]) + '\n')
-            out = Path(tmp) / 'chunk.parquet'
-            first = batch_extract.batch_extract(file_list=lst, output_path=out, max_workers=2,
-                                                chunk_size=1, shuffle=False)
-            assert first['n_rows'] == 2 and out.exists()
-            # rerun with two more paths: the first two are skipped, one fails
             lst.write_text('\n'.join(files) + '\n')
+            out = Path(tmp) / 'chunk.parquet'
+            _raises(lambda: batch_extract.batch_extract(
+                file_list=lst, output_path=out, max_workers=2, chunk_size=1, shuffle=False),
+                batch_extract.ExtractionIncomplete, '1 requested paths failed')
+            assert not out.exists()
+            # A changed request cannot reuse the first attempt's parts.
+            lst.write_text('\n'.join(files[:2]) + '\n')
+            _raises(lambda: batch_extract.batch_extract(file_list=lst, output_path=out,
+                                                        max_workers=1, shuffle=False),
+                    batch_extract.ExtractionError, 'input set differs')
+            # Retry the identical request after the failing path is repaired.
+            lst.write_text('\n'.join(files) + '\n')
+            batch_extract.extract_single_log = _fake_extract_all
             second = batch_extract.batch_extract(file_list=lst, output_path=out, max_workers=2,
                                                  chunk_size=1, shuffle=False)
-            assert second['n_skipped'] == 2 and second['n_success'] == 1 and second['n_failed'] == 1
+            assert second['n_skipped'] == 3 and second['n_success'] == 1 and second['n_failed'] == 0
             published = pd.read_parquet(out)['_source_path'].tolist()
-            assert sorted(published) == sorted(files[:3])
-            errors = pd.read_csv(Path(tmp) / 'chunk_errors.csv')
+            assert sorted(published) == sorted(files)
+            error_files = sorted(Path(tmp).glob('chunk_attempt_*_errors.csv'))
+            assert len(error_files) == 2
+            errors = pd.read_csv(error_files[0])
             assert errors['file_path'].tolist() == [files[3]] and 'synthetic failure' in errors['error'][0]
-            # a list with a path that is neither in a part nor in this run's failures is refused
-            lst.write_text('/logs/a.darshan\n')
-            _raises(lambda: batch_extract.batch_extract(file_list=lst, output_path=out, max_workers=1,
-                                                        shuffle=False),
-                    batch_extract.ExtractionError, 'not in the input')
     finally:
         batch_extract.extract_single_log = real
 
@@ -83,7 +100,7 @@ def test_batch_extract_refuses_empty_input_and_total_failure():
             lst.write_text('/logs/bad_1.darshan\n')
             _raises(lambda: batch_extract.batch_extract(file_list=lst, output_path=Path(tmp) / 'o.parquet',
                                                         max_workers=1, shuffle=False),
-                    batch_extract.ExtractionError, 'no successful extraction')
+                    batch_extract.ExtractionIncomplete, '1 requested paths failed')
             assert not (Path(tmp) / 'o.parquet').exists()
     finally:
         batch_extract.extract_single_log = real
@@ -99,11 +116,18 @@ class _BrokenReport:
         raise RuntimeError('synthetic module read failure')
 
 
+class _PartialReport:
+    modules = {'POSIX': {'partial_flag': True}}
+
+
 def test_unreadable_module_is_an_error_not_a_zero_sample():
     _raises(lambda: _read_module_frames(_BrokenReport(), 'POSIX', 'x.darshan'), ValueError,
             'cannot read module POSIX')
     assert parse_darshan_log('/nonexistent.darshan') is None
     _raises(lambda: parse_darshan_log('/nonexistent.darshan', strict=True), Exception)
+    _raises(lambda: __import__('src.data.parse_darshan', fromlist=['_reject_partial_feature_modules'])
+            ._reject_partial_feature_modules(_PartialReport(), 'partial.darshan'),
+            ValueError, 'incomplete feature module')
 
 
 # --- DATA-008: verification is a gate ------------------------------------
@@ -197,6 +221,68 @@ def test_manifest_requires_exactly_one_row_per_sample():
         _raises(lambda: load_manifest(path), ValueError, 'duplicate')
 
 
+def test_verification_report_is_an_exact_training_gate():
+    with tempfile.TemporaryDirectory() as tmp:
+        manifest = pd.DataFrame([
+            {'benchmark': 'ior', 'job_id': '1', 'log_file': 'a.darshan',
+             'scenario': 'small', 'source': 'slurm_out'},
+            {'benchmark': 'ior', 'job_id': '2', 'log_file': 'b.darshan',
+             'scenario': '', 'source': 'none'},
+            {'benchmark': 'custom', 'job_id': '3', 'log_file': '',
+             'scenario': 'balanced', 'source': 'slurm_out'},
+        ])
+        report = pd.DataFrame([
+            {'benchmark': 'ior', 'job_id': '1', 'first_file': 'a.darshan',
+             'scenario': 'small', 'source': 'slurm_out', 'status': 'pass'},
+            {'benchmark': 'ior', 'job_id': '2', 'first_file': 'b.darshan',
+             'scenario': '', 'source': 'none', 'status': 'excluded'},
+            {'benchmark': 'custom', 'job_id': '3', 'first_file': 'rank0.darshan',
+             'scenario': 'balanced', 'source': 'slurm_out', 'status': 'pass'},
+        ])
+        path = Path(tmp) / 'verification.csv'
+        report.to_csv(path, index=False)
+        assert validate_verification_report(manifest, path) == {'labeled_pass': 2, 'excluded': 1}
+        report.loc[0, 'status'] = 'fail'
+        report.to_csv(path, index=False)
+        _raises(lambda: validate_verification_report(manifest, path), ValueError,
+                '1 labeled samples did not pass')
+
+
+def test_chunk_merge_requires_complete_current_finite_schema():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        chunks = root / 'chunks'
+        lists = root / 'lists'
+        chunks.mkdir()
+        lists.mkdir()
+        (lists / 'chunk_000.txt').write_text('/logs/a.darshan\n')
+        (lists / 'chunk_001.txt').write_text('/logs/b.darshan\n')
+        pd.DataFrame([_raw_row('/logs/a.darshan')]).to_parquet(
+            chunks / 'chunk_000.parquet', index=False)
+        pd.DataFrame([_raw_row('/logs/b.darshan')]).to_parquet(
+            chunks / 'chunk_001.parquet', index=False)
+        out = root / 'merged.parquet'
+        result = batch_extract.merge_extraction_chunks(chunks, lists, out, 2)
+        assert result == {'n_rows': 2, 'n_columns': len(_raw_row('/logs/x.darshan')),
+                          'schema_version': FEATURE_SCHEMA_VERSION}
+        assert sorted(pd.read_parquet(out)['_source_path']) == ['/logs/a.darshan', '/logs/b.darshan']
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        chunks = root / 'chunks'
+        lists = root / 'lists'
+        chunks.mkdir()
+        lists.mkdir()
+        (lists / 'chunk_000.txt').write_text('/logs/a.darshan\n')
+        bad = _raw_row('/logs/a.darshan')
+        bad['_schema_version'] = 1
+        bad['POSIX_READS'] = np.nan
+        pd.DataFrame([bad]).to_parquet(chunks / 'chunk_000.parquet', index=False)
+        _raises(lambda: batch_extract.merge_extraction_chunks(
+            chunks, lists, root / 'merged.parquet', 1), batch_extract.ExtractionError,
+            'schema versions')
+
+
 # --- DATA-010 / DATA-011 / DATA-012: schema contracts ----------------------
 
 def test_feature_name_api_matches_real_extraction():
@@ -235,6 +321,17 @@ def test_temporal_split_returns_positions_for_any_index():
     _raises(lambda: create_splits(raw_frame(3), CONFIG), ValueError, 'empty partition')
     cleaned, _ = stage2_clean(raw_frame(4, start=5), CONFIG)
     assert list(cleaned.index) == [0, 1, 2, 3]
+    grouped = raw_frame(12)
+    grouped.loc[[0, 1, 2], '_jobid'] = 10
+    grouped.loc[[3, 4, 5], '_jobid'] = 20
+    grouped.loc[[6, 7, 8], '_jobid'] = 30
+    grouped.loc[[9, 10, 11], '_jobid'] = 40
+    grouped_splits = create_splits(grouped, CONFIG)
+    memberships = {}
+    for name, positions in grouped_splits.items():
+        for jobid in grouped['_jobid'].iloc[positions]:
+            memberships.setdefault(jobid, set()).add(name)
+    assert all(len(parts) == 1 for parts in memberships.values())
 
 
 # --- DATA-016: label conversion keeps the caller's index ------------------

@@ -26,10 +26,8 @@ and driven by statistical analysis, not hardcoded here.
 """
 
 import logging
-from pathlib import Path
 
 import numpy as np
-import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +44,12 @@ _SENTINEL = -1
 # parquet written by older code cannot be engineered into false zeros.
 # 1: SC 2026 dataset (156 columns). 2: per-rank and shared-record statistics,
 # variance counters kept for one shared file, MPI-IO request-size histograms,
-# Lustre info columns removed.
-FEATURE_SCHEMA_VERSION = 2
+# Lustre info columns removed. 3: feature modules with incomplete records are
+# rejected instead of being treated as complete counter sets.
+FEATURE_SCHEMA_VERSION = 3
 
 # ---------------------------------------------------------------------------
-# Feature definition lists — ALL counters, no exclusions
+# Feature definition lists: ALL counters, no exclusions
 # ---------------------------------------------------------------------------
 
 # POSIX integer counters (SUM, MAX, LAST_VALUE, CONDITIONAL, TOP-4 MERGE)
@@ -70,13 +69,13 @@ POSIX_INT_COUNTERS = [
     # Alignment (SUM for NOT_ALIGNED; LAST_VALUE for ALIGNMENT constants)
     'POSIX_MEM_NOT_ALIGNED', 'POSIX_MEM_ALIGNMENT',
     'POSIX_FILE_NOT_ALIGNED', 'POSIX_FILE_ALIGNMENT',
-    # Size histogram — read (SUM), 10 bins
+    # Size histogram: read (SUM), 10 bins
     'POSIX_SIZE_READ_0_100', 'POSIX_SIZE_READ_100_1K',
     'POSIX_SIZE_READ_1K_10K', 'POSIX_SIZE_READ_10K_100K',
     'POSIX_SIZE_READ_100K_1M', 'POSIX_SIZE_READ_1M_4M',
     'POSIX_SIZE_READ_4M_10M', 'POSIX_SIZE_READ_10M_100M',
     'POSIX_SIZE_READ_100M_1G', 'POSIX_SIZE_READ_1G_PLUS',
-    # Size histogram — write (SUM), 10 bins
+    # Size histogram: write (SUM), 10 bins
     'POSIX_SIZE_WRITE_0_100', 'POSIX_SIZE_WRITE_100_1K',
     'POSIX_SIZE_WRITE_1K_10K', 'POSIX_SIZE_WRITE_10K_100K',
     'POSIX_SIZE_WRITE_100K_1M', 'POSIX_SIZE_WRITE_1M_4M',
@@ -92,32 +91,32 @@ POSIX_INT_COUNTERS = [
     'POSIX_STRIDE3_STRIDE', 'POSIX_STRIDE4_STRIDE',
     'POSIX_STRIDE1_COUNT', 'POSIX_STRIDE2_COUNT',
     'POSIX_STRIDE3_COUNT', 'POSIX_STRIDE4_COUNT',
-    # Rank imbalance (CONDITIONAL — sentinel -1 if not shared)
+    # Rank imbalance (CONDITIONAL: sentinel -1 if not shared)
     'POSIX_FASTEST_RANK', 'POSIX_FASTEST_RANK_BYTES',
     'POSIX_SLOWEST_RANK', 'POSIX_SLOWEST_RANK_BYTES',
     # Worst-case I/O size (CONDITIONAL)
     'POSIX_MAX_READ_TIME_SIZE', 'POSIX_MAX_WRITE_TIME_SIZE',
-    # File metadata (LAST_VALUE — not meaningful as aggregate, kept for EDA)
+    # File metadata (LAST_VALUE: not meaningful as aggregate, kept for EDA)
     'POSIX_MODE', 'POSIX_RENAMED_FROM',
 ]
 
-# POSIX float counters — includes ALL 8 timestamps
+# POSIX float counters: includes ALL 8 timestamps
 POSIX_FLOAT_COUNTERS = [
     # Cumulative I/O times (SUM)
     'POSIX_F_READ_TIME', 'POSIX_F_WRITE_TIME', 'POSIX_F_META_TIME',
     # Worst-case single-op times (MAX)
     'POSIX_F_MAX_READ_TIME', 'POSIX_F_MAX_WRITE_TIME',
-    # Timestamps — START (MIN_NONZERO)
+    # Timestamps: START (MIN_NONZERO)
     'POSIX_F_OPEN_START_TIMESTAMP',
     'POSIX_F_READ_START_TIMESTAMP',
     'POSIX_F_WRITE_START_TIMESTAMP',
     'POSIX_F_CLOSE_START_TIMESTAMP',
-    # Timestamps — END (MAX)
+    # Timestamps: END (MAX)
     'POSIX_F_OPEN_END_TIMESTAMP',
     'POSIX_F_READ_END_TIMESTAMP',
     'POSIX_F_WRITE_END_TIMESTAMP',
     'POSIX_F_CLOSE_END_TIMESTAMP',
-    # Rank time imbalance (CONDITIONAL — 0.0 if not shared)
+    # Rank time imbalance (CONDITIONAL: 0.0 if not shared)
     'POSIX_F_FASTEST_RANK_TIME', 'POSIX_F_SLOWEST_RANK_TIME',
     # Variance (ZEROED in v3.5.0 --total)
     'POSIX_F_VARIANCE_RANK_TIME', 'POSIX_F_VARIANCE_RANK_BYTES',
@@ -203,7 +202,7 @@ ALL_RAW_COUNTERS = (
 )
 
 # ---------------------------------------------------------------------------
-# Feature groups — for group-specific normalization in preprocessing
+# Feature groups: for group-specific normalization in preprocessing
 # ---------------------------------------------------------------------------
 # These groups are used by preprocessing.py to apply different normalization
 # strategies per counter type.  Feature exclusion is NOT done here; it is
@@ -527,30 +526,3 @@ def compute_layer_and_rank_features(g, nprocs):
         'rank_time_cv_all': np.sqrt(np.maximum(g('RANK_TIME_VAR'), 0))
         / np.maximum(time_all / n, _EPS),
     }
-
-
-# ---------------------------------------------------------------------------
-# Configuration loading
-# ---------------------------------------------------------------------------
-
-def load_feature_config(config_path=None):
-    """Load feature extraction configuration from YAML file.
-
-    Parameters
-    ----------
-    config_path : str or Path, optional
-        Path to feature_extraction.yaml.  Defaults to
-        ``configs/feature_extraction.yaml`` relative to project root.
-
-    Returns
-    -------
-    dict
-        Configuration dictionary.
-    """
-    if config_path is None:
-        config_path = (
-            Path(__file__).resolve().parents[2]
-            / 'configs' / 'feature_extraction.yaml'
-        )
-    with open(config_path) as fh:
-        return yaml.safe_load(fh)
