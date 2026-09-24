@@ -13,12 +13,13 @@
 # expiring interactive session cannot take the experiment down with it.
 # Usage: sbatch scripts/measurement_study/run_study.slurm <script.py> [args...]
 export SLURM_EXPORT_ENV=ALL
-set -euo pipefail
+# /etc/profile.d/debuginfod.sh reads an unset variable, so the profile is sourced before set -u
 source /etc/profile
+set -euo pipefail
 IOSAGE_ENV="${IOSAGE_ENV:-/work/nvme/bdau/mbanisharifdehkordi/envs/iosage}"
 export PATH="$IOSAGE_ENV/bin:$PATH" PYTHONNOUSERSITE=1; unset PYTHONPATH
 cd /work/hdd/bdau/mbanisharifdehkordi/IOSage
 (( $# >= 1 )) || { echo "usage: $0 SCRIPT [ARG ...]" >&2; exit 2; }
 echo "host $(hostname) start $(date)"; echo "cmd: $*"
-"$IOSAGE_ENV/bin/python" "$@"
-echo "end $(date) rc=0"
+rc=0; "$IOSAGE_ENV/bin/python" "$@" || rc=$?
+echo "end $(date) rc=$rc"; exit $rc
