@@ -14,6 +14,7 @@ job.
 """
 
 import glob
+import json
 import logging
 import os
 import re
@@ -22,8 +23,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES
+from src.data.label_rules import BOTTLENECK_DIMENSIONS, DIMENSION_NAMES, LABEL_DEFINITIONS_PATH
 from src.data.parse_darshan import parse_benchmark_job, parse_darshan_log
+from src.utils.artifacts import sha256_file, write_atomic
 from src.utils.isolation import ChildFailure, run_in_child
 
 logger = logging.getLogger(__name__)
@@ -105,10 +107,12 @@ MANIFEST_COLUMNS = (
     MANIFEST_KEYS + ["scenario", "source", "note"]
     + DIMENSION_NAMES + VALIDITY_COLUMNS
 )
-LABEL_SOURCES = {"slurm_out", "step_mapping", "none"}
+EXCLUDED_SOURCE = "none"
+LABEL_SOURCES = {"slurm_out", "step_mapping", EXCLUDED_SOURCE}
 VERIFICATION_COLUMNS = {
-    "benchmark", "job_id", "first_file", "scenario", "source", "status"
+    "benchmark", "job_id", "first_file", "scenario", "source", "labels", "status"
 }
+VERIFICATION_SIDECAR_VERSION = 1
 
 
 def load_manifest(path=DEFAULT_MANIFEST):
@@ -153,8 +157,70 @@ def load_manifest(path=DEFAULT_MANIFEST):
     return manifest
 
 
-def validate_verification_report(manifest, report_path, bench_types=None):
-    """Require one passing verification row for every labeled manifest row."""
+def manifest_label_string(row):
+    """The labels of a manifest row over its valid targets, as the report writes them."""
+    return ",".join(
+        f"{dimension}={int(row[dimension])}"
+        for dimension in DIMENSION_NAMES if int(row[f"valid_{dimension}"])
+    )
+
+
+def sidecar_path(report_path):
+    """The provenance file written next to a verification report."""
+    report_path = Path(report_path)
+    return report_path.with_name(report_path.name + ".manifest.json")
+
+
+def write_verification_sidecar(report_path, manifest_path, extra=None):
+    """Bind a written report to the exact manifest and label definitions it verified."""
+    report_path = Path(report_path)
+    payload = {
+        "schema_version": VERIFICATION_SIDECAR_VERSION,
+        "report": {"path": str(report_path), "sha256": sha256_file(report_path)},
+        "label_manifest": {"path": str(Path(manifest_path)), "sha256": sha256_file(manifest_path)},
+        "label_definitions": {"path": str(LABEL_DEFINITIONS_PATH),
+                              "sha256": sha256_file(LABEL_DEFINITIONS_PATH)},
+    }
+    payload.update(extra or {})
+
+    def writer(path):
+        with path.open("x") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    return write_atomic(sidecar_path(report_path), writer)
+
+
+def _require_sidecar(report_path, manifest_path):
+    """The report must carry a sidecar that names the current manifest and definitions."""
+    path = sidecar_path(report_path)
+    if not path.is_file():
+        raise ValueError(f"verification report {report_path} has no provenance sidecar {path}")
+    sidecar = json.loads(path.read_text())
+    if sidecar.get("schema_version") != VERIFICATION_SIDECAR_VERSION:
+        raise ValueError(f"verification sidecar {path} has an unsupported schema")
+    expected = {
+        "report": sha256_file(report_path),
+        "label_manifest": sha256_file(manifest_path),
+        "label_definitions": sha256_file(LABEL_DEFINITIONS_PATH),
+    }
+    for key, digest in expected.items():
+        recorded = sidecar.get(key, {}).get("sha256")
+        if recorded != digest:
+            raise ValueError(
+                f"verification report {report_path} was produced for a different {key} "
+                f"(sidecar sha256 {recorded}, current {digest})")
+    return sidecar
+
+
+def validate_verification_report(manifest, report_path, manifest_path, bench_types=None):
+    """Require one passing verification row for every labeled manifest row.
+
+    ``manifest`` is ``load_manifest(manifest_path)``. The report's sidecar
+    must name this manifest and the current label definitions by hash, and
+    every row's scenario, source and label string must equal the manifest's.
+    """
+    _require_sidecar(report_path, manifest_path)
     report = pd.read_csv(report_path, dtype=str, keep_default_na=False)
     missing_columns = VERIFICATION_COLUMNS - set(report.columns)
     if missing_columns:
@@ -183,6 +249,7 @@ def validate_verification_report(manifest, report_path, bench_types=None):
             f"verification report sample set differs from manifest: "
             f"missing={len(expected_keys - actual_keys)}, extra={len(actual_keys - expected_keys)}")
 
+    expected['_labels'] = expected.apply(manifest_label_string, axis=1)
     joined = expected.merge(actual, on=keys, suffixes=('_manifest', '_report'), validate='one_to_one')
     mismatched = joined[
         (joined['scenario_manifest'] != joined['scenario_report'])
@@ -191,7 +258,13 @@ def validate_verification_report(manifest, report_path, bench_types=None):
     if not mismatched.empty:
         row = mismatched.iloc[0]
         raise ValueError(f"verification metadata differs for {row[keys].tolist()}")
-    excluded = joined['source_manifest'] == 'none'
+    relabeled = joined[joined['_labels'] != joined['labels']]
+    if not relabeled.empty:
+        row = relabeled.iloc[0]
+        raise ValueError(
+            f"verification report labels differ from the manifest for {row[keys].tolist()}: "
+            f"report {row['labels']!r}, manifest {row['_labels']!r}")
+    excluded = joined['source_manifest'] == EXCLUDED_SOURCE
     bad_excluded = joined[excluded & (joined['status'] != 'excluded')]
     if not bad_excluded.empty:
         raise ValueError("a manifest exclusion is not marked excluded in the verification report")
@@ -206,7 +279,8 @@ def validate_verification_report(manifest, report_path, bench_types=None):
 
 
 def manifest_row(manifest, bench_type, job_id, files):
-    """The manifest row of one sample, or None when the row says ``none``.
+    """The manifest row of one sample; ``row["source"] == EXCLUDED_SOURCE``
+    marks a sample the manifest excludes (its scenario and note are kept).
 
     Raises ``KeyError`` when the sample has no row and ``ValueError`` when
     it has more than one, so an unlisted log can never become a sample.
@@ -219,5 +293,4 @@ def manifest_row(manifest, bench_type, job_id, files):
         raise KeyError(f"no manifest row for {bench_type} job {job_id} {key or '(per-process job)'}")
     if len(rows) > 1:
         raise ValueError(f"{len(rows)} manifest rows for {bench_type} job {job_id} {key}")
-    row = rows.iloc[0]
-    return None if row["source"] == "none" else row
+    return rows.iloc[0]

@@ -22,5 +22,5 @@ BENCH="${1:-all}"
 OUT="$PROJECT_DIR/results/resubmission/verification/ground_truth_${BENCH}_$(date +%F)_${SLURM_JOB_ID}.csv"
 echo "host $(hostname) commit $(git rev-parse --short HEAD) bench $BENCH report $OUT"
 "$IOSAGE_ENV/bin/python" scripts/verify_all_ground_truth.py --bench-type "$BENCH" --report "$OUT"
-[[ -s "$OUT" ]] || { echo "verification report is missing or empty: $OUT" >&2; exit 3; }
+[[ -s "$OUT" && -s "$OUT.manifest.json" ]] || { echo "verification report or its sidecar is missing or empty: $OUT" >&2; exit 3; }
 echo "verify rc=0"

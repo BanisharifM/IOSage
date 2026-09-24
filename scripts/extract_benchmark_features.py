@@ -11,7 +11,8 @@ per-process logs of one job for DLIO and the custom mpi4py runs. Labels come
 from the manifest (``scripts/build_label_manifest.py``); a sample without a
 manifest row is an error, and a sample whose row says ``source=none`` is
 excluded. A verification report must contain one passing row for every
-labeled sample before either output is written.
+labeled sample, and its sidecar must name the manifest and the label
+definitions in use, before either output is written.
 
 Output:
     <output-dir>/features.parquet   same columns as production/features.parquet
@@ -36,8 +37,9 @@ import pandas as pd
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 from src.data.benchmark_logs import (  # noqa: E402
-    AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, PER_RANK_BENCHMARKS, iter_benchmark_samples,
-    load_manifest, manifest_row, validate_verification_report)
+    AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, EXCLUDED_SOURCE, PER_RANK_BENCHMARKS,
+    iter_benchmark_samples, load_manifest, manifest_row, sidecar_path,
+    validate_verification_report)
 from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 from src.data.feature_extraction import (  # noqa: E402
     FEATURE_SCHEMA_VERSION, extract_raw_features, get_info_columns)
@@ -60,7 +62,7 @@ def extract_benchmark(bench_type, log_dir, manifest):
     counts = {"extracted": 0, "unlabeled": 0, "unparsed": 0}
     for job_id, files, parsed, error in iter_benchmark_samples(bench_type, str(log_dir)):
         row = manifest_row(manifest, bench_type, job_id, files)
-        if row is None:
+        if row["source"] == EXCLUDED_SOURCE:
             counts["unlabeled"] += 1
             continue
         if parsed is None:
@@ -99,7 +101,7 @@ def main():
     manifest = load_manifest(args.manifest)
     bench_types = BENCHMARKS if args.bench_type == "all" else [args.bench_type]
     verification = validate_verification_report(
-        manifest, args.verification_report, bench_types=bench_types)
+        manifest, args.verification_report, args.manifest, bench_types=bench_types)
     logger.info("Verification gate: %s", verification)
 
     all_features, all_labels = [], []
@@ -155,6 +157,10 @@ def main():
             "verification_report": {
                 "path": str(Path(args.verification_report).resolve()),
                 "sha256": sha256_file(args.verification_report),
+            },
+            "verification_sidecar": {
+                "path": str(sidecar_path(args.verification_report).resolve()),
+                "sha256": sha256_file(sidecar_path(args.verification_report)),
             },
         },
         "outputs": {

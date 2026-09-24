@@ -452,22 +452,23 @@ def test_manifest_requires_exactly_one_row_per_sample():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / 'manifest.csv'
         cols = (
-            ['benchmark', 'job_id', 'log_file', 'scenario', 'source', 'note']
+            ['benchmark', 'job_id', 'log_file', 'scenario', 'source', 'generator_label', 'note']
             + DIMENSION_NAMES + VALIDITY_COLUMNS
         )
         rows = [
-            ['ior', '1', 'a.darshan', 's', 'slurm_out', '']
+            ['ior', '1', 'a.darshan', 's', 'slurm_out', 'access_granularity=1', '']
             + [1, 0, 0, 0, 0, 0, 0, 0, 0]
             + [1, 0, 0, 0, 0, 0, 0, 0, 0],
-            ['ior', '2', 'b.darshan', '', 'none', 'no label'] + [0] * 18,
-            ['custom', '3', '', 'c', 'slurm_out', '']
+            ['ior', '2', 'b.darshan', '', 'none', '', 'no label'] + [0] * 18,
+            ['custom', '3', '', 'c', 'slurm_out', 'parallelism_efficiency=1', '']
             + [0, 0, 1, 0, 0, 0, 0, 0, 0]
             + [0, 0, 1, 0, 0, 0, 0, 0, 0],
         ]
         pd.DataFrame(rows, columns=cols).to_csv(path, index=False)
         m = load_manifest(path)
         assert manifest_row(m, 'ior', '1', ['/x/a.darshan'])['access_granularity'] == 1
-        assert manifest_row(m, 'ior', '2', ['/x/b.darshan']) is None
+        excluded = manifest_row(m, 'ior', '2', ['/x/b.darshan'])
+        assert excluded['source'] == 'none' and excluded['note'] == 'no label'
         assert manifest_row(m, 'custom', '3', ['/x/p0.darshan', '/x/p1.darshan'])['parallelism_efficiency'] == 1
         _raises(lambda: manifest_row(m, 'ior', '9', ['/x/z.darshan']), KeyError, 'no manifest row')
         rows.append(rows[0])
@@ -475,31 +476,87 @@ def test_manifest_requires_exactly_one_row_per_sample():
         _raises(lambda: load_manifest(path), ValueError, 'duplicate')
 
 
+def _manifest_frame(rows):
+    """Manifest rows as (benchmark, job_id, log_file, scenario, source, note, labels, validity)."""
+    records = []
+    for benchmark, job_id, log_file, scenario, source, note, labels, validity in rows:
+        record = {'benchmark': benchmark, 'job_id': job_id, 'log_file': log_file,
+                  'scenario': scenario, 'source': source, 'generator_label': '', 'note': note}
+        record.update({d: labels.get(d, 0) for d in DIMENSION_NAMES})
+        record.update({f'valid_{d}': validity.get(d, 0) for d in DIMENSION_NAMES})
+        records.append(record)
+    return pd.DataFrame(records)
+
+
 def test_verification_report_is_an_exact_training_gate():
+    from scripts.verify_all_ground_truth import report_row
+    from src.data.benchmark_logs import (
+        manifest_label_string, sidecar_path, write_verification_sidecar)
+    healthy = {'healthy': 1}
+    all_valid = {d: 1 for d in DIMENSION_NAMES}
+    rows = [
+        ('ior', '1', 'a.darshan', 'ior_healthy_n4', 'slurm_out', '', healthy, all_valid),
+        ('ior', '2', 'b.darshan', 'ior_single_ost_n4', 'none', 'storage-layout confound', {}, {}),
+        ('custom', '3', '', 'custom_balanced_n4', 'slurm_out', '',
+         healthy, {'parallelism_efficiency': 1}),
+    ]
     with tempfile.TemporaryDirectory() as tmp:
-        manifest = pd.DataFrame([
-            {'benchmark': 'ior', 'job_id': '1', 'log_file': 'a.darshan',
-             'scenario': 'small', 'source': 'slurm_out'},
-            {'benchmark': 'ior', 'job_id': '2', 'log_file': 'b.darshan',
-             'scenario': '', 'source': 'none'},
-            {'benchmark': 'custom', 'job_id': '3', 'log_file': '',
-             'scenario': 'balanced', 'source': 'slurm_out'},
-        ])
-        report = pd.DataFrame([
-            {'benchmark': 'ior', 'job_id': '1', 'first_file': 'a.darshan',
-             'scenario': 'small', 'source': 'slurm_out', 'status': 'pass'},
-            {'benchmark': 'ior', 'job_id': '2', 'first_file': 'b.darshan',
-             'scenario': '', 'source': 'none', 'status': 'excluded'},
-            {'benchmark': 'custom', 'job_id': '3', 'first_file': 'rank0.darshan',
-             'scenario': 'balanced', 'source': 'slurm_out', 'status': 'pass'},
-        ])
-        path = Path(tmp) / 'verification.csv'
-        report.to_csv(path, index=False)
-        assert validate_verification_report(manifest, path) == {'labeled_pass': 2, 'excluded': 1}
-        report.loc[0, 'status'] = 'fail'
-        report.to_csv(path, index=False)
-        _raises(lambda: validate_verification_report(manifest, path), ValueError,
+        root = Path(tmp)
+        manifest_path = root / 'manifest.csv'
+        _manifest_frame(rows).to_csv(manifest_path, index=False)
+        manifest = load_manifest(manifest_path)
+        parsed = _parsed_row()
+        report = [
+            report_row('ior', '1', ['/x/a.darshan'], manifest_row(manifest, 'ior', '1', ['/x/a.darshan']),
+                       parsed, None, CONFIG),
+            report_row('ior', '2', ['/x/b.darshan'], manifest_row(manifest, 'ior', '2', ['/x/b.darshan']),
+                       None, None, CONFIG),
+            report_row('custom', '3', ['/x/r0.darshan', '/x/r1.darshan'],
+                       manifest_row(manifest, 'custom', '3', ['/x/r0.darshan', '/x/r1.darshan']),
+                       parsed, None, CONFIG),
+        ]
+        # the excluded sample keeps the manifest's scenario; labels follow validity
+        assert report[1]['status'] == 'excluded' and report[1]['scenario'] == 'ior_single_ost_n4'
+        assert report[0]['status'] == 'pass' and report[0]['labels'].endswith('healthy=1')
+        assert report[2]['labels'] == 'parallelism_efficiency=0'
+        assert manifest_label_string(manifest.iloc[2]) == report[2]['labels']
+
+        report_path = root / 'verification.csv'
+        pd.DataFrame(report).to_csv(report_path, index=False)
+        _raises(lambda: validate_verification_report(manifest, report_path, manifest_path),
+                ValueError, 'no provenance sidecar')
+        write_verification_sidecar(report_path, manifest_path)
+        assert validate_verification_report(manifest, report_path, manifest_path) == {
+            'labeled_pass': 2, 'excluded': 1}
+
+        # a report produced for another manifest version is refused by hash
+        changed = _manifest_frame(rows)
+        changed.loc[0, 'note'] = 'revised after a rerun'
+        other_manifest = root / 'manifest_v2.csv'
+        changed.to_csv(other_manifest, index=False)
+        _raises(lambda: validate_verification_report(load_manifest(other_manifest), report_path, other_manifest),
+                ValueError, 'different label_manifest')
+
+        # a report whose label strings differ from the manifest is refused row by row
+        relabeled = root / 'relabeled' / 'verification.csv'
+        relabeled.parent.mkdir()
+        frame = pd.DataFrame(report)
+        frame.loc[0, 'labels'] = 'access_granularity=1'
+        frame.to_csv(relabeled, index=False)
+        write_verification_sidecar(relabeled, manifest_path)
+        _raises(lambda: validate_verification_report(manifest, relabeled, manifest_path),
+                ValueError, 'labels differ from the manifest')
+
+        # a failing labeled sample blocks extraction
+        failed = root / 'failed' / 'verification.csv'
+        failed.parent.mkdir()
+        frame = pd.DataFrame(report)
+        frame.loc[0, 'status'] = 'fail'
+        frame.to_csv(failed, index=False)
+        write_verification_sidecar(failed, manifest_path)
+        _raises(lambda: validate_verification_report(manifest, failed, manifest_path), ValueError,
                 '1 labeled samples did not pass')
+        assert sidecar_path(failed).name == 'verification.csv.manifest.json'
 
 
 def test_chunk_merge_requires_complete_current_finite_schema():

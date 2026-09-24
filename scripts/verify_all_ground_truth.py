@@ -10,7 +10,10 @@ HACC-IO; the merged per-process logs of one job for DLIO and custom):
 3. write one row per sample to the CSV report
 
 Samples the manifest excludes (``source=none``) are listed with status
-``excluded``. Exit status is 1 when any listed sample fails or cannot be
+``excluded`` and the manifest's scenario. The report's sidecar
+(``<report>.manifest.json``) records the SHA-256 of the manifest and of the
+label definitions it verified; ``extract_benchmark_features.py`` requires
+them to match. Exit status is 1 when any listed sample fails or cannot be
 parsed, so the run cannot be mistaken for a pass.
 
 Usage:
@@ -27,12 +30,13 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 from src.data.benchmark_logs import (  # noqa: E402
-    AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, PER_RANK_BENCHMARKS, iter_benchmark_samples,
-    load_manifest, manifest_row)
+    AGGREGATED_BENCHMARKS, DEFAULT_MANIFEST, EXCLUDED_SOURCE, PER_RANK_BENCHMARKS,
+    iter_benchmark_samples, load_manifest, manifest_label_string, manifest_row, sidecar_path,
+    write_verification_sidecar)
 from src.data.benchmark_verify import verify_benchmark_log  # noqa: E402
 from src.data.label_rules import DIMENSION_NAMES  # noqa: E402
 from src.data.preprocessing import engineer_one, load_preprocessing_config  # noqa: E402
-from src.utils.artifacts import write_atomic  # noqa: E402
+from src.utils.artifacts import sha256_file, write_atomic  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -42,34 +46,33 @@ REPORT_COLUMNS = ["benchmark", "job_id", "n_files", "first_file", "scenario", "s
                   "labels", "status", "cleaning_rule", "checks", "error"]
 
 
+def report_row(bench_type, job_id, files, row, parsed, error, config):
+    """The report row of one sample from its manifest row and parse result."""
+    base = {"benchmark": bench_type, "job_id": job_id, "n_files": len(files),
+            "first_file": Path(files[0]).name, "scenario": row["scenario"],
+            "source": row["source"], "labels": manifest_label_string(row)}
+    if row["source"] == EXCLUDED_SOURCE:
+        return dict(base, status="excluded", cleaning_rule="", checks="", error="")
+    if parsed is None:
+        return dict(base, status="unparsed", cleaning_rule="", checks="",
+                    error=error or "unknown parse failure")
+    labels = {d: int(row[d]) for d in DIMENSION_NAMES}
+    validity = {d: int(row[f"valid_{d}"]) for d in DIMENSION_NAMES}
+    features = engineer_one(parsed, config=config)
+    passed, report = verify_benchmark_log(
+        features, labels, config['cleaning'], intended_validity=validity)
+    checks = "; ".join(f"{name}={c['status']} ({c['value']})" for name, c in report["checks"].items())
+    cleaning = "pass" if report["cleaning_rule"] else "below: " + report["cleaning_reason"]
+    return dict(base, status="pass" if passed else "fail", cleaning_rule=cleaning,
+                checks=checks, error="")
+
+
 def verify_benchmark(bench_type, log_dir, manifest, config):
     """One report row per sample of a benchmark."""
     rows = []
     for job_id, files, parsed, error in iter_benchmark_samples(bench_type, str(log_dir)):
         row = manifest_row(manifest, bench_type, job_id, files)
-        base = {"benchmark": bench_type, "job_id": job_id, "n_files": len(files),
-                "first_file": Path(files[0]).name}
-        if row is None:
-            rows.append(dict(base, scenario="", source="none", labels="", status="excluded",
-                             cleaning_rule="", checks="", error=""))
-            continue
-        labels = {d: int(row[d]) for d in DIMENSION_NAMES}
-        validity = {d: int(row[f"valid_{d}"]) for d in DIMENSION_NAMES}
-        base.update(scenario=row["scenario"], source=row["source"],
-                    labels=",".join(
-                        f"{d}={labels[d]}" for d in DIMENSION_NAMES if validity[d]
-                    ))
-        if parsed is None:
-            rows.append(dict(base, status="unparsed", cleaning_rule="", checks="",
-                             error=error or "unknown parse failure"))
-            continue
-        features = engineer_one(parsed, config=config)
-        passed, report = verify_benchmark_log(
-            features, labels, config['cleaning'], intended_validity=validity)
-        checks = "; ".join(f"{name}={c['status']} ({c['value']})" for name, c in report["checks"].items())
-        cleaning = "pass" if report["cleaning_rule"] else "below: " + report["cleaning_reason"]
-        rows.append(dict(base, status="pass" if passed else "fail", cleaning_rule=cleaning,
-                         checks=checks, error=""))
+        rows.append(report_row(bench_type, job_id, files, row, parsed, error, config))
     counts = {s: sum(r["status"] == s for r in rows) for s in ("pass", "fail", "unparsed", "excluded")}
     counts["below_cleaning_rule"] = sum(r["cleaning_rule"].startswith("below") for r in rows)
     logger.info("  %s: %s", bench_type, counts)
@@ -86,8 +89,10 @@ def main():
     args = parser.parse_args()
 
     report_path = Path(args.report).resolve() if args.report else None
-    if report_path is not None and report_path.exists():
-        raise FileExistsError(f"refusing to replace verification report: {report_path}")
+    if report_path is not None:
+        existing = [str(path) for path in (report_path, sidecar_path(report_path)) if path.exists()]
+        if existing:
+            raise FileExistsError(f"refusing to replace verification artifacts: {existing}")
 
     manifest = load_manifest(args.manifest)
     config = load_preprocessing_config(args.config)
@@ -144,7 +149,16 @@ def main():
                 writer.writerows(rows)
 
         write_atomic(report_path, write_report)
-        logger.info("Report written: %s (%d samples)", report_path, len(rows))
+        sidecar = write_verification_sidecar(report_path, args.manifest, extra={
+            "benchmarks": bench_types,
+            "preprocessing_config": {"path": str(Path(args.config).resolve()),
+                                     "sha256": sha256_file(args.config)},
+            "script": {"path": str(Path(__file__).resolve()),
+                       "sha256": sha256_file(Path(__file__).resolve())},
+            "rows": len(rows),
+            "totals": totals,
+        })
+        logger.info("Report written: %s (%d samples); provenance: %s", report_path, len(rows), sidecar)
 
     return 1 if totals["fail"] or totals["unparsed"] else 0
 
