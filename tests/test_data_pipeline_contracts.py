@@ -434,6 +434,23 @@ def test_manifest_policy_matches_registered_label_definitions():
     assert configured['metadata_intensity'] == 1
     assert validity['valid_metadata_intensity'] == 1
 
+    # interleaved h5bench runs qualify at 64 ranks only (LABEL_TAXONOMY_AND_BENCHMARK_AUDIT.md)
+    kept, validity, note = apply_manifest_policy(
+        'h5bench', 'h5b_indep_small_interleaved_n64_r2', label_string_to_dims('interface_choice=1'))
+    assert kept['access_granularity'] == 1 and kept['interface_choice'] == 1
+    assert 'policy adds access_granularity beyond the generator label' in note
+    below, validity, reason = apply_manifest_policy(
+        'h5bench', 'h5b_indep_small_interleaved_n32_r1', label_string_to_dims('interface_choice=1'))
+    assert below is None and validity is None and 'below 64 ranks' in reason
+
+    # a target the contract adds is named; a generator positive the contract negates is an error
+    agreed, _, note = apply_manifest_policy(
+        'ior', 'ior_small_posix_n4_r1', label_string_to_dims('access_granularity=1'))
+    assert agreed['access_granularity'] == 1 and 'policy adds' not in note
+    _raises(lambda: apply_manifest_policy(
+        'ior', 'ior_healthy_collective_n4_r1', label_string_to_dims('interface_choice=1')),
+        ValueError, 'controls them as negative')
+
 
 def test_verification_rejects_incomplete_module_records():
     healthy = {d: int(d == 'healthy') for d in DIMENSION_NAMES}

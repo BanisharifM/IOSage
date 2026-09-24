@@ -13,9 +13,13 @@ one job for the per-process DLIO and custom runs). Two label sources exist:
   ``results/boost_experiment/new_gt/{new_features,new_labels}.parquet``
   (row i of the one is row i of the other).
 
-A log with neither source gets ``source=none`` and is excluded downstream;
-it stays in the manifest so the exclusion is explicit. A job with more than
-one stdout file or more than one Label line is an error.
+The generator's label is kept verbatim in ``generator_label``; the label
+columns hold the audited target contract of ``apply_manifest_policy``. A
+target the contract adds beyond the generator's label is named in ``note``;
+a generator positive that the contract marks as a controlled negative is an
+error. A log with neither source gets ``source=none`` and is excluded
+downstream; it stays in the manifest so the exclusion is explicit. A job
+with more than one stdout file or more than one Label line is an error.
 
 Usage:
     python scripts/build_label_manifest.py [--output data/benchmark_labels/manifest.csv]
@@ -71,6 +75,12 @@ def label_string_to_dims(label_str):
     return dims
 
 
+def dims_to_label_string(dims):
+    """The inverse of ``label_string_to_dims``: positives only, or ``healthy=1``."""
+    positives = [d for d in BOTTLENECK_DIMENSIONS if int(dims[d]) == 1]
+    return ",".join(f"{d}=1" for d in positives) if positives else "healthy=1"
+
+
 def slurm_out_label(results_dir, job_id):
     """``(scenario, label string)`` from the job's stdout, or None when the
     job has no stdout file. More than one file or Label line is an error."""
@@ -115,13 +125,16 @@ def _scenario_rank(scenario):
     return int(match.group(1)) if match else None
 
 
-def apply_manifest_policy(benchmark, scenario, dimensions=None):
-    """Return the audited target contract for one constructed sample.
+def apply_manifest_policy(benchmark, scenario, dimensions):
+    """Return ``(labels, validity, note)``: the audited target contract for one
+    constructed sample, or ``(None, None, reason)`` when it is excluded.
 
-    The stdout label is accepted as provenance but is not treated as a full
-    negative vector. Only targets controlled by the generator are valid.
+    ``dimensions`` is the generator's recorded label (``label_string_to_dims``).
+    It is provenance, not a full negative vector: only targets controlled by
+    the construction are valid. A target the contract adds beyond the
+    generator's positives is named in the note; a generator positive that
+    the contract marks as a controlled negative raises ``ValueError``.
     """
-    del dimensions
     positive = ()
     negative = ()
     reason = ""
@@ -144,8 +157,12 @@ def apply_manifest_policy(benchmark, scenario, dimensions=None):
             negative = ("access_granularity",)
         elif scenario.startswith("h5b_interleaved_access_"):
             negative = ("access_pattern",)
-        elif scenario.startswith("h5b_indep_small_interleaved_") and rank == 64:
-            positive = ("access_granularity", "interface_choice")
+        elif scenario.startswith("h5b_indep_small_interleaved_"):
+            if rank == 64:
+                positive = ("access_granularity", "interface_choice")
+            else:
+                reason = ("interleaved runs below 64 ranks issue fewer MPI-IO operations "
+                          "than the registered threshold")
         elif scenario.startswith("h5b_indep_small_") \
                 and not scenario.startswith("h5b_indep_small_single_ost_"):
             positive = ("access_granularity", "interface_choice")
@@ -212,8 +229,20 @@ def apply_manifest_policy(benchmark, scenario, dimensions=None):
     if not positive and not negative:
         return None, None, reason or "scenario has no audited target contract"
     labels, validity = _contract(positive, negative)
+    generator_positive = {d for d in BOTTLENECK_DIMENSIONS if int(dimensions[d]) == 1}
+    contradicted = sorted(generator_positive & set(negative))
+    if contradicted:
+        raise ValueError(
+            f"{benchmark} {scenario}: the generator label marks {contradicted} positive "
+            "but the audited contract controls them as negative")
     controlled = ",".join(sorted(set(positive) | set(negative)))
-    return labels, validity, f"audited targets: {controlled}"
+    note = f"audited targets: {controlled}"
+    added = sorted(set(positive) - generator_positive)
+    if added:
+        note += f"; policy adds {','.join(added)} beyond the generator label"
+        logger.warning("%s %s: policy adds %s beyond the generator label %s",
+                       benchmark, scenario, added, sorted(generator_positive))
+    return labels, validity, note
 
 
 def _project_path(value):
@@ -292,29 +321,30 @@ def build(log_base, results_base, benchmarks, boost_features, boost_labels):
                         bench, scenario, recorded_dims
                     )
                 if dims is None:
-                    row.update(scenario=scenario, source="none", note=note,
-                               **{d: 0 for d in DIMENSION_NAMES},
+                    row.update(scenario=scenario, source="none", generator_label=label_str,
+                               note=note, **{d: 0 for d in DIMENSION_NAMES},
                                **{d: 0 for d in VALIDITY_COLUMNS})
                 else:
-                    row.update(scenario=scenario, source="slurm_out", note=note,
-                               **dims, **validity)
+                    row.update(scenario=scenario, source="slurm_out", generator_label=label_str,
+                               note=note, **dims, **validity)
             elif log_file in boost:
-                _, scenario, dims = boost[log_file]
-                dims, validity, note = apply_manifest_policy(bench, scenario, dims)
+                _, scenario, recorded_dims = boost[log_file]
+                label_str = dims_to_label_string(recorded_dims)
+                dims, validity, note = apply_manifest_policy(bench, scenario, recorded_dims)
                 if dims is None:
-                    row.update(scenario=scenario, source="none", note=note,
-                               **{d: 0 for d in DIMENSION_NAMES},
+                    row.update(scenario=scenario, source="none", generator_label=label_str,
+                               note=note, **{d: 0 for d in DIMENSION_NAMES},
                                **{d: 0 for d in VALIDITY_COLUMNS})
                 else:
                     provenance = (
                         "SLURM step mapping from results/boost_experiment/new_gt; "
                         "source at Git commit 83083ed:scripts/run_boost_experiment.py"
                     )
-                    row.update(scenario=scenario, source="step_mapping",
+                    row.update(scenario=scenario, source="step_mapping", generator_label=label_str,
                                note="; ".join(filter(None, (provenance, note))),
                                **dims, **validity)
             else:
-                row.update(scenario="", source="none",
+                row.update(scenario="", source="none", generator_label="",
                            note="no SLURM stdout and no step mapping",
                            **{d: 0 for d in DIMENSION_NAMES},
                            **{d: 0 for d in VALIDITY_COLUMNS})

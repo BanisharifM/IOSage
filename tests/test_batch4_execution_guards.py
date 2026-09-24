@@ -10,7 +10,7 @@ from scripts.apps.audit_app_runs import (
 from scripts.apps.null_check import correctness_passed as null_correctness_passed
 from scripts.verify_app_smoke_runs import move_job_files
 from scripts.verify_smoke_scenario import parse_labels
-from scripts.build_label_manifest import apply_manifest_policy
+from scripts.build_label_manifest import apply_manifest_policy, label_string_to_dims
 
 
 def _raises(call, exception):
@@ -56,26 +56,31 @@ def test_smoke_label_parser_rejects_unknown_or_zero_labels():
 
 
 def test_audited_scenarios_have_explicit_target_contracts():
+    # the generator labels below are the Label lines of the stored SLURM stdout files
     interleaved, validity, _ = apply_manifest_policy(
-        "h5bench", "h5b_interleaved_access_n16_r1")
+        "h5bench", "h5b_interleaved_access_n16_r1", label_string_to_dims("healthy=1"))
     assert interleaved["access_pattern"] == 0
     assert validity["valid_access_pattern"] == 1
 
-    independent, validity, _ = apply_manifest_policy(
-        "h5bench", "h5b_indep_small_n32_r2")
+    independent, validity, note = apply_manifest_policy(
+        "h5bench", "h5b_indep_small_n32_r2", label_string_to_dims("interface_choice=1"))
     assert independent["access_granularity"] == 1
     assert independent["interface_choice"] == 1
     assert validity["valid_interface_choice"] == 1
+    assert "policy adds access_granularity" in note
 
     excluded, validity, _ = apply_manifest_policy(
-        "h5bench", "h5b_indep_small_single_ost_n32_r2")
+        "h5bench", "h5b_indep_small_single_ost_n32_r2",
+        label_string_to_dims("access_granularity=1,interface_choice=1,throughput_utilization=1"))
     assert excluded is None and validity is None
 
-    for scenario in (
-        "hacc_posix_shared_single_ost_p500000_n64_r1",
-        "hacc_posix_shared_many_single_ost_p500000_n64_r1",
+    for scenario, generator_label in (
+        ("hacc_posix_shared_single_ost_p500000_n64_r1", "throughput_utilization=1"),
+        ("hacc_posix_shared_many_single_ost_p500000_n64_r1",
+         "interface_choice=1,throughput_utilization=1"),
     ):
-        excluded, validity, _ = apply_manifest_policy("hacc_io", scenario)
+        excluded, validity, _ = apply_manifest_policy(
+            "hacc_io", scenario, label_string_to_dims(generator_label))
         assert excluded is None and validity is None
 
 

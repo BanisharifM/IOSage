@@ -104,7 +104,7 @@ DEFAULT_MANIFEST = Path(__file__).resolve().parents[2] / "data" / "benchmark_lab
 MANIFEST_KEYS = ["benchmark", "job_id", "log_file"]
 VALIDITY_COLUMNS = [f"valid_{dimension}" for dimension in DIMENSION_NAMES]
 MANIFEST_COLUMNS = (
-    MANIFEST_KEYS + ["scenario", "source", "note"]
+    MANIFEST_KEYS + ["scenario", "source", "generator_label", "note"]
     + DIMENSION_NAMES + VALIDITY_COLUMNS
 )
 EXCLUDED_SOURCE = "none"
@@ -120,11 +120,15 @@ def load_manifest(path=DEFAULT_MANIFEST):
 
     One row per sample: ``log_file`` is the log's base name for the
     benchmarks with one log per launch and empty for the per-process
-    benchmarks (one row per job). ``source`` says where the label came from;
-    ``none`` marks a log that exists but has no label and is excluded.
+    benchmarks (one row per job). ``source`` says where the scenario and the
+    generator's label came from (``generator_label`` keeps that label
+    verbatim); the label columns hold the audited target contract, and
+    ``note`` names every target the contract adds beyond the generator's
+    label. ``none`` marks a log that exists but is excluded.
     """
-    manifest = pd.read_csv(path, dtype={"job_id": str, "log_file": str, "note": str},
-                           keep_default_na=False)
+    manifest = pd.read_csv(
+        path, dtype={"job_id": str, "log_file": str, "generator_label": str, "note": str},
+        keep_default_na=False)
     missing = [c for c in MANIFEST_COLUMNS if c not in manifest.columns]
     if missing:
         raise ValueError(f"manifest {path} lacks columns {missing}")

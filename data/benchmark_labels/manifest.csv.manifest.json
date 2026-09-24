@@ -1,7 +1,7 @@
 {
   "config": {
     "path": "configs/benchmarks.yaml",
-    "sha256": "f9470cfc8f3c4a168b9becf12d19329c09d0f1bb4978139acd8381692aa21ed2"
+    "sha256": "9967af5a4e253d22a52577d2cc2f79390cbd0f0c1893a1f7dd64f5413521c145"
   },
   "counts": {
     "custom": {
@@ -11,8 +11,8 @@
       "none": 60
     },
     "h5bench": {
-      "none": 27,
-      "slurm_out": 96
+      "none": 33,
+      "slurm_out": 90
     },
     "hacc_io": {
       "none": 75,
@@ -41,12 +41,12 @@
   "output": {
     "path": "data/benchmark_labels/manifest.csv",
     "rows": 726,
-    "sha256": "74a22519d2ed1bf3f4e63eb7bc9d71406d6440ccea5dfb335fae9dee09a28b3a"
+    "sha256": "4ac947917b01cdd6a866c7a4408577617493ed17931f3c97608ddb2fbc17ae2b"
   },
   "schema_version": 1,
   "script": {
     "path": "scripts/build_label_manifest.py",
-    "sha256": "e32d78a1da9ec2c28dea964ea546208b3606e5c3b42ec38d32beab49d55c3187"
+    "sha256": "aa699e22aac225dd35a129afceb0b7417b598c60dbb278577b40c1ebf569414f"
   },
   "status": "passed"
 }
