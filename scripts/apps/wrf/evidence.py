@@ -55,12 +55,14 @@ WRITE_COUNTERS = {"POSIX": "POSIX_BYTES_WRITTEN", "MPI-IO": "MPIIO_BYTES_WRITTEN
 READ_COUNTERS = {"POSIX": "POSIX_BYTES_READ", "MPI-IO": "MPIIO_BYTES_READ", "STDIO": "STDIO_BYTES_READ"}
 EXPECTED_BY_IO_FORM = {
     # io_netcdf in classic mode creates the file with NF_64BIT_OFFSET (external/io_netcdf/wrf_io.F90,
-    # ext_ncd_open_for_write_begin), the same data model PnetCDF uses
+    # ext_ncd_open_for_write_begin), the same data model PnetCDF uses; without use_netcdf_classic
+    # it creates a NetCDF-4 (HDF5) file with deflate level 2, the shipped default
     2: {"write_module": "POSIX", "shared_file": False, "writing_ranks": 1, "collective": False,
         "data_model": "NETCDF3_64BIT_OFFSET"},
     11: {"write_module": "MPI-IO", "shared_file": True, "writing_ranks": None, "collective": True,
          "data_model": "NETCDF3_64BIT_OFFSET"},
 }
+SHIPPED_SERIAL_DATA_MODEL = "NETCDF4"
 WORK_KEYS = ("run_days", "run_hours", "run_minutes", "run_seconds", "history_interval_m", "frames_per_outfile",
              "time_step", "e_we", "e_sn", "e_vert", "max_dom", "restart", "io_form_restart", "io_form_boundary",
              "io_form_input", "nocolons", "use_netcdf_classic", "physics_suite", "nio_tasks_per_group", "nio_groups")
@@ -119,13 +121,18 @@ def history_file_names(values):
     end = date_string(values, "end")
     nocolons = namelist_str(values, "nocolons").lower().strip(".") in ("true", "t")
     names = []
-    # WRF names a history file after its first frame; with one frame per file and a restart
-    # start, the frames fall at multiples of the interval after the start time
+    # WRF names a history file after its first frame. The history alarm rings at the first time
+    # step at or after each multiple of the interval, so with a 72 s step and a 10-minute
+    # interval the frames fall at 23:10:48, 23:20:24, 23:30:00, ... (smoke job 22351338); with
+    # frames_per_outfile 1 every frame is its own file.
     start = date_string(values, "start")
     import datetime
+    import math
+    dt = namelist_int(values, "time_step")
     t0 = datetime.datetime.strptime(start, "%Y-%m-%d_%H:%M:%S")
     for k in range(1, frames + 1):
-        stamp = (t0 + datetime.timedelta(minutes=k * interval)).strftime("%Y-%m-%d_%H:%M:%S")
+        steps = math.ceil(k * interval * 60 / dt)
+        stamp = (t0 + datetime.timedelta(seconds=steps * dt)).strftime("%Y-%m-%d_%H:%M:%S")
         names.append("wrfout_d01_" + (stamp.replace(":", "_") if nocolons else stamp))
     return names, frames, end, minutes * 60
 
@@ -223,8 +230,11 @@ def build_correctness(rsl, values, scratch):
             "problems": problems}
 
 
-def build_io_validation(names, io_form, scratch, darshan, nprocs, history_models):
-    expected = dict(EXPECTED_BY_IO_FORM[io_form], ranks=nprocs, io_form_history=io_form, history_files=len(names))
+def build_io_validation(names, io_form, scratch, darshan, nprocs, history_models, netcdf_classic=True):
+    expected = dict(EXPECTED_BY_IO_FORM[io_form], ranks=nprocs, io_form_history=io_form, history_files=len(names),
+                    use_netcdf_classic=netcdf_classic)
+    if io_form == 2 and not netcdf_classic:
+        expected["data_model"] = SHIPPED_SERIAL_DATA_MODEL
     observed = {"history_files": [], "restart_read": {}, "boundary_read": {}}
     problems = []
     for name in names:
@@ -279,6 +289,8 @@ def main():
     parser.add_argument("--scratch", required=True)
     parser.add_argument("--base-dir", required=True, help="directory with namelist.input.base and the input links")
     parser.add_argument("--io-form-history", type=int, required=True, choices=sorted(EXPECTED_BY_IO_FORM))
+    parser.add_argument("--netcdf-classic", required=True, choices=["yes", "no"],
+                        help="use_netcdf_classic of the run (must match the namelist)")
     parser.add_argument("--darshan-logpath", required=True)
     parser.add_argument("--nodarshan", action="store_true")
     parser.add_argument("--manifest", required=True)
@@ -301,6 +313,11 @@ def main():
         logger.error("namelist io_form_history %s differs from the case value %s", values["io_form_history"],
                      args.io_form_history)
         sys.exit(2)
+    classic = namelist_str(values, "use_netcdf_classic").lower().strip(".") in ("true", "t")
+    if classic != (args.netcdf_classic == "yes"):
+        logger.error("namelist use_netcdf_classic %s differs from the case value %s", values["use_netcdf_classic"],
+                     args.netcdf_classic)
+        sys.exit(2)
     rsl = parse_rsl(Path(scratch, "rsl.out.0000").read_text(errors="replace"))
     darshan_logs = sorted(str(p) for p in Path(args.darshan_logpath).glob(f"*id{args.jobid}-*"))
     darshan = None
@@ -315,7 +332,8 @@ def main():
     correctness = build_correctness(rsl, values, scratch)
     names, frames, end, simulated_s = history_file_names(values)
     io_validation = build_io_validation(names, args.io_form_history, scratch, darshan, args.ntasks,
-                                        {n: h["data_model"] for n, h in correctness["result"]["history"].items()})
+                                        {n: h["data_model"] for n, h in correctness["result"]["history"].items()},
+                                        netcdf_classic=classic)
     normalized = "\n".join(line for line in namelist_text.splitlines() if not line.strip().startswith("io_form_history"))
     restart = Path(scratch, "wrfrst_d01_2019-11-26_23_00_00").resolve()
     boundary = Path(scratch, "wrfbdy_d01").resolve()
@@ -329,7 +347,8 @@ def main():
         "nodelist": args.nodelist, "start_iso": args.start_iso, "wall_s": args.wall_s, "rc": args.rc,
         "nodarshan": args.nodarshan,
         "app_metric": {"name": "history_write_s", "value": rsl["history_write_s"]},
-        "knobs": {"io_form_history": args.io_form_history},
+        "knobs": {"io_form_history": args.io_form_history, "history_interval_m": namelist_int(values, "history_interval_m"),
+                  "use_netcdf_classic": classic},
         "work": {"forecast_start": date_string(values, "start"), "forecast_end": end,
                  "simulated_seconds": simulated_s, "time_step_s": namelist_int(values, "time_step"),
                  "expected_time_steps": simulated_s // namelist_int(values, "time_step"),
@@ -339,7 +358,7 @@ def main():
                  "grid_vert": namelist_int(values, "e_vert"), "ranks": args.ntasks, "nodes": args.nodes,
                  "physics_suite": namelist_str(values, "physics_suite"),
                  "io_form_restart": namelist_int(values, "io_form_restart"),
-                 "io_form_boundary": namelist_int(values, "io_form_boundary"),
+                 "io_form_boundary": namelist_int(values, "io_form_boundary"), "use_netcdf_classic": classic,
                  "restart_sha256": sha256_file(restart), "boundary_sha256": sha256_file(boundary),
                  "namelist_normalized_sha256": hashlib.sha256(normalized.encode()).hexdigest()},
         "correctness": {k: correctness[k] for k in ("check", "pass", "result")},

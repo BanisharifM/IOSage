@@ -76,7 +76,7 @@ def validate_row(row):
     if not row["work"]:
         problems.append("work is empty")
     for key, value in row["work"].items():
-        if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        if not isinstance(value, (bool, int, float, str)):
             problems.append(f"work.{key} is not a typed scalar")
     _named_check(row["correctness"], "correctness", problems, extra_keys=("result",))
     _named_check(row["io_validation"], "io_validation", problems, extra_keys=("expected", "observed"))

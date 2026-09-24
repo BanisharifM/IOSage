@@ -167,6 +167,10 @@ def test_manifest_contract_accepts_typed_rows_and_rejects_untyped_ones():
     assert any("io_validation.expected" in p for p in manifest.validate_row(bad))
     bad = _row(); bad["work"] = {}
     assert "work is empty" in manifest.validate_row(bad)
+    ok = _row(); ok["work"]["use_netcdf_classic"] = True
+    assert manifest.validate_row(ok) == []
+    bad = _row(); bad["work"]["mesh"] = [1, 2]
+    assert any("work.mesh" in p for p in manifest.validate_row(bad))
     bad = _row(); bad["nodarshan"] = True
     assert "control run lists Darshan logs" in manifest.validate_row(bad)
     bad = _row(); bad["wall_s"] = "3.5"

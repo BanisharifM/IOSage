@@ -86,6 +86,11 @@ def test_namelist_and_rsl_parsing():
     assert evidence.namelist_int(values, "io_form_history") == 2 and evidence.namelist_str(values, "physics_suite") == "conus"
     names, frames, end, seconds = evidence.history_file_names(values)
     assert names == ["wrfout_d01_2019-11-27_00_00_00"] and frames == 1 and end == "2019-11-27_00:00:00" and seconds == 3600
+    ten = evidence.parse_namelist(NAMELIST.replace(" history_interval_m                  = 60,", " history_interval_m                  = 10,"))
+    names, frames, _, _ = evidence.history_file_names(ten)
+    assert frames == 6 and names == ["wrfout_d01_2019-11-26_23_10_48", "wrfout_d01_2019-11-26_23_20_24",
+                                     "wrfout_d01_2019-11-26_23_30_00", "wrfout_d01_2019-11-26_23_40_48",
+                                     "wrfout_d01_2019-11-26_23_50_24", "wrfout_d01_2019-11-27_00_00_00"]
     rsl = evidence.parse_rsl(_rsl())
     assert rsl["success"] and rsl["completed_steps"] == 50 and rsl["final_time"] == "2019-11-27_00:00:00"
     assert rsl["history_write_s"] == 8.29863 and rsl["history_writes"][0]["file"] == "wrfout_d01_2019-11-27_00_00_00"
@@ -121,25 +126,30 @@ def _darshan(path, module, size, shared, extra_modules=()):
 def test_correctness_and_io_validation_for_both_forms():
     values = evidence.parse_namelist(NAMELIST)
     with tempfile.TemporaryDirectory() as tmp:
-        for io_form, model, module, shared in ((2, "NETCDF3_64BIT_OFFSET", "POSIX", False), (11, "NETCDF3_64BIT_OFFSET", "MPI-IO", True)):
-            scratch = Path(tmp, f"f{io_form}"); scratch.mkdir()
+        for io_form, model, module, shared in ((2, "NETCDF3_64BIT_OFFSET", "POSIX", False), (11, "NETCDF3_64BIT_OFFSET", "MPI-IO", True),
+                                              (2, "NETCDF4", "POSIX", False)):
+            classic = model != "NETCDF4"
+            scratch = Path(tmp, f"f{io_form}{model}"); scratch.mkdir()
             name = "wrfout_d01_2019-11-27_00_00_00"
             _write_history(scratch / name, model)
             correctness = evidence.build_correctness(evidence.parse_rsl(_rsl()), values, scratch)
             assert correctness["pass"], correctness["problems"]
             models = {n: h["data_model"] for n, h in correctness["result"]["history"].items()}
             size = (scratch / name).stat().st_size
-            io = evidence.build_io_validation([name], io_form, scratch, _darshan(scratch / name, module, size, shared), 128, models)
+            io = evidence.build_io_validation([name], io_form, scratch, _darshan(scratch / name, module, size, shared), 128, models,
+                                              netcdf_classic=classic)
             assert io["pass"], io["problems"]
+            assert io["expected"]["data_model"] == model and io["expected"]["use_netcdf_classic"] == classic
             assert io["expected"]["write_module"] == module and io["observed"]["history_files"][0]["size"] == size
             short = _darshan(scratch / name, module, size - 1, shared)
-            assert not evidence.build_io_validation([name], io_form, scratch, short, 128, models)["pass"]
+            assert not evidence.build_io_validation([name], io_form, scratch, short, 128, models, netcdf_classic=classic)["pass"]
             wrong_form = 11 if io_form == 2 else 2
-            assert not evidence.build_io_validation([name], wrong_form, scratch, _darshan(scratch / name, module, size, shared), 128, models)["pass"]
-            assert not evidence.build_io_validation([name], io_form, scratch, _darshan(scratch / name, module, size, shared), 128, {name: "NETCDF4"})["pass"]
-            control = evidence.build_io_validation([name], io_form, scratch, None, 128, models)
+            assert not evidence.build_io_validation([name], wrong_form, scratch, _darshan(scratch / name, module, size, shared), 128, models, netcdf_classic=classic)["pass"]
+            if io_form == 2:   # the NetCDF mode changes the serial data model only; io_pnetcdf ignores it
+                assert not evidence.build_io_validation([name], io_form, scratch, _darshan(scratch / name, module, size, shared), 128, models, netcdf_classic=not classic)["pass"]
+            control = evidence.build_io_validation([name], io_form, scratch, None, 128, models, netcdf_classic=classic)
             assert control["pass"] and control["check"] == "control_run_without_darshan"
-        scratch = Path(tmp, "f2")
+        scratch = Path(tmp, "f2NETCDF3_64BIT_OFFSET")
         assert not evidence.build_correctness(evidence.parse_rsl(_rsl(success=False)), values, scratch)["pass"]
         assert not evidence.build_correctness(evidence.parse_rsl(_rsl(steps=49)), values, scratch)["pass"]
         stdio = _darshan(scratch / name, "POSIX", size, False, extra_modules=("STDIO",))

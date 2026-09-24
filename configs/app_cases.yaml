@@ -15,7 +15,12 @@ protocol:
   # WRF base input (both cases): nocolons = .true. (doc/README.netcdf4par: colons must be removed
   # for pnetcdf), use_netcdf_classic = .true. (Registry/registry.io_boilerplate; otherwise io_netcdf
   # writes NetCDF-4 with deflate level 2, wrf_io.F90 lines 2502-2504, a compression confound), the
-  # generated Thompson table qr_acr_qg_V4.dat present so no case computes and writes it.
+  # generated Thompson table qr_acr_qg_V4.dat present so no case computes and writes it;
+  # override_restart_timers = .true. from the extension of 2026-09-24 on (README.namelist line 73:
+  # a restart run otherwise keeps the output alarms stored in the restart file, so the namelist's
+  # history_interval_m is ignored; smoke 22351302 wrote one frame with history_interval_m = 10).
+  # The attempt-a series ran without the override; with the 60-minute interval both settings
+  # produce the single frame at the end of the hour.
 
 applications:
   nek5000:
@@ -129,7 +134,7 @@ applications:
         role: problem
         kind: natural
         fix_case: W2
-        args: ["2"]                    # io_form_history
+        args: ["2", "60", "yes"]       # io_form_history history_interval_m use_netcdf_classic (attempt a ran the one-argument form, the same configuration)
         knobs: {io_form_history: 2}
         classifier_supported: false
         expected_labels: []
@@ -149,7 +154,7 @@ applications:
       W2:
         role: fix
         kind: natural
-        args: ["11"]
+        args: ["11", "60", "yes"]
         knobs: {io_form_history: 11}
         classifier_supported: false
         expected_labels: []
@@ -165,3 +170,127 @@ applications:
           whole-job rules hold for it (Phase 0), so it is the measured fix, not a negative control.
         io_structure: {write_module: MPI-IO, shared_file: true, collective: true,
                        data_model: NETCDF3_64BIT_OFFSET, io_form_history: 11, history_files: 1}
+
+  # Extension of task 02 (Mahdi, 2026-09-24, after the attempt-a result): the same intervention
+  # under the NERSC output frequency (six history frames per hour), so that the history-output
+  # share of the run is six times larger. Same binary, base input, work and ranks as `wrf`;
+  # only history_interval_m differs from `wrf`, and only io_form_history between the two cases.
+  wrf_10min:
+    script: scripts/apps/wrf/run_conus12km.slurm
+    base_input: /work/hdd/bdau/mbanisharifdehkordi/apps/wrf/runs/conus12km_task02
+    resources: {nodes: 2, ntasks: 128, ntasks_per_node: 64, cpus_per_task: 1, time_limit: "00:30:00", partition: cpu}
+    secondary_metric: app_metric
+    work_invariant: {forecast_start: "2019-11-26_23:00:00", forecast_end: "2019-11-27_00:00:00", simulated_seconds: 3600,
+                     time_step_s: 72, expected_time_steps: 50, history_interval_m: 10, expected_history_frames: 6,
+                     frames_per_outfile: 1, grid_we: 425, grid_sn: 300, grid_vert: 50, ranks: 128, nodes: 2,
+                     physics_suite: conus, io_form_restart: 2, io_form_boundary: 2, use_netcdf_classic: true}
+    equivalence:
+      source: >-
+        Same rule as `wrf` (exact equality of every history variable, the dimensions and the
+        global attributes, proven bitwise on the attempt-a pairs), applied to each of the six
+        frames named after their simulated time. Source of the scenario: NERSC WRF benchmark
+        page (https://docs.nersc.gov/applications/wrf/wrf_benchmark/), "6 history files at
+        10-minute intervals over one hour"; WRF Users' Guide namelist page, history_interval_m.
+        The alarm rings at the first 72 s step at or after each 10-minute mark, so the frames
+        are named 23:10:48, 23:20:24, 23:30:00, 23:40:48, 23:50:24 and 00:00:00 (smoke 22351338).
+      exact_fields: [success_complete, final_time, completed_steps, history_frames, history_files]
+      exact_subtrees:
+        - history.wrfout_d01_2019-11-26_23_10_48.dimensions
+        - history.wrfout_d01_2019-11-26_23_10_48.variables
+        - history.wrfout_d01_2019-11-26_23_10_48.global_attributes
+        - history.wrfout_d01_2019-11-26_23_20_24.dimensions
+        - history.wrfout_d01_2019-11-26_23_20_24.variables
+        - history.wrfout_d01_2019-11-26_23_20_24.global_attributes
+        - history.wrfout_d01_2019-11-26_23_30_00.dimensions
+        - history.wrfout_d01_2019-11-26_23_30_00.variables
+        - history.wrfout_d01_2019-11-26_23_30_00.global_attributes
+        - history.wrfout_d01_2019-11-26_23_40_48.dimensions
+        - history.wrfout_d01_2019-11-26_23_40_48.variables
+        - history.wrfout_d01_2019-11-26_23_40_48.global_attributes
+        - history.wrfout_d01_2019-11-26_23_50_24.dimensions
+        - history.wrfout_d01_2019-11-26_23_50_24.variables
+        - history.wrfout_d01_2019-11-26_23_50_24.global_attributes
+        - history.wrfout_d01_2019-11-27_00_00_00.dimensions
+        - history.wrfout_d01_2019-11-27_00_00_00.variables
+        - history.wrfout_d01_2019-11-27_00_00_00.global_attributes
+    case_order: [W1_10min, W2_10min]
+    cases:
+      W1_10min:
+        role: problem
+        kind: natural
+        fix_case: W2_10min
+        args: ["2", "10", "yes"]
+        knobs: {io_form_history: 2, history_interval_m: 10}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: >-
+          As W1 (`wrf`), with the NERSC output frequency. Not classifier ground truth for the
+          reasons recorded in the task-02 Phase 0 report.
+        io_structure: {write_module: POSIX, shared_file: false, writing_ranks: 1, collective: false,
+                       data_model: NETCDF3_64BIT_OFFSET, io_form_history: 2, history_files: 6, use_netcdf_classic: true}
+      W2_10min:
+        role: fix
+        kind: natural
+        args: ["11", "10", "yes"]
+        knobs: {io_form_history: 11, history_interval_m: 10}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: As W2 (`wrf`), with the NERSC output frequency.
+        io_structure: {write_module: MPI-IO, shared_file: true, collective: true,
+                       data_model: NETCDF3_64BIT_OFFSET, io_form_history: 11, history_files: 6, use_netcdf_classic: true}
+
+  # Extension of task 02: the intervention against WRF's shipped serial default, which writes
+  # NetCDF-4 with deflate level 2 (use_netcdf_classic absent; external/io_netcdf/wrf_io.F90 lines
+  # 2502-2504 and 2682). This is what a user of the default namelist sees when switching to
+  # PnetCDF; the compressed file is about 211 MB against 596 MB, a trade-off stated with the
+  # result. The fix case is the same PnetCDF configuration (io_pnetcdf ignores use_netcdf_classic),
+  # run again in the same attempt as the contemporaneous control.
+  wrf_shipped:
+    script: scripts/apps/wrf/run_conus12km.slurm
+    base_input: /work/hdd/bdau/mbanisharifdehkordi/apps/wrf/runs/conus12km_task02
+    resources: {nodes: 2, ntasks: 128, ntasks_per_node: 64, cpus_per_task: 1, time_limit: "00:30:00", partition: cpu}
+    secondary_metric: app_metric
+    work_invariant: {forecast_start: "2019-11-26_23:00:00", forecast_end: "2019-11-27_00:00:00", simulated_seconds: 3600,
+                     time_step_s: 72, expected_time_steps: 50, history_interval_m: 60, expected_history_frames: 1,
+                     frames_per_outfile: 1, grid_we: 425, grid_sn: 300, grid_vert: 50, ranks: 128, nodes: 2,
+                     physics_suite: conus, io_form_restart: 2, io_form_boundary: 2, use_netcdf_classic: false}
+    equivalence:
+      source: >-
+        Same rule as `wrf`: exact equality of every history variable, the dimensions and the
+        global attributes; NetCDF-4 deflate is lossless, so the values read back through netCDF4
+        must equal the PnetCDF values (to be confirmed on the smoke pair before the scored series).
+      exact_fields: [success_complete, final_time, completed_steps, history_frames, history_files]
+      exact_subtrees:
+        - history.wrfout_d01_2019-11-27_00_00_00.dimensions
+        - history.wrfout_d01_2019-11-27_00_00_00.variables
+        - history.wrfout_d01_2019-11-27_00_00_00.global_attributes
+    case_order: [W1_shipped, W2_shipped]
+    cases:
+      W1_shipped:
+        role: problem
+        kind: natural
+        fix_case: W2_shipped
+        args: ["2", "60", "no"]
+        knobs: {io_form_history: 2, use_netcdf_classic: false}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: >-
+          WRF default serial history output in a NETCDF4 build: NetCDF-4/HDF5 file with deflate
+          level 2 written by one rank (job 21939602 of 2026-09-10: 210.9 MB in 8.30 s). Not
+          classifier ground truth (task-02 Phase 0).
+        io_structure: {write_module: POSIX, shared_file: false, writing_ranks: 1, collective: false,
+                       data_model: NETCDF4, io_form_history: 2, history_files: 1, use_netcdf_classic: false}
+      W2_shipped:
+        role: fix
+        kind: natural
+        args: ["11", "60", "no"]
+        knobs: {io_form_history: 11, use_netcdf_classic: false}
+        classifier_supported: false
+        expected_labels: []
+        allowed_extra_labels: []
+        source: As W2 (`wrf`); use_netcdf_classic does not apply to io_pnetcdf.
+        io_structure: {write_module: MPI-IO, shared_file: true, collective: true,
+                       data_model: NETCDF3_64BIT_OFFSET, io_form_history: 11, history_files: 1, use_netcdf_classic: false}

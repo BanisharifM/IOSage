@@ -46,7 +46,12 @@ def test_registered_nek5000_cases_load_and_expose_their_inputs():
 
 def test_registered_wrf_cases_expose_their_inputs():
     doc = app_cases.load(CASES)
-    assert app_cases.case_args(doc, "wrf", "W1") == ["2"] and app_cases.case_args(doc, "wrf", "W2") == ["11"]
+    assert app_cases.case_args(doc, "wrf", "W1") == ["2", "60", "yes"] and app_cases.case_args(doc, "wrf", "W2") == ["11", "60", "yes"]
+    assert app_cases.case_args(doc, "wrf_10min", "W1_10min") == ["2", "10", "yes"]
+    assert app_cases.case_args(doc, "wrf_shipped", "W2_shipped") == ["11", "60", "no"]
+    assert len(app_cases.pairs(doc, "wrf_10min")["W1_10min:W2_10min"]["exact_subtrees"]) == 18
+    assert app_cases.work_invariant(doc, "wrf_10min")["expected_history_frames"] == 6
+    assert app_cases.expected_io(doc, "wrf_shipped", "W1_shipped")["data_model"] == "NETCDF4"
     rule = app_cases.pairs(doc, "wrf")["W1:W2"]
     assert "history.wrfout_d01_2019-11-27_00_00_00.variables" in rule["exact_subtrees"]
     assert "final_time" in rule["exact_fields"] and not rule["fields"]
