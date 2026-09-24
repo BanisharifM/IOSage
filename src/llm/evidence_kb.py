@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
@@ -15,6 +14,7 @@ import pandas as pd
 
 from src.data.benchmark_verify import BOTTLENECK_DIMENSIONS
 from src.ioprescriber.contracts import KB_SCHEMA_VERSION, validate_knowledge_base
+from src.utils.artifacts import sha256_file
 
 
 MEASUREMENT_SCHEMA_VERSION = 1
@@ -25,14 +25,6 @@ SIGNATURE_FEATURES = (
     "avg_write_size", "avg_read_size", "small_io_ratio", "seq_write_ratio",
     "metadata_time_ratio", "collective_ratio", "total_bw_mb_s", "fsync_ratio",
 )
-
-
-def _sha256(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _identities(features):
@@ -221,11 +213,11 @@ def build_knowledge_base(features_path, labels_path, splits_path, measurements_p
         "allowed_job_groups": sorted(set(groups[allowed_idx])),
         "entries": entries,
         "inputs": {
-            "features_sha256": _sha256(features_path),
-            "labels_sha256": _sha256(labels_path),
-            "splits_sha256": _sha256(splits_path),
-            "measurements_sha256": _sha256(measurements_path),
-            "shap_sha256": _sha256(shap_path) if shap_path else None,
+            "features_sha256": sha256_file(features_path),
+            "labels_sha256": sha256_file(labels_path),
+            "splits_sha256": sha256_file(splits_path),
+            "measurements_sha256": sha256_file(measurements_path),
+            "shap_sha256": sha256_file(shap_path) if shap_path else None,
         },
     }
     validate_knowledge_base(document)
@@ -265,9 +257,9 @@ def main():
     if not bundle["final_evaluation"]:
         raise ValueError("KB construction requires a final-evaluation bundle")
     expected = bundle["input_hashes"]
-    if _sha256(args.features) != expected["benchmark_features"]["sha256"]:
+    if sha256_file(args.features) != expected["benchmark_features"]["sha256"]:
         raise ValueError("KB feature input differs from the model bundle")
-    if _sha256(args.labels) != expected["benchmark_labels"]["sha256"]:
+    if sha256_file(args.labels) != expected["benchmark_labels"]["sha256"]:
         raise ValueError("KB label input differs from the model bundle")
     document = build_knowledge_base(
         args.features, args.labels, args.splits, args.measurements,

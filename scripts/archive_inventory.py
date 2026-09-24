@@ -10,13 +10,9 @@ import tarfile
 import tempfile
 from pathlib import Path, PurePosixPath
 
-
-def sha256_file(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+from src.utils.artifacts import sha256_file  # noqa: E402
 
 
 def safe_name(name):

@@ -11,7 +11,6 @@ The output records hashes for the model, mapping, traces, and comparison files.
 """
 
 import argparse
-import hashlib
 import json
 import logging
 import os
@@ -26,6 +25,7 @@ import numpy as np
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 from src.artifact_paths import checked_output_dir  # noqa: E402
+from src.utils.artifacts import sha256_file  # noqa: E402
 
 # Load .env
 env_path = PROJECT_DIR / ".env"
@@ -91,15 +91,6 @@ def load_label_mapping():
         if dim is not None:
             tb_to_dim[tb_label] = dim
     return tb_to_dim
-
-
-def sha256_file(path):
-    """Return the SHA-256 digest of one required file."""
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def load_all_traces():

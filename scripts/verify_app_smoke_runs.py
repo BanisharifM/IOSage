@@ -14,7 +14,6 @@ Usage:
         --log-root data/benchmark_logs/apps --output results/apps/smoke_2026-09-21_verify.json
 """
 import argparse
-import hashlib
 import json
 import logging
 import re
@@ -24,6 +23,8 @@ from pathlib import Path
 
 logger = logging.getLogger("verify_app_smoke_runs")
 PROJECT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+from src.utils.artifacts import sha256_file  # noqa: E402
 
 BYTE_COUNTERS = {
     "POSIX": ("POSIX_BYTES_WRITTEN", "POSIX_BYTES_READ"),
@@ -126,14 +127,6 @@ def verify_job(app, jobid, args_str, log_root):
     return result
 
 
-def file_sha256(path):
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def move_job_files(result, trash_root):
     """Move the resolved evidence of one passed job into a job-specific directory."""
     import shutil
@@ -151,7 +144,7 @@ def move_job_files(result, trash_root):
     for path in candidates:
         if path.is_file():
             target = destination / path.name
-            record = {"original": str(path), "moved_to": str(target), "sha256": file_sha256(path)}
+            record = {"original": str(path), "moved_to": str(target), "sha256": sha256_file(path)}
             shutil.move(str(path), str(target))
             moved.append(record)
             if result.get("stdout") == str(path):
@@ -163,7 +156,7 @@ def move_job_files(result, trash_root):
         log_dir = out_path.parent / f"logs_{result['jobid']}"
         if log_dir.is_dir():
             target = destination / log_dir.name
-            hashes = {str(path.relative_to(log_dir)): file_sha256(path)
+            hashes = {str(path.relative_to(log_dir)): sha256_file(path)
                       for path in log_dir.rglob("*") if path.is_file()}
             shutil.move(str(log_dir), str(target))
             moved.append({"original": str(log_dir), "moved_to": str(target), "files": hashes})
