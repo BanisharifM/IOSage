@@ -138,17 +138,30 @@ def _as_frame(features: pd.DataFrame | Mapping[str, object]) -> pd.DataFrame:
     return pd.DataFrame([dict(features)])
 
 
+PARALLELISM_EVIDENCE = [
+    "nprocs", "rank_byte_range_ratio", "SHARED_BYTE_IMBALANCE", "SHARED_TIME_IMBALANCE",
+    "FILE_WRITE_IMBALANCE", "FILE_READ_IMBALANCE",
+]
+
+
 def parallelism_present(features: pd.DataFrame | Mapping[str, object]):
-    """Evaluate the rank-distribution rule without requiring other features."""
+    """Evaluate the rank-distribution rule on its evidence columns.
+
+    Every column of ``PARALLELISM_EVIDENCE`` must be present; a missing one
+    is an error, never a zero.
+    """
     frame = _as_frame(features)
+    missing = [name for name in PARALLELISM_EVIDENCE if name not in frame.columns]
+    if missing:
+        raise KeyError(f"parallelism rule lacks evidence columns {missing}")
     result = (
         (frame["nprocs"] > 1)
         & (
-            (frame.get("rank_byte_range_ratio", 0.0) > RANK_IMBALANCE_RANGE_RATIO)
-            | (frame.get("SHARED_BYTE_IMBALANCE", 0.0) > SHARED_STRAGGLER_SHARE)
-            | (frame.get("SHARED_TIME_IMBALANCE", 0.0) > SHARED_STRAGGLER_SHARE)
-            | (frame.get("FILE_WRITE_IMBALANCE", 0.0) > RANK_IMBALANCE_RANGE_RATIO)
-            | (frame.get("FILE_READ_IMBALANCE", 0.0) > RANK_IMBALANCE_RANGE_RATIO)
+            (frame["rank_byte_range_ratio"] > RANK_IMBALANCE_RANGE_RATIO)
+            | (frame["SHARED_BYTE_IMBALANCE"] > SHARED_STRAGGLER_SHARE)
+            | (frame["SHARED_TIME_IMBALANCE"] > SHARED_STRAGGLER_SHARE)
+            | (frame["FILE_WRITE_IMBALANCE"] > RANK_IMBALANCE_RANGE_RATIO)
+            | (frame["FILE_READ_IMBALANCE"] > RANK_IMBALANCE_RANGE_RATIO)
         )
     )
     if isinstance(features, pd.DataFrame):

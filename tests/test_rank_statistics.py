@@ -31,7 +31,9 @@ def _features(stats, nprocs, bytes_all, time_all=1.0):
                 'STDIO_F_READ_TIME': 0.0, 'STDIO_F_WRITE_TIME': 0.0, 'STDIO_F_META_TIME': 0.0})
     out = compute_layer_and_rank_features(lambda k: float(raw.get(k, 0.0)), nprocs)
     out['nprocs'] = nprocs
-    out['SHARED_BYTE_IMBALANCE'] = stats['SHARED_BYTE_IMBALANCE']
+    for name in ('SHARED_BYTE_IMBALANCE', 'SHARED_TIME_IMBALANCE',
+                 'FILE_WRITE_IMBALANCE', 'FILE_READ_IMBALANCE'):
+        out[name] = stats[name]
     return out
 
 
@@ -207,8 +209,16 @@ def test_rank_imbalance_rule_is_drishti_size_threshold():
     # one process is never imbalanced; otherwise (max - min) / max > 0.3,
     # so a rank doing twice the others (0.5) is flagged at any rank count
     def f(nprocs, ratio, shared=0.0):
-        return {'nprocs': nprocs, 'rank_byte_range_ratio': ratio, 'SHARED_BYTE_IMBALANCE': shared}
+        return {'nprocs': nprocs, 'rank_byte_range_ratio': ratio, 'SHARED_BYTE_IMBALANCE': shared,
+                'SHARED_TIME_IMBALANCE': 0.0, 'FILE_WRITE_IMBALANCE': 0.0, 'FILE_READ_IMBALANCE': 0.0}
     assert not rank_imbalance_present(f(1, 1.0))
+    # evidence columns are required: a missing one is an error, never a zero
+    try:
+        rank_imbalance_present({'nprocs': 8, 'SHARED_BYTE_IMBALANCE': 0.0})
+    except KeyError as exc:
+        assert 'rank_byte_range_ratio' in str(exc)
+    else:
+        raise AssertionError('expected KeyError for missing evidence columns')
     assert rank_imbalance_present(f(64, 0.5))
     assert not rank_imbalance_present(f(4, 0.3))
     assert not rank_imbalance_present(f(4, 0.0))
